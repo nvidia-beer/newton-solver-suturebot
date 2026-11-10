@@ -1,0 +1,46 @@
+{
+  "fem_needle_insertion": {
+    "frames": 420,
+    "fps": 60,
+    "poster_frame": 300,
+    "show_ui": true,
+    "args": [
+      "--regions",
+      "1",
+      "--transparent-pad",
+      "--test"
+    ],
+    "caption": "Simulation-time playback: select entry and exit material points across a region 1 wound gap, preview the curved needle, then start, pause and resume coupled MuJoCo/FEM insertion through both tissue sections. Illustrative puncture and sliding-track forces; no fracture or physiological calibration. Playback rate does not measure live FPS."
+  },
+  "fem_phantom_regions": {
+    "frames": 540,
+    "fps": 60,
+    "show_ui": true,
+    "args": [
+      "--regions",
+      "4",
+      "--test"
+    ],
+    "caption": "Click the 2D pad map to select a SutureBot wound: right-drag wound 4, switch to wound 6, disable FEM, then return to wound 4. Wound numbers follow the dataset; inactive material stays fixed."
+  },
+  "fem_dvrk": {
+    "frames": 1202,
+    "fps": 60,
+    "poster_frame": 600,
+    "show_ui": true,
+    "args": [
+      "--test"
+    ],
+    "caption": "Replay measured da Vinci Research Kit (dVRK) tissue3 tool motion with prepared USD tools, cameras, fixture and the original static phantom. Four synchronized views compare the model with source video; green point labels stay on the mesh. Camera and pad placement remain fitted estimates."
+  },
+  "fem_phantom_cut": {
+    "frames": 360,
+    "fps": 60,
+    "poster_frame": 240,
+    "show_ui": true,
+    "args": [
+      "--test"
+    ],
+    "caption": "The complete 413,405-tetrahedron pad rests on the floor. A finite slice separates an edge strip, which a physical spring grip lifts and releases. All material is active; no region selection. Simulation-time playback is not measured live FPS."
+  }
+}

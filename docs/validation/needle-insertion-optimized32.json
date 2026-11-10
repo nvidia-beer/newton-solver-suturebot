@@ -1,0 +1,2308 @@
+{
+  "cases": {
+    "base": {
+      "outcome": "Success: tip emerged, exit error 0.009 mm",
+      "success": true,
+      "task_status": "success",
+      "interaction_events": [
+        {
+          "kind": "puncture",
+          "time_s": 1.0911458333333115,
+          "position_m": [
+            0.030050992751269715,
+            -0.04006161689160007,
+            0.0011043577210252413
+          ],
+          "reused": false
+        },
+        {
+          "kind": "entry",
+          "time_s": 1.0932291666666447,
+          "position_m": [
+            0.03005978837609291,
+            -0.0399746336042881,
+            0.0011702822521328926
+          ],
+          "reused": false
+        },
+        {
+          "kind": "exit",
+          "time_s": 3.787499999999825,
+          "position_m": [
+            0.038008589297533035,
+            -0.039997100830078125,
+            0.0014631873928010464
+          ],
+          "reused": false
+        }
+      ],
+      "entry_count": 1,
+      "exit_count": 1,
+      "physical_time_s": 3.787499999999825,
+      "exit_error_m": 8.931956565824851e-06,
+      "exit_tolerance_m": 0.001,
+      "puncture_count": 1,
+      "track_samples": 33,
+      "track_section_count": 1,
+      "track_length_m": 0.008047577308220954,
+      "maximum_interface_force_N": 0.003072840741296896,
+      "maximum_deformation_m": 0.0001526955888349629,
+      "maximum_deformation_time_s": 1.0911458333333115,
+      "maximum_force_balance_error_N": 7.009130540997893e-10,
+      "maximum_torque_balance_error_Nm": 2.1903532940618417e-11,
+      "maximum_coupling_iterations": 11,
+      "maximum_coupling_residual_N": 6.562918310361451e-07,
+      "last_coupling_attempt_iterations": 1,
+      "last_coupling_attempt_residual_N": 2.0955212676199153e-08,
+      "fem_graph_captures": 2,
+      "fem_graph_launches": 9783,
+      "fem_graph_status": "replaying",
+      "cutting_resistance_omitted": true,
+      "last_interface_load_on_fixed_nodes_N": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dt_s": 0.0005208333333333333,
+      "track_spacing_m": 0.00025,
+      "shaft_spacing_m": 0.00014,
+      "status": "outside",
+      "calibrated": false,
+      "trace": [
+        {
+          "frame": 0,
+          "time_s": 0.016666666666666666,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "approach",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.02800244651734829,
+            -0.0391126424074173,
+            0.0020553283393383026
+          ],
+          "force_N": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "entry_m": [
+            0.029999999759628505,
+            -0.03999999689271869,
+            0.0012432967657802704
+          ],
+          "exit_m": [
+            0.03799999842000524,
+            -0.039999994672679486,
+            0.001464396540565934
+          ]
+        },
+        {
+          "frame": 30,
+          "time_s": 0.5166666666666774,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "approach",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.02865307405591011,
+            -0.03945596516132355,
+            0.0017377668991684914
+          ],
+          "force_N": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "entry_m": [
+            0.029999999321474846,
+            -0.03999999689271869,
+            0.0012432963601182831
+          ],
+          "exit_m": [
+            0.03799999842000524,
+            -0.039999994672679486,
+            0.0014643967271762005
+          ]
+        },
+        {
+          "frame": 51,
+          "time_s": 0.8666666666666575,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "contact",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.02955785021185875,
+            -0.03984183445572853,
+            0.0013825884088873863
+          ],
+          "force_N": [
+            -4.1181065171258524e-05,
+            0.00010931551514659077,
+            7.332632958423346e-05
+          ],
+          "entry_m": [
+            0.030001476888650926,
+            -0.04000493487518861,
+            0.0012422008108659535
+          ],
+          "exit_m": [
+            0.038000055506733396,
+            -0.04000041703421607,
+            0.0014643707189622456
+          ]
+        },
+        {
+          "frame": 60,
+          "time_s": 1.016666666666649,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "contact",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.029870564118027687,
+            -0.03992006555199623,
+            0.0012385360896587372
+          ],
+          "force_N": [
+            -0.0006265744450502098,
+            0.0015683482633903623,
+            0.0011142054572701454
+          ],
+          "entry_m": [
+            0.030027080949582965,
+            -0.04008609197683787,
+            0.0012229788095724993
+          ],
+          "exit_m": [
+            0.03800048480781407,
+            -0.04000879406953005,
+            0.0014642138486340378
+          ]
+        },
+        {
+          "frame": 65,
+          "time_s": 1.0999999999999777,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 1,
+          "track_section_count": 1,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.03014974296092987,
+            -0.040037527680397034,
+            0.001170080155134201
+          ],
+          "force_N": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "entry_m": [
+            0.030000552511951627,
+            -0.040000430514081,
+            0.0012430679755525578
+          ],
+          "exit_m": [
+            0.03800062380006615,
+            -0.040000171735078374,
+            0.0014641548914134809
+          ]
+        },
+        {
+          "frame": 90,
+          "time_s": 1.5166666666666206,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 6,
+          "track_section_count": 1,
+          "track_length_m": 0.0012572046435779453,
+          "tip_m": [
+            0.03137672692537308,
+            -0.04036621376872063,
+            0.0009186537936329842
+          ],
+          "force_N": [
+            -6.384774678735994e-06,
+            9.692888852441683e-06,
+            -1.5216577594401315e-05
+          ],
+          "entry_m": [
+            0.0300002580728588,
+            -0.0400008520872845,
+            0.0012439410222554132
+          ],
+          "exit_m": [
+            0.03800001092735631,
+            -0.04000007437949466,
+            0.0014643981481633238
+          ]
+        },
+        {
+          "frame": 120,
+          "time_s": 2.0166666666665924,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 12,
+          "track_section_count": 1,
+          "track_length_m": 0.0027659347695560606,
+          "tip_m": [
+            0.03284892067313194,
+            -0.04058282822370529,
+            0.0007477402687072754
+          ],
+          "force_N": [
+            -9.121376933762804e-06,
+            5.2829250307695474e-06,
+            -2.078171200992074e-05
+          ],
+          "entry_m": [
+            0.03000024321682939,
+            -0.0400007488359906,
+            0.0012439647671735252
+          ],
+          "exit_m": [
+            0.038000033574241886,
+            -0.04000002521286133,
+            0.0014644012274727656
+          ]
+        },
+        {
+          "frame": 150,
+          "time_s": 2.516666666666564,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 18,
+          "track_section_count": 1,
+          "track_length_m": 0.004274868890711548,
+          "tip_m": [
+            0.03434613347053528,
+            -0.04063086956739426,
+            0.0007422482594847679
+          ],
+          "force_N": [
+            -1.0131106137123425e-05,
+            1.6486239928781288e-06,
+            -2.6009423891082406e-05
+          ],
+          "entry_m": [
+            0.03000020225643468,
+            -0.04000071119763201,
+            0.0012439609640664108
+          ],
+          "exit_m": [
+            0.038000062487799774,
+            -0.03999993820303744,
+            0.0014644065473139894
+          ]
+        },
+        {
+          "frame": 180,
+          "time_s": 3.0166666666665356,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 24,
+          "track_section_count": 1,
+          "track_length_m": 0.005783887948736527,
+          "tip_m": [
+            0.03583070635795593,
+            -0.040509115904569626,
+            0.0009023826569318771
+          ],
+          "force_N": [
+            -9.926878192345612e-06,
+            -1.4067095435166266e-06,
+            -3.114136416115798e-05
+          ],
+          "entry_m": [
+            0.03000017654509126,
+            -0.040000712384263906,
+            0.0012439646413862822
+          ],
+          "exit_m": [
+            0.03800009191952585,
+            -0.039999790775256804,
+            0.001464424545006963
+          ]
+        },
+        {
+          "frame": 210,
+          "time_s": 3.516666666666507,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 30,
+          "track_section_count": 1,
+          "track_length_m": 0.007293024246235195,
+          "tip_m": [
+            0.037265241146087646,
+            -0.040220633149147034,
+            0.0012240977957844734
+          ],
+          "force_N": [
+            -8.599417014920618e-06,
+            -4.300927230360685e-06,
+            -3.6503559385892004e-05
+          ],
+          "entry_m": [
+            0.030000164620742124,
+            -0.040000721897783725,
+            0.0012439775580749622
+          ],
+          "exit_m": [
+            0.038000100583341447,
+            -0.039999571533957265,
+            0.001464467892529225
+          ]
+        },
+        {
+          "frame": 227,
+          "time_s": 3.787499999999825,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "outside",
+          "task_status": "success",
+          "success": true,
+          "entry_count": 1,
+          "exit_count": 1,
+          "puncture_count": 1,
+          "track_count": 33,
+          "track_section_count": 1,
+          "track_length_m": 0.008047577308220954,
+          "tip_m": [
+            0.038008589297533035,
+            -0.039997100830078125,
+            0.0014631873928010464
+          ],
+          "force_N": [
+            -7.625960279256105e-06,
+            -5.250479262031149e-06,
+            -3.888518040184863e-05
+          ],
+          "entry_m": [
+            0.03000016299595656,
+            -0.0400007520104307,
+            0.001243977859104455
+          ],
+          "exit_m": [
+            0.038000068019945786,
+            -0.03999940811002561,
+            0.0014645453823513646
+          ]
+        }
+      ],
+      "selection": {
+        "regions": [
+          1
+        ],
+        "entry_xy_m": [
+          0.03,
+          -0.04
+        ],
+        "exit_xy_m": [
+          0.038,
+          -0.04
+        ]
+      }
+    },
+    "timestep": {
+      "outcome": "Success: tip emerged, exit error 0.008 mm",
+      "success": true,
+      "task_status": "success",
+      "interaction_events": [
+        {
+          "kind": "puncture",
+          "time_s": 1.0914062499999582,
+          "position_m": [
+            0.030050691085142918,
+            -0.04006194283429412,
+            0.0011045258712008145
+          ],
+          "reused": false
+        },
+        {
+          "kind": "entry",
+          "time_s": 1.0934895833332914,
+          "position_m": [
+            0.030057411640882492,
+            -0.039971984922885895,
+            0.0011703437194228172
+          ],
+          "reused": false
+        },
+        {
+          "kind": "exit",
+          "time_s": 3.787500000001329,
+          "position_m": [
+            0.038007862865924835,
+            -0.03999749571084976,
+            0.0014630472287535667
+          ],
+          "reused": false
+        }
+      ],
+      "entry_count": 1,
+      "exit_count": 1,
+      "physical_time_s": 3.787500000001329,
+      "exit_error_m": 8.15715704002576e-06,
+      "exit_tolerance_m": 0.001,
+      "puncture_count": 1,
+      "track_samples": 33,
+      "track_section_count": 1,
+      "track_length_m": 0.008021990424606138,
+      "maximum_interface_force_N": 0.003072706208787113,
+      "maximum_deformation_m": 0.00015280897772388966,
+      "maximum_deformation_time_s": 1.0914062499999582,
+      "maximum_force_balance_error_N": 7.176322400300968e-10,
+      "maximum_torque_balance_error_Nm": 2.300859821966427e-11,
+      "maximum_coupling_iterations": 10,
+      "maximum_coupling_residual_N": 6.402629294398245e-07,
+      "last_coupling_attempt_iterations": 1,
+      "last_coupling_attempt_residual_N": 3.334344000904821e-08,
+      "fem_graph_captures": 2,
+      "fem_graph_launches": 18980,
+      "fem_graph_status": "replaying",
+      "cutting_resistance_omitted": true,
+      "last_interface_load_on_fixed_nodes_N": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dt_s": 0.00026041666666666666,
+      "track_spacing_m": 0.00025,
+      "shaft_spacing_m": 0.00014,
+      "status": "outside",
+      "calibrated": false,
+      "trace": [
+        {
+          "frame": 0,
+          "time_s": 0.016666666666666684,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "approach",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.028002435341477394,
+            -0.039112638682127,
+            0.0020553264766931534
+          ],
+          "force_N": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "entry_m": [
+            0.029999999759628505,
+            -0.03999999689271869,
+            0.001243296003995411
+          ],
+          "exit_m": [
+            0.03799999842000524,
+            -0.039999998397969784,
+            0.0014643962785199681
+          ]
+        },
+        {
+          "frame": 30,
+          "time_s": 0.5166666666666574,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "approach",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.02865242213010788,
+            -0.039455659687519073,
+            0.0017380565404891968
+          ],
+          "force_N": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "entry_m": [
+            0.029999999759628505,
+            -0.03999999689271869,
+            0.0012432968503434377
+          ],
+          "exit_m": [
+            0.03799999842000524,
+            -0.039999994672679486,
+            0.0014643965174036648
+          ]
+        },
+        {
+          "frame": 51,
+          "time_s": 0.8666666666666375,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "contact",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.029557496309280396,
+            -0.03984183445572853,
+            0.0013828687369823456
+          ],
+          "force_N": [
+            -4.010360862594098e-05,
+            0.00010637882223818451,
+            7.116607594070956e-05
+          ],
+          "entry_m": [
+            0.03000148199330093,
+            -0.040005081427209904,
+            0.0012423139751377996
+          ],
+          "exit_m": [
+            0.0380000411237404,
+            -0.04000050120751415,
+            0.0014643809538448945
+          ]
+        },
+        {
+          "frame": 60,
+          "time_s": 1.016666666666629,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "contact",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.02987023815512657,
+            -0.03992009907960892,
+            0.0012388154864311218
+          ],
+          "force_N": [
+            -0.0006252426537685096,
+            0.0015653697773814201,
+            0.0011121942661702633
+          ],
+          "entry_m": [
+            0.03002707679637131,
+            -0.040086199959526836,
+            0.0012230901621772198
+          ],
+          "exit_m": [
+            0.03800046655195888,
+            -0.04000886348923883,
+            0.0014642236787480959
+          ]
+        },
+        {
+          "frame": 65,
+          "time_s": 1.0999999999999577,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 1,
+          "track_section_count": 1,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.030145468190312386,
+            -0.04003560543060303,
+            0.0011695409193634987
+          ],
+          "force_N": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "entry_m": [
+            0.03000092831464675,
+            -0.040002044037094356,
+            0.0012426759561551981
+          ],
+          "exit_m": [
+            0.03800091412863458,
+            -0.03999812685875577,
+            0.0014638649733060903
+          ]
+        },
+        {
+          "frame": 90,
+          "time_s": 1.5166666666666007,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 6,
+          "track_section_count": 1,
+          "track_length_m": 0.001252702060052575,
+          "tip_m": [
+            0.03137592598795891,
+            -0.04036623239517212,
+            0.0009189285337924957
+          ],
+          "force_N": [
+            -6.465787009801716e-06,
+            8.343528861587401e-06,
+            -1.4927711163181812e-05
+          ],
+          "entry_m": [
+            0.030000255416603627,
+            -0.04000076359222181,
+            0.001243910545146645
+          ],
+          "exit_m": [
+            0.03800001465264661,
+            -0.04000006372179196,
+            0.0014643982429619691
+          ]
+        },
+        {
+          "frame": 120,
+          "time_s": 2.0166666666665862,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 12,
+          "track_section_count": 1,
+          "track_length_m": 0.0027567427400028467,
+          "tip_m": [
+            0.032848112285137177,
+            -0.04058294743299484,
+            0.0007479153573513031
+          ],
+          "force_N": [
+            -9.176693311019335e-06,
+            3.964303232351085e-06,
+            -2.0412802768987603e-05
+          ],
+          "entry_m": [
+            0.03000023972939868,
+            -0.040000660340927904,
+            0.0012439343226179418
+          ],
+          "exit_m": [
+            0.03800003678136399,
+            -0.040000018280448926,
+            0.001464401338464167
+          ]
+        },
+        {
+          "frame": 150,
+          "time_s": 2.516666666666984,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 18,
+          "track_section_count": 1,
+          "track_length_m": 0.004260983020849046,
+          "tip_m": [
+            0.034345321357250214,
+            -0.04063107818365097,
+            0.0007423302158713341
+          ],
+          "force_N": [
+            -1.0201702025369741e-05,
+            2.7330673901815317e-07,
+            -2.5622028260841034e-05
+          ],
+          "entry_m": [
+            0.03000019773753436,
+            -0.040000618977279016,
+            0.0012439305835047862
+          ],
+          "exit_m": [
+            0.03800006621309007,
+            -0.03999993060488496,
+            0.001464407594239587
+          ]
+        },
+        {
+          "frame": 180,
+          "time_s": 3.016666666667382,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 24,
+          "track_section_count": 1,
+          "track_length_m": 0.005765323206217257,
+          "tip_m": [
+            0.03582991659641266,
+            -0.040509406477212906,
+            0.0009023738093674183
+          ],
+          "force_N": [
+            -9.977847184927668e-06,
+            -2.78918628282554e-06,
+            -3.0644798243884e-05
+          ],
+          "entry_m": [
+            0.03000017261950689,
+            -0.04000062016391092,
+            0.0012439328405559663
+          ],
+          "exit_m": [
+            0.03800009191952585,
+            -0.03999978690239462,
+            0.001464424065510811
+          ]
+        },
+        {
+          "frame": 210,
+          "time_s": 3.51666666666778,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 30,
+          "track_section_count": 1,
+          "track_length_m": 0.007269774037320119,
+          "tip_m": [
+            0.03726450353860855,
+            -0.04022099822759628,
+            0.001224006526172161
+          ],
+          "force_N": [
+            -8.730919034860563e-06,
+            -5.7358220146852545e-06,
+            -3.592733992263675e-05
+          ],
+          "entry_m": [
+            0.03000015966368814,
+            -0.04000062761449152,
+            0.0012439453490681875
+          ],
+          "exit_m": [
+            0.038000100583341447,
+            -0.039999571533957265,
+            0.0014644666315319532
+          ]
+        },
+        {
+          "frame": 227,
+          "time_s": 3.787500000001329,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "outside",
+          "task_status": "success",
+          "success": true,
+          "entry_count": 1,
+          "exit_count": 1,
+          "puncture_count": 1,
+          "track_count": 33,
+          "track_section_count": 1,
+          "track_length_m": 0.008021990424606138,
+          "tip_m": [
+            0.038007862865924835,
+            -0.03999749571084976,
+            0.0014630472287535667
+          ],
+          "force_N": [
+            -7.667303179914597e-06,
+            -6.970214144530473e-06,
+            -3.8426482205977663e-05
+          ],
+          "entry_m": [
+            0.03000015676957338,
+            -0.040000650276557886,
+            0.001243943509655439
+          ],
+          "exit_m": [
+            0.038000071745236084,
+            -0.03999939357946072,
+            0.001464542469244095
+          ]
+        }
+      ],
+      "selection": {
+        "regions": [
+          1
+        ],
+        "entry_xy_m": [
+          0.03,
+          -0.04
+        ],
+        "exit_xy_m": [
+          0.038,
+          -0.04
+        ]
+      }
+    },
+    "spacing": {
+      "outcome": "Success: tip emerged, exit error 0.009 mm",
+      "success": true,
+      "task_status": "success",
+      "interaction_events": [
+        {
+          "kind": "puncture",
+          "time_s": 1.0916666666666448,
+          "position_m": [
+            0.03005267558509695,
+            -0.04006149055470329,
+            0.0011037914166492535
+          ],
+          "reused": false
+        },
+        {
+          "kind": "entry",
+          "time_s": 1.093749999999978,
+          "position_m": [
+            0.030061637982726097,
+            -0.039974622428417206,
+            0.001169627532362938
+          ],
+          "reused": false
+        },
+        {
+          "kind": "exit",
+          "time_s": 3.787499999999825,
+          "position_m": [
+            0.03800841420888901,
+            -0.03999760001897812,
+            0.0014632144011557102
+          ],
+          "reused": false
+        }
+      ],
+      "entry_count": 1,
+      "exit_count": 1,
+      "physical_time_s": 3.787499999999825,
+      "exit_error_m": 8.631716963406182e-06,
+      "exit_tolerance_m": 0.001,
+      "puncture_count": 1,
+      "track_samples": 66,
+      "track_section_count": 1,
+      "track_length_m": 0.008215383216804048,
+      "maximum_interface_force_N": 0.0030778980114339167,
+      "maximum_deformation_m": 0.00015347268850848214,
+      "maximum_deformation_time_s": 1.0916666666666448,
+      "maximum_force_balance_error_N": 5.334820243245736e-10,
+      "maximum_torque_balance_error_Nm": 2.2426007500940526e-11,
+      "maximum_coupling_iterations": 11,
+      "maximum_coupling_residual_N": 6.56048281200681e-07,
+      "last_coupling_attempt_iterations": 1,
+      "last_coupling_attempt_residual_N": 1.7935235518962145e-08,
+      "fem_graph_captures": 2,
+      "fem_graph_launches": 9807,
+      "fem_graph_status": "replaying",
+      "cutting_resistance_omitted": true,
+      "last_interface_load_on_fixed_nodes_N": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dt_s": 0.0005208333333333333,
+      "track_spacing_m": 0.000125,
+      "shaft_spacing_m": 7e-05,
+      "status": "outside",
+      "calibrated": false,
+      "trace": [
+        {
+          "frame": 0,
+          "time_s": 0.016666666666666666,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "approach",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.02800244651734829,
+            -0.0391126424074173,
+            0.0020553283393383026
+          ],
+          "force_N": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "entry_m": [
+            0.029999999759628505,
+            -0.03999999689271869,
+            0.0012432965112680074
+          ],
+          "exit_m": [
+            0.03799999842000524,
+            -0.039999994672679486,
+            0.0014643961357721873
+          ]
+        },
+        {
+          "frame": 30,
+          "time_s": 0.5166666666666774,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "approach",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.02865307405591011,
+            -0.03945596516132355,
+            0.0017377668991684914
+          ],
+          "force_N": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "entry_m": [
+            0.029999999321474846,
+            -0.03999999689271869,
+            0.0012432963714627404
+          ],
+          "exit_m": [
+            0.03799999842000524,
+            -0.039999994672679486,
+            0.0014643963709607222
+          ]
+        },
+        {
+          "frame": 51,
+          "time_s": 0.8666666666666575,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "contact",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.02955785021185875,
+            -0.03984183445572853,
+            0.0013825884088873863
+          ],
+          "force_N": [
+            -4.115828778594732e-05,
+            0.00010925796232186258,
+            7.329614163609222e-05
+          ],
+          "entry_m": [
+            0.030001476888650926,
+            -0.04000493741384701,
+            0.0012422002094555694
+          ],
+          "exit_m": [
+            0.038000055506733396,
+            -0.04000041755238427,
+            0.0014643710242415644
+          ]
+        },
+        {
+          "frame": 60,
+          "time_s": 1.016666666666649,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "contact",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.02987053617835045,
+            -0.03992004692554474,
+            0.0012385295704007149
+          ],
+          "force_N": [
+            -0.0006268779980018735,
+            0.0015691349981352687,
+            0.001114758662879467
+          ],
+          "entry_m": [
+            0.03002708519572422,
+            -0.04008611195531586,
+            0.0012229768192199997
+          ],
+          "exit_m": [
+            0.03800048786736428,
+            -0.04000879473527013,
+            0.0014642138717963068
+          ]
+        },
+        {
+          "frame": 65,
+          "time_s": 1.0999999999999777,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 2,
+          "track_section_count": 1,
+          "track_length_m": 0.00012995324333671675,
+          "tip_m": [
+            0.030146023258566856,
+            -0.04003496840596199,
+            0.0011692577973008156
+          ],
+          "force_N": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "entry_m": [
+            0.030000599818992328,
+            -0.04000007737314506,
+            0.0012429421743569693
+          ],
+          "exit_m": [
+            0.03800067642283956,
+            -0.039999888763920737,
+            0.001464091331339756
+          ]
+        },
+        {
+          "frame": 90,
+          "time_s": 1.5166666666666206,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 12,
+          "track_section_count": 1,
+          "track_length_m": 0.0013934886780073363,
+          "tip_m": [
+            0.03137646242976189,
+            -0.040366627275943756,
+            0.000918862409889698
+          ],
+          "force_N": [
+            -7.364470548054669e-06,
+            5.402452643465949e-06,
+            -1.6217833035625517e-05
+          ],
+          "entry_m": [
+            0.030000259369521207,
+            -0.04000060248889777,
+            0.0012439039901609174
+          ],
+          "exit_m": [
+            0.0380000185255088,
+            -0.040000048525486984,
+            0.0014643979913975117
+          ]
+        },
+        {
+          "frame": 120,
+          "time_s": 2.0166666666665924,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 24,
+          "track_section_count": 1,
+          "track_length_m": 0.0029117072359805935,
+          "tip_m": [
+            0.032848674803972244,
+            -0.040583252906799316,
+            0.0007479162886738777
+          ],
+          "force_N": [
+            -9.796369340620004e-06,
+            1.1582624210859649e-06,
+            -2.1497895431821235e-05
+          ],
+          "entry_m": [
+            0.03000023048863792,
+            -0.04000051160010667,
+            0.0012439128224324485
+          ],
+          "exit_m": [
+            0.038000044231944585,
+            -0.03999999921128176,
+            0.0014644011409018984
+          ]
+        },
+        {
+          "frame": 150,
+          "time_s": 2.516666666666564,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 36,
+          "track_section_count": 1,
+          "track_length_m": 0.004426924827057779,
+          "tip_m": [
+            0.03434591367840767,
+            -0.040631309151649475,
+            0.0007423963397741318
+          ],
+          "force_N": [
+            -1.0791397471621167e-05,
+            -2.765252247627359e-06,
+            -2.683992534002755e-05
+          ],
+          "entry_m": [
+            0.030000195664362832,
+            -0.040000465324535585,
+            0.0012439147574826294
+          ],
+          "exit_m": [
+            0.03800007314550247,
+            -0.03999990781042749,
+            0.0014644077003320394
+          ]
+        },
+        {
+          "frame": 180,
+          "time_s": 3.0166666666665356,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 47,
+          "track_section_count": 1,
+          "track_length_m": 0.0058157154094535535,
+          "tip_m": [
+            0.03583049029111862,
+            -0.040509577840566635,
+            0.0009024832397699356
+          ],
+          "force_N": [
+            -1.040797997120535e-05,
+            -5.938942649663659e-06,
+            -3.181166175636463e-05
+          ],
+          "entry_m": [
+            0.030000169359703458,
+            -0.04000046112352611,
+            0.0012439168235862175
+          ],
+          "exit_m": [
+            0.038000098999510144,
+            -0.03999975650978466,
+            0.001464425754280932
+          ]
+        },
+        {
+          "frame": 210,
+          "time_s": 3.516666666666507,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 59,
+          "track_section_count": 1,
+          "track_length_m": 0.007331129762815004,
+          "tip_m": [
+            0.03726506978273392,
+            -0.040221091359853745,
+            0.0012241830118000507
+          ],
+          "force_N": [
+            -9.063661309482995e-06,
+            -8.756820534472354e-06,
+            -3.6793466279050335e-05
+          ],
+          "entry_m": [
+            0.030000156997200662,
+            -0.0400004797499776,
+            0.0012439230995983078
+          ],
+          "exit_m": [
+            0.03800010736818196,
+            -0.03999952557444603,
+            0.001464471099730962
+          ]
+        },
+        {
+          "frame": 227,
+          "time_s": 3.787499999999825,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "outside",
+          "task_status": "success",
+          "success": true,
+          "entry_count": 1,
+          "exit_count": 1,
+          "puncture_count": 1,
+          "track_count": 66,
+          "track_section_count": 1,
+          "track_length_m": 0.008215383216804048,
+          "tip_m": [
+            0.03800841420888901,
+            -0.03999760001897812,
+            0.0014632144011557102
+          ],
+          "force_N": [
+            -7.898772309999913e-06,
+            -1.0264709999319166e-05,
+            -3.957798980991356e-05
+          ],
+          "entry_m": [
+            0.030000154979393224,
+            -0.040000493774831475,
+            0.0012439297274668684
+          ],
+          "exit_m": [
+            0.038000064147083595,
+            -0.03999931682741652,
+            0.0014645692348606329
+          ]
+        }
+      ],
+      "selection": {
+        "regions": [
+          1
+        ],
+        "entry_xy_m": [
+          0.03,
+          -0.04
+        ],
+        "exit_xy_m": [
+          0.038,
+          -0.04
+        ]
+      }
+    },
+    "gap": {
+      "outcome": "Success: tip emerged, exit error 0.010 mm",
+      "success": true,
+      "task_status": "success",
+      "interaction_events": [
+        {
+          "kind": "puncture",
+          "time_s": 1.1270833333333095,
+          "position_m": [
+            0.030006519181831566,
+            -0.040034485106347856,
+            0.0010632396292679772
+          ],
+          "reused": false
+        },
+        {
+          "kind": "entry",
+          "time_s": 1.1291666666666427,
+          "position_m": [
+            0.02999390847980976,
+            -0.03997451812028885,
+            0.0011231591925024986
+          ],
+          "reused": false
+        },
+        {
+          "kind": "exit",
+          "time_s": 2.0249999999999253,
+          "position_m": [
+            0.03002922423183918,
+            -0.04295076057314873,
+            0.0007748203352093697
+          ],
+          "reused": false
+        },
+        {
+          "kind": "puncture",
+          "time_s": 2.8437499999998788,
+          "position_m": [
+            0.030048663347694442,
+            -0.04523305558065452,
+            0.0009067884297015576
+          ],
+          "reused": false
+        },
+        {
+          "kind": "entry",
+          "time_s": 2.845833333333212,
+          "position_m": [
+            0.03001987561583519,
+            -0.04516172409057617,
+            0.000964239239692688
+          ],
+          "reused": false
+        },
+        {
+          "kind": "exit",
+          "time_s": 3.8057291666664907,
+          "position_m": [
+            0.029999002814292908,
+            -0.048009637743234634,
+            0.0022560805082321167
+          ],
+          "reused": false
+        }
+      ],
+      "entry_count": 2,
+      "exit_count": 2,
+      "physical_time_s": 3.8057291666664907,
+      "exit_error_m": 9.600050066386115e-06,
+      "exit_tolerance_m": 0.001,
+      "puncture_count": 2,
+      "track_samples": 26,
+      "track_section_count": 2,
+      "track_length_m": 0.006021738994031172,
+      "maximum_interface_force_N": 0.0032221513476838,
+      "maximum_deformation_m": 0.00013932387838863335,
+      "maximum_deformation_time_s": 1.1270833333333095,
+      "maximum_force_balance_error_N": 1.86300038672398e-09,
+      "maximum_torque_balance_error_Nm": 4.6303910717534946e-11,
+      "maximum_coupling_iterations": 17,
+      "maximum_coupling_residual_N": 7.510832270786645e-07,
+      "last_coupling_attempt_iterations": 1,
+      "last_coupling_attempt_residual_N": 1.5340254277965083e-08,
+      "fem_graph_captures": 2,
+      "fem_graph_launches": 13551,
+      "fem_graph_status": "replaying",
+      "cutting_resistance_omitted": true,
+      "last_interface_load_on_fixed_nodes_N": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dt_s": 0.0005208333333333333,
+      "track_spacing_m": 0.00025,
+      "shaft_spacing_m": 0.00014,
+      "status": "outside",
+      "calibrated": false,
+      "trace": [
+        {
+          "frame": 0,
+          "time_s": 0.016666666666666666,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "approach",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.02995569258928299,
+            -0.03790389373898506,
+            0.0022230520844459534
+          ],
+          "force_N": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "entry_m": [
+            0.029999999759628505,
+            -0.03999999689271869,
+            0.0012432967657802704
+          ],
+          "exit_m": [
+            0.030000000112723305,
+            -0.04800000378149659,
+            0.0022573177404188595
+          ]
+        },
+        {
+          "frame": 30,
+          "time_s": 0.5166666666666774,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "approach",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.02997293695807457,
+            -0.038600049912929535,
+            0.0018266970291733742
+          ],
+          "force_N": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "entry_m": [
+            0.02999999789698336,
+            -0.03999999689271869,
+            0.001243297035693161
+          ],
+          "exit_m": [
+            0.030000000112723305,
+            -0.04800000005620629,
+            0.002257317899226958
+          ]
+        },
+        {
+          "frame": 55,
+          "time_s": 0.9333333333333204,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "contact",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.02999594807624817,
+            -0.039738573133945465,
+            0.001330038532614708
+          ],
+          "force_N": [
+            -2.5647441361797974e-06,
+            0.00011721313785528764,
+            9.32235925574787e-05
+          ],
+          "entry_m": [
+            0.030000436438041473,
+            -0.04000562003718165,
+            0.0012411166674068889
+          ],
+          "exit_m": [
+            0.029999983052826786,
+            -0.04799997820185417,
+            0.002257279048172487
+          ]
+        },
+        {
+          "frame": 60,
+          "time_s": 1.016666666666649,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "contact",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 0,
+          "exit_count": 0,
+          "puncture_count": 0,
+          "track_count": 0,
+          "track_section_count": 0,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.029994161799550056,
+            -0.03981790691614151,
+            0.0012439368292689323
+          ],
+          "force_N": [
+            -6.706177373416722e-05,
+            0.0010519357165321708,
+            0.0009105896460823715
+          ],
+          "entry_m": [
+            0.0300060140933262,
+            -0.04005267600187947,
+            0.0012224114900940654
+          ],
+          "exit_m": [
+            0.029999792912148895,
+            -0.04799918823335626,
+            0.0022569647530220494
+          ]
+        },
+        {
+          "frame": 67,
+          "time_s": 1.133333333333309,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 1,
+          "track_section_count": 1,
+          "track_length_m": 0.0,
+          "tip_m": [
+            0.029999004676938057,
+            -0.040120385587215424,
+            0.0011202171444892883
+          ],
+          "force_N": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "entry_m": [
+            0.029999706519534243,
+            -0.039997789122665175,
+            0.0012430589266660054
+          ],
+          "exit_m": [
+            0.03000006341566777,
+            -0.04799932717604059,
+            0.0022576308143459696
+          ]
+        },
+        {
+          "frame": 90,
+          "time_s": 1.5166666666666206,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 6,
+          "track_section_count": 1,
+          "track_length_m": 0.0012603068345116175,
+          "tip_m": [
+            0.030018126592040062,
+            -0.04143241047859192,
+            0.0008937641978263855
+          ],
+          "force_N": [
+            -2.4200137431762414e-06,
+            2.4699820642126724e-05,
+            -4.59598122688476e-05
+          ],
+          "entry_m": [
+            0.030000275625233736,
+            -0.04000186412782073,
+            0.0012449967148916612
+          ],
+          "exit_m": [
+            0.02999999452478786,
+            -0.047999988880335395,
+            0.002257312829828262
+          ]
+        },
+        {
+          "frame": 120,
+          "time_s": 2.0166666666665924,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 0,
+          "puncture_count": 1,
+          "track_count": 12,
+          "track_section_count": 1,
+          "track_length_m": 0.0027679130117512743,
+          "tip_m": [
+            0.030029110610485077,
+            -0.04292580485343933,
+            0.0007748221978545189
+          ],
+          "force_N": [
+            -2.3658183181396453e-06,
+            2.6757423256640323e-05,
+            -5.304635124048218e-05
+          ],
+          "entry_m": [
+            0.030000272100237514,
+            -0.040001859065636476,
+            0.0012450266100380186
+          ],
+          "exit_m": [
+            0.02999999452478786,
+            -0.047999992605625694,
+            0.0022573142301859504
+          ]
+        },
+        {
+          "frame": 121,
+          "time_s": 2.033333333333258,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "outside",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 1,
+          "puncture_count": 1,
+          "track_count": 13,
+          "track_section_count": 1,
+          "track_length_m": 0.003017928267963694,
+          "tip_m": [
+            0.030029334127902985,
+            -0.042975738644599915,
+            0.0007748967036604881
+          ],
+          "force_N": [
+            -2.3658897134737344e-06,
+            2.6765372240333818e-05,
+            -5.3690237109549344e-05
+          ],
+          "entry_m": [
+            0.030000268730403578,
+            -0.04000183054020956,
+            0.001245011416449179
+          ],
+          "exit_m": [
+            0.029999996387433007,
+            -0.047999992605625694,
+            0.002257314267197223
+          ]
+        },
+        {
+          "frame": 150,
+          "time_s": 2.516666666666564,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "outside",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 1,
+          "puncture_count": 1,
+          "track_count": 13,
+          "track_section_count": 1,
+          "track_length_m": 0.003017928267963694,
+          "tip_m": [
+            0.030031634494662285,
+            -0.04442007839679718,
+            0.0008939160034060478
+          ],
+          "force_N": [
+            -2.555718310759403e-06,
+            2.6991825507138856e-05,
+            -5.372393934521824e-05
+          ],
+          "entry_m": [
+            0.030000273286869415,
+            -0.040001842502124206,
+            0.0012450179004383957
+          ],
+          "exit_m": [
+            0.029999998250078156,
+            -0.04799999633091599,
+            0.00225731407730227
+          ]
+        },
+        {
+          "frame": 159,
+          "time_s": 2.6666666666665555,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "contact",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 1,
+          "exit_count": 1,
+          "puncture_count": 1,
+          "track_count": 13,
+          "track_section_count": 1,
+          "track_length_m": 0.003017928267963694,
+          "tip_m": [
+            0.030030135065317154,
+            -0.044853247702121735,
+            0.0009706048294901848
+          ],
+          "force_N": [
+            -9.713371582620312e-06,
+            0.00022104266099631786,
+            7.677340363443363e-07
+          ],
+          "entry_m": [
+            0.030000223223077667,
+            -0.040001644145897186,
+            0.0012447601609271834
+          ],
+          "exit_m": [
+            0.03000045472868752,
+            -0.04800393118165517,
+            0.0022573589178815395
+          ]
+        },
+        {
+          "frame": 170,
+          "time_s": 2.8499999999998784,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 2,
+          "exit_count": 1,
+          "puncture_count": 2,
+          "track_count": 14,
+          "track_section_count": 2,
+          "track_length_m": 0.003017928267963694,
+          "tip_m": [
+            0.03002556972205639,
+            -0.04527825117111206,
+            0.0010247444733977318
+          ],
+          "force_N": [
+            5.7634028962638695e-06,
+            1.9077635442954488e-05,
+            0.00017553176439832896
+          ],
+          "entry_m": [
+            0.030000307692325954,
+            -0.040001356540306836,
+            0.0012415109653058755
+          ],
+          "exit_m": [
+            0.029998953822773823,
+            -0.04799309692002928,
+            0.0022559766618156295
+          ]
+        },
+        {
+          "frame": 180,
+          "time_s": 3.0166666666665356,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 2,
+          "exit_count": 1,
+          "puncture_count": 2,
+          "track_count": 17,
+          "track_section_count": 2,
+          "track_length_m": 0.0037712045483791414,
+          "tip_m": [
+            0.03002527728676796,
+            -0.04587535187602043,
+            0.001245470717549324
+          ],
+          "force_N": [
+            -4.030526724818628e-06,
+            2.387487984378822e-05,
+            -7.470454147551209e-05
+          ],
+          "entry_m": [
+            0.030000253984404673,
+            -0.04000177719951348,
+            0.0012449619561582072
+          ],
+          "exit_m": [
+            0.030000057960301005,
+            -0.04800029937595485,
+            0.0022574352432675176
+          ]
+        },
+        {
+          "frame": 210,
+          "time_s": 3.516666666666507,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "inserted",
+          "task_status": "running",
+          "success": false,
+          "entry_count": 2,
+          "exit_count": 1,
+          "puncture_count": 2,
+          "track_count": 23,
+          "track_section_count": 2,
+          "track_length_m": 0.005271501717454306,
+          "tip_m": [
+            0.03001096472144127,
+            -0.047257810831069946,
+            0.0018239710479974747
+          ],
+          "force_N": [
+            -4.201366209599655e-06,
+            2.1980542442179285e-05,
+            -8.18642511148937e-05
+          ],
+          "entry_m": [
+            0.030000259134186462,
+            -0.04000176602364258,
+            0.0012449434244378333
+          ],
+          "exit_m": [
+            0.03000005630764197,
+            -0.04800029456109451,
+            0.0022575143013336936
+          ]
+        },
+        {
+          "frame": 228,
+          "time_s": 3.8057291666664907,
+          "state_evaluation": "accepted_state",
+          "force_evaluation": "accepted_endpoint",
+          "status": "outside",
+          "task_status": "success",
+          "success": true,
+          "entry_count": 2,
+          "exit_count": 2,
+          "puncture_count": 2,
+          "track_count": 26,
+          "track_section_count": 2,
+          "track_length_m": 0.006021738994031172,
+          "tip_m": [
+            0.029999002814292908,
+            -0.048009637743234634,
+            0.0022560805082321167
+          ],
+          "force_N": [
+            -4.424756752996473e-06,
+            2.0581199350999668e-05,
+            -8.489892934449017e-05
+          ],
+          "entry_m": [
+            0.030000262504020395,
+            -0.04000176903802015,
+            0.0012449540821507941
+          ],
+          "exit_m": [
+            0.030000042590841502,
+            -0.04800021791695795,
+            0.0022576124021328925
+          ]
+        }
+      ],
+      "selection": {
+        "regions": [
+          1
+        ],
+        "entry_xy_m": [
+          0.03,
+          -0.04
+        ],
+        "exit_xy_m": [
+          0.03,
+          -0.048
+        ]
+      }
+    }
+  },
+  "checks": {
+    "all_reached_exit": true,
+    "gap_entry_count_at_least_two": true,
+    "gap_exit_count_at_least_two": true,
+    "gap_puncture_count_at_least_two": true,
+    "gap_track_section_count_at_least_two": true,
+    "timestep_exit_change_under_0.2mm": true,
+    "timestep_maximum_interface_force_N_change_under_20percent": true,
+    "timestep_maximum_deformation_m_change_under_20percent": true,
+    "spacing_exit_change_under_0.2mm": true,
+    "spacing_maximum_interface_force_N_change_under_20percent": true,
+    "spacing_maximum_deformation_m_change_under_20percent": true,
+    "timestep_exit_vector_change_under_0.2mm": true,
+    "spacing_exit_vector_change_under_0.2mm": true
+  },
+  "task_checks": {
+    "all_reached_exit": true,
+    "gap_entry_count_at_least_two": true,
+    "gap_exit_count_at_least_two": true,
+    "gap_puncture_count_at_least_two": true,
+    "gap_track_section_count_at_least_two": true,
+    "timestep_exit_change_under_0.2mm": true,
+    "timestep_maximum_interface_force_N_change_under_20percent": true,
+    "timestep_maximum_deformation_m_change_under_20percent": true,
+    "spacing_exit_change_under_0.2mm": true,
+    "spacing_maximum_interface_force_N_change_under_20percent": true,
+    "spacing_maximum_deformation_m_change_under_20percent": true,
+    "timestep_exit_vector_change_under_0.2mm": true,
+    "spacing_exit_vector_change_under_0.2mm": true
+  },
+  "coupling_balance_checks": {
+    "base_maximum_force_balance_error_N_under_1e-08N": true,
+    "base_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+    "timestep_maximum_force_balance_error_N_under_1e-08N": true,
+    "timestep_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+    "spacing_maximum_force_balance_error_N_under_1e-08N": true,
+    "spacing_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+    "gap_maximum_force_balance_error_N_under_1e-08N": true,
+    "gap_maximum_torque_balance_error_Nm_under_1e-09Nm": true
+  },
+  "numerical_observations": {
+    "cases": {
+      "base": {
+        "final_exit_error_vector_m": [
+          8.521277587249243e-06,
+          2.307279947481866e-06,
+          -1.3579895503182133e-06
+        ]
+      },
+      "timestep": {
+        "final_exit_error_vector_m": [
+          7.791120688750708e-06,
+          1.8978686109547005e-06,
+          -1.4952404905283281e-06
+        ]
+      },
+      "spacing": {
+        "final_exit_error_vector_m": [
+          8.350061805412201e-06,
+          1.7168084383983873e-06,
+          -1.3548337049226582e-06
+        ]
+      },
+      "gap": {
+        "final_exit_error_vector_m": [
+          -1.039776548594079e-06,
+          -9.419826276682586e-06,
+          -1.531893900775811e-06
+        ]
+      }
+    },
+    "refinements": {
+      "timestep": {
+        "exit_error_vector_change_m": 8.482833014332657e-07,
+        "emergence_time_change_s": 1.503686064552312e-12,
+        "post_entry_force_trace_comparison": {
+          "shared_time_interval_s": [
+            1.0999999999999777,
+            3.787499999999825
+          ],
+          "base_saved_sample_count": 7,
+          "refined_saved_sample_count": 7,
+          "interpolation_knot_count": 12,
+          "vector_difference_rms_N": 1.382274130206126e-06,
+          "base_vector_rms_N": 2.789167995360733e-05,
+          "vector_difference_relative_rms": 0.04955865449859185,
+          "maximum_interpolated_vector_difference_N": 1.7803374220649155e-06,
+          "scope": "Piecewise-linear interpolation of sparse snapshots after first observed entry over shared physical time; no time warping or acceptance threshold. Unresolved substep transients and the entry transition before both first inserted samples are excluded. Rejected coupling-trial force diagnostics are excluded."
+        }
+      },
+      "spacing": {
+        "exit_error_vector_change_m": 6.14801924484261e-07,
+        "emergence_time_change_s": 0.0,
+        "post_entry_force_trace_comparison": {
+          "shared_time_interval_s": [
+            1.0999999999999777,
+            3.787499999999825
+          ],
+          "base_saved_sample_count": 7,
+          "refined_saved_sample_count": 7,
+          "interpolation_knot_count": 7,
+          "vector_difference_rms_N": 4.270334101232569e-06,
+          "base_vector_rms_N": 2.789167995360733e-05,
+          "vector_difference_relative_rms": 0.1531042270790244,
+          "maximum_interpolated_vector_difference_N": 5.069213071748491e-06,
+          "scope": "Piecewise-linear interpolation of sparse snapshots after first observed entry over shared physical time; no time warping or acceptance threshold. Unresolved substep transients and the entry transition before both first inserted samples are excluded. Rejected coupling-trial force diagnostics are excluded."
+        }
+      }
+    }
+  },
+  "force_law_assessment": {
+    "convergence_established": false,
+    "scope": "Task checks assess the selected insertion scenarios. Force/moment residuals assess endpoint force-law scatter, not every finite-tolerance applied iterate. Applied-load balance is covered independently by coupler regression tests. Sparse post-entry force-vector comparisons are observations without an acceptance threshold. Passing task checks does not establish convergence of full force histories or coupled energy."
+  },
+  "provenance": {
+    "assembled_utc": "2026-11-09T14:38:14.871753+00:00",
+    "purpose": "Fresh final-source correctness/refinement with 32 reference substeps and 80 FEM iterations. Concurrent correctness jobs; no performance claim.",
+    "runtime_manifest_original_path": "/tmp/needle-final32-provenance.json",
+    "runtime_manifest_sha256": "5f893cd9d6be483c0c9494445cf28aa117d3f00ff6594e8a40adb8ee3d667626",
+    "runtime_manifest": {
+      "created_utc": "2026-11-09T14:29:53.169431+00:00",
+      "source_root": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem",
+      "source_sha256": {
+        "src/newton_solver_fem/__init__.py": "1c4e52bf9400c6c80d0bd85c6073aeeb39f05a94cf3f1b0705f0742e63224a1a",
+        "src/newton_solver_fem/_src/__init__.py": "832df67421208c0d623da43f9e80936acee24923b542b460be152f84733f9b41",
+        "src/newton_solver_fem/_src/coupling.py": "0414759276798a2ea3dafc59e256ab0bf1eb39cc610db177253c3de8825b278f",
+        "src/newton_solver_fem/_src/cutting/__init__.py": "a842f76f99090a3aea3b4c8dfbfaddf6a9a6fcb6577f5bcfdeb0016ace80c97b",
+        "src/newton_solver_fem/_src/cutting/adjacency.py": "dd72347a4f658beb3a17cd331474e3ee7eb033e6359faaf9e3176e794c30b824",
+        "src/newton_solver_fem/_src/cutting/contact.py": "90fee37e25cf6a055d097358cda4b24dbedbd3e4e604bf93a08dab49979bcb7d",
+        "src/newton_solver_fem/_src/cutting/cylinder.py": "15ecbcfc8246d9053a758943cbe670aa0239b897fc3f9657fb95b024a6e9e5db",
+        "src/newton_solver_fem/_src/cutting/debug.py": "f7982da92e5b2e7f87cee7b4d747d55b88721ce6a327c30b4212a698ae009208",
+        "src/newton_solver_fem/_src/cutting/fragment_adjacency.py": "ab3b373595cff460d74bed8318dad400ddee322465ccedd3d7cc61169188f964",
+        "src/newton_solver_fem/_src/cutting/fragment_connectivity.py": "6ac1943dee554bcdbebac1f596a009011c89d3e56df7d41a3d4471a6289b84e1",
+        "src/newton_solver_fem/_src/cutting/fragment_connectivity_gpu.py": "9efb7cf213a87682f482caf6ebe7a1f4b5b95c203874db726f76c4150ee8c986",
+        "src/newton_solver_fem/_src/cutting/fragment_device.py": "b45538d1e50c8454eca6dc8205dfa76b4aeb5df4148916ee54075aa1fc15c88e",
+        "src/newton_solver_fem/_src/cutting/fragment_merge.py": "216b0ad824a40eec5a4b81c399776f8822a1cd5dcb950acd879f0b5282be5227",
+        "src/newton_solver_fem/_src/cutting/holds.py": "d5de7db264d4f85c7788d74893b7eee5538cde18e85807a8be12c8c9eae40b1a",
+        "src/newton_solver_fem/_src/cutting/knife.py": "3020d7f9048ba7509e57d16902a3530aa1b78bdeba86c0446d82b4e80e5c610d",
+        "src/newton_solver_fem/_src/cutting/model.py": "fee8e71d6448a85c365dbb850ed1e9b2d7062ab0bde8a2005e456c54c3a7bfd8",
+        "src/newton_solver_fem/_src/cutting/sphere.py": "1c094b68750245d8b1c25e494846032cfaa9aececfc40e78a129ae23c5ba2026",
+        "src/newton_solver_fem/_src/cutting/tetrahedral_cut.py": "cd8136eab9d394fb95b4472e7796efb9636d83885638f53323b40f1096ad0ca2",
+        "src/newton_solver_fem/_src/cutting/tunnel.py": "095eea30714e424ad63c6a31b0c2704ae4560004ed510c3e6019e08756dec22b",
+        "src/newton_solver_fem/_src/cutting/volume_guard.py": "8e5afb423200aa3ba70c26d7925c69d8ec4fc0447728e770248211464dc19dbf",
+        "src/newton_solver_fem/_src/geometry/__init__.py": "77dc4c52ff8395e9a969525becd7c602eb6a54c3bddd482784b63ed884b166e8",
+        "src/newton_solver_fem/_src/geometry/assets.py": "ea800b3cb01116e5a8dbc0d1ac472ab81d8a97edcfc8934af7d021852b43d054",
+        "src/newton_solver_fem/_src/geometry/mesh.py": "46cb0a3b21bfa00c803370c34748a5ddfd94ad5b5fb549a405c6639a58d4c0c4",
+        "src/newton_solver_fem/_src/geometry/needle.py": "1fd31fa6101f0ee609780cd24eaf041eac31d75d743b86e7143c0e5ffcfdd950",
+        "src/newton_solver_fem/_src/geometry/regions.py": "61664a4ccee2e341ce3b0000de702e257d83eb2bba6ff3717df933eaa3a14193",
+        "src/newton_solver_fem/_src/geometry/usd.py": "4790ef57ec1a4314833dd8732b26b9c7931bd350a7eb6578c189aa719e882c04",
+        "src/newton_solver_fem/_src/insertion.py": "67e8bcdc847bbcb9d16f923f910b0ccb67a70c2dc3e6b9211358b6f2393004d7",
+        "src/newton_solver_fem/_src/solvers/__init__.py": "0e6baa16aa0f529da83fc6031e1a3f62269346d4ce5cca83db662fbe3574e1ea",
+        "src/newton_solver_fem/_src/solvers/fem/__init__.py": "75e32ca6191fb984143bfdc570300bd06d85b01478296c63edf270e47dec0da9",
+        "src/newton_solver_fem/_src/solvers/fem/builder.py": "f256b61344e0a64d511a164af845c852bbda4689bf92c5c9ef24f20d8a2280e4",
+        "src/newton_solver_fem/_src/solvers/fem/component_scaling.py": "3a99667057a2fb7ad5c3ded20f71af07b7c09354885dd2b9de5265f9f8abd416",
+        "src/newton_solver_fem/_src/solvers/fem/differentiation.py": "2302e33874bb18610da42bba29f7555cddf2c81ed06a88bf402b9aa7f23a9627",
+        "src/newton_solver_fem/_src/solvers/fem/fixed_particles.py": "87abdd169e2b735f4383df04962ce844a77f041f966996533bc9e286177c1fd1",
+        "src/newton_solver_fem/_src/solvers/fem/implicit_predictor.py": "2a6cade355b26e12c7c0d99751b531ccfa18455352cc5de78cfe7028174c69e0",
+        "src/newton_solver_fem/_src/solvers/fem/kernels.py": "36990c2536d5a82ad63e3511fbb11241425c91dc589cd9470da759c18478a14c",
+        "src/newton_solver_fem/_src/solvers/fem/soft_surface_contacts.py": "79fa69474733219681ece9763e19a1633bc03c921e06200ca97e364b39ee1c60",
+        "src/newton_solver_fem/_src/solvers/fem/solver.py": "cfec8aedc30c0b1a78b287d1896569bc795e019223685d43413b41f2ddfc1280",
+        "src/newton_solver_fem/_src/solvers/fem/sparse_update.py": "d5aedaf292f05fce5dd9fba31c851887891083f4f8a6974a605eb3c6fd6f41c2",
+        "src/newton_solver_fem/_src/solvers/fem/streaming.py": "435e1d67202e37f9b1af28a75f6ae82b341af93ce3ebdb8fbe6125e74cac9dcc",
+        "src/newton_solver_fem/examples/__init__.py": "246ce9a6b292015a9414b30e676f7764fc5ef144b836a8a4827d545e60e1e998",
+        "src/newton_solver_fem/examples/__main__.py": "62c0d075ed9a1bdd1ba180100e0719ff1b56488b367680e03221ceef0e27a681",
+        "src/newton_solver_fem/examples/_cut_debug_view.py": "260e765be8992fa19241d8e474104cf20deb8a367e2f120157f056e604e62b49",
+        "src/newton_solver_fem/examples/_cut_diagnostics.py": "af18d0892bac0353a051c9298be1685e9a49aec5e66e752a1f9e892cfa0827dc",
+        "src/newton_solver_fem/examples/_cylinder_extent.py": "27f267fdc98c726a446813a4bcfd8565111c5b494f1628e2bd4ed6b27895700d",
+        "src/newton_solver_fem/examples/_hold_debug.py": "4b12ab09a12f54a41f6a6d99b9d9bf335904be5e648ce24f6a9999a218412a08",
+        "src/newton_solver_fem/examples/_needle_insertion_drive.py": "f68e6c83a5ffc6c30f3d51fa34c10809501d8603ac3cff8efe9399835225d2f4",
+        "src/newton_solver_fem/examples/_needle_insertion_geometry.py": "d30a7fec249c4bc4e78d9f4efd108aa638dfd2ce8d804f6fac305a128081fbd9",
+        "src/newton_solver_fem/examples/_region_map.py": "732953d63df6f1017114ad6d8ca58561040a2b5ad9b07400d23534a6a101fd38",
+        "src/newton_solver_fem/examples/_screen_cut.py": "d1c13cf0bc02af7fef7210c9f06ac003215520854c0526cd3324e1f9b739f0ef",
+        "src/newton_solver_fem/examples/_screen_cylinder_cut.py": "cc47ea84c28b3e96720f87daa401b9235fe9b027b9a1422d9712fb81fd8dc7c8",
+        "src/newton_solver_fem/examples/_screen_pick.py": "8c5ceaf4cb219ed5e98570f822b39b81ef34ce8f8a94d38a83a5436dbed14cf6",
+        "src/newton_solver_fem/examples/_screen_sphere_cut.py": "358a120d9bee7899dd4a3116bcc8cd276d7eee4e23ac6fd85179b5447884c8fd",
+        "src/newton_solver_fem/examples/_surface_pick.py": "05734e45067088ce0be4263d48d73415751a091bc3f0b2217d90f0d2ea4e15de",
+        "src/newton_solver_fem/examples/_suturebot_cameras.py": "585b8aeadeda67a3f13d7948e48871317b18cd86a9e7229361952d487addce87",
+        "src/newton_solver_fem/examples/_suturebot_cli.py": "743024a9d39255c1939faf977889c9f8b5822c7e0e7434bf08cf3110f3107d73",
+        "src/newton_solver_fem/examples/_suturebot_contact_demo.py": "8af7e03a049c424c4d9c0e11daab95024378e4687b12c5aa5766095380690663",
+        "src/newton_solver_fem/examples/_suturebot_contacts.py": "a870b4915694af2bea2ef84ef5bbe4a11963d295c0543e3d06413664e4cb6ad7",
+        "src/newton_solver_fem/examples/_suturebot_needle.py": "7d6b3cfbf6c087dd2e3ab89b4f21b0ce9b946e18f1a8c5ec810d1d32ea04e5df",
+        "src/newton_solver_fem/examples/_suturebot_press.py": "f1c5cc79dcaac8b4662bd733cdbf9b485d45d668017f42c32a073218776c00ab",
+        "src/newton_solver_fem/examples/_suturebot_recording.py": "affd1b4fa61b6d6198b36b0d0a9493990c026969b4e685c116f967b81e0610f1",
+        "src/newton_solver_fem/examples/_suturebot_thread.py": "483e57835a47a7b9efeecda0032dc891d49c7ebfa3790b6e2d81f125c7d625b0",
+        "src/newton_solver_fem/examples/_tet_surface_holds.py": "c163aae618e95d6fa8a03b1f7b714a745a12063159a8b84b72c39f159b3b447c",
+        "src/newton_solver_fem/examples/diffsim/__init__.py": "b8183775ff84923c207549ae2cbe07ae468c93541e3c31f22436413533e74419",
+        "src/newton_solver_fem/examples/diffsim/_bear_training.py": "8d32ec9991a89a8dee8ca9edb94fcd0b25f8748411d0809f6a2a096488bb5576",
+        "src/newton_solver_fem/examples/diffsim/example_diffsim_bear.py": "de8ebc5c9501da4fd4a0c70526617d49e0f2b849be507ca2399dca7437f6ad24",
+        "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "c566954c19092d4537d83fe3eaec6ede603516fd34f939d8c93b19b1729673f6",
+        "src/newton_solver_fem/examples/example_fem_phantom_regions.py": "3c9c107beb1e9764f132930e12cc22d76568276f90a1fbe74276c937737a2c9c",
+        "src/newton_solver_fem/examples/example_fem_suturebot.py": "68d52e51615b557da07c4220b0a27f9673a969fc174113c451a5d545292b9f16",
+        "src/newton_solver_fem/examples/example_linear_fem.py": "ebe5f066444510c89ebd6cc13ebbdaccb7e55c23e22bc0a5fe1919edb24cb7ae",
+        "src/newton_solver_fem/examples/example_linear_fem_baymax_cut.py": "38c07311468cd72c62b0b53c6a7abc4e914b11f5f09f8211fd58348e927b98ba",
+        "tools/validate_needle_insertion.py": "51cba90ca29d52a816cbb78279fdfb0f413164d0151c5d518276c1cafbc69f64",
+        "uv.lock": "93165d29b06fc45d1c1b45532ded3f763f8c45ecfdd59551e2d458a54709c537"
+      },
+      "source_digest": "784124095f84558faf2aa717f412e4891abc1769497d93633ddeae0106ea01ae",
+      "reference_substeps": 32,
+      "reference_fem_iterations": 80,
+      "environment": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "device": "cuda:0"
+      },
+      "purpose": "Fresh final-source32/64/sampling/gap correctness; no timing claims from concurrent correctness jobs.",
+      "previous_report_sha256": "ec34f34e605480f6dda8214b9efa161d99980e8cec0ebd03d781924bf254e540",
+      "previous_report_archive": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem/nsys/results/needle_final32_validation_20261109/needle-insertion-optimized32.previous.json",
+      "original_report_sha256": "50eb2abc33b47e7285e5666a012779f28387c3f513d7429f7149169df78eb5e3"
+    },
+    "all_runtime_sources_still_match_manifest": true,
+    "input_reports": {
+      "base": {
+        "report_path": "/tmp/needle-final32-base.json",
+        "report_sha256": "d067cf44a4068c4e51d1d4d2dd462e9a0faf1c8e7e6b5fbfba1207cf52f0cafc",
+        "log_path": "/tmp/needle-final32-base.log",
+        "log_sha256": "f8fbaacfa47ba8fcd1a1b52131f9e583788bfe5425adb0375e1f14430b4bc606",
+        "command": "OPENBLAS_NUM_THREADS=1 WARP_CACHE_PATH=/tmp/needle-warp-cache UV_CACHE_DIR=/tmp/uv-cache uv run --locked --no-sync python tools/validate_needle_insertion.py --device cuda:0 --case base --output /tmp/needle-final32-base.json --substeps 32 --solver-iterations 80"
+      },
+      "timestep": {
+        "report_path": "/tmp/needle-final32-timestep.json",
+        "report_sha256": "2cf286b7fc7c1fcad6bc4a79bc8a48803ca4dbbcf03881fa2d773e651b6f548e",
+        "log_path": "/tmp/needle-final32-timestep.log",
+        "log_sha256": "6ae0c41c063b8d66c72e23a6e5f819c0fb06496a0eaae728d7858754487ef6cf",
+        "command": "OPENBLAS_NUM_THREADS=1 WARP_CACHE_PATH=/tmp/needle-warp-cache UV_CACHE_DIR=/tmp/uv-cache uv run --locked --no-sync python tools/validate_needle_insertion.py --device cuda:0 --case timestep --output /tmp/needle-final32-timestep.json --substeps 64 --solver-iterations 80"
+      },
+      "spacing": {
+        "report_path": "/tmp/needle-final32-spacing.json",
+        "report_sha256": "e64fb66de13b7c6f6ab92e746bf7f7ec18b7b6cdd2ceb06bcacfb2c924d341cf",
+        "log_path": "/tmp/needle-final32-spacing.log",
+        "log_sha256": "2d6ffffebb2a168bd725d0567565ee578a30e2090921bca5887f4e519897dd30",
+        "command": "OPENBLAS_NUM_THREADS=1 WARP_CACHE_PATH=/tmp/needle-warp-cache UV_CACHE_DIR=/tmp/uv-cache uv run --locked --no-sync python tools/validate_needle_insertion.py --device cuda:0 --case spacing --output /tmp/needle-final32-spacing.json --substeps 32 --solver-iterations 80"
+      },
+      "gap": {
+        "report_path": "/tmp/needle-final32-gap.json",
+        "report_sha256": "8e9671ee1a7bdf771f5ed75e2fe273538bf0276ac4694266769decb1ed37c579",
+        "log_path": "/tmp/needle-final32-gap.log",
+        "log_sha256": "14d17a4d7f9d5ffdbcbb5f5bd990ff9ff30e85ab4daf190e1d41c983afd50a0f",
+        "command": "OPENBLAS_NUM_THREADS=1 WARP_CACHE_PATH=/tmp/needle-warp-cache UV_CACHE_DIR=/tmp/uv-cache uv run --locked --no-sync python tools/validate_needle_insertion.py --device cuda:0 --case gap --output /tmp/needle-final32-gap.json --substeps 32 --solver-iterations 80"
+      }
+    },
+    "case_configuration": {
+      "base": {
+        "substeps": 32,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "fem_iterations": 80
+      },
+      "timestep": {
+        "substeps": 64,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "fem_iterations": 80
+      },
+      "spacing": {
+        "substeps": 32,
+        "track_spacing_m": 0.000125,
+        "shaft_spacing_m": 7e-05,
+        "fem_iterations": 80
+      },
+      "gap": {
+        "substeps": 32,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "fem_iterations": 80
+      }
+    },
+    "validator": "tools/validate_needle_insertion.py::run_case/build_report",
+    "packages": {
+      "newton-solver-fem": "0.1.0",
+      "newton": "1.7.0",
+      "warp-lang": "1.17.0+cu13",
+      "mujoco": "3.15.0",
+      "numpy": "2.5.4"
+    },
+    "preserved_original_correctness_report": {
+      "path": "docs/validation/needle-insertion.json",
+      "sha256": "50eb2abc33b47e7285e5666a012779f28387c3f513d7429f7149169df78eb5e3"
+    },
+    "preserved_previous_optimized_report": {
+      "path": "nsys/results/needle_final32_validation_20261109/needle-insertion-optimized32.previous.json",
+      "sha256": "ec34f34e605480f6dda8214b9efa161d99980e8cec0ebd03d781924bf254e540"
+    },
+    "full_cuda_test_suite": {
+      "log_path": "/tmp/needle-final-full-gpu-tests.log",
+      "log_sha256": "ef9b3d00786e6b8113a8e032fd51136d652938efc96904a013ab1bfe10e5a368",
+      "passed": 301,
+      "elapsed_s": 180.292,
+      "scope": "Correctness only; not throughput evidence.",
+      "validation_artifact": {
+        "path": "docs/validation/needle-optimization-tests.json",
+        "sha256": "afc06aa69f22b42254055dc108605ab2eb7edd1794a4887096d7c0903311be65"
+      }
+    }
+  }
+}

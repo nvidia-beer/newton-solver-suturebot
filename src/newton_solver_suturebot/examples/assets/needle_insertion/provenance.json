@@ -1,0 +1,13 @@
+{
+  "source": "../suturebot/suturebot_rig.usda",
+  "source_sha256": "816518d98273b31a0779078560a43c3d13078a97e7f8b4601609816c9937bcd5",
+  "source_prim": "/SutureBot/Needle",
+  "changes": [
+    "Copied authored prim subtree with original CAD and all 32 capsule collisions.",
+    "Removed original scene placement; body-local geometry and inertial values unchanged.",
+    "Copied the two bound original UsdPreviewSurface materials under /Needle/Looks and retargeted bindings and shader connections."
+  ],
+  "parameters": "Mass, inertia and collision proxy dimensions are inherited illustrative values; no pad calibration.",
+  "tip": "First endpoint of ContactArc_00, a modeled collision proxy tip; original CAD is retained for display.",
+  "license_notice": "../suturebot/THIRD_PARTY.md (upstream needle mesh license unspecified)"
+}

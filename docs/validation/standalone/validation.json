@@ -1,0 +1,551 @@
+{
+  "date_utc": "2026-11-10T18:37:48.755235+00:00",
+  "project": "newton-solver-suturebot",
+  "scope": "Standalone extraction and execution of three requested examples; no numerical solver change or performance claim.",
+  "source_preserved": {
+    "files_checked": 8301,
+    "changed_files": []
+  },
+  "cuda_tests": {
+    "count": 473,
+    "seconds": 112.555,
+    "result": "OK",
+    "log": "results/migration/cuda-tests.log"
+  },
+  "lint": {
+    "ruff_check": "pass",
+    "ruff_format": "pass",
+    "formatted_python_files": 161
+  },
+  "wheel": {
+    "wheel": "newton_solver_suturebot-0.1.0-py3-none-any.whl",
+    "sha256": "bd1bf20fb300df836aa2c256d3827c93964aa17146addaf939824c0359177420",
+    "files": 8131,
+    "package_files_checked": 8126,
+    "asset_files": 8068,
+    "returncode": 0,
+    "independent_import": true,
+    "all_package_bytes_match": true
+  },
+  "docker": {
+    "image": "newton-solver-suturebot:local",
+    "final_image_id": "sha256:8f74d9c11de47f2575d651b07cf48df248d58750204ad7d4e8c1696e9851ef84",
+    "source_checkout_mounts": [],
+    "non_root_user": true,
+    "shared_mounts": [
+      "disposable Warp kernel cache only"
+    ],
+    "examples": {
+      "fem_needle_insertion": {
+        "frames": 250,
+        "exit_code": 0
+      },
+      "fem_phantom_regions": {
+        "frames": 30,
+        "exit_code": 0
+      },
+      "fem_suturebot": {
+        "frames": 60,
+        "exit_code": 0
+      }
+    },
+    "permission_fix": "Bundled source and data made readable in the image for the host UID; replay rerun passed after a private staging-directory permission was exposed by isolation.",
+    "launcher_tests": "Ran 15 tests in 1.678s",
+    "runtime_code_unchanged_between_runs": true
+  },
+  "phantom_every_frame_integrity": {
+    "frames": 540,
+    "device": "cuda:0",
+    "arguments": [
+      "--regions",
+      "4",
+      "--test"
+    ],
+    "minimum_jacobian": 0.9249783036775726,
+    "minimum_jacobian_by_selection": {
+      "4": 0.9647493895865596,
+      "6": 0.9249783036775726
+    },
+    "every_frame_finite_positive_and_fixed_anchors_exact": true,
+    "scenario": {
+      "drag_distance_m": 0.003,
+      "events": [
+        {
+          "frame": 0,
+          "action": "select_regions",
+          "regions": [
+            4
+          ],
+          "tetrahedra": 11795
+        },
+        {
+          "frame": 20,
+          "action": "begin_right_drag",
+          "region": 4
+        },
+        {
+          "frame": 91,
+          "action": "release_to_hold",
+          "maximum_displacement_m": 0.0008109361653996426
+        },
+        {
+          "frame": 130,
+          "action": "clear_holds"
+        },
+        {
+          "frame": 170,
+          "action": "select_regions",
+          "clicked_region": 6,
+          "regions": [
+            6
+          ],
+          "tetrahedra": 13909
+        },
+        {
+          "frame": 190,
+          "action": "begin_right_drag",
+          "region": 6
+        },
+        {
+          "frame": 261,
+          "action": "release_to_hold",
+          "maximum_displacement_m": 0.0012582297080773078
+        },
+        {
+          "frame": 300,
+          "action": "clear_holds"
+        },
+        {
+          "frame": 330,
+          "action": "select_regions",
+          "clicked_region": null,
+          "regions": [],
+          "tetrahedra": 0
+        },
+        {
+          "frame": 360,
+          "action": "select_regions",
+          "clicked_region": 4,
+          "regions": [
+            4
+          ],
+          "tetrahedra": 11795
+        },
+        {
+          "frame": 390,
+          "action": "begin_right_drag",
+          "region": 4
+        },
+        {
+          "frame": 461,
+          "action": "release_to_hold",
+          "maximum_displacement_m": 0.0008109300102365479
+        },
+        {
+          "frame": 500,
+          "action": "clear_holds"
+        }
+      ]
+    },
+    "dependencies": {
+      "newton-solver-suturebot": "0.1.0",
+      "newton": "1.7.0",
+      "warp-lang": "1.17.0+cu13"
+    },
+    "performance_benchmark": false
+  },
+  "rendered_workflows": {
+    "fem_needle_insertion": {
+      "example": "fem_needle_insertion",
+      "module": "newton_solver_suturebot.examples.example_fem_needle_insertion",
+      "caption": "Simulation-time playback: select entry and exit material points across a region 1 wound gap, preview the curved needle, then start, pause and resume coupled MuJoCo/FEM insertion through both tissue sections. Illustrative puncture and sliding-track forces; no fracture or physiological calibration. Playback rate does not measure live FPS.",
+      "arguments": [
+        "--regions",
+        "1",
+        "--transparent-pad",
+        "--test"
+      ],
+      "device": "cuda:0",
+      "frames": 420,
+      "fps": 60,
+      "width": 1280,
+      "height": 720,
+      "show_ui": true,
+      "recording_wall_seconds": 16.672562752006343,
+      "playback_is_performance_benchmark": false,
+      "simulation_time": [
+        {
+          "attribute": "sim_time",
+          "end": 3.816666666666658
+        }
+      ],
+      "dependencies": {
+        "newton_solver_suturebot": "0.1.0",
+        "newton": "1.7.0",
+        "warp-lang": "1.17.0+cu13"
+      },
+      "scenario": {
+        "outcome": "Success: tip emerged, exit error 0.047 mm",
+        "success": true,
+        "task_status": "success",
+        "needle_solver_requested": "partitioned",
+        "needle_solver_class": "NeedleTissueCoupler",
+        "simultaneous_steps": 0,
+        "simultaneous_iterations": 0,
+        "control_mode": "automatic",
+        "manual_position_m": [
+          0.0,
+          0.0
+        ],
+        "manual_target_m": [
+          0.0,
+          0.0
+        ],
+        "step_refinements": 0,
+        "accepted_physics_steps": 229,
+        "minimum_step_dt_s": 0.016666666666666666,
+        "current_deformation_m": 6.625596810494181e-06,
+        "engaged_track_length_m": 0.0055800536647439,
+        "failure_reason": null,
+        "interaction_events": [
+          {
+            "kind": "puncture",
+            "time_s": 1.0333333333333345,
+            "position_m": [
+              0.030017370348011243,
+              -0.04011663980512044,
+              0.001166969009714158
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 1.0500000000000012,
+            "position_m": [
+              0.030001256614923477,
+              -0.040074802935123444,
+              0.0012190872803330421
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 2.033333333333331,
+            "position_m": [
+              0.030029788613319397,
+              -0.042980633676052094,
+              0.0007793726399540901
+            ],
+            "reused": false
+          },
+          {
+            "kind": "puncture",
+            "time_s": 2.7833333333333283,
+            "position_m": [
+              0.030058119489817115,
+              -0.04529593555950638,
+              0.001017450611158413
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 2.799999999999995,
+            "position_m": [
+              0.03002948686480522,
+              -0.045255206525325775,
+              0.0010710228234529495
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 3.816666666666658,
+            "position_m": [
+              0.02999907173216343,
+              -0.0480407252907753,
+              0.0022828057408332825
+            ],
+            "reused": false
+          }
+        ],
+        "entry_count": 2,
+        "exit_count": 2,
+        "physical_time_s": 3.816666666666658,
+        "exit_error_m": 4.689705432167885e-05,
+        "exit_tolerance_m": 0.001,
+        "puncture_count": 2,
+        "track_samples": 21,
+        "track_section_count": 2,
+        "track_length_m": 0.005580053768435965,
+        "maximum_interface_force_N": 0.0033325152132503222,
+        "maximum_deformation_m": 0.00016797392726887082,
+        "maximum_deformation_time_s": 1.0333333333333345,
+        "maximum_force_balance_error_N": 4.737760346644705e-10,
+        "maximum_torque_balance_error_Nm": 1.4551915228366852e-11,
+        "maximum_coupling_iterations": 12,
+        "maximum_coupling_residual_N": 5.079586360337953e-06,
+        "last_coupling_attempt_iterations": 4,
+        "last_coupling_attempt_residual_N": 1.0997002942259598e-06,
+        "fem_graph_captures": 9,
+        "fem_graph_launches": 307,
+        "fem_graph_status": "replaying",
+        "coupling_graph_status": "exact surface-event fallback",
+        "coupling_graph_captures": 68,
+        "coupling_graph_launches": 166,
+        "coupling_graph_fallbacks": 55,
+        "coupling_graph_verifications": 111,
+        "shaft_preconditioner_status": "enabled",
+        "coupling_absolute_tolerance_N": 2e-06,
+        "coupling_relative_tolerance": 0.001,
+        "coupling_iteration_cap": 160,
+        "fem_iteration_cap": 160,
+        "fem_relative_tolerance": 0.003,
+        "young_modulus_Pa": 25000.0,
+        "poisson_ratio": 0.35,
+        "density_kg_per_m3": 1000.0,
+        "cutting_resistance_omitted": true,
+        "last_interface_load_on_fixed_nodes_N": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dt_s": 0.016666666666666666,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "shaft_stiffness_N_per_m2": 60000.0,
+        "tunnel_model": "alm",
+        "tunnel_clearance_m": 2e-05,
+        "tunnel_compliance_m2_per_N": 3.3333333333333333e-06,
+        "tunnel_penalty_N_per_m2": 60000.0,
+        "tunnel_tolerance_m": 2e-06,
+        "tunnel_alm_dual_updates": 118,
+        "tunnel_alm_last_normal_error_m": 0.0,
+        "tunnel_alm_last_dual_residual_N": 0.0,
+        "drive_stiffness_N_per_m": 400.0,
+        "angular_drive_stiffness_Nm_per_rad": 0.05,
+        "implicit_drive_spring": true,
+        "status": "outside",
+        "calibrated": false,
+        "entry_xy_m": [
+          0.03,
+          -0.04
+        ],
+        "exit_xy_m": [
+          0.03,
+          -0.048
+        ],
+        "interaction": "public material-selection, preview, start and pause controls",
+        "needle_motion": "finite PD wrench in MuJoCo, with equal-and-opposite FEM interaction"
+      },
+      "video": "results/migration/rendered/fem_needle_insertion.mp4",
+      "video_sha256": "c91ded5080e579fa1c398d72bf7eb95ea346716f1de89bebee0ec9143631894f",
+      "windows_hidden_at_creation": true,
+      "poster_visually_reviewed": true
+    },
+    "fem_phantom_regions": {
+      "example": "fem_phantom_regions",
+      "module": "newton_solver_suturebot.examples.example_fem_phantom_regions",
+      "caption": "Click the 2D pad map to select a SutureBot wound: right-drag wound 4, switch to wound 6, disable FEM, then return to wound 4. Wound numbers follow the dataset; inactive material stays fixed.",
+      "arguments": [
+        "--regions",
+        "4",
+        "--test"
+      ],
+      "device": "cuda:0",
+      "frames": 540,
+      "fps": 60,
+      "width": 1280,
+      "height": 720,
+      "show_ui": true,
+      "recording_wall_seconds": 15.998897822995787,
+      "playback_is_performance_benchmark": false,
+      "simulation_time": [
+        {
+          "attribute": "sim_time",
+          "end": 9.000000000000027
+        }
+      ],
+      "dependencies": {
+        "newton_solver_suturebot": "0.1.0",
+        "newton": "1.7.0",
+        "warp-lang": "1.17.0+cu13"
+      },
+      "scenario": {
+        "drag_distance_m": 0.003,
+        "events": [
+          {
+            "frame": 0,
+            "action": "select_regions",
+            "regions": [
+              4
+            ],
+            "tetrahedra": 11795
+          },
+          {
+            "frame": 20,
+            "action": "begin_right_drag",
+            "region": 4
+          },
+          {
+            "frame": 91,
+            "action": "release_to_hold",
+            "maximum_displacement_m": 0.0008109375591955221
+          },
+          {
+            "frame": 130,
+            "action": "clear_holds"
+          },
+          {
+            "frame": 170,
+            "action": "click_region_map",
+            "clicked_region": 6,
+            "regions": [
+              6
+            ],
+            "tetrahedra": 13909
+          },
+          {
+            "frame": 190,
+            "action": "begin_right_drag",
+            "region": 6
+          },
+          {
+            "frame": 261,
+            "action": "release_to_hold",
+            "maximum_displacement_m": 0.0012582273320140916
+          },
+          {
+            "frame": 300,
+            "action": "clear_holds"
+          },
+          {
+            "frame": 330,
+            "action": "click_none_button",
+            "clicked_region": null,
+            "regions": [],
+            "tetrahedra": 0
+          },
+          {
+            "frame": 360,
+            "action": "click_region_map",
+            "clicked_region": 4,
+            "regions": [
+              4
+            ],
+            "tetrahedra": 11795
+          },
+          {
+            "frame": 390,
+            "action": "begin_right_drag",
+            "region": 4
+          },
+          {
+            "frame": 461,
+            "action": "release_to_hold",
+            "maximum_displacement_m": 0.0008109297406288827
+          },
+          {
+            "frame": 500,
+            "action": "clear_holds"
+          }
+        ]
+      },
+      "video": "results/migration/rendered/fem_phantom_regions.mp4",
+      "video_sha256": "6ec21b34576aff728e1593c36d046b269789e1810d01d0f38546c6e3f0d8a406",
+      "windows_hidden_at_creation": true,
+      "poster_visually_reviewed": true
+    },
+    "fem_suturebot": {
+      "example": "fem_suturebot",
+      "module": "newton_solver_suturebot.examples.example_fem_suturebot",
+      "caption": "Replay measured tissue3 tool motion with prepared USD tools, cameras, fixture and the original static phantom. Four synchronized views compare the model with source video; green point labels stay on the mesh. Camera and pad placement remain fitted estimates.",
+      "arguments": [
+        "--test"
+      ],
+      "device": "cuda:0",
+      "frames": 1202,
+      "fps": 60,
+      "width": 1280,
+      "height": 720,
+      "show_ui": true,
+      "recording_wall_seconds": 31.014519653996103,
+      "playback_is_performance_benchmark": false,
+      "simulation_time": [
+        {
+          "attribute": "sim_time",
+          "end": 20.033333333333477
+        }
+      ],
+      "dependencies": {
+        "newton_solver_suturebot": "0.1.0",
+        "newton": "1.7.0",
+        "warp-lang": "1.17.0+cu13"
+      },
+      "scenario": {
+        "sample_id": "tissue3_215300",
+        "source_episode": "tissue_3/2_needle_throw/20250428-215300-489212",
+        "source_frame_count": 601,
+        "observed_source_frames": 597,
+        "supported_source_frames": [
+          4,
+          600
+        ],
+        "alignment": {
+          "status": "pad_only_translation_with_fixed_camera_calibration_estimate",
+          "reportpath": "calibration.json",
+          "tool_registration_report": "alignment.json",
+          "absolute_metric_accuracy_validated": false,
+          "pad_placement_report": "pad_placement.json",
+          "prior_metrics_scope": "Previous calibration fit metrics predate the separately reported pad translation",
+          "accepted": false
+        },
+        "final_overlay_coverage_pixels": {
+          "left": 32400,
+          "right": 32400,
+          "psm1": 43200,
+          "psm2": 43200
+        },
+        "motion": "measured Cartesian/joint kinematic replay",
+        "region_id": 1,
+        "point_labels": {
+          "report": "point_labels.json",
+          "texture": "textures/point_labels.png",
+          "count": 2,
+          "display_color_rgb": [
+            0,
+            255,
+            0
+          ]
+        },
+        "view_changes": [
+          {
+            "capture_frame": 120,
+            "view": "phantom"
+          },
+          {
+            "capture_frame": 180,
+            "view": "surface point labels"
+          },
+          {
+            "capture_frame": 850,
+            "view": "phantom"
+          },
+          {
+            "capture_frame": 1000,
+            "view": "complete rig"
+          }
+        ]
+      },
+      "video": "results/migration/rendered/fem_suturebot.mp4",
+      "video_sha256": "c8e9486ddcc244141b4c6011437540bcafa6369883c68812deb0dea72f7e56f2",
+      "windows_hidden_at_creation": true,
+      "poster_visually_reviewed": true
+    }
+  },
+  "limitations": [
+    "Simulation-time movies are not live FPS measurements.",
+    "Extracted physical models and measured replay retain their documented accuracy and calibration limitations.",
+    "No files removed from the original FEM repository."
+  ]
+}

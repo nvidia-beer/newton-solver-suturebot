@@ -1,0 +1,634 @@
+{
+  "schema_version": 1,
+  "hardware": "NVIDIA GB10; driver 580.126.09; ARM64 Linux; Python 3.12",
+  "settings": {
+    "viewer": "gl",
+    "width": 1280,
+    "height": 720,
+    "frames": 420,
+    "warmup": 5,
+    "device": "cuda:0"
+  },
+  "dependencies": {
+    "newton-solver-fem": "0.1.0",
+    "newton": "1.7.0",
+    "warp-lang": "1.17.0+cu13",
+    "mujoco": "3.15.0",
+    "numpy": "2.5.4",
+    "nvtx": "0.2.16"
+  },
+  "OPENBLAS_NUM_THREADS": 1,
+  "measurement_definition": "Unprofiled host frame-scope wall time for frames whose physics_running flag was true after scenario actions. Includes in-gap motion and a partial final physical frame. Active frame time includes scenario/test/render submission; physics-only time excludes those phases. No per-frame synchronization is added. GPU completion can overlap frames; the complete loop includes a final device synchronization. Idle presentation frames are excluded from active FPS. These values are not GPU kernel durations or GPU utilization.",
+  "measurement_conditions": "Separate sequential runs, no other GPU simulation. Nsight disabled during timing; same wrapper SHA and GL workload. Initialization and idle selection/pause/post-success frames excluded from active FPS. Warmup: 5 frames.",
+  "statistical_limits": "One original and one final32 run, two final10 runs. Descriptive timings, not confidence intervals; no claim of real-time execution.",
+  "code_only_speedup_at_32_substeps": 5.123546797373336,
+  "default10_speedup_vs_original32_range": [
+    12.576876217248435,
+    12.723158141839114
+  ],
+  "default10_active_FPS_range": [
+    4.622055494319875,
+    4.675814723686129
+  ],
+  "budget_difference": "The final default uses 10 rather than 32 substeps; this additional gain is a validated numerical-budget change, separate from the code-only 32-substep comparison. All use 80 CG iterations, the same material/interaction coefficients, geometry and contact sampling.",
+  "runs": {
+    "original_32": {
+      "raw_evidence_directory": "nsys/results/needle_unprofiled_baseline_20261109",
+      "benchmark_sha256": "c80a38e88efc9ce78da526615aef007154d0b5d0d9e5409d929896d892deb2dc",
+      "source_sha256": {
+        "src/newton_solver_fem/_src/insertion.py": "fd33d3a2dafdfeb98ebf63ada08e420096cc1b6b1dee9c634b3aa4c08b7883ae",
+        "src/newton_solver_fem/_src/coupling.py": "cd375af928ee22ca985fba0291e908d376075d9ee31b0ffdffaef6e3efa5d446",
+        "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "4fe33a8e8748c1467bf62ce43b184a3f0bdbe90ddf976b9a4a08fb3384321b06"
+      },
+      "started_at_utc": "2026-11-09T13:33:42.932579+00:00",
+      "substeps_per_60Hz_frame": 32,
+      "FEM_CG_iterations": 80,
+      "active_frame_calls": 229,
+      "idle_frame_calls": 191,
+      "simulated_seconds": 3.8057291666664907,
+      "accepted_physics_substeps": 7307,
+      "equivalent_60Hz_frames": 228.34374999998946,
+      "active_frame_call_fps": 0.36856044383280356,
+      "active_equivalent_60Hz_fps": 0.36750425260455394,
+      "active_real_time_factor": 0.0061250708767425655,
+      "physics_only_equivalent_60Hz_fps": 0.3689935727847156,
+      "initialization_wall_seconds": 2.6597844479983905,
+      "loop_wall_seconds": 623.8584921120018,
+      "final_device_sync_wall_seconds": 1.1264000931987539e-05,
+      "active_wall_seconds": 621.336347489003,
+      "active_render_seconds": 2.3018648989855137,
+      "active_frame_p95_seconds": 10.458163814997533,
+      "scenario": {
+        "outcome": "Success: tip emerged, exit error 0.010 mm",
+        "success": true,
+        "task_status": "success",
+        "interaction_events": [
+          {
+            "kind": "puncture",
+            "time_s": 1.1270833333333095,
+            "position_m": [
+              0.030006517504258274,
+              -0.04003449037231551,
+              0.0010632437012202942
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 1.1291666666666427,
+            "position_m": [
+              0.029993906617164612,
+              -0.03997451812028885,
+              0.001123162917792797
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 2.0249999999999253,
+            "position_m": [
+              0.03002922236919403,
+              -0.04295076057314873,
+              0.000774819403886795
+            ],
+            "reused": false
+          },
+          {
+            "kind": "puncture",
+            "time_s": 2.8437499999998788,
+            "position_m": [
+              0.030048661709701486,
+              -0.04523304804087037,
+              0.0009067988829499757
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 2.845833333333212,
+            "position_m": [
+              0.030019881203770638,
+              -0.04516173154115677,
+              0.0009642457589507103
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 3.8057291666664907,
+            "position_m": [
+              0.029999004676938057,
+              -0.048009637743234634,
+              0.002256077714264393
+            ],
+            "reused": false
+          }
+        ],
+        "entry_count": 2,
+        "exit_count": 2,
+        "physical_time_s": 3.8057291666664907,
+        "exit_error_m": 9.60024072910666e-06,
+        "exit_tolerance_m": 0.001,
+        "puncture_count": 2,
+        "track_samples": 26,
+        "track_section_count": 2,
+        "track_length_m": 0.006021726237772101,
+        "maximum_interface_force_N": 0.0032225522747786695,
+        "maximum_deformation_m": 0.0001393299928489535,
+        "maximum_deformation_time_s": 1.1270833333333095,
+        "maximum_force_balance_error_N": 1.6308535968561075e-09,
+        "maximum_torque_balance_error_Nm": 4.605313334167354e-11,
+        "maximum_coupling_iterations": 16,
+        "maximum_coupling_residual_N": 7.849158047035405e-07,
+        "last_coupling_attempt_iterations": 1,
+        "last_coupling_attempt_residual_N": 1.3090350317195064e-08,
+        "cutting_resistance_omitted": true,
+        "last_interface_load_on_fixed_nodes_N": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dt_s": 0.0005208333333333333,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "status": "outside",
+        "calibrated": false,
+        "entry_xy_m": [
+          0.03,
+          -0.04
+        ],
+        "exit_xy_m": [
+          0.03,
+          -0.048
+        ],
+        "interaction": "public material-selection, preview, start and pause controls",
+        "needle_motion": "finite PD wrench in MuJoCo, with equal-and-opposite FEM interaction"
+      }
+    },
+    "optimized_32": {
+      "raw_evidence_directory": "nsys/results/needle_unprofiled_final32_20261109",
+      "benchmark_sha256": "3b61c829096a751b05a08ccf4eeb0163b5b79db994fa3a7f9921c65100fef5f6",
+      "source_sha256": {
+        "src/newton_solver_fem/_src/insertion.py": "67e8bcdc847bbcb9d16f923f910b0ccb67a70c2dc3e6b9211358b6f2393004d7",
+        "src/newton_solver_fem/_src/coupling.py": "0414759276798a2ea3dafc59e256ab0bf1eb39cc610db177253c3de8825b278f",
+        "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "c566954c19092d4537d83fe3eaec6ede603516fd34f939d8c93b19b1729673f6"
+      },
+      "started_at_utc": "2026-11-09T14:36:16.416816+00:00",
+      "substeps_per_60Hz_frame": 32,
+      "FEM_CG_iterations": 80,
+      "active_frame_calls": 229,
+      "idle_frame_calls": 191,
+      "simulated_seconds": 3.8057291666664907,
+      "accepted_physics_substeps": 7307,
+      "equivalent_60Hz_frames": 228.34374999998946,
+      "active_frame_call_fps": 1.888336681638056,
+      "active_equivalent_60Hz_fps": 1.882925236453144,
+      "active_real_time_factor": 0.03138208727421906,
+      "physics_only_equivalent_60Hz_fps": 1.9220018202123597,
+      "initialization_wall_seconds": 2.58666742800051,
+      "loop_wall_seconds": 123.78959881400078,
+      "final_device_sync_wall_seconds": 1.0880001354962587e-05,
+      "active_wall_seconds": 121.27074701602032,
+      "active_render_seconds": 2.252183730030083,
+      "active_frame_p95_seconds": 2.0004352069991,
+      "scenario": {
+        "outcome": "Success: tip emerged, exit error 0.010 mm",
+        "success": true,
+        "task_status": "success",
+        "interaction_events": [
+          {
+            "kind": "puncture",
+            "time_s": 1.1270833333333095,
+            "position_m": [
+              0.030006521035112674,
+              -0.04003449017297855,
+              0.0010632426257372832
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 1.1291666666666427,
+            "position_m": [
+              0.02999391034245491,
+              -0.03997451812028885,
+              0.0011231601238250732
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 2.0249999999999253,
+            "position_m": [
+              0.03002922423183918,
+              -0.04295076057314873,
+              0.0007748203352093697
+            ],
+            "reused": false
+          },
+          {
+            "kind": "puncture",
+            "time_s": 2.8437499999998788,
+            "position_m": [
+              0.030048656955187863,
+              -0.045233050371947595,
+              0.0009067953822856112
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 2.845833333333212,
+            "position_m": [
+              0.03001987561583519,
+              -0.04516173154115677,
+              0.0009642438963055611
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 3.8057291666664907,
+            "position_m": [
+              0.029999004676938057,
+              -0.048009637743234634,
+              0.002256077714264393
+            ],
+            "reused": false
+          }
+        ],
+        "entry_count": 2,
+        "exit_count": 2,
+        "physical_time_s": 3.8057291666664907,
+        "exit_error_m": 9.600236482560288e-06,
+        "exit_tolerance_m": 0.001,
+        "puncture_count": 2,
+        "track_samples": 26,
+        "track_section_count": 2,
+        "track_length_m": 0.006021732124097567,
+        "maximum_interface_force_N": 0.003222323470632865,
+        "maximum_deformation_m": 0.0001393302605059413,
+        "maximum_deformation_time_s": 1.1270833333333095,
+        "maximum_force_balance_error_N": 1.1875646749454996e-09,
+        "maximum_torque_balance_error_Nm": 5.966728883088482e-11,
+        "maximum_coupling_iterations": 19,
+        "maximum_coupling_residual_N": 7.800813649695877e-07,
+        "last_coupling_attempt_iterations": 1,
+        "last_coupling_attempt_residual_N": 1.2322118436713936e-08,
+        "fem_graph_captures": 2,
+        "fem_graph_launches": 13513,
+        "fem_graph_status": "replaying",
+        "cutting_resistance_omitted": true,
+        "last_interface_load_on_fixed_nodes_N": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dt_s": 0.0005208333333333333,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "status": "outside",
+        "calibrated": false,
+        "entry_xy_m": [
+          0.03,
+          -0.04
+        ],
+        "exit_xy_m": [
+          0.03,
+          -0.048
+        ],
+        "interaction": "public material-selection, preview, start and pause controls",
+        "needle_motion": "finite PD wrench in MuJoCo, with equal-and-opposite FEM interaction"
+      }
+    },
+    "default_10_first": {
+      "raw_evidence_directory": "nsys/results/needle_unprofiled_default10_20261109",
+      "benchmark_sha256": "cc2f0a355434d1af80b1dddda3ed3a89f8aeb85822cabf3b65ffbf859dccd656",
+      "source_sha256": {
+        "src/newton_solver_fem/_src/insertion.py": "67e8bcdc847bbcb9d16f923f910b0ccb67a70c2dc3e6b9211358b6f2393004d7",
+        "src/newton_solver_fem/_src/coupling.py": "0414759276798a2ea3dafc59e256ab0bf1eb39cc610db177253c3de8825b278f",
+        "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "fe4c514c4db16eec4dc289c6fb5e2254592c42c18f28944f21124ebc8864db3a"
+      },
+      "started_at_utc": "2026-11-09T14:48:27.428289+00:00",
+      "substeps_per_60Hz_frame": 10,
+      "FEM_CG_iterations": 80,
+      "active_frame_calls": 229,
+      "idle_frame_calls": 191,
+      "simulated_seconds": 3.8049999999998336,
+      "accepted_physics_substeps": 2283,
+      "equivalent_60Hz_frames": 228.29999999999,
+      "active_frame_call_fps": 4.690151431117697,
+      "active_equivalent_60Hz_fps": 4.675814723686129,
+      "active_real_time_factor": 0.07793024539476881,
+      "physics_only_equivalent_60Hz_fps": 4.919632837981772,
+      "initialization_wall_seconds": 2.706834025000717,
+      "loop_wall_seconds": 51.30639720800173,
+      "final_device_sync_wall_seconds": 1.1920001270482317e-05,
+      "active_wall_seconds": 48.82571562202793,
+      "active_render_seconds": 2.232584711015079,
+      "active_frame_p95_seconds": 0.9303116580013011,
+      "scenario": {
+        "outcome": "Success: tip emerged, exit error 0.011 mm",
+        "success": true,
+        "task_status": "success",
+        "interaction_events": [
+          {
+            "kind": "puncture",
+            "time_s": 1.1266666666666791,
+            "position_m": [
+              0.03000635854387816,
+              -0.04003335568004904,
+              0.0010625472004115706
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 1.1283333333333458,
+            "position_m": [
+              0.029995569959282875,
+              -0.03999269753694534,
+              0.001118307001888752
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 2.0250000000000297,
+            "position_m": [
+              0.03002910502254963,
+              -0.04295433312654495,
+              0.0007749227806925774
+            ],
+            "reused": false
+          },
+          {
+            "kind": "puncture",
+            "time_s": 2.843333333333273,
+            "position_m": [
+              0.03004817641532678,
+              -0.04523248902858445,
+              0.0009053712243240024
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 2.8449999999999394,
+            "position_m": [
+              0.030021710321307182,
+              -0.04517839103937149,
+              0.0009666141122579575
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 3.8049999999998336,
+            "position_m": [
+              0.02999883145093918,
+              -0.048010703176259995,
+              0.00225675106048584
+            ],
+            "reused": false
+          }
+        ],
+        "entry_count": 2,
+        "exit_count": 2,
+        "physical_time_s": 3.8049999999998336,
+        "exit_error_m": 1.058060812222618e-05,
+        "exit_tolerance_m": 0.001,
+        "puncture_count": 2,
+        "track_samples": 25,
+        "track_section_count": 2,
+        "track_length_m": 0.005808815932962034,
+        "maximum_interface_force_N": 0.003216681961399973,
+        "maximum_deformation_m": 0.00013868185481104788,
+        "maximum_deformation_time_s": 1.1266666666666791,
+        "maximum_force_balance_error_N": 1.6571941869422712e-09,
+        "maximum_torque_balance_error_Nm": 5.868884110860264e-11,
+        "maximum_coupling_iterations": 22,
+        "maximum_coupling_residual_N": 6.899942520833396e-07,
+        "last_coupling_attempt_iterations": 1,
+        "last_coupling_attempt_residual_N": 6.57164491713047e-08,
+        "fem_graph_captures": 2,
+        "fem_graph_launches": 5443,
+        "fem_graph_status": "replaying",
+        "cutting_resistance_omitted": true,
+        "last_interface_load_on_fixed_nodes_N": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dt_s": 0.0016666666666666666,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "status": "outside",
+        "calibrated": false,
+        "entry_xy_m": [
+          0.03,
+          -0.04
+        ],
+        "exit_xy_m": [
+          0.03,
+          -0.048
+        ],
+        "interaction": "public material-selection, preview, start and pause controls",
+        "needle_motion": "finite PD wrench in MuJoCo, with equal-and-opposite FEM interaction"
+      },
+      "active_frame_median_seconds": 0.12491742600104772
+    },
+    "default_10_repeat": {
+      "raw_evidence_directory": "nsys/results/needle_unprofiled_default10_repeat_20261109",
+      "benchmark_sha256": "7cfcd4a709e86de307ee9645c230bc93adbe608df5ec962c82fd23c2be5641af",
+      "source_sha256": {
+        "src/newton_solver_fem/_src/insertion.py": "67e8bcdc847bbcb9d16f923f910b0ccb67a70c2dc3e6b9211358b6f2393004d7",
+        "src/newton_solver_fem/_src/coupling.py": "0414759276798a2ea3dafc59e256ab0bf1eb39cc610db177253c3de8825b278f",
+        "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "fe4c514c4db16eec4dc289c6fb5e2254592c42c18f28944f21124ebc8864db3a"
+      },
+      "started_at_utc": "2026-11-09T14:50:04.372427+00:00",
+      "substeps_per_60Hz_frame": 10,
+      "FEM_CG_iterations": 80,
+      "active_frame_calls": 229,
+      "idle_frame_calls": 191,
+      "simulated_seconds": 3.8049999999998336,
+      "accepted_physics_substeps": 2283,
+      "equivalent_60Hz_frames": 228.29999999999,
+      "active_frame_call_fps": 4.636227368371869,
+      "active_equivalent_60Hz_fps": 4.622055494319875,
+      "active_real_time_factor": 0.07703425823866458,
+      "physics_only_equivalent_60Hz_fps": 4.862549061789447,
+      "initialization_wall_seconds": 2.626652661998378,
+      "loop_wall_seconds": 51.95518469400122,
+      "final_device_sync_wall_seconds": 1.182400228572078e-05,
+      "active_wall_seconds": 49.39360859698718,
+      "active_render_seconds": 2.23979399898235,
+      "active_frame_p95_seconds": 0.9494862989995454,
+      "scenario": {
+        "outcome": "Success: tip emerged, exit error 0.011 mm",
+        "success": true,
+        "task_status": "success",
+        "interaction_events": [
+          {
+            "kind": "puncture",
+            "time_s": 1.1266666666666791,
+            "position_m": [
+              0.030006358775718618,
+              -0.040033354303438476,
+              0.0010625455593072917
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 1.1283333333333458,
+            "position_m": [
+              0.029995568096637726,
+              -0.039992690086364746,
+              0.0011183060705661774
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 2.0250000000000297,
+            "position_m": [
+              0.03002910502254963,
+              -0.04295433312654495,
+              0.0007749227806925774
+            ],
+            "reused": false
+          },
+          {
+            "kind": "puncture",
+            "time_s": 2.843333333333273,
+            "position_m": [
+              0.030048171708733848,
+              -0.045232487584047354,
+              0.0009053692670380866
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 2.8449999999999394,
+            "position_m": [
+              0.030021706596016884,
+              -0.04517838731408119,
+              0.0009666131809353828
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 3.8049999999998336,
+            "position_m": [
+              0.02999882772564888,
+              -0.048010703176259995,
+              0.002256751526147127
+            ],
+            "reused": false
+          }
+        ],
+        "entry_count": 2,
+        "exit_count": 2,
+        "physical_time_s": 3.8049999999998336,
+        "exit_error_m": 1.0580953863387799e-05,
+        "exit_tolerance_m": 0.001,
+        "puncture_count": 2,
+        "track_samples": 25,
+        "track_section_count": 2,
+        "track_length_m": 0.005808826554172164,
+        "maximum_interface_force_N": 0.0032166822391639315,
+        "maximum_deformation_m": 0.00013868406475210502,
+        "maximum_deformation_time_s": 1.1266666666666791,
+        "maximum_force_balance_error_N": 1.1701631077742026e-09,
+        "maximum_torque_balance_error_Nm": 4.760750863461872e-11,
+        "maximum_coupling_iterations": 21,
+        "maximum_coupling_residual_N": 7.707423323378873e-07,
+        "last_coupling_attempt_iterations": 1,
+        "last_coupling_attempt_residual_N": 6.656046025454998e-08,
+        "fem_graph_captures": 2,
+        "fem_graph_launches": 5472,
+        "fem_graph_status": "replaying",
+        "cutting_resistance_omitted": true,
+        "last_interface_load_on_fixed_nodes_N": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dt_s": 0.0016666666666666666,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "status": "outside",
+        "calibrated": false,
+        "entry_xy_m": [
+          0.03,
+          -0.04
+        ],
+        "exit_xy_m": [
+          0.03,
+          -0.048
+        ],
+        "interaction": "public material-selection, preview, start and pause controls",
+        "needle_motion": "finite PD wrench in MuJoCo, with equal-and-opposite FEM interaction"
+      },
+      "active_frame_median_seconds": 0.12383516900081304
+    }
+  },
+  "validation": {
+    "fixed32_refinement": "needle-insertion-optimized32.json",
+    "reduced_substeps": "needle-insertion-substeps.json",
+    "lateral_push": "needle-handling-response.json",
+    "region_ownership": "needle-region-selection.json",
+    "CUDA_and_lint": "needle-optimization-tests.json"
+  },
+  "nsight": {
+    "version": "2026.5.1.161-265138896106v0",
+    "workload_substeps": 32,
+    "final_capture": "nsys/results/20261109T143849.354534Z_fem_needle_insertion_9ezu10es",
+    "final_analysis_sha256": "3b37402a1c9d275700f72d2a47f45bb0ecf754e12a71182086704569967e9a56",
+    "first_round_capture": "nsys/results/20261109T135526.881434Z_fem_needle_insertion_j8ycu85q",
+    "original_capture": "nsys/results/20261109T131406.509261Z_fem_needle_insertion_oqfyy360",
+    "surface_kernel_recorded_seconds_first_round": 49.4614,
+    "surface_kernel_recorded_seconds_final": 4.478047688,
+    "all_kernel_event_seconds_final": 39.0721,
+    "CG_update_invocations_per_FEM_trial": 80,
+    "surface_block_threads": 32,
+    "remaining_costs": "Host geometry/material queries and FEM solves; inclusive NVTX timings overlap and must not be added as disjoint frame costs.",
+    "limits": "Nsight timings diagnose costs; unprofiled runs alone supply FPS. The original capture briefly overlapped another demo and is not a fair throughput denominator. Generic collection-completeness warnings remain, with no reported numeric CUPTI record loss. No exported Python sampling tables. See the raw analysis for aggregate graph coverage and detailed caveats."
+  },
+  "default_frame_latency_seconds": {
+    "p95_range": [
+      0.9303116580013011,
+      0.9494862989995454
+    ],
+    "maximum_range": [
+      1.6899915560024965,
+      1.6958251359974383
+    ]
+  },
+  "recording": {
+    "video": "../media/fem_needle_insertion.mp4",
+    "metadata": "../media/fem_needle_insertion.json",
+    "video_sha256": "13d280fddde9dc33b6af9f3aa23521670de2f0ab75fdc3b4e8f20a9549add17c",
+    "metadata_sha256": "10bad8c69063d55b50099e2afa6238138a5f3f9651b9af0b84e812916d4591bc",
+    "source": "Final optimized implementation with 10 substeps; original movie preserved under nsys/results/needle_video_preoptimization_20261109.",
+    "success": true,
+    "entry_count": 2,
+    "exit_count": 2,
+    "exit_error_m": 1.0577032885170138e-05,
+    "dt_s": 0.0016666666666666666,
+    "frames": 420,
+    "encoded_FPS": 60,
+    "playback_is_performance_benchmark": false,
+    "record_command": "OPENBLAS_NUM_THREADS=1 UV_CACHE_DIR=/tmp/needle-uv-cache WARP_CACHE_PATH=/tmp/needle-warp-cache uv run --locked --no-sync python tools/record_examples.py fem_needle_insertion --child --device cuda:0 --frames 420 --width 1280 --height 720",
+    "inspection": "MP4 frame count/resolution/duration checked with ffprobe; poster and final frame visually inspected. Final overlay reports successful emergence."
+  },
+  "independent_timing_and_gap_audit": {
+    "path": "nsys/results/needle_final_default10_validation_20261109/performance-audit.json",
+    "sha256": "736aee7a0aa377c48e7d4e55796f8d9f2bff672831c54801ffb6b18f149630ae",
+    "checks_passed": 84,
+    "scope": "Recomputed core frame timing, speedup, settings and source transitions; final gap-run engineering checks retained separately in needle-insertion-substeps.json. Recording and delivery annotations are additional evidence, not timed runs."
+  }
+}

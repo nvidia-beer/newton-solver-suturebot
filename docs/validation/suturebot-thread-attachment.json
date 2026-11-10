@@ -1,0 +1,1313 @@
+{
+  "scope": "Hard endpoint position at modeled blunt needle end for static initial thread references; orientation free. No camera or needle pose changes and no dynamic thread simulation.",
+  "updated_cli_choices": [
+    1,
+    2,
+    3,
+    5
+  ],
+  "unanchored_cli_choices": {
+    "4": "No needle asset; partial thread reference unchanged."
+  },
+  "image_alignment_accepted": false,
+  "recordings": [
+    {
+      "sample_id": "tissue3_215300",
+      "source_frame": 4,
+      "attached_component": "upper_needle_side",
+      "before_endpoint_gap_mm": 4.353921720619672,
+      "endpoint_gap_m": 0.0,
+      "attachment": {
+        "body_path": "/SutureBotNeedle/Needle",
+        "body_local_position_m": [
+          -0.002468098783488663,
+          -0.002318856524448216,
+          1.467299124963179e-07
+        ],
+        "world_position_m": [
+          0.04469351882115156,
+          -0.050910155045031706,
+          0.017991860488619914
+        ],
+        "body_world_pose_xyz_xyzw": [
+          0.04363530481227551,
+          -0.05187674542004595,
+          0.01492355584828313,
+          -0.20140554488420312,
+          0.7111767353883743,
+          -0.5300621735757798,
+          0.41556894695868646
+        ],
+        "source_frame": 4,
+        "body_local_outward_tangent": [
+          0.011254541235681677,
+          -0.9999366453574309,
+          0.00020142716246166216
+        ],
+        "world_outward_tangent": [
+          -0.1603672674016411,
+          -0.3652176572881088,
+          0.9170051266765723
+        ],
+        "method": "area-weighted rendered CAD blunt-cap centroid",
+        "cap_triangle_count": 36,
+        "needle_usd_sha256": "fd109c648c830000f2501df243bada6c0b3bca70ec57c95d093afc17985703fa",
+        "needle_inputs_sha256": "06e32186ae3378ff8194ae310d3fe436cf744331961d27abb77c9bbeae0ca1f2",
+        "source_swage_observed": false,
+        "boundary_condition": "hard endpoint position at CAD blunt cap; orientation is free",
+        "endpoint": "start",
+        "constraint": "hard_position",
+        "orientation_constraint": "free",
+        "orientation_note": "No tangent or torque constraint",
+        "endpoint_gap_m": 0.0,
+        "uncertainty_scope": "Zero endpoint covariance is conditional on the fixed CAD/needle pose; physical swage and needle pose uncertainty are unmeasured."
+      },
+      "reference_length_m": 0.024706733369463364,
+      "centreline_residuals_px": {
+        "left": {
+          "count": 76,
+          "rms_px": 2.639807883475726,
+          "median_px": 2.1624879178982157,
+          "p95_px": 5.137223062991957,
+          "max_px": 6.143256660652653,
+          "observed_parameter_interval": [
+            0.0008146333109705738,
+            1.0
+          ],
+          "matched_parameters": [
+            0.041884816753926704,
+            0.03445548325576748,
+            0.02060499436771896,
+            0.00960157276095026,
+            0.0008146333109705738,
+            0.11474865785058068,
+            0.12389054898201568,
+            0.13236462102568164,
+            0.14029105606579065,
+            0.14798220483990476,
+            0.15539269659387656,
+            0.16271617405473515,
+            0.1699400659453742,
+            0.17722075302284718,
+            0.18458869516359167,
+            0.19203932517661013,
+            0.1996879650812131,
+            0.2075709235789127,
+            0.21572335342502633,
+            0.22419794786899166,
+            0.2330823381032346,
+            0.24235748196282983,
+            0.2520472211221419,
+            0.26216818712970985,
+            0.27272731114944365,
+            0.2837196046590529,
+            0.2951266553814068,
+            0.306983451290501,
+            0.3195003212155123,
+            0.33279789858610254,
+            0.3467554659805895,
+            0.3613264376909286,
+            0.376415724260072,
+            0.39192595083880566,
+            0.40776000703094833,
+            0.42417824583413816,
+            0.4411926637671288,
+            0.45883140644536397,
+            0.4771320263845787,
+            0.49550232001764444,
+            0.5148079146544939,
+            0.5349420857795596,
+            0.5546753193562858,
+            0.5737527054897,
+            0.5914185258754068,
+            0.6085851572594159,
+            0.6244181892026976,
+            0.6391661541569393,
+            0.6529175791374993,
+            0.6661247142984247,
+            0.6787400784085984,
+            0.6908918166439599,
+            0.7026351146314019,
+            0.7139889390255522,
+            0.7250261556755495,
+            0.7357812368916289,
+            0.746289284342067,
+            0.7565774947629199,
+            0.7666690467948343,
+            0.7765833011754393,
+            0.7863359812934215,
+            0.7959414878264665,
+            0.8054906953210256,
+            0.814938701697567,
+            0.8243844195749214,
+            0.8338731257962257,
+            0.8434572713612732,
+            0.8532228800956022,
+            0.8632071557164779,
+            0.8735236320636011,
+            0.8843301132886286,
+            0.89584102222763,
+            0.9084258141475625,
+            0.9226851585329594,
+            0.9402321569243384,
+            1.0
+          ],
+          "minimum_depth_m": 0.04029582776879924,
+          "source_parameter_direction": 1,
+          "order_reversals": 0,
+          "full_primary_span_to_guide": {
+            "count": 192,
+            "rms_px": 2.640013706287114,
+            "median_px": 2.0333793535002593,
+            "p95_px": 5.611361252004509,
+            "max_px": 6.307702587920461
+          },
+          "needle_attachment_projection_px": [
+            663.1919625994707,
+            306.52191525353965
+          ],
+          "needle_attachment_source_endpoint_error_px": 18.94761637601764
+        },
+        "right": {
+          "count": 81,
+          "rms_px": 2.783911971992408,
+          "median_px": 1.6036761007578724,
+          "p95_px": 4.556563581087247,
+          "max_px": 10.367508586822934,
+          "observed_parameter_interval": [
+            0.07199950588815827,
+            1.0
+          ],
+          "matched_parameters": [
+            0.07199950588815827,
+            0.07853403141361257,
+            0.0886862750834839,
+            0.09800583201700579,
+            0.10727438088447704,
+            0.11615455524905896,
+            0.12470652953912253,
+            0.1327087076254085,
+            0.1405816565947559,
+            0.14819371223247585,
+            0.15572841944665686,
+            0.1631445324835925,
+            0.1705616198479588,
+            0.17799074985285038,
+            0.1855032361613121,
+            0.19318365620533168,
+            0.20109665679374802,
+            0.20931341281205443,
+            0.21787705538652677,
+            0.22676642515371728,
+            0.23604090537982486,
+            0.24583571619327663,
+            0.2561485613990581,
+            0.2670197712598968,
+            0.2784740657857671,
+            0.2904847266067874,
+            0.302993984738246,
+            0.31599802007245126,
+            0.32988537774802246,
+            0.3444856851358904,
+            0.3597410427930583,
+            0.37538343887574727,
+            0.3911998565505856,
+            0.4071857224646777,
+            0.4234119508863219,
+            0.4399464101997057,
+            0.45660050011633785,
+            0.47333077629944,
+            0.490209854960506,
+            0.5075007572979711,
+            0.5250489911264415,
+            0.5423237061667872,
+            0.5590011374356672,
+            0.5755527346841192,
+            0.5917772545805613,
+            0.6073418555571263,
+            0.6221218349456464,
+            0.6361759530590917,
+            0.6498829383054612,
+            0.6631550180875172,
+            0.6758842339502859,
+            0.6882285939360621,
+            0.7002139255191837,
+            0.7119204769621054,
+            0.7233196078987388,
+            0.7344816259141058,
+            0.7454132122773428,
+            0.756137907704342,
+            0.7666761489681141,
+            0.7770450073720575,
+            0.7872632871814389,
+            0.7973431548950185,
+            0.8072857142928719,
+            0.8170966568941267,
+            0.8267576954256224,
+            0.8363949048905721,
+            0.8460170856420708,
+            0.8556479175227388,
+            0.8653214138793847,
+            0.8750776940707965,
+            0.8849640021495975,
+            0.8950135376919565,
+            0.9053524774525861,
+            0.9160684162969759,
+            0.9273216084760773,
+            0.9392320033702015,
+            0.9520722375985643,
+            0.9663807451210624,
+            0.9829648458061881,
+            1.0,
+            1.0
+          ],
+          "minimum_depth_m": 0.04259337368499575,
+          "source_parameter_direction": 1,
+          "order_reversals": 0,
+          "needle_attachment_projection_px": [
+            640.7657076850337,
+            309.1408160022489
+          ]
+        },
+        "psm1": {
+          "count": 40,
+          "rms_px": 3.285648236053276,
+          "median_px": 1.0711023150924457,
+          "p95_px": 7.458351537953907,
+          "max_px": 8.898353112733837,
+          "observed_parameter_interval": [
+            0.06229765901951096,
+            0.8916316054855014
+          ],
+          "matched_parameters": [
+            0.06229765901951096,
+            0.07235930026724915,
+            0.08336560670755631,
+            0.09542003799331875,
+            0.10846055887533901,
+            0.12250910574401506,
+            0.13669669702083617,
+            0.15145566071439232,
+            0.16643943980259254,
+            0.18147760380107705,
+            0.19772847948590036,
+            0.21570516891808947,
+            0.2360437835134808,
+            0.25968871523981946,
+            0.28940390539189503,
+            0.32669930279598547,
+            0.3688916318771343,
+            0.40134062016066036,
+            0.42510007366507174,
+            0.44880988622790996,
+            0.4712041995206682,
+            0.4923507981787498,
+            0.5140296454033628,
+            0.536265812950314,
+            0.5570837053437562,
+            0.5784604959805967,
+            0.6023220037230171,
+            0.628931616649405,
+            0.6583659815326877,
+            0.6868012794058096,
+            0.7129699858773667,
+            0.7374323957268832,
+            0.7607272575368335,
+            0.7832344549154058,
+            0.8051274951853888,
+            0.8261594609197843,
+            0.846152116516723,
+            0.8639620938910496,
+            0.8791798963832687,
+            0.8916316054855014
+          ],
+          "minimum_depth_m": 0.04105648826945387,
+          "source_parameter_direction": 1,
+          "order_reversals": 0,
+          "needle_attachment_projection_px": [
+            347.75640837299994,
+            181.20755788555752
+          ]
+        }
+      },
+      "actual_mesh_render": {
+        "sample_id": "tissue3_215300",
+        "source_frame": 4,
+        "source_timestamp_ns": 1745891580617266585,
+        "preparation_module_sha256": "07b0a530f9eb05120a3631418983819ca02f6ca88f73b4e25401c91c70d9dd77",
+        "source_assets_sha256": {
+          "scene": "2cb4689eb2830a8cec21d38709206c9cfc77653723356fa20bbba6a32899b442",
+          "rig": "3ae0095c517ea66c337e02c8aa51c0f13bdb3513221d6d4b746be7c05f260a53",
+          "phantom": "ea046d474aab6f0be7917e22bb5cf78de9b1e4b03b48073a5100945ebee6a0f7",
+          "thread_usd": "a3d897d212a7ab9086bc6f22c306be1973624747c487c44b7a88d8445f7559bb",
+          "motion": "efa2609e32d0a66219097c0f4a89d5b500f74f9b64f28fc1a9e8d796b0ac5ff7",
+          "cameras": "f20da4d85cac773a2618dda4e3a2fe7c87ac71af4ce1a54ef9027d20e48b3265"
+        },
+        "method": "native inverse-lens rays, actual imported USD triangles, complete-scene occlusion; CPU SensorCamera",
+        "image_alignment_accepted": false,
+        "components": {
+          "left": {
+            "upper_needle_side": {
+              "visible_pixels": 2067,
+              "isolated_pixels": 2067,
+              "scene_occluded_pixels": 0,
+              "rendered_surface_to_guide_px": {
+                "median": 2.0,
+                "p95": 6.0,
+                "maximum": 8.246211051940918
+              },
+              "guide_to_visible_surface_px": {
+                "median": 0.0,
+                "p95": 3.0973665714263916,
+                "fraction_within_5px": 1.0
+              }
+            },
+            "lower_diagonal": {
+              "visible_pixels": 3095,
+              "isolated_pixels": 3095,
+              "scene_occluded_pixels": 0,
+              "rendered_surface_to_guide_px": {
+                "median": 1.0,
+                "p95": 3.0,
+                "maximum": 4.123105525970459
+              },
+              "guide_to_visible_surface_px": {
+                "median": 0.0,
+                "p95": 1.0,
+                "fraction_within_5px": 1.0
+              }
+            }
+          },
+          "right": {
+            "upper_needle_side": {
+              "visible_pixels": 2161,
+              "isolated_pixels": 2161,
+              "scene_occluded_pixels": 0,
+              "rendered_surface_to_guide_px": {
+                "median": 2.0,
+                "p95": 14.317821502685547,
+                "maximum": 34.928497314453125
+              },
+              "guide_to_visible_surface_px": {
+                "median": 0.0,
+                "p95": 2.0708203315734863,
+                "fraction_within_5px": 0.9813333333333333
+              }
+            },
+            "lower_diagonal": {
+              "visible_pixels": 2914,
+              "isolated_pixels": 2914,
+              "scene_occluded_pixels": 0,
+              "rendered_surface_to_guide_px": {
+                "median": 2.0,
+                "p95": 4.123105525970459,
+                "maximum": 12.041594505310059
+              },
+              "guide_to_visible_surface_px": {
+                "median": 1.0,
+                "p95": 1.4142135381698608,
+                "fraction_within_5px": 1.0
+              }
+            }
+          },
+          "psm1": {
+            "upper_needle_side": {
+              "visible_pixels": 868,
+              "isolated_pixels": 868,
+              "scene_occluded_pixels": 0,
+              "rendered_surface_to_guide_px": {
+                "median": 2.8284270763397217,
+                "p95": 51.687103271484375,
+                "maximum": 66.0302963256836
+              },
+              "guide_to_visible_surface_px": {
+                "median": 0.0,
+                "p95": 6.662277698516846,
+                "fraction_within_5px": 0.8713450292397661
+              }
+            },
+            "lower_diagonal": {
+              "visible_pixels": 541,
+              "isolated_pixels": 668,
+              "scene_occluded_pixels": 127,
+              "rendered_surface_to_guide_px": {
+                "median": 1.4142135381698608,
+                "p95": 5.0,
+                "maximum": 6.4031243324279785
+              },
+              "guide_to_visible_surface_px": {
+                "median": 1.0,
+                "p95": 4.242640495300293,
+                "fraction_within_5px": 0.9893048128342246
+              }
+            }
+          },
+          "psm2": {
+            "upper_needle_side": {
+              "visible_pixels": 0,
+              "isolated_pixels": 0,
+              "scene_occluded_pixels": 0,
+              "source_observation": "unavailable; no image-fit metric"
+            },
+            "lower_diagonal": {
+              "visible_pixels": 897,
+              "isolated_pixels": 897,
+              "scene_occluded_pixels": 0,
+              "rendered_surface_to_guide_px": {
+                "median": 3.0,
+                "p95": 6.7082037925720215,
+                "maximum": 7.280109882354736
+              },
+              "guide_to_visible_surface_px": {
+                "median": 2.0,
+                "p95": 5.385164737701416,
+                "fraction_within_5px": 0.8991097922848664
+              }
+            }
+          }
+        },
+        "thread_body_count": 0,
+        "thread_joint_count": 0,
+        "thread_collision_shape_count": 0,
+        "limitations": [
+          "Image guides are fitting evidence, not held-out validation.",
+          "Visibility uses estimated scene geometry; source video has no measured depth.",
+          "Visible components do not establish hidden connectivity or physical twist."
+        ]
+      },
+      "review_note": "Needle-side endpoint attached at frame 4. Unsupported visible PSM1 tail remains (surface-to-guide p95 about 52 px); hidden connectivity unresolved.",
+      "bundle_review": "../../src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_215300/thread/render_review/thread_four_views.jpg",
+      "thread_usd_sha256": "a3d897d212a7ab9086bc6f22c306be1973624747c487c44b7a88d8445f7559bb"
+    },
+    {
+      "sample_id": "tissue3_215248_pickup",
+      "source_frame": 4,
+      "attached_component": "visible_tail",
+      "before_endpoint_gap_mm": 1.086627,
+      "endpoint_gap_m": 0.0,
+      "attachment": {
+        "body_path": "/SutureBotNeedle/Needle",
+        "body_local_position_m": [
+          -0.0027746767248468932,
+          -0.002606896245882103,
+          1.6495922119916209e-07
+        ],
+        "world_position_m": [
+          0.04299849148324145,
+          -0.04193183953842662,
+          0.0050491375501330385
+        ],
+        "body_world_pose_xyz_xyzw": [
+          0.0429466058084668,
+          -0.044804525934965006,
+          0.0025511944492379625,
+          -0.2818797195757079,
+          -0.25282712697393744,
+          0.8736315354275771,
+          -0.3055981149557031
+        ],
+        "source_frame": 4,
+        "body_local_outward_tangent": [
+          0.011254541235679703,
+          -0.999936645357431,
+          0.00020142716246166365
+        ],
+        "world_outward_tangent": [
+          -0.6838831293509372,
+          0.6808040389709467,
+          0.26231608015906244
+        ],
+        "method": "area-weighted rendered CAD blunt-cap centroid",
+        "cap_triangle_count": 36,
+        "needle_usd_sha256": "41e49234084eb04dbeb0bd994277933be9dd702f5c048cbf27d7c2b3c6da2eb0",
+        "needle_inputs_sha256": "f4fe515818a2e9898bd7900799bab2a9a66f070859f8b8face01641e1b83fb57",
+        "source_swage_observed": false,
+        "boundary_condition": "hard endpoint position at CAD blunt cap; orientation is free",
+        "endpoint": "start",
+        "constraint": "hard_position",
+        "orientation_constraint": "free",
+        "orientation_note": "No tangent or torque constraint",
+        "endpoint_gap_m": 0.0,
+        "uncertainty_scope": "Zero endpoint covariance is conditional on the fixed CAD/needle pose; physical swage and needle pose uncertainty are unmeasured."
+      },
+      "reference_length_m": 0.011186354930528776,
+      "centreline_residuals_px": {
+        "left": {
+          "count": 29,
+          "rms_px": 1.7312848255454076,
+          "median_px": 0.4424467329994856,
+          "p95_px": 3.173590354702532,
+          "max_px": 4.332923048447736,
+          "observed_parameter_interval": [
+            0.07055840438600516,
+            0.9929627965397964
+          ],
+          "matched_parameters": [
+            0.07055840438600516,
+            0.09659363174281366,
+            0.13089005235602094,
+            0.170654670770042,
+            0.2207550874185736,
+            0.2977165602225326,
+            0.4500762019583879,
+            0.6639138374602257,
+            0.7442919705006275,
+            0.7924523660883358,
+            0.8273332468418954,
+            0.8534031413612565,
+            0.8726282904935181,
+            0.8883313034948448,
+            0.9012953160498848,
+            0.9122663368940965,
+            0.9219152892879999,
+            0.9305021099944598,
+            0.938301864647357,
+            0.9454307698928482,
+            0.9520482356128844,
+            0.9582262245542862,
+            0.9640013854669013,
+            0.9694591905149376,
+            0.974636416875353,
+            0.9795475308830424,
+            0.9842343512925555,
+            0.988689354696012,
+            0.9929627965397964
+          ],
+          "minimum_depth_m": 0.06531981331060668,
+          "source_parameter_direction": 1,
+          "order_reversals": 0,
+          "full_primary_span_to_guide": {
+            "count": 192,
+            "rms_px": 3.6216711229418728,
+            "median_px": 2.6323012995202966,
+            "p95_px": 6.557188513675618,
+            "max_px": 16.53764209101466
+          },
+          "needle_attachment_projection_px": [
+            507.912716335476,
+            211.1487409680396
+          ],
+          "needle_attachment_source_endpoint_error_px": 16.53764209101466
+        },
+        "right": {
+          "count": 30,
+          "rms_px": 2.891898089810714,
+          "median_px": 2.9588326791974033,
+          "p95_px": 3.9198769550464028,
+          "max_px": 4.210348644015419,
+          "observed_parameter_interval": [
+            0.03722864269327705,
+            0.9952578966416805
+          ],
+          "matched_parameters": [
+            0.03722864269327705,
+            0.06643623306296788,
+            0.11365475095695288,
+            0.16281351824667223,
+            0.20847690152177045,
+            0.2700008641274506,
+            0.37037637616810654,
+            0.6249805946137706,
+            0.7305935732869636,
+            0.7833929036601336,
+            0.8238498495908674,
+            0.8554946619958329,
+            0.875705739183449,
+            0.8910661259185425,
+            0.903397042529743,
+            0.9138930536826375,
+            0.9230795213158279,
+            0.931267633178046,
+            0.9387462581022235,
+            0.9455684968704082,
+            0.9519098605182287,
+            0.9578316446610369,
+            0.9634210140957719,
+            0.9686616176007236,
+            0.9736016853886776,
+            0.9783210615297865,
+            0.9828193865707575,
+            0.987126433814011,
+            0.9912657123247758,
+            0.9952578966416805
+          ],
+          "minimum_depth_m": 0.06879619813528019,
+          "source_parameter_direction": 1,
+          "order_reversals": 0,
+          "needle_attachment_projection_px": [
+            513.5962355575757,
+            215.71504555211465
+          ]
+        },
+        "psm1": {
+          "count": 19,
+          "rms_px": 14.19109169689888,
+          "median_px": 13.132862239559179,
+          "p95_px": 22.493434155933166,
+          "max_px": 24.982423895193158,
+          "observed_parameter_interval": [
+            0.37698481530920325,
+            1.0
+          ],
+          "matched_parameters": [
+            0.37698481530920325,
+            0.7135594577413301,
+            0.7993391582479884,
+            0.8408979456948718,
+            0.8693265383043769,
+            0.8900523560209425,
+            0.9061196606656723,
+            0.9206971273047889,
+            0.933263355471099,
+            0.9446228994625248,
+            0.954657986588498,
+            0.9640028848359001,
+            0.972879404019857,
+            0.9807484673398482,
+            0.9882902125870849,
+            0.9950865917651938,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "minimum_depth_m": 0.06990560874299233,
+          "source_parameter_direction": 1,
+          "order_reversals": 0,
+          "needle_attachment_projection_px": [
+            434.8317245322186,
+            164.7141117134882
+          ]
+        },
+        "psm2": {
+          "count": 25,
+          "rms_px": 3.068761930380506,
+          "median_px": 1.1215575099979993,
+          "p95_px": 6.191395320050582,
+          "max_px": 11.135694696271736,
+          "observed_parameter_interval": [
+            0.034519001321394564,
+            1.0
+          ],
+          "matched_parameters": [
+            0.034519001321394564,
+            0.05359427567455189,
+            0.07932468680385307,
+            0.11649001069219238,
+            0.16801174284091341,
+            0.23278039452959964,
+            0.33243207688625986,
+            0.6442017404560896,
+            0.7619885025347395,
+            0.8184217457336952,
+            0.8573406867446522,
+            0.883447724776603,
+            0.9028303680084526,
+            0.9180836118878872,
+            0.9309877699344271,
+            0.9424826434005897,
+            0.9528795811518325,
+            0.9622314842552157,
+            0.9706082399966538,
+            0.9784538198256263,
+            0.9858309711693167,
+            0.9927991220348541,
+            0.9993760537308783,
+            1.0,
+            1.0
+          ],
+          "minimum_depth_m": 0.06290842277985875,
+          "source_parameter_direction": 1,
+          "order_reversals": 0,
+          "needle_attachment_projection_px": [
+            164.3130124073012,
+            161.56504756891883
+          ]
+        }
+      },
+      "actual_mesh_render": {
+        "sample_id": "tissue3_215248_pickup",
+        "source_frame": 4,
+        "source_timestamp_ns": 1745891569107650555,
+        "preparation_module_sha256": "07b0a530f9eb05120a3631418983819ca02f6ca88f73b4e25401c91c70d9dd77",
+        "source_assets_sha256": {
+          "scene": "2cb4689eb2830a8cec21d38709206c9cfc77653723356fa20bbba6a32899b442",
+          "rig": "1a86bdb028c2f02d39e7e8a87c62f5cf9bde36a5f18a3850caff28526a9f7c64",
+          "phantom": "0fe79ce3014e9e476c0c8ab3cff897a0b65c57f24a8da3f353341635618debbc",
+          "thread_usd": "6a68c61f9209964a02374532c487ef14135c492aeec6fd5ceda3918898f58f29",
+          "motion": "b1afe117db515ca4ddc10d03a4c8adb2a847842e65af6c45cc99a3f8c44c1eef",
+          "cameras": "8453debe80cd521b507008a5684a4984914e27dd4980a3b314646e0cbe911574"
+        },
+        "method": "native inverse-lens rays, actual imported USD triangles, complete-scene occlusion; CPU SensorCamera",
+        "image_alignment_accepted": false,
+        "components": {
+          "left": {
+            "visible_tail": {
+              "visible_pixels": 506,
+              "isolated_pixels": 509,
+              "scene_occluded_pixels": 3,
+              "rendered_surface_to_guide_px": {
+                "median": 1.4142135381698608,
+                "p95": 8.844204902648926,
+                "maximum": 16.552946090698242
+              },
+              "guide_to_visible_surface_px": {
+                "median": 0.0,
+                "p95": 2.0,
+                "fraction_within_5px": 1.0
+              }
+            }
+          },
+          "right": {
+            "visible_tail": {
+              "visible_pixels": 521,
+              "isolated_pixels": 526,
+              "scene_occluded_pixels": 5,
+              "rendered_surface_to_guide_px": {
+                "median": 2.8284270763397217,
+                "p95": 5.0,
+                "maximum": 7.211102485656738
+              },
+              "guide_to_visible_surface_px": {
+                "median": 1.7071068286895752,
+                "p95": 2.8284270763397217,
+                "fraction_within_5px": 1.0
+              }
+            }
+          },
+          "psm1": {
+            "visible_tail": {
+              "visible_pixels": 176,
+              "isolated_pixels": 177,
+              "scene_occluded_pixels": 1,
+              "rendered_surface_to_guide_px": {
+                "median": 11.661903381347656,
+                "p95": 21.295452117919922,
+                "maximum": 26.4007568359375
+              },
+              "guide_to_visible_surface_px": {
+                "median": 13.601470947265625,
+                "p95": 22.803508758544922,
+                "fraction_within_5px": 0.24691358024691357
+              }
+            }
+          },
+          "psm2": {
+            "visible_tail": {
+              "visible_pixels": 258,
+              "isolated_pixels": 258,
+              "scene_occluded_pixels": 0,
+              "rendered_surface_to_guide_px": {
+                "median": 1.0,
+                "p95": 5.452032566070557,
+                "maximum": 10.049875259399414
+              },
+              "guide_to_visible_surface_px": {
+                "median": 0.5,
+                "p95": 5.684656620025635,
+                "fraction_within_5px": 0.9351851851851852
+              }
+            }
+          }
+        },
+        "thread_body_count": 0,
+        "thread_joint_count": 0,
+        "thread_collision_shape_count": 0,
+        "limitations": [
+          "Image guides are fitting evidence, not held-out validation.",
+          "Visibility uses estimated scene geometry; source video has no measured depth.",
+          "Visible components do not establish hidden connectivity or physical twist."
+        ]
+      },
+      "review_note": "Thread endpoint attached to the needle at frame 4. About 14 px PSM1 centreline RMS remains; other observed views about 2\u20133 px.",
+      "bundle_review": "../../src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_215248_pickup/thread/render_review/thread_four_views.jpg",
+      "thread_usd_sha256": "6a68c61f9209964a02374532c487ef14135c492aeec6fd5ceda3918898f58f29"
+    },
+    {
+      "sample_id": "tissue3_222119_approach",
+      "source_frame": 5,
+      "attached_component": "visible_tool_loop",
+      "before_endpoint_gap_mm": 1.601106,
+      "endpoint_gap_m": 0.0,
+      "attachment": {
+        "body_path": "/SutureBotNeedle/Needle",
+        "body_local_position_m": [
+          -0.001809401279335271,
+          -0.0004624335079633527,
+          -0.002617876550860675
+        ],
+        "world_position_m": [
+          0.039148997401469605,
+          -0.03938255435755264,
+          0.007727871268958748
+        ],
+        "body_world_pose_xyz_xyzw": [
+          0.039088757246287076,
+          -0.03814584322600571,
+          0.0047600484852829625,
+          -0.4572521861035511,
+          0.7623787248331191,
+          0.25873043533902335,
+          0.3778328731789101
+        ],
+        "source_frame": 5,
+        "body_local_outward_tangent": [
+          0.34422992435996513,
+          -0.5196269057916122,
+          -0.7819805866852244
+        ],
+        "world_outward_tangent": [
+          0.09639604687247055,
+          -0.9841558564670908,
+          0.14881213770686788
+        ],
+        "method": "area-weighted rendered CAD blunt-cap centroid",
+        "cap_triangle_count": 36,
+        "needle_usd_sha256": "41b218a80a88770d5aec89c401bab0a18a9593d9d093a207e149284335d8b80f",
+        "needle_inputs_sha256": "499dce404a3985f3ccfa506167e0759b477cb04b1c5a13c2a6204e387a984d71",
+        "source_swage_observed": false,
+        "boundary_condition": "hard endpoint position at CAD blunt cap; orientation is free",
+        "endpoint": "start",
+        "constraint": "hard_position",
+        "orientation_constraint": "free",
+        "orientation_note": "No tangent or torque constraint",
+        "endpoint_gap_m": 0.0,
+        "uncertainty_scope": "Zero endpoint covariance is conditional on the fixed CAD/needle pose; physical swage and needle pose uncertainty are unmeasured."
+      },
+      "reference_length_m": 0.00884223586075155,
+      "centreline_residuals_px": {
+        "left": {
+          "count": 33,
+          "rms_px": 1.1746942207498356,
+          "median_px": 0.4351194691089032,
+          "p95_px": 2.6467464706734543,
+          "max_px": 2.7959875520539454,
+          "observed_parameter_interval": [
+            0.04381899101081652,
+            1.0
+          ],
+          "matched_parameters": [
+            0.04381899101081652,
+            0.057334315733640576,
+            0.07314621459055436,
+            0.0968660013302774,
+            0.13472356419064674,
+            0.19596234157440773,
+            0.2520175300848782,
+            0.2987279864552479,
+            0.34042869968346845,
+            0.37911636512872265,
+            0.41571881672406646,
+            0.45065993608602356,
+            0.4841067025913593,
+            0.5162399378204254,
+            0.5471127169401068,
+            0.5767683802313752,
+            0.605265412283697,
+            0.6328655987875905,
+            0.6597601608193288,
+            0.685967749379736,
+            0.7114270306993298,
+            0.7360895732902405,
+            0.7602408434223954,
+            0.78371301971868,
+            0.8064517915317223,
+            0.8284711263269618,
+            0.850447935943177,
+            0.8727901990798125,
+            0.8956704215779133,
+            0.9199324855352841,
+            0.9464219850826929,
+            0.9708815150958763,
+            1.0
+          ],
+          "minimum_depth_m": 0.05302594289210797,
+          "source_parameter_direction": 1,
+          "order_reversals": 0,
+          "full_primary_span_to_guide": {
+            "count": 192,
+            "rms_px": 2.4005179372296457,
+            "median_px": 0.2923919151679057,
+            "p95_px": 2.685415397302263,
+            "max_px": 17.250559489294186
+          },
+          "needle_attachment_projection_px": [
+            479.444717546655,
+            201.74119038984898
+          ],
+          "needle_attachment_source_endpoint_error_px": 17.250559489294186
+        },
+        "right": {
+          "count": 32,
+          "rms_px": 2.0959870864345893,
+          "median_px": 0.5749277073988346,
+          "p95_px": 4.4570155548071355,
+          "max_px": 4.472767502828213,
+          "observed_parameter_interval": [
+            0.036136250112585006,
+            0.9895287958115183
+          ],
+          "matched_parameters": [
+            0.036136250112585006,
+            0.052022504404667116,
+            0.07089896640036342,
+            0.09453593381279907,
+            0.13694309771227184,
+            0.20257716998084338,
+            0.2574564713241433,
+            0.30372804265312203,
+            0.3452738445417434,
+            0.3838542732073569,
+            0.4204398078434954,
+            0.45540278836483594,
+            0.48882054066665537,
+            0.5208860883913285,
+            0.551895623890706,
+            0.5818668366733412,
+            0.6108100006674804,
+            0.6387434554973822,
+            0.6657978786295857,
+            0.6920267364383405,
+            0.7173482890739247,
+            0.741732696944195,
+            0.7652596490368769,
+            0.788068448027464,
+            0.8099700942327537,
+            0.8314419581523419,
+            0.85343304957156,
+            0.8767058175582575,
+            0.9024252907333519,
+            0.9329459271533036,
+            0.9664765824371847,
+            0.9895287958115183
+          ],
+          "minimum_depth_m": 0.05606501604799856,
+          "source_parameter_direction": 1,
+          "order_reversals": 0,
+          "needle_attachment_projection_px": [
+            465.6146162838639,
+            206.64946192997607
+          ]
+        },
+        "psm1": {
+          "count": 14,
+          "rms_px": 2.3892432968454007,
+          "median_px": 2.0333504018803787,
+          "p95_px": 3.875116808527467,
+          "max_px": 4.531066481307612,
+          "observed_parameter_interval": [
+            0.08094049475567985,
+            0.9319371543745205
+          ],
+          "matched_parameters": [
+            0.08094049475567985,
+            0.12462780938314753,
+            0.25724239794123027,
+            0.3459033310630785,
+            0.42239543792266837,
+            0.4942249171661739,
+            0.5630297946462021,
+            0.6274257011808466,
+            0.6887947977656004,
+            0.7468921348999331,
+            0.799147884112837,
+            0.8453891634841827,
+            0.8892249158608999,
+            0.9319371543745205
+          ],
+          "minimum_depth_m": 0.05811327071501828,
+          "source_parameter_direction": 1,
+          "order_reversals": 0,
+          "needle_attachment_projection_px": [
+            364.7812820911524,
+            235.922823905574
+          ]
+        }
+      },
+      "actual_mesh_render": {
+        "sample_id": "tissue3_222119_approach",
+        "source_frame": 5,
+        "source_timestamp_ns": 1745893279612410392,
+        "preparation_module_sha256": "07b0a530f9eb05120a3631418983819ca02f6ca88f73b4e25401c91c70d9dd77",
+        "source_assets_sha256": {
+          "scene": "2cb4689eb2830a8cec21d38709206c9cfc77653723356fa20bbba6a32899b442",
+          "rig": "5efa5348a918a66cdbc8f0c4abfbd4c432bb56762b425537e99f4ba7b96a6384",
+          "phantom": "a496a3435d339da0e7904c65ec553945ca32a13e18397614d0d936016ca80e19",
+          "thread_usd": "d0234f5e77d6a37638f7702c5949e99467c563ec1d5ced6ae9174329bee96f47",
+          "motion": "f09a6a6b7f00e12441a7385b4976b2beba39f9348627be7fee8c69be2e75750b",
+          "cameras": "9696a79c554178c474860b1713d50f2882d1745923d80a1afe20886ef6b6209d"
+        },
+        "method": "native inverse-lens rays, actual imported USD triangles, complete-scene occlusion; CPU SensorCamera",
+        "image_alignment_accepted": false,
+        "components": {
+          "left": {
+            "visible_tool_loop": {
+              "visible_pixels": 691,
+              "isolated_pixels": 691,
+              "scene_occluded_pixels": 0,
+              "rendered_surface_to_guide_px": {
+                "median": 1.0,
+                "p95": 9.081908226013184,
+                "maximum": 18.357559204101562
+              },
+              "guide_to_visible_surface_px": {
+                "median": 0.0,
+                "p95": 1.0,
+                "fraction_within_5px": 1.0
+              }
+            }
+          },
+          "right": {
+            "visible_tool_loop": {
+              "visible_pixels": 681,
+              "isolated_pixels": 682,
+              "scene_occluded_pixels": 1,
+              "rendered_surface_to_guide_px": {
+                "median": 1.4142135381698608,
+                "p95": 7.071067810058594,
+                "maximum": 15.231546401977539
+              },
+              "guide_to_visible_surface_px": {
+                "median": 0.0,
+                "p95": 2.8284270763397217,
+                "fraction_within_5px": 1.0
+              }
+            }
+          },
+          "psm1": {
+            "visible_tool_loop": {
+              "visible_pixels": 187,
+              "isolated_pixels": 187,
+              "scene_occluded_pixels": 0,
+              "rendered_surface_to_guide_px": {
+                "median": 2.2360680103302,
+                "p95": 11.849642753601074,
+                "maximum": 15.81138801574707
+              },
+              "guide_to_visible_surface_px": {
+                "median": 1.0,
+                "p95": 3.0,
+                "fraction_within_5px": 1.0
+              }
+            }
+          },
+          "psm2": {
+            "visible_tool_loop": {
+              "visible_pixels": 199,
+              "isolated_pixels": 199,
+              "scene_occluded_pixels": 0,
+              "source_observation": "unavailable; no image-fit metric"
+            }
+          }
+        },
+        "thread_body_count": 0,
+        "thread_joint_count": 0,
+        "thread_collision_shape_count": 0,
+        "limitations": [
+          "Image guides are fitting evidence, not held-out validation.",
+          "Visibility uses estimated scene geometry; source video has no measured depth.",
+          "Visible components do not establish hidden connectivity or physical twist."
+        ]
+      },
+      "review_note": "Thread endpoint attached to the needle at frame 5. Partial loop; PSM2 clipped and unmeasured. Full scene alignment is not validated.",
+      "bundle_review": "../../src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_222119_approach/thread/render_review/thread_four_views.jpg",
+      "thread_usd_sha256": "d0234f5e77d6a37638f7702c5949e99467c563ec1d5ced6ae9174329bee96f47"
+    }
+  ],
+  "runtime": {
+    "device": "cpu",
+    "checks": [
+      {
+        "sample_id": "tissue3_215248_pickup",
+        "status": "passed",
+        "source_frame": 4,
+        "attached": true,
+        "runtime_endpoint_gap_m": [
+          1.4926676935822366e-09
+        ],
+        "visual_shapes": 1,
+        "bodies": 0,
+        "joints": 0,
+        "collision_shapes": 0,
+        "pause_seek_reenable": "passed",
+        "image_alignment_acceptance": false
+      },
+      {
+        "sample_id": "tissue3_215300",
+        "status": "passed",
+        "source_frame": 4,
+        "attached": true,
+        "runtime_endpoint_gap_m": [
+          6.585604933553025e-10
+        ],
+        "visual_shapes": 2,
+        "bodies": 0,
+        "joints": 0,
+        "collision_shapes": 0,
+        "pause_seek_reenable": "passed",
+        "image_alignment_acceptance": false
+      },
+      {
+        "sample_id": "tissue3_222119_approach",
+        "status": "passed",
+        "source_frame": 5,
+        "attached": true,
+        "runtime_endpoint_gap_m": [
+          1.594893341897623e-09
+        ],
+        "visual_shapes": 1,
+        "bodies": 0,
+        "joints": 0,
+        "collision_shapes": 0,
+        "pause_seek_reenable": "passed",
+        "image_alignment_acceptance": false
+      },
+      {
+        "sample_id": "tissue3_224616_approach",
+        "status": "passed",
+        "source_frame": 4,
+        "attached": false,
+        "runtime_endpoint_gap_m": [],
+        "visual_shapes": 1,
+        "bodies": 0,
+        "joints": 0,
+        "collision_shapes": 0,
+        "pause_seek_reenable": "passed",
+        "image_alignment_acceptance": false
+      },
+      {
+        "sample_id": "tissue3_215300_mesh_preview",
+        "status": "passed",
+        "source_frame": 4,
+        "attached": true,
+        "runtime_endpoint_gap_m": [
+          6.585604933553025e-10
+        ],
+        "visual_shapes": 2,
+        "bodies": 0,
+        "joints": 0,
+        "collision_shapes": 0,
+        "pause_seek_reenable": "passed",
+        "image_alignment_acceptance": false
+      }
+    ]
+  },
+  "preservation": [
+    {
+      "sample_id": "tissue3_215300",
+      "existing_core_files_unchanged": 2483,
+      "preserved": true,
+      "installation": {
+        "status": "thread_reference_installed",
+        "sample_id": "tissue3_215300",
+        "source_dependencies_sha256": {
+          "recording_manifest": "298cd2dd447dfefa413e4875153d738f71e1e26a22444538763fe98093764e50",
+          "calibration_json": "85135d5e80c075993cc9835e1f57ec97183368b584deea9fb1c188164e4e9293",
+          "motion_npz": "efa2609e32d0a66219097c0f4a89d5b500f74f9b64f28fc1a9e8d796b0ac5ff7",
+          "camera_poses_npz": "f20da4d85cac773a2618dda4e3a2fe7c87ac71af4ce1a54ef9027d20e48b3265",
+          "rig_usd": "3ae0095c517ea66c337e02c8aa51c0f13bdb3513221d6d4b746be7c05f260a53",
+          "phantom_usd": "ea046d474aab6f0be7917e22bb5cf78de9b1e4b03b48073a5100945ebee6a0f7",
+          "needle_usd": "fd109c648c830000f2501df243bada6c0b3bca70ec57c95d093afc17985703fa",
+          "needle_inputs_npz": "06e32186ae3378ff8194ae310d3fe436cf744331961d27abb77c9bbeae0ca1f2"
+        },
+        "recording_manifest_sha256": "8a42fb9cad369c208ee4f55b14e0b76f3ecfdbee8e4feb14c21b36778caba9c3",
+        "thread_payload": {
+          "file_count": 38,
+          "bytes": 5163127,
+          "sha256": "05327cdfd227dab556ec15a9ef243b621b2ba86a7e13082172cc87780c95a8b5",
+          "hash_definition": "SHA256 of sorted relative-path + NUL + file-SHA256 + newline records"
+        },
+        "core_payload_hashes_preserved": true
+      },
+      "documentation_updates": {
+        "README.md": {
+          "before_sha256": "1de14692de281568764033779e91a650d055c4bedad7762713bd567b96528c88",
+          "after_sha256": "b39b3b160efa6d848cfed813cfbd79a990399b18a603cb4eab69f0b5ff8a4483",
+          "reason": "Describe the newly constrained attachment rather than old 4.35 mm gap."
+        }
+      },
+      "alias_metadata_updates": {
+        "recording_mesh_preview.json": {
+          "before_sha256": "0b1dd15155c24ae7eeb4c88e4a07a095d90c14a5ca0d7b6c32348e834f723974",
+          "after_sha256": "68a4194b138875eaf2779d6610ab03c3e6f203fa9bc4604c16bba1c83dd4b039",
+          "reason": "Synchronize shared thread description with canonical replay; no pose or asset-path changes."
+        }
+      }
+    },
+    {
+      "sample_id": "tissue3_215248_pickup",
+      "existing_core_files_unchanged": 1206,
+      "preserved": true,
+      "installation": {
+        "status": "thread_reference_installed",
+        "sample_id": "tissue3_215248_pickup",
+        "source_dependencies_sha256": {
+          "recording_manifest": "6a063dea75a6bd4eb9530137cd81a4f8032126ac4df6c75c571c29025ee87321",
+          "calibration_json": "9af09de53d8f73056408c26bfaa8796a14aaf88720cf863bc2cca3d11f7841f3",
+          "motion_npz": "b1afe117db515ca4ddc10d03a4c8adb2a847842e65af6c45cc99a3f8c44c1eef",
+          "camera_poses_npz": "8453debe80cd521b507008a5684a4984914e27dd4980a3b314646e0cbe911574",
+          "rig_usd": "1a86bdb028c2f02d39e7e8a87c62f5cf9bde36a5f18a3850caff28526a9f7c64",
+          "phantom_usd": "0fe79ce3014e9e476c0c8ab3cff897a0b65c57f24a8da3f353341635618debbc",
+          "needle_usd": "41e49234084eb04dbeb0bd994277933be9dd702f5c048cbf27d7c2b3c6da2eb0",
+          "needle_inputs_npz": "f4fe515818a2e9898bd7900799bab2a9a66f070859f8b8face01641e1b83fb57"
+        },
+        "recording_manifest_sha256": "1f8330ca09de8c8ef9d56c372e14cffd2d152a4875c73b864ed088fae669031c",
+        "thread_payload": {
+          "file_count": 34,
+          "bytes": 4929754,
+          "sha256": "f40d74d1f8e10802927a50a064b5d73e641176926ffabddcf24182eddcee6c3b",
+          "hash_definition": "SHA256 of sorted relative-path + NUL + file-SHA256 + newline records"
+        },
+        "core_payload_hashes_preserved": true
+      }
+    },
+    {
+      "sample_id": "tissue3_222119_approach",
+      "existing_core_files_unchanged": 2384,
+      "preserved": true,
+      "installation": {
+        "status": "thread_reference_installed",
+        "sample_id": "tissue3_222119_approach",
+        "source_dependencies_sha256": {
+          "recording_manifest": "3a2e779b1072a3c556c93ad8a04f04dbbb4bcb6ad84605ade17bbe2e3bf0e31d",
+          "calibration_json": "b1b5d9212e36bb9707d0dec21e1b0b6297fb5b68d16ef6298e69349321e70340",
+          "motion_npz": "f09a6a6b7f00e12441a7385b4976b2beba39f9348627be7fee8c69be2e75750b",
+          "camera_poses_npz": "9696a79c554178c474860b1713d50f2882d1745923d80a1afe20886ef6b6209d",
+          "rig_usd": "5efa5348a918a66cdbc8f0c4abfbd4c432bb56762b425537e99f4ba7b96a6384",
+          "phantom_usd": "a496a3435d339da0e7904c65ec553945ca32a13e18397614d0d936016ca80e19",
+          "needle_usd": "41b218a80a88770d5aec89c401bab0a18a9593d9d093a207e149284335d8b80f",
+          "needle_inputs_npz": "499dce404a3985f3ccfa506167e0759b477cb04b1c5a13c2a6204e387a984d71"
+        },
+        "recording_manifest_sha256": "eef298c0462d2167c3875d5a6a1f4b0c124cfbcbd01b73e485a354c61cffa7ad",
+        "thread_payload": {
+          "file_count": 34,
+          "bytes": 4937984,
+          "sha256": "0f7841512fb087b9ed7ebbfa2cf7953d4c6de4657d0bed0d17c4cd658650dff0",
+          "hash_definition": "SHA256 of sorted relative-path + NUL + file-SHA256 + newline records"
+        },
+        "core_payload_hashes_preserved": true
+      }
+    }
+  ],
+  "checks": {
+    "preparation_unittests": {
+      "count": 26,
+      "passed": true
+    },
+    "full_fem_cuda_suite": {
+      "count": 202,
+      "initial_passed": 201,
+      "initial_failure": "Choice5 thread description was stale; canonical and alias metadata synchronized.",
+      "log_sha256": "b53fe8e1ed3a8c85958f0772c8a077f86978512abf3d9b02ebfa09b870b9ccd9"
+    },
+    "affected_recording_tests_after_fix": {
+      "count": 13,
+      "passed": true,
+      "log_sha256": "6156f026768c5a29c70e8dea4eb506ec9b83125d4d3419f1b6d1461cbea79e93"
+    },
+    "ruff": {
+      "check": "passed",
+      "format": "128 files formatted"
+    },
+    "all_five_actual_replays": "passed; attached needle anchors verified in choices1,2,3,5"
+  }
+}

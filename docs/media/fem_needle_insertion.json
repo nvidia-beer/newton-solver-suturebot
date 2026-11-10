@@ -1,0 +1,175 @@
+{
+  "example": "fem_needle_insertion",
+  "module": "newton_solver_fem.examples.example_fem_needle_insertion",
+  "caption": "Simulation-time playback: select entry and exit material points across a region 1 wound gap, preview the curved needle, then start, pause and resume coupled MuJoCo/FEM insertion through both tissue sections. Illustrative puncture and sliding-track forces; no fracture or physiological calibration. Playback rate does not measure live FPS.",
+  "arguments": [
+    "--regions",
+    "1",
+    "--transparent-pad",
+    "--test"
+  ],
+  "device": "cuda:0",
+  "frames": 420,
+  "fps": 60,
+  "width": 1280,
+  "height": 720,
+  "show_ui": true,
+  "recording_wall_seconds": 12.819514279995929,
+  "playback_is_performance_benchmark": false,
+  "simulation_time": [
+    {
+      "attribute": "sim_time",
+      "end": 3.816666666666658
+    }
+  ],
+  "dependencies": {
+    "newton_solver_fem": "0.1.0",
+    "newton": "1.7.0",
+    "warp-lang": "1.17.0+cu13"
+  },
+  "scenario": {
+    "outcome": "Success: tip emerged, exit error 0.048 mm",
+    "success": true,
+    "task_status": "success",
+    "control_mode": "automatic",
+    "manual_position_m": [
+      0.0,
+      0.0
+    ],
+    "manual_target_m": [
+      0.0,
+      0.0
+    ],
+    "step_refinements": 0,
+    "accepted_physics_steps": 229,
+    "minimum_step_dt_s": 0.016666666666666666,
+    "current_deformation_m": 3.3524939161414977e-06,
+    "engaged_track_length_m": 0.005581734236329794,
+    "failure_reason": null,
+    "interaction_events": [
+      {
+        "kind": "puncture",
+        "time_s": 1.0333333333333345,
+        "position_m": [
+          0.030017369523183464,
+          -0.040116641843011086,
+          0.0011669670797305417
+        ],
+        "reused": false
+      },
+      {
+        "kind": "entry",
+        "time_s": 1.0500000000000012,
+        "position_m": [
+          0.030001256614923477,
+          -0.040074802935123444,
+          0.0012190872803330421
+        ],
+        "reused": false
+      },
+      {
+        "kind": "exit",
+        "time_s": 2.033333333333331,
+        "position_m": [
+          0.030029861256480217,
+          -0.04298081621527672,
+          0.0007795598357915878
+        ],
+        "reused": false
+      },
+      {
+        "kind": "puncture",
+        "time_s": 2.7833333333333283,
+        "position_m": [
+          0.030058141844110643,
+          -0.04529600124005228,
+          0.00101755975491868
+        ],
+        "reused": false
+      },
+      {
+        "kind": "entry",
+        "time_s": 2.799999999999995,
+        "position_m": [
+          0.030029552057385445,
+          -0.04525537043809891,
+          0.0010712351649999619
+        ],
+        "reused": false
+      },
+      {
+        "kind": "exit",
+        "time_s": 3.816666666666658,
+        "position_m": [
+          0.02999916858971119,
+          -0.048040859401226044,
+          0.0022832080721855164
+        ],
+        "reused": false
+      }
+    ],
+    "entry_count": 2,
+    "exit_count": 2,
+    "physical_time_s": 3.816666666666658,
+    "exit_error_m": 4.786243692393375e-05,
+    "exit_tolerance_m": 0.001,
+    "puncture_count": 2,
+    "track_samples": 21,
+    "track_section_count": 2,
+    "track_length_m": 0.005581734345762529,
+    "maximum_interface_force_N": 0.003321567353839877,
+    "maximum_deformation_m": 0.0001679779030773648,
+    "maximum_deformation_time_s": 1.0333333333333345,
+    "maximum_force_balance_error_N": 4.674767378079999e-10,
+    "maximum_torque_balance_error_Nm": 1.4777539772032398e-11,
+    "maximum_coupling_iterations": 12,
+    "maximum_coupling_residual_N": 5.0538653720301994e-06,
+    "last_coupling_attempt_iterations": 3,
+    "last_coupling_attempt_residual_N": 4.167241058894433e-07,
+    "fem_graph_captures": 8,
+    "fem_graph_launches": 509,
+    "fem_graph_status": "replaying",
+    "shaft_preconditioner_status": "enabled",
+    "coupling_absolute_tolerance_N": 2e-06,
+    "coupling_relative_tolerance": 0.001,
+    "coupling_iteration_cap": 160,
+    "fem_iteration_cap": 160,
+    "fem_relative_tolerance": 0.003,
+    "young_modulus_Pa": 25000.0,
+    "poisson_ratio": 0.35,
+    "density_kg_per_m3": 1000.0,
+    "cutting_resistance_omitted": true,
+    "last_interface_load_on_fixed_nodes_N": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "dt_s": 0.016666666666666666,
+    "track_spacing_m": 0.00025,
+    "shaft_spacing_m": 0.00014,
+    "shaft_stiffness_N_per_m2": 60000.0,
+    "tunnel_model": "alm",
+    "tunnel_clearance_m": 2e-05,
+    "tunnel_compliance_m2_per_N": 1.6666666666666667e-05,
+    "tunnel_penalty_N_per_m2": 60000.0,
+    "tunnel_tolerance_m": 2e-06,
+    "tunnel_alm_dual_updates": 63,
+    "tunnel_alm_last_normal_error_m": 7.689726134497976e-13,
+    "tunnel_alm_last_dual_residual_N": 0.0,
+    "drive_stiffness_N_per_m": 400.0,
+    "angular_drive_stiffness_Nm_per_rad": 0.05,
+    "implicit_drive_spring": true,
+    "status": "outside",
+    "calibrated": false,
+    "entry_xy_m": [
+      0.03,
+      -0.04
+    ],
+    "exit_xy_m": [
+      0.03,
+      -0.048
+    ],
+    "interaction": "public material-selection, preview, start and pause controls",
+    "needle_motion": "finite PD wrench in MuJoCo, with equal-and-opposite FEM interaction"
+  }
+}

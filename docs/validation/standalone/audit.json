@@ -1,0 +1,65 @@
+{
+  "time_utc": "2026-11-10T18:27:45.735996+00:00",
+  "scope": "Read-only standalone extraction audit; no simulation or GPU execution.",
+  "source_repository": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem",
+  "original_repository": {
+    "manifest_files_checked": 8301,
+    "bytes_hashed": 197804359,
+    "missing_files": [],
+    "changed_files": [],
+    "manifest_sha256": "01eafc6ebe4de6604b6f0e3a633551fd5af54329d17bbb4254dbdf3feff496e0",
+    "local_manifest": "results/extraction/source-manifest.json",
+    "meaning": "All files recorded before extraction remain byte-identical."
+  },
+  "new_runtime": {
+    "manifest_files_checked": 39,
+    "hash_mismatches": [],
+    "implementation_modules": 37,
+    "normalized_AST_mismatches": [],
+    "normalization": "Only Python namespace and optional-dependency help/docstrings; root/cutting exports deliberately trimmed."
+  },
+  "package_portability": {
+    "forbidden_runtime_namespace_matches": 0,
+    "package_symlinks": 0,
+    "standalone_tests": "Four CPU tests passed in 2.576s; installed imports, metadata and default resource loaders are covered.",
+    "new_namespace_GPU_tests": "473 tests passed in 112.555s; see validation.json."
+  },
+  "wheel": {
+    "wheel": "newton_solver_suturebot-0.1.0-py3-none-any.whl",
+    "sha256": "bd1bf20fb300df836aa2c256d3827c93964aa17146addaf939824c0359177420",
+    "files": 8131,
+    "package_files_checked": 8126,
+    "asset_files": 8068,
+    "returncode": 0,
+    "independent_import": true,
+    "all_package_bytes_match": true,
+    "limitations": "Independent CPU imports/resources and byte equality verified; GPU workflows were checked in the source install and isolated Docker image."
+  },
+  "finding": {
+    "runtime_or_asset_blockers": [],
+    "documentation_correction": "THIRD_PARTY_NOTICES used old package paths and advertised the absent bear controller. Corrected package paths/scope; retained third-party attribution and pointed to the existing per-recording dVRK MIT notice."
+  },
+  "USD_dependency_closure": {
+    "method": "pxr.UsdUtils.ComputeAllDependencies on authored needle, phantom stage, and all four distinct bundled recording scene_tools.usda files",
+    "scenes_checked": 6,
+    "layers_per_scene": [
+      1,
+      13,
+      6,
+      6,
+      6,
+      6
+    ],
+    "other_assets_per_scene": [
+      0,
+      0,
+      0,
+      1,
+      1,
+      1
+    ],
+    "unresolved_assets": [],
+    "dependencies_outside_package_assets": [],
+    "GPU_execution": false
+  }
+}

@@ -1,0 +1,5 @@
+# Preserve source bytes and the published asset integrity hashes on checkout.
+src/newton_solver_suturebot/examples/assets/** -text
+# Original dataset CSVs use CRLF; USD's exporter emits a final empty line.
+src/newton_solver_suturebot/examples/assets/suturebot/**/clicked_point.csv whitespace=cr-at-eol
+src/newton_solver_suturebot/examples/assets/**/*.usda whitespace=-blank-at-eof

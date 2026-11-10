@@ -1,0 +1,258 @@
+{
+  "date": "2026-11-10",
+  "scope": "Original documentation retained before user-authorized removal of SutureBot functionality from newton-solver-fem. Archive text is historical, not current standalone setup or runtime dependency.",
+  "records": [
+    {
+      "original": "docs/method.md",
+      "preserved": "docs/validation/original-fem-documents/docs__method.md.txt",
+      "sha256": "0b5735987a3db730e2e290f08923f2e09acce68e46c454481a81525aeba469da",
+      "action": "historical original document preserved before cleanup"
+    },
+    {
+      "original": "docs/papers.md",
+      "preserved": "docs/validation/original-fem-documents/docs__papers.md.txt",
+      "sha256": "a53c623a61bd49df4cce6be18e585bc5d186b4ce720faaa3910a32b7f86cd058",
+      "action": "historical original document preserved before cleanup"
+    },
+    {
+      "original": "docs/usage.md",
+      "preserved": "docs/validation/original-fem-documents/docs__usage.md.txt",
+      "sha256": "30d9d8ee2dc5456a523b32dc053dbdc1fb31e03d1371d5e86e63185f1b75997d",
+      "action": "historical original document preserved before cleanup"
+    },
+    {
+      "original": "docs/validation.md",
+      "preserved": "docs/validation/original-fem-documents/docs__validation.md.txt",
+      "sha256": "9ec031612ec2e1897b84cebe8bb3a12224f733cfadd90eb9d651381110b4fbcc",
+      "action": "historical original document preserved before cleanup"
+    },
+    {
+      "original": "docs/needle-insertion.md",
+      "preserved": "docs/validation/original-fem-documents/docs__needle-insertion.md.txt",
+      "sha256": "e812cd58af5b79815beb118e35da9707ebc04776c8f2eae1a00add50b0abbd9c",
+      "action": "historical original document preserved before cleanup"
+    },
+    {
+      "original": "docs/phantom-regions.md",
+      "preserved": "docs/validation/original-fem-documents/docs__phantom-regions.md.txt",
+      "sha256": "82ffaa8c74d9cc752322f15a74d76db03025ba87d74e7022cec7b484d5a20fcd",
+      "action": "historical original document preserved before cleanup"
+    },
+    {
+      "original": "docs/suturebot-recording.md",
+      "preserved": "docs/validation/original-fem-documents/docs__suturebot-recording.md.txt",
+      "sha256": "94b5da3cc984007a305615662816af16c954159ddbeb49b32a21b4f477b1a757",
+      "action": "historical original document preserved before cleanup"
+    },
+    {
+      "original": "docs/videos.json",
+      "preserved": "docs/validation/original-fem-documents/docs__videos.json.txt",
+      "sha256": "c9d0ee412c25a1cbbe95e2e18c811d0fbbfb4981fc95ada53b9e7e7866a818a4",
+      "action": "historical original document preserved before cleanup"
+    },
+    {
+      "original": "THIRD_PARTY_NOTICES",
+      "preserved": "docs/validation/original-fem-documents/THIRD_PARTY_NOTICES.txt",
+      "sha256": "8c6e5c097f5c8f2e48fbb23ab41987876392e989d878d6eac2e4b18d186a0b8e",
+      "action": "historical original document preserved before cleanup"
+    },
+    {
+      "original": "docs/media/fem_needle_insertion.gif",
+      "preserved": "docs/media/fem_needle_insertion.gif",
+      "sha256": "55fb435012993bdf7a3dee2aee07a9b14de1fdc403adc87b1b9555d867669ede",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/media/fem_needle_insertion.jpg",
+      "preserved": "docs/media/fem_needle_insertion.jpg",
+      "sha256": "2501e5e338382d602e8fd0cc375e41a32a12eb2847a89d1ba9a19ecef7053840",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/media/fem_needle_insertion.json",
+      "preserved": "docs/media/fem_needle_insertion.json",
+      "sha256": "d5e7399c40607c6dff9ae8be56ab0ac7e2fa8041bbfb7ad92f802fa1c618e861",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/media/fem_needle_insertion.mp4",
+      "preserved": "docs/media/fem_needle_insertion.mp4",
+      "sha256": "c95aef837d7dcc2aa7ba0ce1ea8915131ee32b1746a12329ca20911153916853",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/media/fem_phantom_regions.gif",
+      "preserved": "docs/media/fem_phantom_regions.gif",
+      "sha256": "8528c0ff8f5feb436a796ab4ac6363d2d9487e94b7027c423971e792cdcd0e48",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/media/fem_phantom_regions.jpg",
+      "preserved": "docs/media/fem_phantom_regions.jpg",
+      "sha256": "db593e2dd46d8e9b842a94f625fafa3efe8a836ea6c53c8052e7c3269797a42e",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/media/fem_phantom_regions.json",
+      "preserved": "docs/media/fem_phantom_regions.json",
+      "sha256": "c8fa99c4fc5729010652880f0375a235f5bfe9772d0f62382aa33d4f5d92d709",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/media/fem_phantom_regions.mp4",
+      "preserved": "docs/media/fem_phantom_regions.mp4",
+      "sha256": "4cf8b58adf166d40ddeafb98f3eba1d6f6eb4311293272bb606a0882578a047b",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/media/fem_suturebot.gif",
+      "preserved": "docs/media/fem_suturebot.gif",
+      "sha256": "759ecb5c8340e99dc2440011fc7f6dade976ff0d261a2382701217cb3d5d3d1c",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/media/fem_suturebot.jpg",
+      "preserved": "docs/media/fem_suturebot.jpg",
+      "sha256": "b7e7b87f3ea78d539438fc418a62d54b6540839fd53cc8c08e75dde6d702bf9a",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/media/fem_suturebot.json",
+      "preserved": "docs/media/fem_suturebot.json",
+      "sha256": "5e1c2a041b6f74e1f50457bad7586ad0bca8abec3cef69ee2daf57901afa5f65",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/media/fem_suturebot.mp4",
+      "preserved": "docs/media/fem_suturebot.mp4",
+      "sha256": "61c02546ec340a537395600d18eec94cda7d5086feed9c0a9fce7d1518f289a6",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/media/fem_suturebot_alignment.jpg",
+      "preserved": "docs/media/fem_suturebot_alignment.jpg",
+      "sha256": "a26284d331e942bd55c8e4c5d5019879093f853dfb17312db4e79b9640cf5d96",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/media/fem_suturebot_boundary.png",
+      "preserved": "docs/media/fem_suturebot_boundary.png",
+      "sha256": "891a459c1aa470a292c3b4f0a1ed259200a5a4c45e3bbc08cbe8b7d4df14e64d",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/media/fem_suturebot_point_labels.png",
+      "preserved": "docs/media/fem_suturebot_point_labels.png",
+      "sha256": "8bec7c787a6cb1c92be27d8eca42a3713d0a0c226b445bf6245dc9037d8537ac",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/media/fem_suturebot_thread.jpg",
+      "preserved": "docs/media/fem_suturebot_thread.jpg",
+      "sha256": "0583a5d849c6a0f17b1a849137976736eef194570262feb322e5b23b750c9ad1",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/needle-handling-response.json",
+      "preserved": "docs/validation/needle-handling-response.json",
+      "sha256": "0ca0f644e0c49ebf2ac375b424b8ce24ae30f486419d07825d1a1b768210dd6f",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/needle-insertion-final-20261110.json",
+      "preserved": "docs/validation/needle-insertion-final-20261110.json",
+      "sha256": "a119676feb973c15d37179241d64e2b6a77dbd50126867b89cfc25344ae67381",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/needle-insertion-optimized32.json",
+      "preserved": "docs/validation/needle-insertion-optimized32.json",
+      "sha256": "50e9a7345dc3cf012933c56af90912ebc6cbcbf1291e32565e10803367e8eeda",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/needle-insertion-performance.json",
+      "preserved": "docs/validation/needle-insertion-performance.json",
+      "sha256": "d8ae9acee5b77231a0371d973101b4e1f44a134258639ce2f160dd20bc1a82a9",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/needle-insertion-substeps.json",
+      "preserved": "docs/validation/needle-insertion-substeps.json",
+      "sha256": "9880e6c0a38ad9e2c35ef99ae740e8997deea02f43e68cbbd422941a71d42148",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/needle-insertion.json",
+      "preserved": "docs/validation/needle-insertion.json",
+      "sha256": "50eb2abc33b47e7285e5666a012779f28387c3f513d7429f7149169df78eb5e3",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/needle-optimization-tests.json",
+      "preserved": "docs/validation/needle-optimization-tests.json",
+      "sha256": "7f124c69ece91a744fed437c9daf7848200c776abd4a9b6218c7f08167ef4e59",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/needle-region-selection.json",
+      "preserved": "docs/validation/needle-region-selection.json",
+      "sha256": "82e19e6fb915abeb0e4ff53012daeefe25eb5d0d628f91ac90de088874da14fa",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/needle-source-video-review.json",
+      "preserved": "docs/validation/needle-source-video-review.json",
+      "sha256": "efb5a98f1d5c1ab720b270469c9dcf6e20f8161f904a8db2e42841ed4f6f4c70",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/phantom-regions.json",
+      "preserved": "docs/validation/phantom-regions.json",
+      "sha256": "8d8ee4e493c424bd61c3c89b3414631afe3e77d8642766f640b3f22e68e6678e",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/suturebot-approaches.json",
+      "preserved": "docs/validation/suturebot-approaches.json",
+      "sha256": "7e700e321b866a5d5659317eab8fe20034f095701a364db486bd78143aec1fce",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/suturebot-prepush.json",
+      "preserved": "docs/validation/suturebot-prepush.json",
+      "sha256": "d62619b20c97700ae3ba31bf3dc3c18533613c853876808f4af789ecc08e8f62",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/suturebot-press.json",
+      "preserved": "docs/validation/suturebot-press.json",
+      "sha256": "b4c1261b14fc7bc5b6f238fd81bba4045fd76e8f4f27469d0e6bbad3c96eae2e",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/suturebot-recording.json",
+      "preserved": "docs/validation/suturebot-recording.json",
+      "sha256": "74796fd09480208b21fb0afef452f582ab206478c5570e129c813f1047968e3a",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/suturebot-thread-additions.json",
+      "preserved": "docs/validation/suturebot-thread-additions.json",
+      "sha256": "1d83d772d4390d00cc60bfd96affb5635c62fd06f1b45fbe82192251340cc539",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/suturebot-thread-attachment.json",
+      "preserved": "docs/validation/suturebot-thread-attachment.json",
+      "sha256": "8f2b4f6cd776bf908b7cda525b49098c2bebc2fedb8d20ab809b8ba534d1ec9e",
+      "action": "removed from FEM after verifying standalone copy"
+    },
+    {
+      "original": "docs/validation/suturebot-thread.json",
+      "preserved": "docs/validation/suturebot-thread.json",
+      "sha256": "0d84690b20bf2eec46c62bf9638cf8975e74a9bb6f1d0cf38164d1f40444d646",
+      "action": "removed from FEM after verifying standalone copy"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "scope": "Two subsequent hidden real-UI candidate runs compared with earlier baseline repeats; no claim of interleaved ABBA isolation",
+  "runs": [
+    "ui-copy-once-a",
+    "ui-copy-once-b"
+  ],
+  "baseline_mean_active_fps": 51.600543908834986,
+  "candidate_mean_active_fps": 53.06380807119753,
+  "change_percent": 2.8357533690880343,
+  "phases": {
+    "lift": {
+      "full_mean_ms": 37.412997267771665,
+      "full_p95_ms": 62.13157299498562
+    },
+    "lower": {
+      "full_mean_ms": 47.45597141760906,
+      "full_p95_ms": 74.98575600038748
+    }
+  }
+}

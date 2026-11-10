@@ -1,0 +1,302 @@
+{
+  "schema_version": 1,
+  "overall_pass": true,
+  "recorded_utc": "2026-11-09T14:31:05.228674+00:00",
+  "test_log_modified_utc": "2026-11-09T14:29:10.131229+00:00",
+  "working_directory": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem",
+  "example_default_substeps_at_test": 32,
+  "source_sha256": {
+    "src/newton_solver_fem/_src/insertion.py": "67e8bcdc847bbcb9d16f923f910b0ccb67a70c2dc3e6b9211358b6f2393004d7",
+    "src/newton_solver_fem/_src/coupling.py": "0414759276798a2ea3dafc59e256ab0bf1eb39cc610db177253c3de8825b278f",
+    "src/newton_solver_fem/_src/solvers/fem/solver.py": "cfec8aedc30c0b1a78b287d1896569bc795e019223685d43413b41f2ddfc1280",
+    "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "c566954c19092d4537d83fe3eaec6ede603516fd34f939d8c93b19b1729673f6",
+    "tests/test_needle_tissue_coupler.py": "34fa65714059722b27f4d535eae14a4ace53e4ec54f42fceba49066fbca4dc71",
+    "pyproject.toml": "938a14af0f2254ad73dfd9929f2819f1362561d79f550c2fef823ec739195609",
+    "uv.lock": "93165d29b06fc45d1c1b45532ded3f763f8c45ecfdd59551e2d458a54709c537"
+  },
+  "checks": {
+    "full_cuda_unittest": {
+      "command": "OPENBLAS_NUM_THREADS=1 NEWTON_TEST_DEVICE=cuda:0 WARP_CACHE_PATH=/tmp/needle-warp-cache UV_CACHE_DIR=/tmp/needle-uv-cache uv run --locked --no-sync python -m unittest discover -s tests -v",
+      "exit_code": 0,
+      "tests": 301,
+      "unittest_reported_elapsed_s": 180.292,
+      "status": "PASS",
+      "original_log": "/tmp/needle-final-full-gpu-tests.log",
+      "archived_log": "nsys/results/needle_final_tests_20261109/full-gpu-unittest.log",
+      "log_sha256": "ef9b3d00786e6b8113a8e032fd51136d652938efc96904a013ab1bfe10e5a368"
+    },
+    "ruff_check": {
+      "command": "UV_CACHE_DIR=/tmp/needle-uv-cache uv run --locked --no-sync ruff check .",
+      "exit_code": 0,
+      "status": "PASS",
+      "archived_stdout": "nsys/results/needle_final_tests_20261109/ruff-check.log",
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "ruff_format_check": {
+      "command": "UV_CACHE_DIR=/tmp/needle-uv-cache uv run --locked --no-sync ruff format --check .",
+      "exit_code": 0,
+      "status": "PASS",
+      "already_formatted_files": 149,
+      "archived_stdout": "nsys/results/needle_final_tests_20261109/ruff-format-check.log",
+      "stdout_sha256": "7a340da38ae65b1fde7d1e27b294de067e2bd0ac37ef92c9f1edbe0cafbed9ba"
+    }
+  },
+  "log_preservation": "The unittest log is copied byte-for-byte. Ruff stdout is preserved byte-for-byte from the completed tool results; no Ruff rerun was used to generate these archives.",
+  "coupling_capture_review": {
+    "scope": "Read-only review of fixed-allocation CUDA FEM graph capture and native/history rollback.",
+    "result": "No blocking correctness concern found within the documented supported configuration and allocation contract.",
+    "automatic_guards": "Unsupported/custom/differentiable/contact/host-residual-check configurations remain eager. Keys include dt, numerical settings and Krylov workspace identity; graph inputs are keyed by particle state storage, with retained references.",
+    "rollback": "Every force trial restores native MuJoCo integration state and FEM velocity increment. Nonconvergence restores the native state and increment, preserves external wrench, leaves output kinematics uncommitted, and does not accept interaction history.",
+    "documented_caller_requirements": "Explicitly invalidate after replacing fixed model/solver allocations or cached resources; construct a new coupler for changed model capacities. Supported in-place tangent/topology updates retain storage.",
+    "particle_force_workspace": "FEM particle_f is documented scratch storage, not an external-force input; its transient contents are not part of the rollback guarantee.",
+    "regression_references": [
+      "tests/test_needle_tissue_coupler.py::test_fem_graph_tracks_tangent_state_storage_numerical_settings_and_timestep",
+      "tests/test_needle_tissue_coupler.py::test_captured_contact_preserves_trajectory_interface_iterations_and_native_state",
+      "tests/test_needle_tissue_coupler.py::test_captured_nonconvergence_restores_warmstart_and_native_state"
+    ]
+  },
+  "limitations": [
+    "Correctness jobs shared the GPU; elapsed test time is not an FPS or speedup measurement.",
+    "The suite was configured with cuda:0, while tests intentionally also exercise CPU MuJoCo, geometry, and reporting paths.",
+    "These checks validate the tested implementation and numerical invariants; they do not establish material calibration, general force-history convergence, or a universal stable substep count."
+  ],
+  "post_default_change": {
+    "default_substeps": 10,
+    "reference_validator_substeps": 32,
+    "source_sha256": {
+      "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "fe4c514c4db16eec4dc289c6fb5e2254592c42c18f28944f21124ebc8864db3a",
+      "tools/validate_needle_insertion.py": "0553ca1b5c31fdeed5de7e4214f35f97bec4271e8e5eff60af83d84122a20f05"
+    },
+    "focused_cuda_tests": 17,
+    "result": "PASS",
+    "archived_log": "nsys/results/needle_final_tests_20261109/default10-example-report-tests.log",
+    "log_sha256": "e1c5908d297888102220c3529338ee5e65ac35dcd488977287cd6419bfdda80a",
+    "ruff_check": "PASS",
+    "ruff_format_check": "PASS,149files",
+    "scope": "Two configuration changes followed the full 301-test run; insertion and coupling retain the full-suite source hashes. The 17 focused CUDA tests and five manual option checks passed; final-source physical scenarios are recorded separately.",
+    "test_invocation_description": "Unittest discovery for test_needle_insertion_example.py and test_needle_insertion_validation_report.py, plus assertion that the parser default is 10; OPENBLAS_NUM_THREADS=1, NEWTON_TEST_DEVICE=cuda:0, using uv run --locked --no-sync. This describes the invocation; it is not an executable exact shell transcript.",
+    "validator_option_checks": {
+      "count": 5,
+      "result": "PASS",
+      "scope": "Manual constructor-option routing checks; no physical simulation advanced.",
+      "cases": [
+        {
+          "case": "base",
+          "caller_arguments": [],
+          "expected_substeps": 32,
+          "result": "PASS"
+        },
+        {
+          "case": "gap",
+          "caller_arguments": [],
+          "expected_substeps": 32,
+          "result": "PASS"
+        },
+        {
+          "case": "spacing",
+          "caller_arguments": [],
+          "expected_substeps": 32,
+          "result": "PASS"
+        },
+        {
+          "case": "timestep",
+          "caller_arguments": [],
+          "expected_substeps": 64,
+          "result": "PASS"
+        },
+        {
+          "case": "base",
+          "caller_arguments": [
+            "--substeps",
+            "10"
+          ],
+          "expected_substeps": 10,
+          "result": "PASS"
+        }
+      ],
+      "archived_log": "nsys/results/needle_final_default10_validation_20261109/needle-validator-reference-options.log",
+      "log_sha256": "76f43b6a07c5d13126b80f8fc55159a5103fa617f62b1adcd4cff33da07dfdb5",
+      "source_sha256": {
+        "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "fe4c514c4db16eec4dc289c6fb5e2254592c42c18f28944f21124ebc8864db3a",
+        "tools/validate_needle_insertion.py": "0553ca1b5c31fdeed5de7e4214f35f97bec4271e8e5eff60af83d84122a20f05"
+      }
+    }
+  },
+  "final_docker_delivery_check": {
+    "recorded_utc": "2026-11-09T14:56:15.649882+00:00",
+    "status": "PASS",
+    "purpose": "Final delivery check using the existing Docker image with bind-mounted final source; not an FPS benchmark.",
+    "image": {
+      "id": "sha256:5740589498bad7acb3a698e75c559c21a529428166203078750a156f99e621af",
+      "created": "2026-11-03T12:23:07.059729078+02:00",
+      "architecture": "arm64",
+      "os": "linux"
+    },
+    "device": "NVIDIA GB10, cuda:0",
+    "image_rebuilt": false,
+    "command": "./docker/run.sh --headless -- env OPENBLAS_NUM_THREADS=1 python -m newton_solver_fem.examples fem_needle_insertion --device cuda:0 --viewer null --num-frames 300 --regions 1 --entry-xy 0.030 -0.040 --exit-xy 0.030 -0.048 --start --test --report /workspace/nsys/results/needle_final_docker_20261109/report.json",
+    "exit_code": 0,
+    "checks": {
+      "process_exit_zero": true,
+      "task_succeeded": true,
+      "dt_is_10_substeps_per_60Hz_frame": true,
+      "two_punctures": true,
+      "two_entries": true,
+      "two_exits": true,
+      "two_material_track_sections": true,
+      "ordered_gap_event_sequence": true,
+      "reported_numbers_finite": true,
+      "force_balance_under_1e_8_N": true,
+      "torque_balance_under_1e_9_Nm": true,
+      "fem_graph_replay_active": true,
+      "bindmounted_source_unchanged": true,
+      "image_dependency_metadata_matches": true,
+      "package_loads_from_bindmounted_source": true
+    },
+    "result": {
+      "success": true,
+      "physical_time_s": 3.8049999999998336,
+      "exit_error_m": 1.0580482641448278e-05,
+      "exit_tolerance_m": 0.001,
+      "dt_s": 0.0016666666666666666,
+      "puncture_count": 2,
+      "entry_count": 2,
+      "exit_count": 2,
+      "track_section_count": 2,
+      "maximum_interface_force_N": 0.0032167998612034118,
+      "maximum_deformation_m": 0.0001386853674675226,
+      "maximum_force_balance_error_N": 1.4025057082811816e-09,
+      "maximum_torque_balance_error_Nm": 3.258987429429711e-11,
+      "maximum_coupling_iterations": 21,
+      "fem_graph_captures": 2,
+      "fem_graph_launches": 5458
+    },
+    "state_validation_scope": "--test completed without assertion: finite particle/rigid positions and velocities, positive tetrahedron orientations, and fixed nodes bitwise at rest in the final state. The example also checks finite particle/rigid states at every accepted physical step. No additional per-step fixed-support recorder was used.",
+    "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+    "architecture": "aarch64",
+    "packages": {
+      "newton-solver-fem": "0.1.0",
+      "newton": "1.7.0",
+      "warp-lang": "1.17.0+cu13",
+      "mujoco": "3.15.0",
+      "numpy": "2.5.4",
+      "usd-core": null,
+      "nvtx": "0.2.16"
+    },
+    "package_version_note": "A null value denotes unavailable distribution metadata, not a failed runtime import; the actual USD assets loaded during the successful run.",
+    "source_sha256": {
+      "src/newton_solver_fem/_src/insertion.py": "67e8bcdc847bbcb9d16f923f910b0ccb67a70c2dc3e6b9211358b6f2393004d7",
+      "src/newton_solver_fem/_src/coupling.py": "0414759276798a2ea3dafc59e256ab0bf1eb39cc610db177253c3de8825b278f",
+      "src/newton_solver_fem/_src/solvers/fem/solver.py": "cfec8aedc30c0b1a78b287d1896569bc795e019223685d43413b41f2ddfc1280",
+      "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "fe4c514c4db16eec4dc289c6fb5e2254592c42c18f28944f21124ebc8864db3a",
+      "src/newton_solver_fem/examples/_needle_insertion_drive.py": "f68e6c83a5ffc6c30f3d51fa34c10809501d8603ac3cff8efe9399835225d2f4",
+      "docker/run.sh": "ab870cefa40cf54695d35aab95f239230d369cab042e38f80b1d93168ed6550d",
+      "docker/entrypoint.sh": "0f89c16283d076bd94e814b712c4b895bfc6d860d8cc5af503c64963a92a7e7b",
+      "docker/Dockerfile": "e5c1e016233fe550a372e09959357c753c0594d8894a5f53d4f7ce069ee753cf",
+      "pyproject.toml": "938a14af0f2254ad73dfd9929f2819f1362561d79f550c2fef823ec739195609",
+      "uv.lock": "93165d29b06fc45d1c1b45532ded3f763f8c45ecfdd59551e2d458a54709c537"
+    },
+    "image_dependency_metadata_sha256": {
+      "pyproject.toml": "938a14af0f2254ad73dfd9929f2819f1362561d79f550c2fef823ec739195609",
+      "uv.lock": "93165d29b06fc45d1c1b45532ded3f763f8c45ecfdd59551e2d458a54709c537"
+    },
+    "artifacts_sha256": {
+      "nsys/results/needle_final_docker_20261109/container-versions.json": "5c9dcc125a9a65fd3acbf59e5869b73b3d98c58eaa2171b42ff5ff871a03c3cc",
+      "nsys/results/needle_final_docker_20261109/source-before.json": "8d08a334f74893bd38b638a38195a5acbece07405412f5293a58966e071ee9a1",
+      "nsys/results/needle_final_docker_20261109/run.log": "e47626475d753ea090279cfe2ec1e8decb834c230f89b3ba9e49f45b2fc43d80",
+      "nsys/results/needle_final_docker_20261109/image.json": "4cb0688db0a1fc28827db5b78e320be0b3de05591dce634aa688dcec82cea9d7",
+      "nsys/results/needle_final_docker_20261109/report.json": "adf78a45acda6d531147555932d669cf76872d9b680d84957df5c0676c82ae2d",
+      "nsys/results/needle_final_docker_20261109/container_versions.py": "c2d40d06f8a2be61bd846a7cfd84ce7a0cf561f870e5010cff1ec35f36063c39"
+    },
+    "limitations": [
+      "One final headless gap delivery scenario; the rendering/video check is separate.",
+      "Force and moment bounds are endpoint interaction-law scatter diagnostics; no energy or force-history convergence claim.",
+      "Container startup, cache loading and run duration are not reported as live simulation performance."
+    ]
+  },
+  "current_runtime_cpu_review_20261110": {
+    "recorded_utc": "2026-11-10T00:40:52.407285+00:00",
+    "status": "INCOMPLETE_FULL_SUITE",
+    "full_suite_pass": false,
+    "scope": "Current runtime correctness review. This record does not supersede dated historical checks or claim live simulation performance.",
+    "completed_tests": 349,
+    "passed_tests": 336,
+    "skipped_tests": 13,
+    "failures_reported": 0,
+    "errors_reported": 0,
+    "unvalidated_tests": [
+      "test_suturebot_press.SuturebotPressTests.test_runtime_demo_loads_free_tissue_recovers_and_resets_after_selection"
+    ],
+    "full_cpu_invocation": {
+      "command": "OPENBLAS_NUM_THREADS=1 UV_CACHE_DIR=/tmp/needle-uv-cache WARP_CACHE_PATH=/tmp/needle-warp-cache NEWTON_TEST_DEVICE=cpu uv run --locked --no-sync python -m unittest discover -s tests -v",
+      "exit_code": 124,
+      "status": "TIMEOUT",
+      "command_timeout_seconds": 1200,
+      "started_tests": 321,
+      "completed_tests": 320,
+      "explanation": "The command limit interrupted the existing 540-frame full-pad press scenario while the CPU process was still active. Its outcome is unknown; no test assertion failure had been reported. The unfinished press is deferred to the final frozen-source run with a longer allowance.",
+      "archived_log": "nsys/results/needle_current_cpu_review_20261110/full-cpu-unittest.log"
+    },
+    "remaining_tail": {
+      "command": "OPENBLAS_NUM_THREADS=1 UV_CACHE_DIR=/tmp/needle-uv-cache WARP_CACHE_PATH=/tmp/needle-warp-cache NEWTON_TEST_DEVICE=cpu PYTHONPATH=tests uv run --locked --no-sync python -m unittest -v test_suturebot_recording test_suturebot_thread",
+      "exit_code": 0,
+      "status": "PASS",
+      "tests": 29,
+      "unittest_reported_seconds": 4.26,
+      "archived_log": "nsys/results/needle_current_cpu_review_20261110/remaining-cpu-unittest.log"
+    },
+    "ruff_check": {
+      "command": "UV_CACHE_DIR=/tmp/needle-uv-cache uv run --locked --no-sync ruff check .",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    "ruff_format_check": {
+      "command": "UV_CACHE_DIR=/tmp/needle-uv-cache uv run --locked --no-sync ruff format --check .",
+      "exit_code": 0,
+      "status": "PASS",
+      "already_formatted_files": 159
+    },
+    "source_sha256": {
+      "src/newton_solver_fem/_src/coupling.py": "9d77d18b6317bfecdb63524f3eda72d24080bc4280e18b2d8cad7896a98bbf2b",
+      "src/newton_solver_fem/_src/mujoco_free_body.py": "9929e54a4a94e95f26796b468e9fc744c4dd5692cc7b0174135f077a544db75e",
+      "src/newton_solver_fem/_src/insertion.py": "3bb1e8014543fe066fec8d7bef051ba1b4e0a455bc336fa32eb1fe8c71ab8e2e",
+      "src/newton_solver_fem/_src/solvers/fem/solver.py": "418a39154e78626c0a59a4df5e677e9158215466d68ca011cb7fc310578f620f",
+      "src/newton_solver_fem/examples/_needle_insertion_drive.py": "f53394eb1cd20a39bc2f796802dd27113da5fcee2db34c94298dbb7a686b81d4",
+      "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "6859a5d3597e4d30e0909bee67d7d72295790ac54a378c88fb5fab4bb762a451",
+      "tests/test_mujoco_free_body.py": "21d957482d563f7b98ab22a95cc2c9a5b6ce61118258c5f65f897e40d9eb11e8",
+      "tests/test_needle_trial_commit.py": "0234ed93457c97710abf5d3bce2e00f6bb0a6f2584b04674c47f28e013924915",
+      "tests/test_needle_tissue_coupler.py": "211cc9abce2671ad18ab230f4c861d435b77dd9f515aab6f6bf05229b220c0ed",
+      "tests/test_needle_insertion_example.py": "8837d970e725d9304c92560fa68c2c2ed66a9b20faf72621d250bfa28bfb80cc",
+      "tests/test_needle_manual_controller.py": "66e8d2e8682fb84e1857f29e029d375d64a44958814ed19a0b8e321aaad5daf1",
+      "pyproject.toml": "938a14af0f2254ad73dfd9929f2819f1362561d79f550c2fef823ec739195609",
+      "uv.lock": "93165d29b06fc45d1c1b45532ded3f763f8c45ecfdd59551e2d458a54709c537"
+    },
+    "all_source_test_configuration_hashes_unchanged": true,
+    "hash_manifest_file_count": 127,
+    "artifacts_sha256": {
+      "nsys/results/needle_current_cpu_review_20261110/full-cpu-unittest.log": "82ba20e936c318b7bba044bbb5bdac01813cd66207bc840f265542409774f0b6",
+      "nsys/results/needle_current_cpu_review_20261110/remaining-cpu-unittest.log": "1a9b81c143474fa9275910fecc20188f5779d88ba4250041b8e07e7a51071ba6",
+      "nsys/results/needle_current_cpu_review_20261110/ruff-check.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "nsys/results/needle_current_cpu_review_20261110/ruff-format-check.log": "9eb349efea514fbeea8b0a7f956f42d873604e56d26fe39405bf2460fba15a65",
+      "nsys/results/needle_current_cpu_review_20261110/source-after.json": "8ece048f3f28559e5ac03c9f6174bb1acff80cf0f49b9946bb887d95dbd22bf5",
+      "nsys/results/needle_current_cpu_review_20261110/source-before.json": "76e49fb3eae86bcf2c1a746aa55ac8de114de3f9661bf623c2dc920d44857747"
+    },
+    "independent_review": {
+      "result": "No blocking correctness issue found in the supported production path; review is separate from the incomplete full-suite result.",
+      "compact_bridge": "One eligible zero-COM world FREE body reuses native mj_step and full integration rollback, preserving native contacts, damping and Newton coordinate conversions. Unsupported layouts, extra output observables or custom steps delegate to the general adapter.",
+      "resident_interface": "Float64 device arrays preserve the Aitken update and force tolerances; atomic reduction order can change final floating-point bits. Six reduced statistics replace full interface readbacks.",
+      "retained_trial": "The converged endpoint force context is retained only after resolution checks. The unchanged candidate is accepted once using the true time-n swept state. Rejection discards the context and restores native/FEM warm-start/input loads.",
+      "regressions": [
+        "tests/test_mujoco_free_body.py",
+        "tests/test_needle_trial_commit.py",
+        "tests/test_needle_tissue_coupler.py",
+        "tests/test_needle_step_resolution.py"
+      ]
+    },
+    "limitations": [
+      "Thirteen CUDA-only checks were skipped in this CPU-configured run.",
+      "The existing full-pad press case remains unvalidated by this run; 336 tests passed and 13 skipped, with no assertion failures reported.",
+      "No performance, material-calibration, universal timestep-stability or stronger-preconditioner qualification claim is made."
+    ]
+  }
+}

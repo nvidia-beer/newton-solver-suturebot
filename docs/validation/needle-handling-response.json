@@ -1,0 +1,370 @@
+{
+  "schema_version": 1,
+  "experiment": "needle_lateral_finite_drive_response",
+  "date": "2026-11-09",
+  "status": "both_paired_probe_branches_completed",
+  "calibrated": false,
+  "purpose": "Measure off-arc handling response against continuing ideal-arc insertion with unchanged physical and numerical parameters; not an FPS measurement or video calibration.",
+  "artifacts": {
+    "nsys/results/needle_lateral_push_20261109/needle_lateral_push_diagnostic.py": "1cc659f036f012966e4b90b1e0fa25f5f65275a6bebee08a40d8b375d8e6e756",
+    "nsys/results/needle_lateral_push_20261109/needle-optimized-lateral-push.json": "a73ecc9900fc8f5fd1e6ec11cf38f4516dab5547f96dd07a48927b56f3385eb9",
+    "nsys/results/needle_lateral_push_20261109/needle-optimized-lateral-push.npz": "f8ba8681b50f526ed4e97cb611c1a7267c4435817b1fd1a6b1358f0ce3fc5653",
+    "nsys/results/needle_lateral_push_20261109/needle-optimized-lateral-push.log": "e108a6474d1c21e87ef94c80f072ab812533f6d3a881ce7138bb7afe6c1722d2"
+  },
+  "source_sha256_recorded_at_run": {
+    "src/newton_solver_fem/_src/insertion.py": "d6d652b15653d4a6675ab9799c08abab0618882dee542125cae26bc0bd220fa4",
+    "src/newton_solver_fem/_src/coupling.py": "0414759276798a2ea3dafc59e256ab0bf1eb39cc610db177253c3de8825b278f",
+    "src/newton_solver_fem/_src/solvers/fem/solver.py": "cfec8aedc30c0b1a78b287d1896569bc795e019223685d43413b41f2ddfc1280",
+    "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "c566954c19092d4537d83fe3eaec6ede603516fd34f939d8c93b19b1729673f6"
+  },
+  "source_hashes_rechecked_after_run": true,
+  "dependency_lock_sha256": "93165d29b06fc45d1c1b45532ded3f763f8c45ecfdd59551e2d458a54709c537",
+  "input_asset_sha256": {
+    "src/newton_solver_fem/examples/assets/needle_insertion/needle.usda": "e7a1c64b7c8e6798845ee1f7e238e9af36936a192edd9fee08f4661cef299b21",
+    "src/newton_solver_fem/examples/assets/phantom_pad/phantom_regions.usd": "45218965fe8b3eef6d0492f79317a5a42c154b29b2b96bf7e937fc197d415324",
+    "src/newton_solver_fem/examples/assets/phantom_pad/suturebot_region_map.json": "b922b82dd66230963601f2fa05b186c94296ea795557157d18883b83663949ac",
+    "src/newton_solver_fem/examples/assets/phantom_pad/phantom_regions_payloads/region_000_base_and_lettering.usdc": "e1d67af37a3cb6d2c0dff2bb1b39d773f1197f7bc2db9fdd883d78267b5a48c7",
+    "src/newton_solver_fem/examples/assets/phantom_pad/phantom_regions_payloads/region_001_feature_01.usdc": "9a8460b85b0af05a05fb0f556231361649261f06e73a508f9daa3580ac03e7cc",
+    "src/newton_solver_fem/examples/assets/phantom_pad/phantom_regions_payloads/region_002_feature_02.usdc": "ffd338ba156b14d2391d8f48c8c903bd8084dde8ce675fa9b34a79fcecc3b013",
+    "src/newton_solver_fem/examples/assets/phantom_pad/phantom_regions_payloads/region_003_feature_03.usdc": "76c7cb1fbfeb72e61bb4402a27b5d1f10eaecb15b115efa100d1d7f0d3026ed4",
+    "src/newton_solver_fem/examples/assets/phantom_pad/phantom_regions_payloads/region_004_feature_04.usdc": "638a2728bb203b7f7ccc2c10e5d2fc17ca662d3763bc16cf65f2f6de73b5fd7a",
+    "src/newton_solver_fem/examples/assets/phantom_pad/phantom_regions_payloads/region_005_feature_05.usdc": "38824c34a68a6788146982b08192ccaf556eef5ecd6f9791ed3632d7aedc19d3",
+    "src/newton_solver_fem/examples/assets/phantom_pad/phantom_regions_payloads/region_006_feature_06.usdc": "b8ac9e3d67ca515e74a2e7495683716637911b650a7ba2c1c39918bb1de1cae3",
+    "src/newton_solver_fem/examples/assets/phantom_pad/phantom_regions_payloads/region_007_feature_07.usdc": "28763d6c606ac323169c395bfb7059e5d9d6f1f7c9c0da69dff35409bf888567",
+    "src/newton_solver_fem/examples/assets/phantom_pad/phantom_regions_payloads/region_008_feature_08.usdc": "3f11004229357330d068099eefd0e457f3bd60c0b7cd543b555348a0fc1d5fe1",
+    "src/newton_solver_fem/examples/assets/phantom_pad/phantom_regions_payloads/region_009_upper_paired_strips.usdc": "2356925ad8eed756a7a2181bc3891e8175149e8fcae05d99da97ed6013cb0040",
+    "src/newton_solver_fem/examples/assets/phantom_pad/phantom_regions_payloads/region_010_wound_5_slit_patch.usdc": "9a25df1b3f2de927f520f4f8e11c72ed348a0cb723f0d395e0149c27f12390ba",
+    "src/newton_solver_fem/examples/assets/phantom_pad/phantom_regions_payloads/region_011_upper_narrow_slit.usdc": "e0dc91b6bf07edb5e60ce765d6f78015b6727c9533390e68d549642644cac249"
+  },
+  "command": "OPENBLAS_NUM_THREADS=1 WARP_CACHE_PATH=/tmp/needle-warp-cache UV_CACHE_DIR=/tmp/needle-uv-cache uv run --locked --no-sync python nsys/results/needle_lateral_push_20261109/needle_lateral_push_diagnostic.py --device cuda:0 --substeps 32 --amplitude .0005 --output /tmp/needle-optimized-lateral-push.json",
+  "geometry": {
+    "map_region": 1,
+    "active_tetrahedra": 29160,
+    "active_particles": 7205,
+    "fixed_particles": 1841,
+    "entry_xy_m": [
+      0.03,
+      -0.04
+    ],
+    "exit_xy_m": [
+      0.038,
+      -0.04
+    ],
+    "needle_geometry_changed": false,
+    "preflight": {
+      "passed": true,
+      "scope": "Desired shaft tube against undeformed fixed/inactive geometry; actual interaction guards stay enabled",
+      "padding_m": 0.00044729918873012947,
+      "temporal_margin_m": 5.8876081215006e-05,
+      "spatial_margin_m": 5.8423107515123506e-05
+    }
+  },
+  "restored_start": {
+    "physical_time_s": 1.5999999999999492,
+    "tip_inside_tissue": true,
+    "entry_count": 1,
+    "initialization": "Both branches use fresh Examples restored from one accepted frame-boundary snapshot; geometry is refreshed and FEM graphs are uncaptured initially",
+    "exact_equality_checks_passed": [
+      "All state particle/body/joint arrays against shared snapshot",
+      "Full native MuJoCo mjSTATE_INTEGRATION against shared snapshot",
+      "FEM velocity_increment against shared snapshot",
+      "All interaction Warp arrays against shared snapshot",
+      "Paired initial particle positions and rigid pose"
+    ],
+    "additional_restored_state": [
+      "Interface force iterate",
+      "Committed openings/tracks/engagement and previous accepted geometry",
+      "Example time, task state and event history",
+      "Drive wrench"
+    ],
+    "cache_handling": "Fresh solver instances for both branches; FEM graph cache invalidated, geometry query cache invalidated, both surface BVHs refitted. The next frame prepares its tangent identically.",
+    "initial_particle_positions_sha256": "897bfc3dda7fcef9347e0642631d6ff510ae02353a0a19a7333213bba624305d",
+    "initial_rigid_pose_sha256": "c94312e94e0ceab46186f84fb2e9941596de84edb5f8a37ff27d92895287fbd0",
+    "raw_snapshot_scope": "NPZ retains frame particle positions and rigid poses; native/history/warm-start equality was asserted in memory, not saved as a full restart checkpoint."
+  },
+  "unchanged_parameters": {
+    "young_modulus_Pa": 30000.0,
+    "poisson_ratio": 0.35,
+    "density_kg_m3": 1000.0,
+    "material_damping": 0.01,
+    "linear_damping_per_s": 1.0,
+    "surface_stiffness_N_m": 20.0,
+    "surface_damping_N_s_m": 0.025,
+    "puncture_force_N": 0.003,
+    "shaft_stiffness_N_m2": 1500.0,
+    "shaft_damping_N_s_m2": 0.5,
+    "shaft_friction": 0.2,
+    "track_spacing_m": 0.00025,
+    "shaft_spacing_m": 0.00014,
+    "drive_stiffness_N_m": 40.0,
+    "angular_drive_stiffness_Nm_rad": 0.001,
+    "drive_damping": "Unchanged critically damped gains derived from authored needle mass/inertia",
+    "insertion_speed_m_s": 0.003,
+    "cutting_resistance_omitted": true,
+    "substeps_per_60Hz_frame": 32,
+    "dt_s": 0.0005208333333333333,
+    "cg_fixed_iterations": 80,
+    "cg_relative_tolerance": 1e-05,
+    "coupling_maximum_iterations": 40,
+    "coupling_absolute_tolerance_N": 2e-07,
+    "coupling_relative_tolerance": 0.0002,
+    "mujoco_integrator": "implicitfast",
+    "mujoco_iterations": 30,
+    "mujoco_linesearch_iterations": 10
+  },
+  "changed_input_only": {
+    "control_desired_offset_m": 0.0,
+    "push_desired_offset_m": 0.0005,
+    "world_direction": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "applied_to": "Desired pose translation and its consistent finite-drive target velocity; actual needle pose/velocity never prescribed",
+    "shape": "Quintic smoothstep rise, hold, quintic fall, then zero offset",
+    "start_s": 1.6,
+    "phase_durations_s": {
+      "rise": 0.2,
+      "hold": 0.1,
+      "fall": 0.2,
+      "recovery": 0.3
+    }
+  },
+  "measurement": {
+    "interval_s": [
+      1.5999999999999492,
+      2.399999999999904
+    ],
+    "peak_sampling": "Every accepted substep during the matched post-entry interval",
+    "paired_difference_sampling": "49 matching 60Hz frame boundaries, including identical start",
+    "global_insertion_peak_comparison": false,
+    "scope": "Pre-puncture deformation and force maxima are excluded from these interval peaks.",
+    "support_force_scope": "Direct needle/interface load on fixed or inactive surface nodes; not the total structural reaction at fixed boundaries.",
+    "balance_error_scope": "Force/moment conservation of the accepted endpoint interaction-law scatter; not an energy-conservation measurement."
+  },
+  "branches": {
+    "control": {
+      "completed": true,
+      "failure_reason": null,
+      "accepted_substep_peaks": {
+        "force_N": 2.7551861587525925e-05,
+        "deformation_m": 1.253875617164612e-06,
+        "support_force_N": 0.0,
+        "force_balance_N": 9.806107597272705e-12,
+        "torque_balance_Nm": 3.4693117685644956e-13
+      },
+      "final_deformation_from_reference_m": 1.1639615968620394e-06,
+      "final_state": "inserted",
+      "punctures": 1,
+      "entries": 1,
+      "exits": 0,
+      "track_samples": 17,
+      "fem_graph_captures": 2,
+      "fem_graph_launches": 1555
+    },
+    "push": {
+      "completed": true,
+      "failure_reason": null,
+      "accepted_substep_peaks": {
+        "force_N": 0.0009766523441641435,
+        "deformation_m": 4.573054339189548e-05,
+        "support_force_N": 0.0,
+        "force_balance_N": 2.399963341663627e-10,
+        "torque_balance_Nm": 1.4553802485128325e-11
+      },
+      "final_deformation_from_reference_m": 1.854031249244861e-05,
+      "final_state": "inserted",
+      "punctures": 1,
+      "entries": 1,
+      "exits": 0,
+      "track_samples": 17,
+      "fem_graph_captures": 2,
+      "fem_graph_launches": 2898
+    }
+  },
+  "paired_comparison": {
+    "both_completed": true,
+    "identical_starting_particles_and_pose": true,
+    "peak_sampled_nodal_difference_m": 4.6130964619806036e-05,
+    "peak_sampled_tip_difference_along_push_m": 0.00038722530007362366,
+    "post_entry_interval_peak_deformation_ratio": 36.471355504388804,
+    "post_entry_interval_peak_force_ratio": 35.447780581415294,
+    "final_sampled_nodal_difference_m": 1.8428936527925543e-05,
+    "final_sampled_tip_difference_along_push_m": 3.089383244514465e-05,
+    "time_after_desired_offset_release_s": 0.3
+  },
+  "limitations": [
+    "One prescribed direction/amplitude, one region/material and one starting insertion state; no general arbitrary-motion accuracy claim.",
+    "The 36.47-fold displacement ratio compares only the matched post-entry interval, not the full insertion or its larger pre-puncture maximum.",
+    "The probe ends with both needles still embedded; it is not a complete-insertion emergence test.",
+    "Residual differences after release compare continued insertion with different material-track histories; they do not establish plastic deformation, permanent damage, or return-to-rest recovery.",
+    "Illustrative contact/shaft/friction/drive parameters remain uncalibrated. Neither magnitude nor visual appearance was fitted to SutureBot videos."
+  ],
+  "timestep_qualification_10_substeps": {
+    "status": "passed_all_predeclared_handling_checks",
+    "candidate_substeps": 10,
+    "reference_substeps": 32,
+    "dt_s": 0.0016666666666666668,
+    "criteria_declared_at_utc": "2026-11-09T14:17:03.599674+00:00",
+    "candidate_source_recorded_at_utc": "2026-11-09T14:24:50.428132+00:00",
+    "source_sha256_recorded_at_run": {
+      "src/newton_solver_fem/_src/insertion.py": "67e8bcdc847bbcb9d16f923f910b0ccb67a70c2dc3e6b9211358b6f2393004d7",
+      "src/newton_solver_fem/_src/coupling.py": "0414759276798a2ea3dafc59e256ab0bf1eb39cc610db177253c3de8825b278f",
+      "src/newton_solver_fem/_src/solvers/fem/solver.py": "cfec8aedc30c0b1a78b287d1896569bc795e019223685d43413b41f2ddfc1280",
+      "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "c566954c19092d4537d83fe3eaec6ede603516fd34f939d8c93b19b1729673f6"
+    },
+    "input_assets_unchanged": true,
+    "physical_parameters_and_solver_budgets_unchanged": true,
+    "unchanged_parameters_reference": "unchanged_parameters in this record, except substeps_per_60Hz_frame=10 and dt_s=1/600",
+    "fem_iterations": 80,
+    "predeclared_limits": {
+      "maximum_force_balance_error_N": 1e-08,
+      "maximum_torque_balance_error_Nm": 1e-09,
+      "maximum_relative_push_peak_force_change": 0.05,
+      "maximum_relative_push_peak_deformation_change": 0.05,
+      "maximum_absolute_sampled_tip_peak_difference_change_m": 5e-05
+    },
+    "assessment": {
+      "passed": true,
+      "checks": {
+        "control_completed": true,
+        "control_embedded": true,
+        "control_finite": true,
+        "control_fixed_positions_exact": true,
+        "control_force_balance_N": true,
+        "control_torque_balance_Nm": true,
+        "push_completed": true,
+        "push_embedded": true,
+        "push_finite": true,
+        "push_fixed_positions_exact": true,
+        "push_force_balance_N": true,
+        "push_torque_balance_Nm": true,
+        "parameters_and_budgets_unchanged": true,
+        "input_assets_unchanged": true,
+        "requested_candidate_substeps": true,
+        "push_peak_force_N": true,
+        "push_peak_deformation_m": true,
+        "sampled_tip_peak_difference": true
+      },
+      "comparisons": {
+        "force_N": {
+          "baseline": 0.0009766523441641435,
+          "candidate": 0.0009696304403933541,
+          "relative_change": 0.0071897679995833194
+        },
+        "deformation_m": {
+          "baseline": 4.573054339189548e-05,
+          "candidate": 4.5503309188590076e-05,
+          "relative_change": 0.0049689810452958234
+        },
+        "sampled_tip_peak_difference_m": {
+          "baseline": 0.00038722530007362366,
+          "candidate": 0.00038679689168930054,
+          "absolute_change_m": 4.284083843231201e-07
+        }
+      },
+      "decision": "accept handling check"
+    },
+    "changed_input": "Same 0 versus 0.5 mm world-Y desired-pose pulse as the 32-substep paired trial: quintic rise 0.2 s, hold 0.1 s, fall 0.2 s, recovery 0.3 s. Each candidate branch starts from the same accepted 10-substep snapshot at 1.6 s.",
+    "restored_start": {
+      "physical_time_s": 1.6000000000000234,
+      "entry_count": 1,
+      "initialization": "Both branches use fresh Examples restored from one accepted frame-boundary snapshot; geometry is refreshed and FEM graphs are uncaptured initially",
+      "identical_starting_particles_and_pose": true,
+      "initial_particle_positions_sha256": "7c4bc7e9f884109224fc4c725db287229eb5b96c85766cd614cfccb99fd4db2c",
+      "initial_rigid_pose_sha256": "96e0b620976c4976c8f29516d03b5cbc0db3dd5e7447cbf03de5f87486078aaa",
+      "full_state_native_history_and_warm_start_equality_asserted_in_memory": true,
+      "cross_timestep_starts_identical": false,
+      "cross_timestep_scope": "Each timestep runs its own prelude to 1.6 s; exact paired restoration is within each timestep, not across 10 and 32 substeps."
+    },
+    "measurement": {
+      "interval_s": [
+        1.6000000000000234,
+        2.3999999999999884
+      ],
+      "peak_sampling": "Every accepted substep; 480 accepted steps per branch",
+      "paired_difference_sampling": "49 matching 60 Hz frame boundaries including identical start",
+      "global_insertion_peak_comparison": false,
+      "scope": "Post-entry probe interval only. The same 10-substep prelude had 154.815 micrometres peak deformation before puncture, larger than either probe-interval maximum."
+    },
+    "branches": {
+      "control": {
+        "completed": true,
+        "failure_reason": null,
+        "accepted_state_checks": {
+          "accepted_substeps": 480,
+          "all_finite": true,
+          "fixed_positions_exact": true,
+          "all_tip_embedded": true
+        },
+        "accepted_substep_peaks": {
+          "force_N": 2.7315067161068406e-05,
+          "deformation_m": 1.2927698322965517e-06,
+          "support_force_N": 0.0,
+          "force_balance_N": 9.210738926653491e-12,
+          "torque_balance_Nm": 3.907339045345998e-13
+        },
+        "final_deformation_from_reference_m": 1.2131583367293802e-06,
+        "final_state": "inserted",
+        "punctures": 1,
+        "entries": 1,
+        "exits": 0,
+        "track_samples": 17,
+        "fem_graph_captures": 2,
+        "fem_graph_launches": 497
+      },
+      "push": {
+        "completed": true,
+        "failure_reason": null,
+        "accepted_state_checks": {
+          "accepted_substeps": 480,
+          "all_finite": true,
+          "fixed_positions_exact": true,
+          "all_tip_embedded": true
+        },
+        "accepted_substep_peaks": {
+          "force_N": 0.0009696304403933541,
+          "deformation_m": 4.5503309188590076e-05,
+          "support_force_N": 0.0,
+          "force_balance_N": 2.400239056908567e-10,
+          "torque_balance_Nm": 1.0917636537471405e-11
+        },
+        "final_deformation_from_reference_m": 1.8683375582071893e-05,
+        "final_state": "inserted",
+        "punctures": 1,
+        "entries": 1,
+        "exits": 0,
+        "track_samples": 17,
+        "fem_graph_captures": 2,
+        "fem_graph_launches": 1136
+      }
+    },
+    "paired_comparison": {
+      "peak_sampled_nodal_difference_m": 4.588659430737607e-05,
+      "peak_sampled_tip_difference_along_push_m": 0.00038679689168930054,
+      "final_sampled_nodal_difference_m": 1.8541477402322926e-05,
+      "final_sampled_tip_difference_along_push_m": 3.112107515335083e-05,
+      "post_entry_interval_peak_deformation_ratio": 35.19830680745028,
+      "post_entry_interval_peak_force_ratio": 35.49800682076843,
+      "recovery_scope": "Difference from matched continuing insertion after desired offset returns to zero; not return to rest"
+    },
+    "artifacts": {
+      "nsys/results/needle_lateral_push_10substeps_20261109/needle-lateral-push-10-predeclared-original.json": "9c54fa5b09549908b5fbe1456b91142235aafb68528a50db6fddd565590739eb",
+      "nsys/results/needle_lateral_push_10substeps_20261109/needle-lateral-push-10-predeclared.json": "9b94ea9ecc973c64d1a4b9a65dc06693fdc7358d62a059891f1d5b83bd50333b",
+      "nsys/results/needle_lateral_push_10substeps_20261109/needle_lateral_push_10substeps.py": "7b30b766f3459d9269dadfa4ecc46d29691edd7c7bb6b31709df43212b8802f2",
+      "nsys/results/needle_lateral_push_10substeps_20261109/needle-optimized-lateral-push-10.npz": "51bf487eed74c310ba067b6bc746e00bbbeaa4c3fcb659ccb1ade4e3eec1ad47",
+      "nsys/results/needle_lateral_push_10substeps_20261109/needle-optimized-lateral-push-10.json": "bfce8e68fd3c21842143198ed93428ddd91de9751cd7ed1b7787320877af733e",
+      "nsys/results/needle_lateral_push_10substeps_20261109/needle-optimized-lateral-push-10.log": "ae1ce6197356c21d318766344b68f4cc7a9e4c793fda54e6163f8cbe33d743f5"
+    },
+    "baseline_raw_report_sha256": "a73ecc9900fc8f5fd1e6ec11cf38f4516dab5547f96dd07a48927b56f3385eb9",
+    "baseline_raw_report_path": "nsys/results/needle_lateral_push_20261109/needle-optimized-lateral-push.json",
+    "reproduction_prerequisite": "Use the recorded candidate source hashes and copy the saved needle-lateral-push-10-predeclared.json to /tmp/needle-lateral-push-10-predeclared.json. The harness verifies these sources and the preserved 32-substep report. A later source change, including the example default, requires a new source-stamped declaration before rerunning; the original declaration and results remain unchanged.",
+    "command": "OPENBLAS_NUM_THREADS=1 WARP_CACHE_PATH=/tmp/needle-warp-cache UV_CACHE_DIR=/tmp/needle-uv-cache uv run --locked --no-sync python nsys/results/needle_lateral_push_10substeps_20261109/needle_lateral_push_10substeps.py --device cuda:0 --substeps 10 --amplitude .0005 --output /tmp/needle-optimized-lateral-push-10.json",
+    "limitations": [
+      "Qualification of this one handling pulse and the declared aggregate metrics; no general arbitrary-motion timestep guarantee.",
+      "The 0.719% force and 0.497% deformation changes compare post-entry pulse-interval peaks; they are not full-insertion convergence estimates.",
+      "Both needles remain embedded at the end. Residual differences after release include different material-track histories, and do not establish plastic deformation or return-to-rest recovery.",
+      "No physical coefficients were tuned and no video-derived calibration was used. Diagnostic runtime is not an FPS measurement."
+    ]
+  }
+}

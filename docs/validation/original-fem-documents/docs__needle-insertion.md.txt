@@ -1,0 +1,999 @@
+# One needle insertion into the regional pad
+
+`fem_needle_insertion` adds a dynamically driven rigid needle to the
+[regional FEM phantom](phantom-regions.md). Select one entry and one exit,
+preview a shape-compatible path, then run an automatic insertion or control
+insertion, retraction and vertical lifting with sliders. Automatic mode
+runs until the actual tip emerges near the selected exit or the example
+reports a failure; intermediate exits into empty gaps can continue to re-entry.
+There is no thread, robot arm, explicit jaw/needle grasp contact, knot or repeated
+suturing workflow.
+The underlying interaction is independent of the planned path and supports
+withdrawal, rotation and re-entry.
+
+```bash
+uv sync --locked --extra examples
+OPENBLAS_NUM_THREADS=1 uv run --locked python -m newton_solver_fem.examples fem_needle_insertion
+```
+
+With the existing Docker image, set the BLAS limit inside the container:
+
+```bash
+./docker/run.sh -- env OPENBLAS_NUM_THREADS=1 python -m \
+  newton_solver_fem.examples fem_needle_insertion --device cuda:0
+```
+
+The bundled pad and standalone needle USD are sufficient. The example uses
+MuJoCo's CPU rigid-body backend; the FEM device can be selected independently
+with `--device cpu` or `--device cuda:0`. CUDA geometry queries use conservative
+device candidate searches followed by float64 NumPy material/crossing tests;
+event bookkeeping stays on the host, and interaction forces use Warp. No
+fixed 60 FPS or physiological accuracy is claimed. The commands limit BLAS to one thread,
+matching the recorded validation configuration.
+
+## Selection and controls
+
+1. In **Region** mode, click the existing upright 2D map to activate a region.
+2. Choose **Entry**, then click its surface location on the same map.
+3. Choose **Exit**, then click the intended surface emergence location.
+4. Use **Preview path** to check the geometry, then adjust the sliders or choose
+   **Start automatic insertion**.
+5. Use **Pause** to stop time or **Reset** to restore undeformed tissue and clear
+   the points, path and insertion history. Reset also restores automatic mode.
+   Changing region resets the task.
+
+After preview, the controls are:
+
+| Control | Action |
+| --- | --- |
+| **Insert / retract (mm)** | Set travel along the planned curve, from zero at preview to the planned finish |
+| **Lift / lower (mm)** | Set a world-Z offset between −2 and +2 mm |
+| **Pause** / **Resume sliders** | Freeze physical time / resume the force-driven response to the slider settings |
+| **Reset** | Restore tissue, clear markers and return to automatic mode |
+| **Space** | Toggle the viewer's separate global pause |
+
+Changing an insertion or lift setting starts or resumes manual motion. The
+setting directly specifies the drive target for the next physical step, with
+no additional target speed limit or ramp. The simulated needle moves under
+finite force and torque; its pose is never copied from the slider. After
+releasing the mouse, the target holds while the needle and tissue settle.
+The insertion value is arc travel from preview, including the approach; it is
+not measured penetration depth. Manual mode stays active until reset. A
+globally paused viewer must also be resumed with **Space** for physical time
+to advance.
+
+This Docker command prepares a continuous insertion path and waits for input:
+
+```bash
+./docker/run.sh -- env OPENBLAS_NUM_THREADS=1 python -m \
+  newton_solver_fem.examples fem_needle_insertion --device cuda:0 \
+  --regions 1 --transparent-pad \
+  --entry-xy 0.030 -0.040 --exit-xy 0.038 -0.040
+```
+
+Increase **Insert / retract** to enter the tissue, then adjust **Lift / lower**
+while the shaft remains embedded. Lower the insertion setting to retract.
+The actual needle can lag behind the drive under tissue resistance. Add
+`--start` to the command to begin automatic insertion instead.
+
+**Tissue displacement** reports the current largest active-node movement from
+its rest position, in millimetres. **Shaft engagement** reports the weighted
+material-track length transmitting shaft forces; zero means lifting cannot
+pull tissue through the shaft track. The tip can be outside while part of the
+curved shaft is still engaged. These readouts do not magnify rendered motion.
+
+Green entry and pink exit markers follow their selected material triangles as
+the pad deforms. Cyan shows the desired tip path, yellow the desired needle,
+silver the actual needle, and orange its actual tip history. **See through pad**
+helps inspect the embedded needle. **Frame pad** restores the camera.
+After preview, **Frame insertion** brings the selected path into a closer view.
+
+Only the selected volume enters the FEM model; the rest of the pad remains
+reference geometry for display and contact. The
+[selection audit](validation/needle-region-selection.json) checks each of the
+12 regions and an empty selection, including fixed shared interfaces and
+unchanged inactive display geometry. It validates model ownership and display
+mapping, without performing time integration.
+A historical 30 kPa penalty-model physical check of region 2 used 42,607 tetrahedra and
+10,236 nodes, completed one entry and exit with 43.15 µm exit error, and required
+no smaller-step retries. This supplements the region-1 scenarios; it does not
+qualify every possible pair in every region.
+
+Map coordinates are converted to the frontmost reference surface along the
+map's native +Z view, retaining the map's orientation and scale. A surface ray
+query must agree with the map's region ownership. Background, ambiguous boundary
+ownership, another region and coincident points produce an explanation; no
+selection is moved to a different surface. Selection is allowed only before
+simulation; reset before changing either point.
+
+The planner keeps the authored needle radius. It chooses a minor circular arc
+through the two points, with its plane determined by their chord and averaged
+surface normal. Thus the two points do not independently determine an arbitrary
+needle shape. It rejects excessive chord/arc lengths, incompatible surface
+normals and sampled collisions with fixed boundaries or inactive material.
+Empty wound gaps remain empty; the planner records material intervals using
+circle/triangle crossings and tetrahedral occupancy between crossings. These
+intervals describe the desired path, not the physical interaction's events.
+Clearance checks combine tetrahedral occupancy with
+sampled centerline-to-triangle distances, inflated by the proxy radius,
+clearance and half the sample spacing. The default longitudinal spacing is
+0.14 mm. This is finite sampling, not an exact continuous swept-volume
+certificate. Preview creates no
+insertion track and does not predict loaded tissue or needle motion.
+
+## Needle, parameters and driving
+
+The [standalone asset](../src/newton_solver_fem/examples/assets/needle_insertion/needle.usda)
+copies the original local SutureBot needle CAD and its 32 authored capsule
+proxies, removing only scene placement. Its [provenance](../src/newton_solver_fem/examples/assets/needle_insertion/provenance.json)
+records the source and hash. The proxy arc has approximately 9.449 mm radius and
+0.28 mm tube radius. The interaction tip is the first proxy centerline endpoint;
+the displayed CAD tip and rounded proxy are not a resolved bevel model.
+Inherited mass is 0.3 g and body-diagonal inertia is
+$(10^{-8},10^{-8},2\cdot10^{-8})\,\mathrm{kg\,m^2}$. These are illustrative
+authored properties, not measurements of a physical needle.
+The public `NeedleGeometry` loader in
+[geometry/needle.py](../src/newton_solver_fem/_src/geometry/needle.py) validates
+the authored arc and inertial values; `sample_centerline` subdivides its existing
+segments without changing their geometry. Shaft force directions use a centered
+arclength secant with a one-proxy-radius half-span, clipped at the endpoints.
+This smooths the direction across authored segment joints while retaining the
+original needle positions; the span does not depend on sampling spacing.
+
+| Setting | Default | Provenance and meaning |
+| --- | --- | --- |
+| Tissue Young's modulus, Poisson ratio, density | 25 kPa, 0.35, 1000 kg/m³ | Needle-demo softening; the regional-pad example remains at 30 kPa. Earlier 25 kPa ALM checks covered 30 physical cases with the more compliant tunnel wall; historical refinement studies used 30 kPa |
+| Gravity | Zero | Inherited scene setting for both needle and tissue |
+| Physics timestep | Nominally $1/60$ s, about 16.67 ms | One coupled step per display frame, with adaptive smaller retries; this is the interactive preset, not a force-history convergence claim |
+| FEM iteration budget | At most 160 CG iterations | Conditional CUDA graphs stop on the residual criterion; the material tangent still refreshes at 60 Hz |
+| Initial FEM linear solve tolerance | $3\cdot10^{-3}$ relative | Tightened adaptively during unresolved interface iterations. Earlier paired tolerance studies used the penalty branch; they do not establish blanket ALM accuracy. Set `--fem-tolerance 1e-5` for the stricter reference. The general solver default remains $10^{-2}$ |
+| Interface solve tolerances | $2\cdot10^{-6}$ N absolute; $10^{-3}$ relative | Infinity-norm residual over all nodal forces and the needle wrench, with torque divided by the needle's curve radius; the generic public relative default remains $2\cdot10^{-4}$ |
+| Interface iteration | At most 160 trials; preconditioned vector Aitken relaxation, initially 1.0 | Early convergence ends the solve; relaxation is bounded to [0.001, 2] with an active shaft preconditioner and [0.001, 1] otherwise. Generic public coupler defaults remain 40 trials and 0.3 initial relaxation |
+| Shaft preconditioner | Enabled | Auxiliary block-Jacobi CG, at most 80 iterations; $10^{-2}$ relative tolerance for finite-compliance ALM and $10^{-3}$ for penalty/hard-wall modes. The physical acceptance residual is unchanged; the fast-handling 2 µm trajectory-equivalence gate failed as detailed below. Unpreconditioned Aitken remains capped at 1 |
+| Automatic desired tip speed | 3 mm/s | `--insertion-speed`; illustrative speed with a 0.5 s smooth initial ramp |
+| Translational and rotational drive stiffness | 400 N/m; 0.05 N·m/rad | Finite stiffness PD drive with native implicit damping and spring linearization; damping estimated from mass/inertia |
+| Surface penalty stiffness and damping | 20 N/m; 0.025 N·s/m | Damping scales with penetration/radius and acts only during compression; 0.025 is its effective coefficient at one-radius penetration. Tip and length-weighted shaft contact are separate. |
+| Surface facet blending width | Half the proxy radius, 0.14 mm | Compact area/orientation weighting of nearby blocking facets; independent of contact-sample spacing |
+| Puncture criterion | 3 mN | Illustrative threshold on the norm of the summed tip normal-force vectors, excluding friction |
+| Cutting resistance | Omitted | No resistance or fracture work for creating the passage after puncture |
+| Tunnel model and clearance | ALM; 20 µm | Analytic finite-compliance radial reaction with ALM Coulomb friction; no added transverse damping. Generic public interaction defaults to penalty |
+| Tunnel compliance, numerical penalty and geometric tolerance | $1/300000$ m²/N; 60000 N/m²; 2 µm | Explicit example compliance, independent of the numerical multiplier metric; finite bearing, not a hard confinement guarantee or material calibration |
+| ALM friction coefficient | 0.2 | Projected Coulomb sticking and sliding; accepted tangential traction can persist at zero relative velocity |
+| Alternative penalty-mode shaft coefficients | 60000 N/m²; 0.5 N·s/m²; friction speed 0.2 mm/s | Used with `--tunnel-model penalty`: transverse spring/damping and regularized velocity friction, without an exact static sticking solve |
+| Track sampling threshold | 0.25 mm | A new accepted tip endpoint is sampled after this material-space distance; actual intervals can be larger and depend on the accepted timestep |
+| Shaft contact spacing | At most 0.14 mm | Subdivision of the unchanged authored capsule centerline |
+| Exit tolerance | 1 mm | Declared before running; relative to the deformed exit marker |
+
+The drive applies a translational force at the needle COM and an orientation
+error torque. Tissue reactions therefore change the actual MuJoCo motion. The
+desired circular path stays fixed in reference space; there is no adaptive exit
+retargeting or forced pose playback. These are finite gains, not explicit
+force/torque saturation limits. Initial placement occurs only during reset or
+preview. See [the implemented equations](method.md#needle-insertion-interaction)
+and [paper-to-code boundaries](papers.md#needle-insertion-literature).
+MuJoCo integrates the drive damping and a timestep-dependent spring
+linearization implicitly. This gives the backward-Euler spring response for
+translation and collinear principal-axis rotation; the rotational Jacobian is
+an approximation for general finite rotations. It does not impose a rigid
+attachment or eliminate target lag.
+
+In slider mode, insertion changes the target's arc angle between the preview
+start and planned finish. Lift adds an independent world-Z offset to that pose;
+it does not lift along the local tissue normal. Each physical step uses the
+full requested pose as a position-servo target, with zero target velocity.
+The finite force and torque drive determines the actual body response. A
+slider change therefore changes the applied drive force without imposing a
+body position or a velocity impulse derived from the size of that change.
+
+If a physical step moves the needle too far to resolve its radius and track
+spacing, or its coupled force iteration does not converge, the example retries
+it with a smaller timestep. The requested slider
+target stays unchanged, and accepted steps still cover the same display-frame
+duration. Each attempt uses the same force tolerance and 160-trial cap.
+A rejected interval is halved while it exceeds
+$\min(h_0/256,5\cdot10^{-6}\,\mathrm{s})$, where $h_0$ is the nominal duration.
+After two accepted intervals needing at most four interface trials, the next
+interval may double toward $h_0$, capped by the frame's remaining time.
+Every attempt retains the same motion and contact guards. If the minimum
+interval still fails, the failure remains visible; the target is never softened
+or moved to hide it.
+
+The stronger shaft and drive settings are physical model choices, separate
+from the submission, query and rendering optimizations. They reduce the weak
+track's lateral compliance and drive lag while retaining sliding and release.
+The [current scenario checks](#current-alm-scenario-checks-and-accuracy-limits)
+and [measured UI performance](#current-ui-performance-and-movies) record their
+scope and remaining accuracy and speed limits.
+Historical automatic and prescribed-pulse results below retain their earlier
+coefficients and controller versions.
+
+Lifting an embedded shaft can pull tissue through the track's transverse
+forces, producing tenting or stretching in this illustrative model. The track
+permits longitudinal sliding, and its forces disengage after the finite shaft
+withdraws from that material. A sliding or withdrawn needle therefore does not
+carry tissue indefinitely. This response is not a calibrated model of tissue
+damage or physiological accuracy.
+
+## Interaction and outcomes
+
+Before puncture, penalty contact deforms the tissue. A compact area-weighted
+blend of nearby facets regularizes contact at corners; permissions are checked
+per facet so an opened face cannot hide a separate intact wall. A material
+association exempts a facet only when the segment to its closest point reaches
+it through active material; a triangle's extended plane alone cannot identify
+a wall inside a concave region. When the nearest facet is already permitted,
+other walls contribute only within the proxy radius, with a compact radial
+weight and unsigned distance limiting penetration. Unauthorized interior
+contact retains signed penetration recovery. The norm of
+the summed tip normal-force vectors reaching the puncture threshold authorizes
+an entry opening. Friction is excluded from that criterion. After accepted
+time steps, actual tip positions inside active tetrahedra create barycentric
+material track samples. Separate occupied sections prevent track quadrature
+from connecting across empty gaps. The default compliant tunnel resists
+transverse motion and solves Coulomb sticking/sliding along the shaft. The
+alternative penalty mode uses transverse springs and regularized velocity
+friction. The model omits cutting
+resistance after puncture; it does not model the work of creating a passage.
+Neither branch applies a timestep-dependent friction-force cap. The opening and
+traversed track permit insertion through ordinary surface blocking. The opening
+is restricted to its connected, similarly oriented surface neighborhood. Entry
+into an untouched surface requires its own physical puncture criterion;
+interior exemptions require an accepted material-track association. A retained
+engaged anchor can follow lateral displacement of its local shaft neighborhood
+inside active material, provided no exterior surface separates anchor and
+shaft. This includes active-region interfaces to inactive material, even when
+they lie inside the full reference phantom. Its spring continues resisting that
+displacement. During endpoint
+iteration, the leading tip can continue from its
+accepted interior position into another material cell if its swept segment
+crosses no exterior surface. This temporary permission creates no track history
+and does not authorize other shaft samples. It also permits the first candidate
+entry through an already authorized opening when the active and reference
+boundary crossings agree; acceptance alone creates the first track sample.
+A candidate outward crossing can
+similarly release only the tip's local exit patch; a nearby new wall retains
+contact. Exit events and persistent openings are committed only after accepting
+the step. New engagement and local opening capture use twice the proxy radius,
+independent of track spacing. Retained shaft association instead uses a local
+arclength neighborhood of that size. A separate nearby wall retains surface
+contact.
+Withdrawal and re-entry through an existing local opening can reuse the actual
+material track. Empty space creates no material samples or tissue springs.
+A needle spanning a gap can still receive shaft reactions from tissue on
+either side.
+An engaged track spring keeps resisting lateral motion while the shaft covers
+its material point. Withdrawal past an endpoint disengages it; local return
+can re-engage it. This avoids both a rigid axial attachment and a force that
+silently vanishes after a large lateral offset. Engagement is held fixed during
+each implicit force solve; acceptance updates it for the following substep.
+
+The public `NeedleTissueCoupler` solves for interface forces evaluated at a
+shared end-of-step state. Every trial restarts FEM and MuJoCo from the same
+accepted time and restores MuJoCo's full integration state. After force
+convergence and resolution checks, the exact last trial evaluation is retained
+and its unchanged candidate is accepted; material events are committed once.
+Rejected solves discard that pending context. Physical states restart on every
+trial, while the numerical FEM velocity-increment guess carries forward from
+the previous trial. Rejection restores the guess saved before the physical
+step; a timestep change clears it. Drive loads remain separate external
+loads. Eight unresolved primal iterations tighten the FEM tolerance by a factor
+of ten, down to $10^{-6}$ or an already stricter caller setting, and restart
+Aitken history. The configured FEM tolerance is restored when the physical
+attempt ends; the outer force acceptance threshold stays unchanged.
+Each evaluated interface
+force is scattered with an equal-and-opposite tissue reaction and a matching
+needle moment; the applied iterate agrees with that evaluation within the
+coupling tolerance. The existing FEM tangent refresh
+policy remains in use; this is not a fully nonlinear FEM equilibrium solve.
+Fixed interfaces and the pad underside remain supported. Reactions remain in
+the full active nodal load vector, including fixed nodes; the FEM projector
+removes constrained motion, not the support reaction. Inactive material does
+not deform.
+
+Geometry queries reuse data only while nodal coordinates remain unchanged.
+Reference faces without active vertices stay cached; moving faces and active
+tetrahedra are updated. Batched track queries and coordinate-bound filtering
+preserve material permissions, inclusion tolerances and candidate order.
+CUDA BVHs supply sorted candidates; final containment and swept-boundary tests
+retain their float64 CPU arithmetic. An overflowing candidate packet uses the
+complete CPU query, so capacity does not silently discard possible contacts.
+Contact evaluates cheap distance/side, footprint-weight and force-contribution
+checks before material visibility, preserving facet order. Positive-weight
+blocking facets still enter normalization even when they do not penetrate.
+For a sample with a verified material passage, other-wall contact has support
+only inside its proxy radius $r$, so its facet query uses a $1.5r$ half-extent.
+Unauthorized interior recovery retains the wider nearest-surface query.
+The full material-visibility rays remain unchanged. A 32-thread surface-kernel
+block changes scheduling only; 276 paired GPU evaluations preserved all force,
+moment, diagnostic and flag outputs exactly.
+
+On CUDA, this example enables `NeedleTissueCoupler(..., capture_fem=True)`.
+Eligible non-differentiable Tet4 CG steps use CUDA graph replay after an actual
+eager trial initializes their workspace. Each replay retains the FEM step,
+maximum iteration budget and tolerance; supported conditional graphs may stop
+CG when that tolerance is met. MuJoCo, interface convergence and event handling
+still run for every trial. The public coupler defaults to eager execution;
+CPU and unsupported configurations remain eager. Reports expose
+`fem_graph_status`, `fem_graph_captures` and `fem_graph_launches`.
+Interface loads and Aitken vectors remain on the device in float64; each trial
+returns compact convergence statistics instead of full nodal load arrays.
+For the example's single free needle, a compact native MuJoCo bridge also
+batches coordinate, velocity and wrench transfers. It retains the same native
+integrator, damping, contacts and full rollback. Unsupported body layouts,
+extra output observables and custom solver steps use the general adapter.
+These changes preserve the physical equations and convergence tolerances.
+The constrained CUDA FEM multiply also uses a separately refreshed native
+sparse operator. It preserves the original physical matrix for the elastic
+predictor and adds about 3.2 MB of value storage for region 1; CPU uses the
+existing masked multiply.
+
+The example enables `NeedleTissueCoupler(..., capture_coupling=True)` by default
+for eligible CUDA configurations; `--no-capture-coupling` selects the earlier
+host-controlled coupling for comparison. The generic public coupler keeps
+`capture_coupling=False` as its default. Capture keeps the repeated FEM,
+free-needle, contact, Aitken and ALM iterations together, with device-side
+convergence decisions. It requires `capture_fem=True` and
+`shaft_preconditioner=True`, as already configured by this example.
+The rigid branch matches MuJoCo 3.15.0 `implicitfast`; native MuJoCo advances its
+history once and its joint/body endpoint must match bit for bit. Material
+history, swept-motion checks and ambiguous surface events retain their exact
+host path. This option does not make every operation GPU-only. Reports on the
+coupler expose `coupling_graph_status`, `coupling_graph_captures`,
+`coupling_graph_launches`, `coupling_graph_fallbacks` and
+`coupling_graph_verifications`. The numerical budgets and physical laws are
+unchanged; unsupported configurations use the existing solver.
+
+The November 10 CUDA-coupling comparison used the same region-1, 25 kPa,
+one-nominal-step, 1 mm lift/lower workload with capture explicitly off/on.
+Two unprofiled runs per mode on NVIDIA GB10 at 1280 × 720 measured complete
+frames, including OpenGL, ImGui, event polling and presentation. Windows stayed
+hidden from creation, so desktop composition and human input latency are
+excluded. These are measured rates, not a fixed 60 FPS guarantee:
+
+| Active phase | Host-controlled coupling FPS | Captured coupling FPS |
+| --- | --- | --- |
+| Complete active sequence | 56.51–56.63 | 57.64–58.15 |
+| Lift | 34.45–34.67 | 39.11–39.61 |
+| Lower | 20.81–21.34 | 26.78–26.84 |
+
+Entry and withdrawal were slower with capture, while remaining above 60 FPS
+on this workload. Lowering's 95th-percentile frame time improved from
+76–78 ms to about 60 ms; sustained 60 FPS remains unmet. Repeated FEM/ALM
+iterations and graph rebuilding still cost time. No convergence tolerances,
+substep guards or force laws were weakened for these measurements.
+
+The separate physical checks retained finite states, exact fixed nodes,
+positive element determinants and matching entry/exit sequences. Region 3
+passed the declared 2 µm trajectory and 1% force-history comparisons. Region 1
+failed the 2 µm trajectory gate in both capture comparisons and repeated runs
+of each unchanged implementation: maximum differences were approximately
+12–13 µm near a finite-shaft engagement transition. Force-history RMS
+differences stayed below 0.177%. These failed repeatability gates are retained,
+not reclassified as passes. The local
+[complete results and provenance](../nsys/results/needle_gpu_coupling_20261110/physical_ab/final-summary.md)
+include both repeats, physical checks and the Nsight analysis.
+
+The reusable interaction reports actual entry and exit events from crossings
+of the deforming surface. It has no target point, planned passage count or
+task-completion rule. Swept tip/triangle checks
+interpolate tip and boundary motion over each step; multiple tip crossings in
+one step or displacement of any shaft sample larger than the
+radius/track-spacing limit cause a
+reported failure. This prevents a step silently bridging a thin tissue gap.
+The tip has swept crossing checks; the full finite-radius shaft does not have
+continuous collision detection.
+The event test still depends on timestep and surface resolution. The automatic
+controller checks actual exit events against the **deformed** selected exit
+point. An exit within the declared tolerance gives success and stops the task;
+an intermediate exit elsewhere can continue across a gap. Finishing the drive
+without a successful exit gives a missed target. Unsupported contact,
+unauthorized penetration and nonfinite states are physical failures; excessive
+deviation or a stalled automatic insertion are controller failures. Slider
+mode permits retraction and further handling after exit: it has no automatic
+target-success stop or insertion deadline. Contact, displacement, convergence,
+finite-state and drive-deviation guards remain active.
+
+For other needle-handling tasks, construct the public `NeedleTissueInteraction`
+from the material mesh and ordered needle samples, then pass it with the FEM and
+CPU MuJoCo solvers to `NeedleTissueCoupler`. The caller supplies its own external
+wrench and controller; a physical step has this form:
+
+```python
+state_in.clear_forces()
+state_in.body_f.assign(external_body_wrenches)  # caller's loads, including the needle wrench
+coupler.step(state_in, state_out, control, dt, external_forces=external_nodal_forces)
+events = interaction.events  # actual puncture/entry/exit events for this accepted step
+state_in, state_out = state_out, state_in
+```
+
+Graph capture assumes fixed model and solver allocations. Call
+`coupler.invalidate_fem_graph()` between completed steps after replacing model
+array storage, force implementations or cached solver resources; construct a
+new coupler if capacities change. Timestep/numerical-setting changes and a
+changed Krylov workspace invalidate automatically. Supported in-place updates
+within existing tangent, material and topology buffers need no invalidation.
+
+The example defaults to the material-tunnel mode `--tunnel-model alm`.
+It uses the existing barycentric track and a virtual radial clearance; it does
+not remesh tissue or alter the needle. Its controls are
+`--tunnel-clearance 0.00002`, `--tunnel-tolerance 0.000002`,
+`--tunnel-compliance` in m²/N and `--tunnel-penalty` in N/m². The example
+explicitly defaults to $1/300000$ m²/N compliance; omitted numerical penalty
+still equals the 60000 N/m² shaft stiffness. Changing that penalty does not
+change the converged physical radial compliance. The generic interaction's
+omitted-compliance behavior remains the inverse of its shaft stiffness.
+The example wall remains physically compliant. Its radial reaction is evaluated analytically; ALM iterations solve
+the Coulomb friction conditions. `--tunnel-compliance 0` requests a hard local
+wall and retains normal ALM. The numerical penalty controls dual convergence
+rather than the converged physical compliance.
+The public `NeedleTissueInteraction` default remains `penalty`; the example
+selects ALM explicitly. Use `--tunnel-model penalty` for the earlier model.
+
+The previous $1/60000$ m²/N wall allowed the shaft to move outside tissue
+during a 2 mm lift even while material anchors remained engaged and transmitted
+force. The fivefold stiffer example setting removed the observed escape away
+from the opening in the reproduced region-1 lift/return/withdrawal scenario.
+This changes physical bearing compliance; it does not alter engagement,
+withdrawal or force-convergence rules. Radial separation remains proportional
+to load, so this result is not a hard confinement guarantee for arbitrary
+handling. Earlier full scenario matrices and performance measurements below
+used the previous compliance and must not be attributed to the new default.
+
+ALM adds projected Coulomb sticking and sliding: a valid tangential reaction
+can persist at zero relative velocity, unlike the regularized penalty-mode
+drag. Trial multipliers are published only on accepted steps and cleared on
+withdrawal; no constraints are created in wound gaps. Both primal force and
+multiplier residuals must converge. The independent law/lifecycle tests cover
+clearance, compliance, penalty refinement, force/moment scatter, friction,
+gap separation and rollback. They do not establish real-pad performance or
+hard-wall feasibility for every handling motion. See [the equations](method.md)
+for the exact local-plane approximation and its limits.
+
+Analytic normal evaluation passed the local law and derivative tests and the
+checked physical sequences, but **failed the declared 2 µm whole-trajectory
+equivalence criterion** against iterative normal ALM. With 727 identical
+accepted steps, the maximum nodal difference was 16.40 µm and the time-weighted
+force RMS difference was 0.414%; entry, exit and opening-reuse events matched.
+Differences stayed below 0.770 µm before the first differing engaged-track
+length during lowering. Aggregate engaged length indicates an endpoint-anchor
+activation difference; individual activation masks were not recorded.
+An identical-source repeat stayed within 0.219 µm and 0.0057% force RMS, so the
+failed comparison cannot be dismissed as ordinary repeat noise. These results
+separate physical completion and pointwise law agreement from discrete
+history equivalence.
+
+The adopted finite-compliance ALM preconditioner tolerance of $10^{-2}$ also
+**failed the 2 µm trajectory gate** against $10^{-3}$ for a 1 mm lift/lower
+performed over 0.5 s: 12.46 µm maximum nodal difference and 0.188% force RMS.
+Both runs passed the physical guards and had matching events. Continuous,
+gap and slower handling comparisons passed that gate. A faster auxiliary
+solve does not therefore imply identical discrete engagement history.
+
+Inspect `interaction.status` for a physical failure and handle events according
+to the application. Exhausting the interface budget raises
+`NeedleCouplingNotConverged`; unresolved motion raises `NeedleStepTooLarge`.
+Both are public `RuntimeError` subclasses and reject the candidate without
+advancing accepted time or material history. The coupler already commits
+acceptance; do not call
+`interaction.accept` again. Neither class needs marked entry/exit points or
+decides task completion. Those selections, the path planner and stopping rules
+belong solely to this example. General handling uses the same approximate,
+uncalibrated material-interaction model described here.
+
+The mesh topology, material mass and elasticity remain unchanged. The track is
+neither a physical cavity nor a crack: there is no fracture-energy balance,
+damage evolution, remeshing, resolved cutting front or permanent material loss.
+The approximate contact and friction laws are not calibrated to this pad. No
+contact potential or elastic contact-energy conservation is claimed for the
+facet-force blend. No gradient support is claimed for insertion events or the
+coupled example.
+
+## Handling response
+
+With the previously qualified 30 kPa tissue and current bearing/drive gains,
+a [separate handling check](validation/needle-insertion-final-20261110.json)
+using a 2 mm lift over 1 s, hold, lowering,
+0.5 mm abrupt offset and return, withdrawal and re-entry sequence completed
+with six motion-resolution retries. At the lifted hold, the largest tissue
+change from the pre-lift state was 1.453 mm and the interface load was 86.19 mN.
+The actual tip lagged its target by 0.400 mm; maximum transverse shaft/track
+mismatch was 0.596 mm, exceeding the proxy radius. This demonstrates a finite
+penalty response, not a no-slip attachment or video-calibrated tissue behavior.
+After lowering, about 69 µm of material offset remained while the shaft was
+engaged. Full withdrawal removed shaft engagement and interface force; re-entry
+reused the opening. This selected sequence does not qualify the full slider
+range or establish timestep-independent handling forces.
+
+A historical unrestricted −5 mm target stress test failed at a desired −3.5 mm
+offset because an element inverted (minimum Jacobian −0.00145). The end-frame
+integrity check stopped subsequent motion and displayed the failure; it retained
+the committed failed state and required reset. This is distinct from the
+pre-commit motion and force-iteration rejections that permit smaller-step retries.
+Separate −2 mm and −1 mm sequences completed; the −2 mm hold displaced tissue
+by 1.407 mm with a 93.02 mN load. The demonstration therefore limits lift targets
+to ±2 mm in both its slider and `set_manual_target`. This is an example control
+policy based on the checked region-1 sequences, not a general physical limit or
+validation of every selected path and region.
+
+A historical [paired lateral-drive experiment](validation/needle-handling-response.json)
+starts both branches from the same accepted embedded state at 1.6 s. One
+continues the circular drive; the other adds a smooth 0.5 mm sideways target
+offset, then releases it. Actual needle motion still responds to finite drive
+forces. With 10 substeps, the matched 1.6–2.4 s interval has peak deformation
+of 1.293 µm for the control and 45.503 µm for the push, and peak interface force
+of 0.02732 and 0.96963 mN respectively. The ideal circular motion produces
+little post-puncture load; off-arc handling produces more modeled deformation.
+These are interval peaks: the earlier pre-puncture maximum was about 155 µm,
+so the push did not exceed the full insertion's maximum.
+
+Both branches remain embedded with fixed supports preserved. After 0.3 s at
+zero desired offset, their nodal positions still differ by up to 18.54 µm
+while insertion continues along different material-track histories. This is
+not evidence of permanent damage or return-to-rest recovery. Relative to the
+preserved 32-substep experiment, the 10-substep push-peak force and deformation
+change by 0.719% and 0.497%; the sampled peak tip-offset difference changes
+by 0.428 µm. No material or interaction coefficients were tuned, and neither
+the magnitudes nor the appearance were calibrated to the SutureBot videos.
+
+The [source-video review](validation/needle-source-video-review.json) records
+visible loading and sliding separately. In recovery clip `222119`, both lips
+deform strongly at 9–10.5 s, relax at 11–13 s while the needle still spans the
+incision, and deform again during pull-through at 14–14.5 s. This motivates
+checking shaft engagement, transverse bearing, sliding and release in manual
+handling. These are qualitative stereo observations, not measured forces,
+world-Z displacements or fitted material parameters; thread and tool contact
+in the footage also contribute loads absent from this needle-only example.
+
+## Reproducible runs and numerical checks
+
+Command-line selections are undeformed world XY coordinates in metres. The
+following pair passes reference-geometry planning in region 1; its dynamic
+outcome must be read from the run, not inferred from preview:
+
+```bash
+OPENBLAS_NUM_THREADS=1 uv run --locked --extra examples python -m newton_solver_fem.examples fem_needle_insertion \
+  --device cuda:0 --viewer null --regions 1 \
+  --entry-xy 0.030 -0.040 --exit-xy 0.038 -0.040 \
+  --start --num-frames 360 --test --report /tmp/needle-insertion.json
+```
+
+The separate gap scenario uses the same entry and exit XY `(0.030, -0.048)`.
+Its reference path crosses two material intervals separated by about 2.240 mm
+of empty arc length. Preview alone does not establish its dynamic outcome;
+the recorded run below checks actual exit and re-entry. To run that scenario
+alone:
+
+```bash
+OPENBLAS_NUM_THREADS=1 uv run --locked --extra examples python -m newton_solver_fem.examples fem_needle_insertion \
+  --device cuda:0 --viewer null --regions 1 \
+  --entry-xy 0.030 -0.040 --exit-xy 0.030 -0.048 \
+  --start --num-frames 360 --test --report /tmp/needle-insertion-gap.json
+```
+
+Use `--device cpu` if CUDA is unavailable; full-pad runs on CPU can take much
+longer. `--report` with `--test` writes outcome, physical time, exit
+error/tolerance, puncture/entry/exit counts, material track counts and length,
+peak interface force and deformation,
+and maximum substep force/moment balance residuals. Force and deformation
+peaks are sampled each physical substep. It also records the maximum interface
+iteration count and force residual over accepted steps, the last coupling
+attempt's iteration count/residual, the last interface load assigned to fixed
+nodes and the timestep/track/shaft spacing. `--help` lists interaction and drive
+controls.
+Controller success and task status are separate from the physical interaction
+status: a successful final exit leaves the physical tip outside.
+Each validator snapshot labels the state and force evaluations. If coupling
+fails to converge, tip position and time remain the accepted state, while
+`force_evaluation: rejected_coupling_trial` identifies the final rejected
+candidate's diagnostic force. That force is excluded from trace comparisons.
+
+## Current interactive preset and finer reference
+
+The one-step preset prioritizes interactive handling with adaptive retries;
+it is not a claim that one step resolves the complete force history. Use
+`--substeps 12 --coupling-absolute-tolerance 2e-7 --coupling-relative-tolerance 2e-4 --fem-tolerance 1e-5` for the finer, stricter
+reference while retaining the current material and drive coefficients.
+The [current validation report](validation/needle-insertion-final-20261110.json)
+separates automatic insertion, manual handling, numerical comparisons and
+source provenance. No fixed 60 FPS guarantee follows from a successful run.
+The measured studies in this section used 30 kPa tissue. The current needle
+demo uses 25 kPa, a 16.7% decrease in Young's modulus requested for softer
+handling. Its smooth insertion and handling checks completed, but abrupt
+±2 mm slider jumps initially failed to converge at the smallest physical step.
+The adaptive inner-accuracy correction completed both full click/return tests,
+with positive element Jacobians and unchanged force-acceptance tolerances.
+The original failures remain recorded. The first large click still took about
+18 seconds of solver wall time and thousands of trials, so convergence does not
+make abrupt end-to-end slider jumps responsive.
+Use `--young-modulus 30000` when reproducing the reported comparisons.
+
+An isolated one-versus-twelve-step study, using the same stronger bearing and
+drive with a 0.2 µN absolute interface tolerance in both runs, reached the same
+ordered puncture/entry/exit events. Nevertheless, physical needle-force vectors
+sampled on a common 60 Hz grid differed by **13.29% RMS for continuous insertion
+and 47.29% for the gap**. Aligning all matching event times diagnostically
+reduced these to **12.45% and 21.67%**; it changes the comparison clock, not the
+physical result. Differences also remain strictly inside material passages,
+so event timing alone does not explain them.
+
+Track histories differ as well: the finer/coarser runs produced 33/29 samples
+for continuous insertion and 25/22 for the gap. The 0.25 mm setting is a
+sampling threshold at accepted tip endpoints, not uniform resampling of a
+continuous material curve. Time discretization and track quadrature therefore
+change together. These results support the selected demonstration tasks, not
+timestep-independent force, damage or energy predictions. The current 2 µN
+interface tolerance and larger trial budget are qualified separately from this
+timestep comparison. The separate $10^{-4}$ versus $10^{-5}$ FEM tolerance
+comparison preserved the event sequence, with at most 0.132 µm nodal difference
+and 0.0713% force RMS difference across the checked tasks. The looser setting's
+audited true relative residual stayed below $9.994\cdot10^{-5}$.
+The historical penalty-branch $10^{-3}$ versus $10^{-4}$ comparison, with
+matched interface tolerances and physical parameters, preserved events and all six manual motion
+retries. Maximum nodal differences were 0.089 µm for continuous insertion,
+0.154 µm for the gap and 0.196 µm for handling; force RMS differences were
+0.0613%, 0.0642% and 0.0178%, respectively. Sparse true-residual audits reached
+at most $9.992\cdot10^{-4}$. The later penalty-branch
+$3\cdot10^{-3}$ versus $10^{-3}$ check
+also preserved event sequences and the six manual retries. Maximum nodal
+differences were 0.164, 0.328 and 0.215 µm for continuous insertion, the gap
+and handling; force RMS differences were 0.0892%, 0.1347% and 0.0289%.
+Its sampled true FEM residual reached at most $2.993\cdot10^{-3}$.
+These are separate comparisons along the recorded
+configuration history, not a direct final-preset comparison with the finest
+reference or a check of every linear solve.
+Earlier true-residual audits distinguish the FEM's recursive
+$10^{-5}$ stopping target from its float32 matrix residual, which has reached
+about $1.7\cdot10^{-5}$ in the recorded checks.
+
+The combined native sparse operator and interface-preconditioner qualification
+also retains a failed comparison criterion: with adaptive step growth enabled,
+the first abrupt return differed by **4.768 µm**, exceeding the predeclared
+2 µm nodal threshold. Both runs completed with the same physical event sequence.
+A separate diagnostic disabled growth in both runs and matched all 596 accepted
+phase/time/timestep tuples; its maximum nodal difference was **0.0889 µm** and
+force RMS difference **0.00862%**. That comparison isolates operator behavior
+at matching steps; it does not erase the adaptive transient or establish
+timestep-independent handling forces. Endpoint-law scatter and the loads
+actually applied at finite interface tolerance are reported separately.
+
+The separate $10^{-3}$ versus $2\cdot10^{-4}$ outer-relative-tolerance check
+preserved the event sequence and six manual motion retries, with maximum nodal
+differences of about 0.218 µm and force RMS differences of about 0.095% across the
+checked tasks. Applied moment imbalance reached $9.18\cdot10^{-8}$ N·m in
+handling, about 0.031% of the interface moment; the corresponding force-law
+scatter was $2.60\cdot10^{-11}$ N·m. These measure different finite-tolerance
+quantities and must not be combined into a claim of exact applied balance.
+
+## Repeatable regional and handling checks
+
+The robustness suite runs continuous insertion, a wound-gap crossing, signed
+1 mm slider drags with withdrawal and re-entry, direct ±2 mm clicks and returns,
+and separate region-2 and region-3 insertions. To repeat those eight scenarios
+at each of the requested nominal step counts:
+
+```bash
+OPENBLAS_NUM_THREADS=1 uv run --locked --extra examples python tools/validate_needle_insertion.py \
+  --suite robustness --device cuda:0 --substep-counts 1 4 8 \
+  --output /tmp/needle-robustness.json -- --tunnel-model alm
+```
+
+Use `--scenario lift --substep-counts 4` for one case. The report retains
+failed cases, accepted and rejected physical attempts, force-map work and
+frame-sampled responses. These are correctness runs with scripted public
+controls, not interactive FPS measurements. Nominal step counts allow adaptive
+refinement; compare the actual accepted-step counts as well. Completion,
+finite states, fixed supports and positive element Jacobians are distinct
+from timestep-independent force histories.
+
+## Current ALM scenario checks and accuracy limits
+
+The earlier frozen ALM source, with $1/60000$ m²/N tunnel compliance,
+passed all **24 public cases** above and **six
+additional shallow/middle/deep handling cases** at nominal 4 and 8 steps.
+The full CPU discovery ran 395 tests with 13 CUDA-only skips; CUDA ran all
+395 tests without skips. Source manifests match the physical checks, clean UI
+measurements and reviewed movies. The
+[final evidence report](validation/needle-insertion-final-20261110.json)
+keeps correctness, accuracy and performance results separate.
+
+Actual accepted steps vary by task and adaptive retries:
+
+| Scenario | Nominal 1: accepted / retries | Nominal 4: accepted / retries | Nominal 8: accepted / retries |
+| --- | ---: | ---: | ---: |
+| Continuous insertion | 228 / 0 | 909 / 0 | 1817 / 0 |
+| Wound-gap insertion | 229 / 0 | 913 / 0 | 1825 / 0 |
+| Smooth +1 mm or −1 mm handling | 546 / 0 | 2184 / 0 | 4368 / 0 |
+| Abrupt +2 mm click and return | 223 / 12 | 722 / 8 | 1392 / 6 |
+| Abrupt −2 mm click and return | 245 / 12 | 742 / 8 | 1409 / 6 |
+| Region 2 insertion | 228 / 0 | 909 / 0 | 1817 / 0 |
+| Region 3 insertion | 236 / 0 | 943 / 0 | 1885 / 0 |
+
+The public cases check finite states, fixed supports and positive element
+Jacobians at completed frames. The six depth cases also check these at every
+accepted step, closed multiplier transactions, physical residuals, withdrawal
+and re-entry. Their minimum accepted Jacobian was 0.93997, with zero rejected
+attempts. The first deep/8 diagnostic sent a target about $-8.7\cdot10^{-19}$ m
+instead of exactly zero; that correctly rejected input is preserved separately
+from the passing rerun with an exact-endpoint diagnostic interpolation.
+
+**Nominal 1 is not force-history converged.** On a common 60 Hz sampling grid,
+the following force-vector RMS differences remained against nominal 8:
+
+| Automatic case | 1 versus 8: absolute RMS | 1 versus 8: relative RMS | 4 versus 8: relative RMS |
+| --- | ---: | ---: | ---: |
+| Continuous | 87.0 µN | 20.15% | 7.56% |
+| Wound gap | 228.4 µN | 49.77% | 3.04% |
+| Region 2 | 221.4 µN | 64.68% | 0.088% |
+| Region 3 | 208.9 µN | 63.72% | 0.252% |
+
+These are equal-weight sampled-vector comparisons over common time coverage,
+without event alignment. Time integration of the piecewise-linear traces is
+also retained: for example, region 3's 4-versus-8 result is 2.88% when the
+common partial final interval is included. Thus a frame grid can miss brief
+event differences. Regions 2 and 3 concentrate over 99.97% of sampled squared
+error inside ±2-frame event windows. Continuous and gap cases also differ
+while both needles remain embedded outside those windows: respectively
+98.9 µN / 59.7% and 75.8 µN / 56.2% RMS. Four nominal steps generally improve
+agreement with eight; neither is established as a converged reference.
+
+The retained reports are
+`nsys/results/needle_alm_final_robustness_20261110/final-summary.json` and
+`event-window-analysis.json`, with full-suite results under
+`nsys/results/needle_alm_final_tests_20261110/{cpu,cuda}/result.json`.
+Physical completion does not erase the analytic-normal 16.40 µm or faster
+preconditioner 12.46 µm failed trajectory gates described above. No calibrated
+tissue behavior, universal hard-wall feasibility or fixed 60 FPS is claimed.
+
+## Current UI performance and movies
+
+These recorded timings and movies precede the change from $1/60000$ to
+$1/300000$ m²/N tunnel compliance. They do not measure the current stiffer wall.
+
+Four isolated, unprofiled runs measured the normal GUI, event polling and
+buffer presentation on NVIDIA GB10 in a hidden 1280×720 window. Each used
+the same automatic approach, 1 mm lift over 0.5 s, lowering and withdrawal
+sequence: 600 displayed frames, including 364 active frames spanning about
+6.07 physical seconds. Idle presentation and initialization are excluded from
+the active rates; visible desktop composition and human input were not measured.
+
+| Nominal substeps | Active overall FPS | Insertion FPS | Lift FPS | Lower FPS | Withdrawal FPS | Accepted steps / retries |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1, first run | 56.13 | 70.53 | 29.87 | 21.52 | 84.65 | 364 / 0 |
+| 4 | 26.46 | 36.97 | 14.08 | 11.11 | 31.99 | 1456 / 0 |
+| 8 | 18.15 | 23.45 | 10.25 | 8.54 | 22.46 | 2912 / 0 |
+| 1, repeat | 56.93 | 70.13 | 34.54 | 21.59 | 83.31 | 364 / 0 |
+
+Nominal-1 active-frame p95 latency was 44.0–44.3 ms and p99 was 76.5–83.1 ms;
+the maximum was 271–289 ms. Four/eight steps increased p95 to 86.2/120.1 ms.
+These include the active frame's scenario, physics, checks and rendering.
+There is no per-frame synchronization; the complete loop includes a final
+device synchronization. **Sustained 60 FPS during loaded handling remains
+unmet.** More substeps improve some force-history comparisons but cost more
+work; they are not interchangeable speed presets with proven identical forces.
+
+The current [canonical movie](media/fem_needle_insertion.mp4) shows selection,
+preview and insertion through two wound lips, with two material entries and
+exits and 47.9 µm final exit error. The separate
+[manual handling movie](../nsys/results/needle_alm_final_movies_20261110/manual/fem_needle_insertion.mp4)
+shows a continuous insertion, an extra 0.75 mm arc advance, a 1 mm lift,
+lowering and withdrawal. That extra advance makes its 405 accepted steps a
+different workload from the timing sequence. Both movies are **60 FPS
+simulation-time playback**, independent of computation speed.
+
+Decoded manual frames show local wound-lip movement and relaxation at the
+original deformation scale. At the lifted hold, reported maximum displacement
+was 0.757 mm and interface load 44.1 mN; after lowering these were 37.2 µm and
+0.956 mN. After withdrawal the force and engagement were zero, with 14.5 nm
+remaining maximum displacement. These are simulation measurements, not values
+inferred from pixels or calibrated against the source videos. The needle
+partly occludes the contact patch. The
+[local movie and results review](../nsys/results/needle_final_report_20261110/index.html)
+collects the clips, decoded frames, phase measurements and limitations.
+
+Final Nsight node tracing attributes 2.593 s of summed recorded kernel time
+across 788,710 kernel events, including 735,744 graph-node executions.
+About 49.8% is FEM work and 18.8% shaft preconditioning. Zero explicit lost
+records were reported, but generic collection warnings remain. These sums
+are attribution evidence, not live FPS or a synchronized wall-time breakdown.
+Several later predictors, relaxation changes, looser tolerances and cache
+variants were rejected for insufficient benefit or failed accuracy gates;
+their results remain in the final report rather than changing the selected code.
+
+## Further refinement and historical checks
+
+For numerical assessment, explicitly use `--substeps 32` as the reference and
+repeat the same selected geometry and parameters with `--substeps 64`, then
+with `--substeps 32 --track-spacing 0.000125`, and with
+`--substeps 32 --shaft-spacing 0.00007`. Subdivision retains every original capsule endpoint
+and does not smooth or refit the needle. Compare the actual outcome,
+exit error, force/deformation history and interface balance, including the
+puncture and emergence transitions. A successful preview or finite-state check
+alone does not establish insertion success or refinement convergence.
+The automated comparison keeps its explicit 32-substep reference independently
+of the example default: continuous base, 64 substeps, halved track **and** shaft
+spacing at 32 substeps, and a separate 32-substep gap-crossing scenario:
+
+```bash
+OPENBLAS_NUM_THREADS=1 uv run --locked --extra examples python tools/validate_needle_insertion.py \
+  --device cuda:0 --output /tmp/needle-insertion-validation.json
+```
+
+These cases retain the same FEM mesh and 60 Hz tangent-refresh cadence. The
+spacing case refines contact and track sampling; it is not a FEM mesh-refinement
+study. `--suite refinement` is the default. Its baseline uses 32 steps unless
+overridden after `--`; the timestep case doubles that effective count and the
+spacing case halves both effective sampling intervals. This tool pins only the numerical reference cases; unmentioned physical
+parameters follow the current example defaults. Reproducing an older report
+requires its recorded source and parameters, not just its substep count.
+
+Its declared engineering criteria require all four runs to reach their exit.
+The fresh gap case must record at least two actual entries, exits, punctures
+and occupied track sections. These are scenario checks, not physical stopping
+rules. The total needle force need not vanish while its tip is in the gap.
+Refinements of the continuous case must have
+changes in exit error and in the tip-to-target error **vector** no larger than
+0.2 mm, and changes in peak interface force and deformation no larger than 20%
+relative to the base case. Interface-transfer residuals are checked separately
+against $10^{-8}$ N and $10^{-9}$ N·m. These are endpoint force-law scatter
+diagnostics, not measurements of every finite-tolerance applied iterate or
+coupled energy accuracy. Applied-force and moment balance are independently
+checked in [coupler regressions](../tests/test_needle_tissue_coupler.py).
+The interface iteration residual instead tests
+self-consistency of candidate endpoint loads within one physical step; its
+convergence does not establish timestep-independent force histories.
+
+The report preserves `checks` and adds `task_checks`, `coupling_balance_checks`,
+`numerical_observations` and `force_law_assessment`. The validator saves this
+report before returning a nonzero exit status if a declared task or balance
+check fails or lacks evidence. It records emergence-time
+changes and compares post-entry interface-force vectors interpolated from
+the saved snapshots over their common physical-time interval, without shifting
+the events in time. These sparse traces do not resolve substep transients and
+have no additional acceptance threshold. No combination of
+these aggregate checks establishes convergence of the full force history or
+coupled energy. Saved cases can be reassessed with the
+validator's `build_report` helper without rerunning physics.
+
+The historical [timestep qualification](validation/needle-insertion-substeps.json)
+separately compares 10, 12 and 16 substeps with the optimized 32-substep
+reference. All three pass the declared continuous and gap insertion checks:
+matching ordered event types/counts, exit-error vector changes within 50 µm,
+peak force and deformation changes within 5%, finite accepted states, exact
+fixed supports and the stated force/moment balance limits. The 10-substep
+lateral-drive pulse also passes its predeclared 5% peak and 50 µm tip-offset
+limits. In that study, 10 was the lowest tested passing setting for those
+automatic insertions and prescribed pulses; it does not qualify the new slider
+workload, establish a universal minimum or prove full force-history
+convergence. Within that historical study, the 80-iteration FEM budget,
+physical coefficients and coupling tolerances were unchanged. At 8 substeps,
+both paths failed the tip/shaft
+displacement guard during free-space approach, before any contact force or
+puncture; those runs provide no successful contact result.
+
+## Historical correctness baseline
+
+The [2026-11-09 report](validation/needle-insertion.json) records four fresh
+runs before the performance optimizations, with CUDA FEM on an NVIDIA GB10,
+CPU MuJoCo and one BLAS thread. All
+declared task, refinement and endpoint force-law balance checks passed. The
+report includes source and input-report SHA-256 hashes, package versions and
+the reproduction command; the interaction source digest begins `fd33d3a2dafd`.
+
+| Case | Timestep (ms) | Exit error (mm) | Peak interface force (mN) | Peak nodal deformation (mm) | Exit time (s) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Continuous base | 0.5208 | 0.00893 | 3.07277 | 0.15269 | 3.787500 |
+| Half timestep | 0.2604 | 0.00816 | 3.07275 | 0.15281 | 3.787500 |
+| Half track and shaft spacing | 0.5208 | 0.00863 | 3.07799 | 0.15347 | 3.787500 |
+| Two-material gap | 0.5208 | 0.00960 | 3.22230 | 0.13932 | 3.805729 |
+
+The exit tolerance was 1 mm in every case. The gap run recorded two actual
+punctures, entries, exits and occupied track sections. Relative to the
+continuous base, timestep/sampling refinement changed the exit-error vector
+by 0.845/0.612 µm, peak force by at most 0.170%, and peak deformation by at
+most 0.505%. The largest endpoint force-law scatter residuals across the four
+runs were $1.631\cdot10^{-9}$ N and $5.11\cdot10^{-11}$ N·m. These are the
+scatter diagnostics described above, not per-step measurements of applied
+iterate balance. Accepted steps required at most 17 interface iterations.
+
+Sparse post-entry force-vector comparisons gave RMS differences of 1.38 µN
+(4.94% of the base RMS) for half timestep and 4.27 µN (15.30%) for half
+sampling spacing. Each run contributes only seven post-entry snapshots over
+the common interval 1.1000–3.7875 s. These observations do not resolve substep
+transients or establish convergence of the full force history, contact energy
+or physiological response. Cutting resistance and fracture work remain omitted.
+
+The same runtime source passed the complete CUDA test suite: **278 tests**.
+This report is the historical correctness baseline for the original performance work;
+test-suite duration and concurrently recorded video duration are not live
+simulation performance measurements.
+
+Focused public-API regressions in
+[test_needle_insertion_contact_guards.py](../tests/test_needle_insertion_contact_guards.py)
+cover neighboring untouched material, thin gaps and excessive steps; they do
+not replace a refinement study of a complete insertion.
+
+## Historical optimization measurements
+
+A newer isolated 25 kPa penalty baseline includes the real viewer GUI, event
+polling and buffer presentation in a 1280×720 window hidden from creation. Its
+600-frame insertion/lift/lower/withdrawal script measured **55.58 FPS** over
+active frames: **57.15** during insertion, **41.75** while lifting, **30.80**
+while lowering and **68.69** during withdrawal. Initialization took 3.35 s and
+is excluded from those rates. The window-hidden setup excludes the visible
+desktop compositor and human input timing. This is one run before ALM adoption,
+not a 60 FPS guarantee or an ALM speed measurement. Raw source hashes, timing
+and 600 actual GUI/event/presentation calls are retained under
+`nsys/results/needle_soft25_final_20261110/baseline-ui` and its metadata sidecar.
+
+Loaded phases require more coupled work than movement in empty space. Large
+slider jumps can also trigger tighter inner solves and smaller physical steps;
+their cost is not represented by a smooth-drag average. The following options
+remain distinct:
+
+| Approach | What it changes | Evidence and unresolved questions |
+| --- | --- | --- |
+| Penalty tunnel | Finite transverse bearing and regularized sliding friction | Measured baseline above; abrupt-click convergence improved by tighter inner solves, but latency remains high |
+| Default ALM virtual tunnel | Explicit clearance, analytic compliant normal reaction and ALM Coulomb sticking/sliding | Full CPU/CUDA suites and 30 physical cases passed with the earlier wall compliance; those timing and accuracy results do not qualify the stiffer default. Failed trajectory-equivalence gates and force-history sensitivity remain; hard-wall handling is not generally qualified |
+| Different solver architecture | Would replace wider parts of time integration or material/contact coupling | Not implemented here; results from other models cannot establish performance or accuracy for this pad |
+
+The ALM model preserves the MuJoCo needle and regional FEM tissue. No
+cable model or alternative rigid/deformable architecture is introduced.
+
+The optimized automatic-insertion implementation measured on 2026-11-09 passed
+all four [fresh reference cases](validation/needle-insertion-optimized32.json),
+the [substep and handling qualification](validation/needle-insertion-substeps.json),
+and the complete **301-test CUDA suite**. With the then-default 10 substeps,
+17 focused example/report tests and five validator-option checks also passed;
+the final continuous insertion and both timed gap insertions succeeded.
+[Test and formatting evidence](validation/needle-optimization-tests.json)
+records the source versions and scope of these checks.
+
+The [performance report](validation/needle-insertion-performance.json) compares
+the same gap insertion on an NVIDIA GB10, with a 1280×720 offscreen GL viewer, 420 display
+frames, five warmup frames and one BLAS thread. Timed runs used no profiler or
+competing GPU simulation. Active FPS excludes initialization, selection/pause
+and post-success presentation frames; it includes rendering submission and
+motion through the empty gap. The profiling runner's `--headless` mode omits
+Newton's GUI and normal window event/presentation path; these values therefore
+do not measure the full interactive window. Those historical runs used an
+80-iteration FEM budget.
+
+| Implementation | Substeps per 60 Hz frame | Active FPS | Speedup over original |
+| --- | ---: | ---: | ---: |
+| Original | 32 | 0.368 | 1× |
+| Optimized, same numerical budget | 32 | 1.883 | 5.12× |
+| Historical optimized 10-substep setting, two runs | 10 | 4.62–4.68 | 12.6–12.7× |
+
+The 5.12× result measures code changes alone. The additional gain uses the
+separately qualified timestep change; geometry, material coefficients,
+interaction laws and contact sampling remain the same. At 32 substeps,
+event kinds and times match the original, peak force changes by 0.0071% and
+peak deformation by 0.000192%. All timed runs complete two tissue passages.
+These are descriptive measurements: one original and one optimized 32-substep
+run, plus two 10-substep runs, without confidence intervals. They do not measure
+the current interactive preset or manual slider motion.
+
+Those 10-substep automatic runs have contact stalls: their active-frame 95th
+percentile is 0.93–0.95 seconds and their maximum is about 1.70 seconds. They
+are not real time.
+The [recorded movie](media/fem_needle_insertion.mp4) records actual coupled
+simulation but is encoded at 60 FPS; its playback speed is not live throughput.
+
+Nsight Systems 2026.5.1 separately traced the fixed-32 workload. The final
+surface-force kernel took 4.478 seconds of recorded GPU time, versus 49.461
+seconds after the first optimization round. Raw graph events confirm the
+unchanged 80 CG updates per FEM trial and the 32-thread surface launch.
+That capture's remaining costs were host geometry/material queries and FEM
+solves. These inclusive profiler timings are not the FPS denominator. Raw captures and
+analysis are preserved under `nsys/results/`; the performance report records
+their paths and collection limitations.
+
+Current infrastructure also batches accepted-step state checks into three
+device-reduced diagnostics and uploads compact per-region render buffers.
+Every accepted substep still checks all tissue and rigid state components;
+end-frame element and support checks remain. OpenGL reuses unchanged regional
+meshes, including a refresh after selection or transparency changes, while
+regions sharing active vertices continue to update. Triangle geometry, normals
+and displayed deformation are unchanged. The resident Aitken vectors, device
+candidate searches and these display changes have correctness checks; the
+historical FPS table above does not measure this newer implementation.

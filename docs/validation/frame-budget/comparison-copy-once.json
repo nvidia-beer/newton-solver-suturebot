@@ -1,0 +1,906 @@
+{
+  "scope": "CPU-only common-frame audit; diagnostics are not throughput measurements.",
+  "comparison_thresholds": {
+    "maximum_nodal_difference_m": 2e-06,
+    "force_vector_relative_RMS": 0.01,
+    "origin": "Historical comparison gates requested by root for this audit; not a newly pre-registered candidate-specific accuracy study. Runtime physical acceptance remains its configured residual/geometry checks."
+  },
+  "gates": {
+    "same_mesh": true,
+    "matching_frame_times": true,
+    "same_reported_physical_parameters": true,
+    "same_event_kinds_times_and_reuse": true,
+    "maximum_nodal_difference_le_2um": true,
+    "force_vector_relative_RMS_le_1percent": true,
+    "both_complete_finite_fixed_positive_J": true
+  },
+  "all_comparison_gates_pass": true,
+  "frames_compared": 600,
+  "active_frames": 364,
+  "maximum_time_difference_s": 0.0,
+  "maximum_nodal_difference_m": 1.4243941363004138e-06,
+  "maximum_difference_frame": 235,
+  "maximum_difference_time_s": 3.433333333333326,
+  "maximum_difference_node": 652,
+  "force": {
+    "RMS_difference_N": 7.1535144509569066e-06,
+    "baseline_RMS_N": 0.013657697731813086,
+    "relative_RMS": 0.0005237716188647312,
+    "maximum_vector_difference_N": 6.247464999131115e-05
+  },
+  "maximum_body_translation_difference_m": 6.344624359254204e-08,
+  "events": {
+    "diagnostic-baseline-v2": [
+      {
+        "kind": "puncture",
+        "time_s": 1.0500000000000012,
+        "position_m": [
+          0.030067307216498987,
+          -0.04011443487490261,
+          0.0011614592234917504
+        ],
+        "reused": false
+      },
+      {
+        "kind": "entry",
+        "time_s": 1.0666666666666678,
+        "position_m": [
+          0.030102428048849106,
+          -0.04003291577100754,
+          0.0012136474251747131
+        ],
+        "reused": false
+      },
+      {
+        "kind": "exit",
+        "time_s": 4.983333333333321,
+        "position_m": [
+          0.02996830828487873,
+          -0.03999020531773567,
+          0.00125198345631361
+        ],
+        "reused": false
+      }
+    ],
+    "diagnostic-copy-once": [
+      {
+        "kind": "puncture",
+        "time_s": 1.0500000000000012,
+        "position_m": [
+          0.030067307012373222,
+          -0.0401144384393543,
+          0.0011614569110750513
+        ],
+        "reused": false
+      },
+      {
+        "kind": "entry",
+        "time_s": 1.0666666666666678,
+        "position_m": [
+          0.030102428048849106,
+          -0.04003291577100754,
+          0.0012136474251747131
+        ],
+        "reused": false
+      },
+      {
+        "kind": "exit",
+        "time_s": 4.983333333333321,
+        "position_m": [
+          0.02996830828487873,
+          -0.03999020531773567,
+          0.00125198345631361
+        ],
+        "reused": false
+      }
+    ]
+  },
+  "phase_comparison": {
+    "preview": {
+      "maximum_nodal_difference_m": 0.0,
+      "frame_count": 30,
+      "force": {
+        "RMS_difference_N": 0.0,
+        "baseline_RMS_N": 0.0,
+        "relative_RMS": null,
+        "maximum_vector_difference_N": 0.0
+      }
+    },
+    "insertion": {
+      "maximum_nodal_difference_m": 1.7071424778386354e-08,
+      "frame_count": 132,
+      "force": {
+        "RMS_difference_N": 7.328925628845721e-08,
+        "baseline_RMS_N": 0.0005767222740416935,
+        "relative_RMS": 0.00012707894178395966,
+        "maximum_vector_difference_N": 4.0560263780032497e-07
+      }
+    },
+    "settle": {
+      "maximum_nodal_difference_m": 2.6220338481801e-08,
+      "frame_count": 12,
+      "force": {
+        "RMS_difference_N": 5.401106670744788e-07,
+        "baseline_RMS_N": 0.00014277113096353213,
+        "relative_RMS": 0.0037830523820143913,
+        "maximum_vector_difference_N": 1.128230769143612e-06
+      }
+    },
+    "lift": {
+      "maximum_nodal_difference_m": 2.034477574901828e-07,
+      "frame_count": 30,
+      "force": {
+        "RMS_difference_N": 5.751384910505296e-06,
+        "baseline_RMS_N": 0.027212653682090727,
+        "relative_RMS": 0.0002113496529113004,
+        "maximum_vector_difference_N": 1.0109316267099961e-05
+      }
+    },
+    "hold": {
+      "maximum_nodal_difference_m": 5.718843884340587e-07,
+      "frame_count": 12,
+      "force": {
+        "RMS_difference_N": 2.864632532616752e-05,
+        "baseline_RMS_N": 0.04619163923629462,
+        "relative_RMS": 0.0006201625618789245,
+        "maximum_vector_difference_N": 6.247464999131115e-05
+      }
+    },
+    "lower": {
+      "maximum_nodal_difference_m": 1.4243941363004138e-06,
+      "frame_count": 30,
+      "force": {
+        "RMS_difference_N": 1.6100749576240672e-05,
+        "baseline_RMS_N": 0.02584065441808195,
+        "relative_RMS": 0.0006230782439075616,
+        "maximum_vector_difference_N": 3.517792647080469e-05
+      }
+    },
+    "recovery": {
+      "maximum_nodal_difference_m": 6.997568023337422e-08,
+      "frame_count": 12,
+      "force": {
+        "RMS_difference_N": 2.905807473194972e-07,
+        "baseline_RMS_N": 0.00011783713883383931,
+        "relative_RMS": 0.002465952162409862,
+        "maximum_vector_difference_N": 5.547210647063376e-07
+      }
+    },
+    "withdrawal": {
+      "maximum_nodal_difference_m": 1.0311434147420038e-07,
+      "frame_count": 118,
+      "force": {
+        "RMS_difference_N": 2.0470330961257292e-07,
+        "baseline_RMS_N": 0.00011428655321421311,
+        "relative_RMS": 0.0017911408110181351,
+        "maximum_vector_difference_N": 1.0702572466587857e-06
+      }
+    },
+    "unloaded_hold": {
+      "maximum_nodal_difference_m": 5.759912019992704e-09,
+      "frame_count": 18,
+      "force": {
+        "RMS_difference_N": 0.0,
+        "baseline_RMS_N": 0.0,
+        "relative_RMS": null,
+        "maximum_vector_difference_N": 0.0
+      }
+    },
+    "complete": {
+      "maximum_nodal_difference_m": 5.350040874013704e-09,
+      "frame_count": 206,
+      "force": {
+        "RMS_difference_N": 0.0,
+        "baseline_RMS_N": 0.0,
+        "relative_RMS": null,
+        "maximum_vector_difference_N": 0.0
+      }
+    }
+  },
+  "physical": {
+    "diagnostic-baseline-v2": {
+      "complete": true,
+      "finite": true,
+      "fixed_positions_exact": true,
+      "maximum_fixed_displacement_m": 0.0,
+      "maximum_fixed_velocity_m_per_s": 0.0,
+      "minimum_saved_frame_J": 0.869198930703435,
+      "minimum_J_frame": 203,
+      "minimum_J_time_s": 2.8999999999999946,
+      "all_saved_frame_J_positive": true,
+      "accepted": 364,
+      "rejected": 0,
+      "refinements": 0,
+      "entry_count": 1,
+      "exit_count": 1,
+      "final_status": "outside",
+      "final_engaged_length_m": 0.0,
+      "maximum_deformation_m": 0.0008756674395954809,
+      "maximum_interface_force_N": 0.046368557381064136,
+      "reported_maximum_force_balance_error_N": 1.119782877971161e-08,
+      "reported_maximum_torque_balance_error_Nm": 5.822584796621975e-10,
+      "cg_totals": {
+        "fem_ordinary": {
+          "solves": 1335,
+          "iterations": 65514,
+          "maximum_iterations": 87,
+          "zero_iteration_solves": 194,
+          "at_iteration_cap": 0,
+          "recursive_tolerance_failed": 0
+        },
+        "fem_prepared": {
+          "solves": 0,
+          "iterations": 0,
+          "maximum_iterations": 0,
+          "zero_iteration_solves": 0,
+          "at_iteration_cap": 0,
+          "recursive_tolerance_failed": 0
+        },
+        "shaft_preconditioner": {
+          "solves": 680,
+          "iterations": 15988,
+          "maximum_iterations": 41,
+          "zero_iteration_solves": 0,
+          "at_iteration_cap": 0,
+          "recursive_tolerance_failed": 0
+        }
+      },
+      "phase_work": {
+        "insertion": {
+          "accepted": 132,
+          "rejected": 0,
+          "force_map_evaluations": 261,
+          "alm_dual_updates": 3,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 262,
+              "iterations": 13851,
+              "maximum_iterations": 85,
+              "zero_iteration_solves": 3,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 70,
+              "iterations": 2425,
+              "maximum_iterations": 40,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        },
+        "settle": {
+          "accepted": 12,
+          "rejected": 0,
+          "force_map_evaluations": 17,
+          "alm_dual_updates": 0,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 17,
+              "iterations": 774,
+              "maximum_iterations": 57,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 5,
+              "iterations": 105,
+              "maximum_iterations": 21,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        },
+        "lift": {
+          "accepted": 30,
+          "rejected": 0,
+          "force_map_evaluations": 313,
+          "alm_dual_updates": 72,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 313,
+              "iterations": 14067,
+              "maximum_iterations": 83,
+              "zero_iteration_solves": 73,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 211,
+              "iterations": 4715,
+              "maximum_iterations": 40,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        },
+        "hold": {
+          "accepted": 12,
+          "rejected": 0,
+          "force_map_evaluations": 38,
+          "alm_dual_updates": 2,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 38,
+              "iterations": 1993,
+              "maximum_iterations": 76,
+              "zero_iteration_solves": 2,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 24,
+              "iterations": 413,
+              "maximum_iterations": 31,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        },
+        "lower": {
+          "accepted": 30,
+          "rejected": 0,
+          "force_map_evaluations": 434,
+          "alm_dual_updates": 110,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 434,
+              "iterations": 19593,
+              "maximum_iterations": 87,
+              "zero_iteration_solves": 111,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 294,
+              "iterations": 5766,
+              "maximum_iterations": 39,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        },
+        "recovery": {
+          "accepted": 12,
+          "rejected": 0,
+          "force_map_evaluations": 31,
+          "alm_dual_updates": 4,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 31,
+              "iterations": 1338,
+              "maximum_iterations": 78,
+              "zero_iteration_solves": 4,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 15,
+              "iterations": 422,
+              "maximum_iterations": 36,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        },
+        "withdrawal": {
+          "accepted": 118,
+          "rejected": 0,
+          "force_map_evaluations": 222,
+          "alm_dual_updates": 1,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 222,
+              "iterations": 12954,
+              "maximum_iterations": 76,
+              "zero_iteration_solves": 1,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 61,
+              "iterations": 2142,
+              "maximum_iterations": 41,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        },
+        "unloaded_hold": {
+          "accepted": 18,
+          "rejected": 0,
+          "force_map_evaluations": 18,
+          "alm_dual_updates": 0,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 18,
+              "iterations": 944,
+              "maximum_iterations": 55,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        }
+      }
+    },
+    "diagnostic-copy-once": {
+      "complete": true,
+      "finite": true,
+      "fixed_positions_exact": true,
+      "maximum_fixed_displacement_m": 0.0,
+      "maximum_fixed_velocity_m_per_s": 0.0,
+      "minimum_saved_frame_J": 0.8692003999456538,
+      "minimum_J_frame": 203,
+      "minimum_J_time_s": 2.8999999999999946,
+      "all_saved_frame_J_positive": true,
+      "accepted": 364,
+      "rejected": 0,
+      "refinements": 0,
+      "entry_count": 1,
+      "exit_count": 1,
+      "final_status": "outside",
+      "final_engaged_length_m": 0.0,
+      "maximum_deformation_m": 0.0008755757645377152,
+      "maximum_interface_force_N": 0.04636330701382784,
+      "reported_maximum_force_balance_error_N": 7.46534525641942e-09,
+      "reported_maximum_torque_balance_error_Nm": 3.293526329145614e-10,
+      "cg_totals": {
+        "fem_ordinary": {
+          "solves": 1328,
+          "iterations": 65585,
+          "maximum_iterations": 91,
+          "zero_iteration_solves": 192,
+          "at_iteration_cap": 0,
+          "recursive_tolerance_failed": 0
+        },
+        "fem_prepared": {
+          "solves": 0,
+          "iterations": 0,
+          "maximum_iterations": 0,
+          "zero_iteration_solves": 0,
+          "at_iteration_cap": 0,
+          "recursive_tolerance_failed": 0
+        },
+        "shaft_preconditioner": {
+          "solves": 676,
+          "iterations": 15837,
+          "maximum_iterations": 41,
+          "zero_iteration_solves": 0,
+          "at_iteration_cap": 0,
+          "recursive_tolerance_failed": 0
+        }
+      },
+      "phase_work": {
+        "insertion": {
+          "accepted": 132,
+          "rejected": 0,
+          "force_map_evaluations": 261,
+          "alm_dual_updates": 3,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 262,
+              "iterations": 13849,
+              "maximum_iterations": 85,
+              "zero_iteration_solves": 3,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 70,
+              "iterations": 2414,
+              "maximum_iterations": 40,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        },
+        "settle": {
+          "accepted": 12,
+          "rejected": 0,
+          "force_map_evaluations": 16,
+          "alm_dual_updates": 0,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 16,
+              "iterations": 744,
+              "maximum_iterations": 57,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 4,
+              "iterations": 84,
+              "maximum_iterations": 21,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        },
+        "lift": {
+          "accepted": 30,
+          "rejected": 0,
+          "force_map_evaluations": 312,
+          "alm_dual_updates": 70,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 312,
+              "iterations": 14384,
+              "maximum_iterations": 83,
+              "zero_iteration_solves": 73,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 212,
+              "iterations": 4659,
+              "maximum_iterations": 40,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        },
+        "hold": {
+          "accepted": 12,
+          "rejected": 0,
+          "force_map_evaluations": 36,
+          "alm_dual_updates": 1,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 36,
+              "iterations": 1978,
+              "maximum_iterations": 76,
+              "zero_iteration_solves": 1,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 23,
+              "iterations": 397,
+              "maximum_iterations": 31,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        },
+        "lower": {
+          "accepted": 30,
+          "rejected": 0,
+          "force_map_evaluations": 430,
+          "alm_dual_updates": 110,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 430,
+              "iterations": 19368,
+              "maximum_iterations": 91,
+              "zero_iteration_solves": 110,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 290,
+              "iterations": 5697,
+              "maximum_iterations": 39,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        },
+        "recovery": {
+          "accepted": 12,
+          "rejected": 0,
+          "force_map_evaluations": 31,
+          "alm_dual_updates": 4,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 31,
+              "iterations": 1340,
+              "maximum_iterations": 78,
+              "zero_iteration_solves": 4,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 15,
+              "iterations": 422,
+              "maximum_iterations": 36,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        },
+        "withdrawal": {
+          "accepted": 118,
+          "rejected": 0,
+          "force_map_evaluations": 223,
+          "alm_dual_updates": 1,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 223,
+              "iterations": 12974,
+              "maximum_iterations": 76,
+              "zero_iteration_solves": 1,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 62,
+              "iterations": 2164,
+              "maximum_iterations": 41,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        },
+        "unloaded_hold": {
+          "accepted": 18,
+          "rejected": 0,
+          "force_map_evaluations": 18,
+          "alm_dual_updates": 0,
+          "cg": {
+            "fem_ordinary": {
+              "solves": 18,
+              "iterations": 948,
+              "maximum_iterations": 55,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "fem_prepared": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            },
+            "shaft_preconditioner": {
+              "solves": 0,
+              "iterations": 0,
+              "maximum_iterations": 0,
+              "zero_iteration_solves": 0,
+              "at_iteration_cap": 0,
+              "recursive_tolerance_failed": 0
+            }
+          }
+        }
+      }
+    }
+  },
+  "source_differences": {
+    "src/newton_solver_fem/_src/coupling_graph.py": [
+      "85737c0dd0ef11587e492af366881441266e813d66f9e2c666b6b1d66c846be7",
+      "9817cc3f8a853e2925f7959bac0ba3e3a1d8ea711a5aa7b7804a461bcd5a6128"
+    ]
+  },
+  "reported_parameter_differences": {},
+  "wrapper_identical": true,
+  "sources_unchanged": true,
+  "artifacts": {
+    "diagnostic-baseline-v2": {
+      "diagnostics.json": "1774fe54d0afe34f8bb8e841312611020b24dce7b5a2e584cde28c50cf9566cb",
+      "frame-states.npz": "883f44eb59db49d710eb71dfd61f554c2a60eb1fab943ed1f8d142b691c739c0",
+      "benchmark.json": "69772e4af1fce4c0c8695024ebd88d9a32a2f7757b2ef956e0d365e85850fa48"
+    },
+    "diagnostic-copy-once": {
+      "diagnostics.json": "3e67314be2072e60c8cb25df484c1fabe235f781611cc20a39102e9f1e4c62df",
+      "frame-states.npz": "0d78ac71ca461f648a0abd37d650c4acc82d2c9bf87dd167e4375a8e32602755",
+      "benchmark.json": "8949eb55bd424d3bf2a149e935c48f0c6f2e961776da43f6b6557cd768b6e42c"
+    }
+  },
+  "limits": [
+    "No FPS inference: the diagnostic adds GPU counters and per-attempt readbacks.",
+    "Jacobian/fixed/finite audits inspect all saved completed frames, not every adaptive substep.",
+    "Confinement is not independently measured here: per-anchor barycentric history/engagement masks are absent; aggregate engaged length cannot establish outside-away-from-opening counts.",
+    "Reported physical balances are recorded law-scatter diagnostics, not a new independent applied-load reconstruction.",
+    "CG residual failure counters are recursive solver results, not independently recomputed true residuals."
+  ],
+  "initial_states_bitwise_equal": {
+    "particle_q": true,
+    "particle_qd": true,
+    "body_q": true,
+    "body_qd": true
+  },
+  "identical_attempt_frame_dt_acceptance_schedule": true,
+  "engagement_comparison": {
+    "maximum_aggregate_length_difference_m": 3.259629011154175e-09,
+    "track_count_difference_frames": [],
+    "maximum_node_difference_frame_context": [
+      {
+        "frame": 235,
+        "start_s": 3.4166666666666594,
+        "end_s": 3.433333333333326,
+        "interaction_prepared": true,
+        "interface_force_N": [
+          -0.0003957237349823117,
+          -0.0009256972116418183,
+          -0.014902474358677864
+        ],
+        "interface_torque_Nm": [
+          0.00011823122999056023,
+          6.942442684243944e-05,
+          -6.5142490081241235e-06
+        ],
+        "engaged_length_m": 0.0033549387007951736,
+        "track_count": 13,
+        "task_status": "running",
+        "attempts": 1,
+        "rejected_attempts": 0,
+        "force_map_evaluations": 22,
+        "alm_dual_updates": 7,
+        "graph_trials": 22,
+        "phase": "lower"
+      },
+      {
+        "frame": 235,
+        "start_s": 3.4166666666666594,
+        "end_s": 3.433333333333326,
+        "interaction_prepared": true,
+        "interface_force_N": [
+          -0.0004192111373413354,
+          -0.0009237935882993042,
+          -0.014904741197824478
+        ],
+        "interface_torque_Nm": [
+          0.00011826498054287116,
+          6.963111109511088e-05,
+          -6.71043924694594e-06
+        ],
+        "engaged_length_m": 0.00335493846796453,
+        "track_count": 13,
+        "task_status": "running",
+        "attempts": 1,
+        "rejected_attempts": 0,
+        "force_map_evaluations": 15,
+        "alm_dual_updates": 3,
+        "graph_trials": 15,
+        "phase": "lower"
+      }
+    ]
+  },
+  "audit_script_sha256": "b93cd9345780330f8f952ece3f4ddd625480b75548775e13c1d672ae03d5129d"
+}

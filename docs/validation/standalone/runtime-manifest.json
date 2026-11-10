@@ -1,0 +1,342 @@
+{
+  "source_repository": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem",
+  "destination_repository": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot",
+  "scope": "Runtime dependency closure of fem_needle_insertion, fem_phantom_regions and fem_suturebot; full generic FEM subsystem retained.",
+  "old_repository_modified": false,
+  "runtime_files": [
+    {
+      "source": "src/newton_solver_fem/_src/__init__.py",
+      "destination": "src/newton_solver_suturebot/_src/__init__.py",
+      "source_sha256": "832df67421208c0d623da43f9e80936acee24923b542b460be152f84733f9b41",
+      "destination_sha256": "832df67421208c0d623da43f9e80936acee24923b542b460be152f84733f9b41",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/coupling.py",
+      "destination": "src/newton_solver_suturebot/_src/coupling.py",
+      "source_sha256": "b96ab7e0d5c2f120e028131a4dfb97483595163fa4dc21f81667016c04296d6e",
+      "destination_sha256": "b96ab7e0d5c2f120e028131a4dfb97483595163fa4dc21f81667016c04296d6e",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/coupling_graph.py",
+      "destination": "src/newton_solver_suturebot/_src/coupling_graph.py",
+      "source_sha256": "9817cc3f8a853e2925f7959bac0ba3e3a1d8ea711a5aa7b7804a461bcd5a6128",
+      "destination_sha256": "9817cc3f8a853e2925f7959bac0ba3e3a1d8ea711a5aa7b7804a461bcd5a6128",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/cutting/fragment_device.py",
+      "destination": "src/newton_solver_suturebot/_src/cutting/fragment_device.py",
+      "source_sha256": "b45538d1e50c8454eca6dc8205dfa76b4aeb5df4148916ee54075aa1fc15c88e",
+      "destination_sha256": "b45538d1e50c8454eca6dc8205dfa76b4aeb5df4148916ee54075aa1fc15c88e",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/cutting/holds.py",
+      "destination": "src/newton_solver_suturebot/_src/cutting/holds.py",
+      "source_sha256": "d5de7db264d4f85c7788d74893b7eee5538cde18e85807a8be12c8c9eae40b1a",
+      "destination_sha256": "d5de7db264d4f85c7788d74893b7eee5538cde18e85807a8be12c8c9eae40b1a",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/cutting/knife.py",
+      "destination": "src/newton_solver_suturebot/_src/cutting/knife.py",
+      "source_sha256": "3020d7f9048ba7509e57d16902a3530aa1b78bdeba86c0446d82b4e80e5c610d",
+      "destination_sha256": "3020d7f9048ba7509e57d16902a3530aa1b78bdeba86c0446d82b4e80e5c610d",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/geometry/__init__.py",
+      "destination": "src/newton_solver_suturebot/_src/geometry/__init__.py",
+      "source_sha256": "77dc4c52ff8395e9a969525becd7c602eb6a54c3bddd482784b63ed884b166e8",
+      "destination_sha256": "77dc4c52ff8395e9a969525becd7c602eb6a54c3bddd482784b63ed884b166e8",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/geometry/mesh.py",
+      "destination": "src/newton_solver_suturebot/_src/geometry/mesh.py",
+      "source_sha256": "46cb0a3b21bfa00c803370c34748a5ddfd94ad5b5fb549a405c6639a58d4c0c4",
+      "destination_sha256": "46cb0a3b21bfa00c803370c34748a5ddfd94ad5b5fb549a405c6639a58d4c0c4",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/geometry/mesh_refit.py",
+      "destination": "src/newton_solver_suturebot/_src/geometry/mesh_refit.py",
+      "source_sha256": "a0e3c9a2f18559f74464b8ec16f9b014385967f54d7f747b84414d47945cf6cd",
+      "destination_sha256": "a0e3c9a2f18559f74464b8ec16f9b014385967f54d7f747b84414d47945cf6cd",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/geometry/needle.py",
+      "destination": "src/newton_solver_suturebot/_src/geometry/needle.py",
+      "source_sha256": "1fd31fa6101f0ee609780cd24eaf041eac31d75d743b86e7143c0e5ffcfdd950",
+      "destination_sha256": "1fd31fa6101f0ee609780cd24eaf041eac31d75d743b86e7143c0e5ffcfdd950",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/geometry/needle_queries.py",
+      "destination": "src/newton_solver_suturebot/_src/geometry/needle_queries.py",
+      "source_sha256": "33b987be437a466cb9207e9a0bfe3e43c879d50530bba00fba0e1d08b44bbe90",
+      "destination_sha256": "33b987be437a466cb9207e9a0bfe3e43c879d50530bba00fba0e1d08b44bbe90",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/geometry/regions.py",
+      "destination": "src/newton_solver_suturebot/_src/geometry/regions.py",
+      "source_sha256": "61664a4ccee2e341ce3b0000de702e257d83eb2bba6ff3717df933eaa3a14193",
+      "destination_sha256": "55f09fed8bcf4bf12775d1e26e195b5029a6e6cef890b622fc59a3faa0adada5",
+      "changes": "optional-dependency help/docstring package name only",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/geometry/usd.py",
+      "destination": "src/newton_solver_suturebot/_src/geometry/usd.py",
+      "source_sha256": "4790ef57ec1a4314833dd8732b26b9c7931bd350a7eb6578c189aa719e882c04",
+      "destination_sha256": "5080c76acd986ef2c5b2c38ff6bcdf7c7a83a0817c6a7c0609543fbb3db911e7",
+      "changes": "optional-dependency help/docstring package name only",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/insertion.py",
+      "destination": "src/newton_solver_suturebot/_src/insertion.py",
+      "source_sha256": "692e811f846d9fc8ac5d119005335e401648dcb86ea3d0b5e3aed181b45544eb",
+      "destination_sha256": "692e811f846d9fc8ac5d119005335e401648dcb86ea3d0b5e3aed181b45544eb",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/mujoco_free_body.py",
+      "destination": "src/newton_solver_suturebot/_src/mujoco_free_body.py",
+      "source_sha256": "9929e54a4a94e95f26796b468e9fc744c4dd5692cc7b0174135f077a544db75e",
+      "destination_sha256": "9929e54a4a94e95f26796b468e9fc744c4dd5692cc7b0174135f077a544db75e",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/mujoco_free_body_gpu.py",
+      "destination": "src/newton_solver_suturebot/_src/mujoco_free_body_gpu.py",
+      "source_sha256": "bec17e4ad7fd922fcbd9a13d5f53bcebb1faf89f398bd3e7d15c06e664e8cadc",
+      "destination_sha256": "bec17e4ad7fd922fcbd9a13d5f53bcebb1faf89f398bd3e7d15c06e664e8cadc",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/needle_trial_forces.py",
+      "destination": "src/newton_solver_suturebot/_src/needle_trial_forces.py",
+      "source_sha256": "12e25a8e07e28bb3b7201955f0b7fe9bcfcf091318e3b6ac24bc83c31c0621b7",
+      "destination_sha256": "8a092b25d1b8512e848602b28ce10ac2810b0ea5b062638eaa71c674ee17fdcd",
+      "changes": "namespace_imports_only",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/shaft_preconditioner.py",
+      "destination": "src/newton_solver_suturebot/_src/shaft_preconditioner.py",
+      "source_sha256": "7d6e52e902b921f9dd8bdf19c7d579fa611c6deee20d8f9ee381b2d818a1bc03",
+      "destination_sha256": "7d6e52e902b921f9dd8bdf19c7d579fa611c6deee20d8f9ee381b2d818a1bc03",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/__init__.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/__init__.py",
+      "source_sha256": "0e6baa16aa0f529da83fc6031e1a3f62269346d4ce5cca83db662fbe3574e1ea",
+      "destination_sha256": "0e6baa16aa0f529da83fc6031e1a3f62269346d4ce5cca83db662fbe3574e1ea",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/fem/__init__.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/fem/__init__.py",
+      "source_sha256": "75e32ca6191fb984143bfdc570300bd06d85b01478296c63edf270e47dec0da9",
+      "destination_sha256": "75e32ca6191fb984143bfdc570300bd06d85b01478296c63edf270e47dec0da9",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/fem/builder.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/fem/builder.py",
+      "source_sha256": "f256b61344e0a64d511a164af845c852bbda4689bf92c5c9ef24f20d8a2280e4",
+      "destination_sha256": "f256b61344e0a64d511a164af845c852bbda4689bf92c5c9ef24f20d8a2280e4",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/fem/component_scaling.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/fem/component_scaling.py",
+      "source_sha256": "3a99667057a2fb7ad5c3ded20f71af07b7c09354885dd2b9de5265f9f8abd416",
+      "destination_sha256": "3a99667057a2fb7ad5c3ded20f71af07b7c09354885dd2b9de5265f9f8abd416",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/fem/differentiation.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/fem/differentiation.py",
+      "source_sha256": "2302e33874bb18610da42bba29f7555cddf2c81ed06a88bf402b9aa7f23a9627",
+      "destination_sha256": "2302e33874bb18610da42bba29f7555cddf2c81ed06a88bf402b9aa7f23a9627",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/fem/fixed_particles.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/fem/fixed_particles.py",
+      "source_sha256": "58f667f9629e4937b00ee9debafe3557637ea9100e97f2a3a4340c6aee577f17",
+      "destination_sha256": "58f667f9629e4937b00ee9debafe3557637ea9100e97f2a3a4340c6aee577f17",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/fem/implicit_predictor.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/fem/implicit_predictor.py",
+      "source_sha256": "2a6cade355b26e12c7c0d99751b531ccfa18455352cc5de78cfe7028174c69e0",
+      "destination_sha256": "2a6cade355b26e12c7c0d99751b531ccfa18455352cc5de78cfe7028174c69e0",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/fem/kernels.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/fem/kernels.py",
+      "source_sha256": "36990c2536d5a82ad63e3511fbb11241425c91dc589cd9470da759c18478a14c",
+      "destination_sha256": "36990c2536d5a82ad63e3511fbb11241425c91dc589cd9470da759c18478a14c",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/fem/prepared_step.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/fem/prepared_step.py",
+      "source_sha256": "0bfb588112e1c5a56b8afead4497aca1159043b7645132604470d2eeac453f7d",
+      "destination_sha256": "0bfb588112e1c5a56b8afead4497aca1159043b7645132604470d2eeac453f7d",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/fem/soft_surface_contacts.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/fem/soft_surface_contacts.py",
+      "source_sha256": "79fa69474733219681ece9763e19a1633bc03c921e06200ca97e364b39ee1c60",
+      "destination_sha256": "79fa69474733219681ece9763e19a1633bc03c921e06200ca97e364b39ee1c60",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/fem/solver.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/fem/solver.py",
+      "source_sha256": "98a988251fb26d0d7d8e61d3b6be7d0fc01b0b602d7bee7d38251d527606f3c3",
+      "destination_sha256": "98a988251fb26d0d7d8e61d3b6be7d0fc01b0b602d7bee7d38251d527606f3c3",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/fem/sparse_update.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/fem/sparse_update.py",
+      "source_sha256": "d5aedaf292f05fce5dd9fba31c851887891083f4f8a6974a605eb3c6fd6f41c2",
+      "destination_sha256": "d5aedaf292f05fce5dd9fba31c851887891083f4f8a6974a605eb3c6fd6f41c2",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/fem/streaming.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/fem/streaming.py",
+      "source_sha256": "435e1d67202e37f9b1af28a75f6ae82b341af93ce3ebdb8fbe6125e74cac9dcc",
+      "destination_sha256": "435e1d67202e37f9b1af28a75f6ae82b341af93ce3ebdb8fbe6125e74cac9dcc",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/mujoco_fem/__init__.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/mujoco_fem/__init__.py",
+      "source_sha256": "7e508391e797eb823ee3255c0ae13e2b84154fe4ac9b8036c4d2ab1ef78b8e46",
+      "destination_sha256": "7e508391e797eb823ee3255c0ae13e2b84154fe4ac9b8036c4d2ab1ef78b8e46",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/mujoco_fem/control.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/mujoco_fem/control.py",
+      "source_sha256": "563996754d82dfd24c0d70c44995ed95d5fe0f2821950e648c5fc388c2f44756",
+      "destination_sha256": "563996754d82dfd24c0d70c44995ed95d5fe0f2821950e648c5fc388c2f44756",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/mujoco_fem/kernels.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/mujoco_fem/kernels.py",
+      "source_sha256": "522c2d866959fb9007f30665a73f047a5e3033ced61bb6c2b80e6e8e4068e0d8",
+      "destination_sha256": "522c2d866959fb9007f30665a73f047a5e3033ced61bb6c2b80e6e8e4068e0d8",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/mujoco_fem/solver.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/mujoco_fem/solver.py",
+      "source_sha256": "205ba8d698d81c85869d87964feef5ac2c7ec4213c9a01bb9730cbba8f205470",
+      "destination_sha256": "205ba8d698d81c85869d87964feef5ac2c7ec4213c9a01bb9730cbba8f205470",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/solvers/mujoco_fem/trials.py",
+      "destination": "src/newton_solver_suturebot/_src/solvers/mujoco_fem/trials.py",
+      "source_sha256": "a94360eaa5a04e6fbda31b1d9a1baf150dfbcb6be8899c4bce4f01472c9093ae",
+      "destination_sha256": "a94360eaa5a04e6fbda31b1d9a1baf150dfbcb6be8899c4bce4f01472c9093ae",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/newton_solver_fem/_src/tunnel_alm.py",
+      "destination": "src/newton_solver_suturebot/_src/tunnel_alm.py",
+      "source_sha256": "bce046c62997e675d081bc6ada2b57be27caa88f30dedde281fa5693066f17f5",
+      "destination_sha256": "bce046c62997e675d081bc6ada2b57be27caa88f30dedde281fa5693066f17f5",
+      "changes": "byte_identical",
+      "normalized_ast_equal": true
+    }
+  ],
+  "export_modules": [
+    {
+      "destination": "src/newton_solver_suturebot/__init__.py",
+      "destination_sha256": "f3ba1b3fed3e1496649c97cf54961377165c68e51de2ea2143438a6bee501dec",
+      "changes": "trimmed exports; no numerical code"
+    },
+    {
+      "destination": "src/newton_solver_suturebot/_src/cutting/__init__.py",
+      "destination_sha256": "97e5a208050bf34639c497e9089104c6cbfc13643cab492f28c0dc586d096101",
+      "changes": "trimmed exports; no numerical code"
+    }
+  ],
+  "omitted_runtime": [
+    "cutting: all modules except holds.py, fragment_device.py, knife.py, and a MaterialHolds-only __init__.py",
+    "geometry/assets.py: unused asset-helper API (the selected examples use geometry.regions/needle/USD)"
+  ],
+  "notes": [
+    "SolverLinearFEM is an alias of SolverFEM, retained without a separate implementation.",
+    "MaterialHolds remains byte-identical and retains its FragmentArrays import dependency; this avoids changing grip numerics or shape contracts.",
+    "No example/runtime assets are copied by this manifest; example agent owns them.",
+    "No GPU execution performed."
+  ],
+  "normalization_exceptions": [
+    "Python import namespace newton_solver_fem\u2192newton_solver_suturebot",
+    "Public optional-dependency error/help/docstring newton-solver-fem[examples]\u2192newton-solver-suturebot[examples]",
+    "Root and cutting package exports trimmed; no numerical implementations changed."
+  ],
+  "validation": {
+    "old_source_hashes_unchanged": true,
+    "normalized_numerical_AST_equal": true,
+    "runtime_imports": 37,
+    "public_exports": 20,
+    "old_package_import_attempts": "blocked by an import hook; all new runtime imports succeeded",
+    "ruff_check": "PASS",
+    "ruff_format": "39 files already formatted",
+    "GPU": "not run",
+    "interpreter_note": "Import audit used existing dependency environment with only new src added to PYTHONPATH; standalone environment validation belongs to root."
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "prepared": {
+    "status": "rejected",
+    "reason": "Maximum common-frame nodal difference 3.3255705515714008e-6 m exceeds unchanged 2e-6 m trajectory gate; unchanged-source repeat passes at 1.104e-6 m.",
+    "comparison": "comparison-prepared.json",
+    "baseline_repeat": "comparison-baseline-repeat.json",
+    "force_RMS_relative": 0.000576,
+    "physical_integrity": "Finite states, exact fixed nodes, positive saved-frame tetrahedral Jacobians, identical event times and accepted-step schedule.",
+    "candidate_source_sha256": "3e09bff02a6f61faed59ee86cfb6ab6cc850a3335d4eec5b12d42a518bbf0c0f",
+    "promoted": false
+  },
+  "rho300000": {
+    "status": "rejected",
+    "reason": "Lowering slowed to 16.78 FPS versus 20.35 FPS baseline in first unprofiled pair with unchanged physical compliance.",
+    "promoted": false
+  },
+  "copy_once": {
+    "status": "qualified_and_promoted",
+    "source_sha256": "9817cc3f8a853e2925f7959bac0ba3e3a1d8ea711a5aa7b7804a461bcd5a6128",
+    "comparison": "comparison-copy-once.json",
+    "focused_cuda_tests": {
+      "count": 12,
+      "status": "passed",
+      "seconds": 9.322
+    },
+    "full_cuda_suite": {
+      "status": "passed",
+      "tests": 492,
+      "seconds": 111.667,
+      "log": "validation-cuda.log"
+    },
+    "confinement_probe": {
+      "status": "passed",
+      "summary": "confinement-summary.json"
+    },
+    "performance_repeat": {
+      "status": "complete",
+      "summary": "ui-copy-once-summary.json"
+    },
+    "scope": "Only hoists full candidate state copy to every captured attempt initialization; retains per-trial particle force scratch copy.",
+    "lint": {
+      "ruff_check": "passed",
+      "ruff_format": "passed",
+      "formatted_files": 193,
+      "git_diff_check": "passed"
+    }
+  },
+  "goal_60_fps_all_phases": false,
+  "live_runtime_changed": true
+}

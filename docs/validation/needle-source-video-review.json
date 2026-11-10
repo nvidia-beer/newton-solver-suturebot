@@ -1,0 +1,259 @@
+{
+  "schema_version": 1,
+  "review_date": "2026-11-10",
+  "status": "qualitative_source_video_review",
+  "dataset_root_hint": "/home/beer/Dev/MSc/SutureBot/data",
+  "method": "FFmpeg-decoded original videos: left-camera overviews sampled every second, plus selected stereo frames spaced 0.5\u20131 s apart around contact, release and pull-through; images directly visually inspected. No simulation or replay overlay was substituted.",
+  "timebase": "Encoded MP4 PTS in seconds from clip start; frame indices are zero-based at 30 FPS. These are not a new robot-camera time calibration.",
+  "contact_sheet_directory": "nsys/results/needle_source_video_review_20261110",
+  "contact_sheet_label_note": "Detail-sheet frame labels are selected-image ordinals, not source frame indices; PTS labels and selected_frames.json identify source frames.",
+  "source_hash_note": "All reviewed original video files were independently SHA-256 checked on 2026-11-10; every digest matches the retained prepared provenance.",
+  "episodes": [
+    {
+      "id": "throw215300",
+      "episode": "tissue_3/2_needle_throw/20250428-215300-489212",
+      "prepared_provenance": "src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_215300/provenance.json",
+      "reviewed_videos": [
+        {
+          "path": "tissue_3/2_needle_throw/20250428-215300-489212/left.mp4",
+          "sha256_from_prepared_provenance": "4d4f43aa208305c099800206d05a0ea3f85dd328442ea41a752f65a3356d0683",
+          "sha256_verified_original": "4d4f43aa208305c099800206d05a0ea3f85dd328442ea41a752f65a3356d0683"
+        },
+        {
+          "path": "tissue_3/2_needle_throw/20250428-215300-489212/right.mp4",
+          "sha256_from_prepared_provenance": "562e9ec1cfa8152187f1f535515602cc99fa5566dd04994879b976cd7f6dc8a4",
+          "sha256_verified_original": "562e9ec1cfa8152187f1f535515602cc99fa5566dd04994879b976cd7f6dc8a4"
+        }
+      ],
+      "encoded_video": {
+        "width": 960,
+        "height": 540,
+        "fps": 30,
+        "frames": 601,
+        "duration_s": 20.033333
+      },
+      "observations": [
+        {
+          "video_time_s": [
+            0,
+            3.5
+          ],
+          "visible_feature": "The grasped needle moves above the incision; no pronounced local lip notch is visible."
+        },
+        {
+          "video_time_s": [
+            4.5,
+            6.5
+          ],
+          "visible_feature": "A local notch develops at the upper lip and the bright needle tip becomes visible in the incision opening."
+        },
+        {
+          "video_time_s": [
+            7.5,
+            9.5
+          ],
+          "visible_feature": "The needle advances across the opening and through the lower lip. Both lip contours deform locally; the lower exposed metal segment lengthens."
+        },
+        {
+          "video_time_s": [
+            10.5,
+            14.5
+          ],
+          "visible_feature": "The tool releases and moves to regrasp. The lip contours largely relax while separated visible needle segments remain on either side of tissue and across the opening."
+        },
+        {
+          "video_time_s": [
+            15.5,
+            17.5
+          ],
+          "visible_feature": "Pulling the exposed needle produces another local V-shaped distortion, followed by lip relaxation as the metal slides through and the thread follows."
+        }
+      ]
+    },
+    {
+      "id": "recovery222119",
+      "episode": "tissue_3/2_needle_throw_recovery/20250428-222119-449047_recovery",
+      "prepared_provenance": "src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_222119_approach/provenance.json",
+      "reviewed_videos": [
+        {
+          "path": "tissue_3/2_needle_throw_recovery/20250428-222119-449047_recovery/left.mp4",
+          "sha256_from_prepared_provenance": "39fd48d5cd1c8a48e347ae79b503f286e0050284845fe4504392d14bda88a46e",
+          "sha256_verified_original": "39fd48d5cd1c8a48e347ae79b503f286e0050284845fe4504392d14bda88a46e"
+        },
+        {
+          "path": "tissue_3/2_needle_throw_recovery/20250428-222119-449047_recovery/right.mp4",
+          "sha256_from_prepared_provenance": "557cd700c064e78bd9e6a909921ae1dcd071c9c636887b53f39f62c4767eecb4",
+          "sha256_verified_original": "557cd700c064e78bd9e6a909921ae1dcd071c9c636887b53f39f62c4767eecb4"
+        }
+      ],
+      "encoded_video": {
+        "width": 960,
+        "height": 540,
+        "fps": 30,
+        "frames": 575,
+        "duration_s": 19.166667
+      },
+      "observations": [
+        {
+          "video_time_s": [
+            0,
+            4
+          ],
+          "visible_feature": "Needle repositioning and approach occur above a comparatively smooth incision lip."
+        },
+        {
+          "video_time_s": [
+            5,
+            8
+          ],
+          "visible_feature": "A shallow local depression becomes a clear V-shaped upper-lip notch as the needle advances."
+        },
+        {
+          "video_time_s": [
+            9,
+            10.5
+          ],
+          "visible_feature": "Both incision lips undergo pronounced local displacement around the needle. This is present in both stereo views; portions of the needle remain occluded by tissue."
+        },
+        {
+          "video_time_s": [
+            11,
+            13
+          ],
+          "visible_feature": "The tool opens/releases and repositions. The lips largely relax while the needle remains visibly spanning the incision, with exposed metal above, within the opening, and below the tissue."
+        },
+        {
+          "video_time_s": [
+            14,
+            14.5
+          ],
+          "visible_feature": "Regrasping and pulling the lower exposed segment creates another strong local V-shaped lip deformation."
+        },
+        {
+          "video_time_s": [
+            15,
+            16
+          ],
+          "visible_feature": "The metal slides out and the thread follows; the lip contours relax despite continued tool/needle motion."
+        }
+      ]
+    },
+    {
+      "id": "recovery224616",
+      "episode": "tissue_3/2_needle_throw_recovery/20250428-224616-539134_recovery",
+      "prepared_provenance": "src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_224616_approach/provenance.json",
+      "reviewed_videos": [
+        {
+          "path": "tissue_3/2_needle_throw_recovery/20250428-224616-539134_recovery/left.mp4",
+          "sha256_from_prepared_provenance": "33c5515631d9a8b2c28cc09971ff796dace12c5ab0982d495b251181121aef8d",
+          "sha256_verified_original": "33c5515631d9a8b2c28cc09971ff796dace12c5ab0982d495b251181121aef8d"
+        },
+        {
+          "path": "tissue_3/2_needle_throw_recovery/20250428-224616-539134_recovery/right.mp4",
+          "sha256_from_prepared_provenance": "aeab2a61bc34e62277999c2a13109077f856aff9f47d7878670021405a2c0e71",
+          "sha256_verified_original": "aeab2a61bc34e62277999c2a13109077f856aff9f47d7878670021405a2c0e71"
+        }
+      ],
+      "encoded_video": {
+        "width": 960,
+        "height": 540,
+        "fps": 30,
+        "frames": 461,
+        "duration_s": 15.366667
+      },
+      "observations": [
+        {
+          "video_time_s": [
+            0,
+            2
+          ],
+          "visible_feature": "The grasped needle lifts/repositions away from the lip without a comparable local notch developing."
+        },
+        {
+          "video_time_s": [
+            3.5,
+            4
+          ],
+          "visible_feature": "The initially smooth upper-lip contour develops a localized notch, clearly visible at 3.7\u20134.0 s."
+        },
+        {
+          "video_time_s": [
+            5,
+            7.5
+          ],
+          "visible_feature": "The needle advances across the incision opening and through the opposite lip; both lips develop a pronounced local V-shaped deformation."
+        },
+        {
+          "video_time_s": [
+            8,
+            10
+          ],
+          "visible_feature": "The gripper opens/repositions and the lips relax while the needle still visibly spans the tissue and opening."
+        },
+        {
+          "video_time_s": [
+            11,
+            11
+          ],
+          "visible_feature": "Pulling the lower exposed needle recreates localized lip tenting/distortion in both stereo views."
+        },
+        {
+          "video_time_s": [
+            12,
+            13
+          ],
+          "visible_feature": "Metal slides through, thread follows, and the lip contours relax."
+        }
+      ]
+    },
+    {
+      "id": "pickup215248",
+      "episode": "tissue_3/1_needle_pickup/20250428-215248-974340",
+      "prepared_provenance": "src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_215248_pickup/provenance.json",
+      "reviewed_videos": [
+        {
+          "path": "tissue_3/1_needle_pickup/20250428-215248-974340/left.mp4",
+          "sha256_from_prepared_provenance": "fa7d9ad384dd45142fea3da05ce808b8c9f5535dc49b897f9ee32ea951c6ff19",
+          "sha256_verified_original": "fa7d9ad384dd45142fea3da05ce808b8c9f5535dc49b897f9ee32ea951c6ff19"
+        }
+      ],
+      "encoded_video": {
+        "width": 960,
+        "height": 540,
+        "fps": 30,
+        "frames": 282,
+        "duration_s": 9.4
+      },
+      "observations": [
+        {
+          "video_time_s": [
+            0,
+            9
+          ],
+          "visible_feature": "Two tools grasp, transfer and reorient the free curved needle. The visible incision retains a broadly smooth contour without the large localized V deformation seen during the subsequent throw."
+        }
+      ]
+    }
+  ],
+  "model_comparison_priorities": [
+    "Separate pre-entry surface indentation, embedded-shaft transverse bearing, tangential sliding, tool release and final shaft disengagement.",
+    "An outside tip does not establish that the shaft is disengaged: the clips show metal on both sides of tissue while lips respond to handling.",
+    "Include release/relaxation and regrasp/pull-through cases; one smooth prescribed insertion arc does not cover all observed handling.",
+    "Retain separated incision lips and the intervening empty space; do not replace the visible gap with solid material.",
+    "Audit material-anchor retention, engaged track length, transverse needle/anchor separation and finite-shaft endpoint coverage before attributing weak deformation solely to stiffness."
+  ],
+  "safe_comparison_metrics": [
+    "Order and source-frame brackets of visible indentation, appearance in the gap, opposite-lip emergence, release, regrasp and relaxation.",
+    "Projected lip-contour displacement relative to nearby far-field pad landmarks, in pixels and separately in each camera; register camera/pad motion first.",
+    "Local notch depth relative to a line through its two neighboring lip points, normalized by visible local lip width; avoid occluded contour intervals.",
+    "Projected material motion versus projected needle motion during loaded and sliding intervals, with explicit visibility masks.",
+    "Relaxation interval after release or disengagement, with frame-bracket uncertainty."
+  ],
+  "limitations": [
+    "These selected frames establish visible behavior, not exact puncture times, hidden shaft contact, measured forces, material modulus, friction coefficients or world-Z displacement.",
+    "No new metric stereo calibration, segmentation, 3D reconstruction or numerical displacement estimate was performed.",
+    "Thread and gripper can also transmit loads in the footage; the current needle-only example omits those mechanisms.",
+    "Session name tissue_3 does not identify FEM region 3; prepared workbench provenance associates these source recordings with wound 1.",
+    "No 60 FPS or physical-calibration claim follows from this review."
+  ]
+}

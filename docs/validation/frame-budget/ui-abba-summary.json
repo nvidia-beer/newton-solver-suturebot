@@ -1,0 +1,46 @@
+{
+  "scope": "Unprofiled hidden real UI; two repeats per mode; pooled phase p95",
+  "run_order": [
+    "ui-baseline-a",
+    "ui-prepared-a",
+    "ui-prepared-b",
+    "ui-baseline-b"
+  ],
+  "modes": {
+    "baseline": {
+      "active_fps_mean": 51.600543908834986,
+      "lift": {
+        "frames": 60,
+        "full_mean_ms": 37.71538839985927,
+        "full_p95_ms": 62.667552003404126,
+        "physics_mean_ms": 33.81839623398264,
+        "render_mean_ms": 3.88073295034701
+      },
+      "lower": {
+        "frames": 60,
+        "full_mean_ms": 50.273922116563575,
+        "full_p95_ms": 81.7114809906343,
+        "physics_mean_ms": 44.79813556633113,
+        "render_mean_ms": 5.458609266982724
+      }
+    },
+    "prepared": {
+      "active_fps_mean": 52.33090705099619,
+      "lift": {
+        "frames": 60,
+        "full_mean_ms": 35.88313835037601,
+        "full_p95_ms": 63.081241998588666,
+        "physics_mean_ms": 32.13331815034811,
+        "render_mean_ms": 3.7348050502866195
+      },
+      "lower": {
+        "frames": 60,
+        "full_mean_ms": 47.56441609982479,
+        "full_p95_ms": 75.42696500604507,
+        "physics_mean_ms": 42.10430678285775,
+        "render_mean_ms": 5.442425132787321
+      }
+    }
+  },
+  "mean_active_fps_change_percent": 1.4154175263182633
+}

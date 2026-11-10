@@ -1,0 +1,472 @@
+{
+  "date": "2026-11-06",
+  "new_references": [
+    "tissue3_215248_pickup",
+    "tissue3_222119_approach",
+    "tissue3_224616_approach"
+  ],
+  "existing_default_reference_unchanged": true,
+  "canonical_recordings": 4,
+  "cli_choices": 5,
+  "new_scene_alignment_acceptance": false,
+  "thread_image_alignment_acceptance": false,
+  "scope": "Partial source-frame geometry only, with assumed reference orientation; no physical twist, dynamics, hidden connectivity or later-frame motion inferred.",
+  "preparation_tests": {
+    "tests": 16,
+    "result": "passed"
+  },
+  "newton_runtime_checks": "Actual replay construction, pause at source frame, removal on seek, reenable, oriented arrays and visual-only USD import; no image alignment claim.",
+  "preservation_audit_sha256": "b2ea5dbcea9895fab2e5860a45b76dffe6e656924f84d3dd0780155a99a52314",
+  "recordings": [
+    {
+      "sample_id": "tissue3_215248_pickup",
+      "source_frame": 4,
+      "status": "optional_partial_initial_geometry_estimate",
+      "review_note": "Partial initial tail; PSM1 remains displaced (about 14 px centreline RMS); camera alignment is unresolved.",
+      "thread_usd_sha256": "feb16d9fede337e2ed4e25cca45ef1d77e1f1e17fc111875a3e5275294aa074a",
+      "fit_residuals": {
+        "visible_tail": {
+          "left": 1.6363835144540604,
+          "right": 3.1367693962328764,
+          "psm1": 14.180538967036439,
+          "psm2": 2.925549591261001
+        }
+      },
+      "native_render_metrics": {
+        "left": {
+          "visible_tail": {
+            "visible_pixels": 467,
+            "isolated_pixels": 467,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 1.0,
+              "p95": 4.0,
+              "maximum": 9.219544410705566
+            },
+            "guide_to_visible_surface_px": {
+              "median": 0.0,
+              "p95": 2.0,
+              "fraction_within_5px": 1.0
+            }
+          }
+        },
+        "right": {
+          "visible_tail": {
+            "visible_pixels": 491,
+            "isolated_pixels": 491,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 2.8284270763397217,
+              "p95": 5.0,
+              "maximum": 8.0
+            },
+            "guide_to_visible_surface_px": {
+              "median": 2.0,
+              "p95": 3.0,
+              "fraction_within_5px": 1.0
+            }
+          }
+        },
+        "psm1": {
+          "visible_tail": {
+            "visible_pixels": 172,
+            "isolated_pixels": 172,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 11.180339813232422,
+              "p95": 18.812997817993164,
+              "maximum": 21.931713104248047
+            },
+            "guide_to_visible_surface_px": {
+              "median": 13.601470947265625,
+              "p95": 21.840330123901367,
+              "fraction_within_5px": 0.24691358024691357
+            }
+          }
+        },
+        "psm2": {
+          "visible_tail": {
+            "visible_pixels": 235,
+            "isolated_pixels": 235,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 1.0,
+              "p95": 2.8284270763397217,
+              "maximum": 4.123105525970459
+            },
+            "guide_to_visible_surface_px": {
+              "median": 0.0,
+              "p95": 5.684656620025635,
+              "fraction_within_5px": 0.9351851851851852
+            }
+          }
+        }
+      },
+      "runtime": {
+        "sample_id": "tissue3_215248_pickup",
+        "status": "passed",
+        "source_frame": 4,
+        "visual_shapes": 1,
+        "bodies": 0,
+        "joints": 0,
+        "collision_shapes": 0,
+        "pause_seek_reenable": "passed",
+        "thread_usd_sha256": "feb16d9fede337e2ed4e25cca45ef1d77e1f1e17fc111875a3e5275294aa074a",
+        "image_alignment_acceptance": false
+      },
+      "native_report": "../../src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_215248_pickup/thread/render_review/thread_render_validation.json",
+      "native_four_views": "../../src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_215248_pickup/thread/render_review/thread_four_views.jpg",
+      "source_evidence": "../../src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_215248_pickup/thread/thread_evidence/source_observations.json"
+    },
+    {
+      "sample_id": "tissue3_215300",
+      "source_frame": 4,
+      "status": "optional_partial_initial_geometry_estimate",
+      "review_note": null,
+      "thread_usd_sha256": "1942cd4b355e764756104be5cf8b890620f0ac75efa1355c3d69bec06b1c82bf",
+      "fit_residuals": {
+        "upper_needle_side": {
+          "left": 2.29517535199255,
+          "right": 3.2765934040989926,
+          "psm1": 3.3555809094761724
+        },
+        "lower_diagonal": {
+          "left": 1.143113203107187,
+          "right": 2.1650546466063503,
+          "psm1": 2.2922225741150237,
+          "psm2": 4.118845533338788
+        }
+      },
+      "native_render_metrics": {
+        "left": {
+          "upper_needle_side": {
+            "visible_pixels": 1986,
+            "isolated_pixels": 1986,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 2.0,
+              "p95": 5.0,
+              "maximum": 6.324555397033691
+            },
+            "guide_to_visible_surface_px": {
+              "median": 0.0,
+              "p95": 2.0,
+              "fraction_within_5px": 1.0
+            }
+          },
+          "lower_diagonal": {
+            "visible_pixels": 3092,
+            "isolated_pixels": 3092,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 1.0,
+              "p95": 3.0,
+              "maximum": 4.123105525970459
+            },
+            "guide_to_visible_surface_px": {
+              "median": 0.0,
+              "p95": 1.0,
+              "fraction_within_5px": 1.0
+            }
+          }
+        },
+        "right": {
+          "upper_needle_side": {
+            "visible_pixels": 2067,
+            "isolated_pixels": 2067,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 2.0,
+              "p95": 7.280109882354736,
+              "maximum": 14.03566837310791
+            },
+            "guide_to_visible_surface_px": {
+              "median": 0.0,
+              "p95": 5.0,
+              "fraction_within_5px": 0.9546666666666667
+            }
+          },
+          "lower_diagonal": {
+            "visible_pixels": 2913,
+            "isolated_pixels": 2913,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 2.0,
+              "p95": 4.123105525970459,
+              "maximum": 12.041594505310059
+            },
+            "guide_to_visible_surface_px": {
+              "median": 1.0,
+              "p95": 1.4142135381698608,
+              "fraction_within_5px": 1.0
+            }
+          }
+        },
+        "psm1": {
+          "upper_needle_side": {
+            "visible_pixels": 766,
+            "isolated_pixels": 766,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 2.0,
+              "p95": 53.07305908203125,
+              "maximum": 66.0302963256836
+            },
+            "guide_to_visible_surface_px": {
+              "median": 0.0,
+              "p95": 6.662277698516846,
+              "fraction_within_5px": 0.8713450292397661
+            }
+          },
+          "lower_diagonal": {
+            "visible_pixels": 547,
+            "isolated_pixels": 675,
+            "scene_occluded_pixels": 128,
+            "rendered_surface_to_guide_px": {
+              "median": 1.4142135381698608,
+              "p95": 5.0,
+              "maximum": 6.4031243324279785
+            },
+            "guide_to_visible_surface_px": {
+              "median": 1.0,
+              "p95": 4.242640495300293,
+              "fraction_within_5px": 0.9893048128342246
+            }
+          }
+        },
+        "psm2": {
+          "upper_needle_side": {
+            "visible_pixels": 0,
+            "isolated_pixels": 0,
+            "scene_occluded_pixels": 0,
+            "source_observation": "unavailable; no image-fit metric"
+          },
+          "lower_diagonal": {
+            "visible_pixels": 898,
+            "isolated_pixels": 898,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 3.0,
+              "p95": 6.7082037925720215,
+              "maximum": 7.280109882354736
+            },
+            "guide_to_visible_surface_px": {
+              "median": 2.0,
+              "p95": 5.385164737701416,
+              "fraction_within_5px": 0.8991097922848664
+            }
+          }
+        }
+      },
+      "runtime": {
+        "sample_id": "tissue3_215300",
+        "status": "passed",
+        "source_frame": 4,
+        "visual_shapes": 2,
+        "bodies": 0,
+        "joints": 0,
+        "collision_shapes": 0,
+        "pause_seek_reenable": "passed",
+        "thread_usd_sha256": "1942cd4b355e764756104be5cf8b890620f0ac75efa1355c3d69bec06b1c82bf",
+        "image_alignment_acceptance": false
+      },
+      "native_report": "../../src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_215300/thread/render_review/thread_render_validation.json",
+      "native_four_views": "../../src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_215300/thread/render_review/thread_four_views.jpg",
+      "source_evidence": "../../src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_215300/thread/thread_evidence/source_observations.json"
+    },
+    {
+      "sample_id": "tissue3_222119_approach",
+      "source_frame": 5,
+      "status": "optional_partial_initial_geometry_estimate",
+      "review_note": null,
+      "thread_usd_sha256": "e7cfc6ff0d562919c0e2396f36f4b200858613c3a4f2aea91519fafd30c6a8be",
+      "fit_residuals": {
+        "visible_tool_loop": {
+          "left": 0.9207566778806726,
+          "right": 1.936390832848603,
+          "psm1": 2.2809207520749015
+        }
+      },
+      "native_render_metrics": {
+        "left": {
+          "visible_tool_loop": {
+            "visible_pixels": 634,
+            "isolated_pixels": 634,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 1.0,
+              "p95": 2.8284270763397217,
+              "maximum": 4.4721360206604
+            },
+            "guide_to_visible_surface_px": {
+              "median": 0.0,
+              "p95": 1.0,
+              "fraction_within_5px": 1.0
+            }
+          }
+        },
+        "right": {
+          "visible_tool_loop": {
+            "visible_pixels": 641,
+            "isolated_pixels": 641,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 1.4142135381698608,
+              "p95": 5.0,
+              "maximum": 6.324555397033691
+            },
+            "guide_to_visible_surface_px": {
+              "median": 0.0,
+              "p95": 2.502629518508911,
+              "fraction_within_5px": 1.0
+            }
+          }
+        },
+        "psm1": {
+          "visible_tool_loop": {
+            "visible_pixels": 178,
+            "isolated_pixels": 178,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 2.0,
+              "p95": 8.653617858886719,
+              "maximum": 12.529964447021484
+            },
+            "guide_to_visible_surface_px": {
+              "median": 1.0,
+              "p95": 3.1541638374328613,
+              "fraction_within_5px": 1.0
+            }
+          }
+        },
+        "psm2": {
+          "visible_tool_loop": {
+            "visible_pixels": 140,
+            "isolated_pixels": 140,
+            "scene_occluded_pixels": 0,
+            "source_observation": "unavailable; no image-fit metric"
+          }
+        }
+      },
+      "runtime": {
+        "sample_id": "tissue3_222119_approach",
+        "status": "passed",
+        "source_frame": 5,
+        "visual_shapes": 1,
+        "bodies": 0,
+        "joints": 0,
+        "collision_shapes": 0,
+        "pause_seek_reenable": "passed",
+        "thread_usd_sha256": "e7cfc6ff0d562919c0e2396f36f4b200858613c3a4f2aea91519fafd30c6a8be",
+        "image_alignment_acceptance": false
+      },
+      "native_report": "../../src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_222119_approach/thread/render_review/thread_render_validation.json",
+      "native_four_views": "../../src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_222119_approach/thread/render_review/thread_four_views.jpg",
+      "source_evidence": "../../src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_222119_approach/thread/thread_evidence/source_observations.json"
+    },
+    {
+      "sample_id": "tissue3_224616_approach",
+      "source_frame": 4,
+      "status": "optional_partial_initial_geometry_estimate",
+      "review_note": "Partial loop estimate; residual alignment errors remain and PSM2 is unmeasured.",
+      "thread_usd_sha256": "baa43f08f371bdac1f23d062c9e9f34ccc995945c30832f9c6567679ec57cd31",
+      "fit_residuals": {
+        "visible_tool_loop": {
+          "left": 2.049805803734011,
+          "right": 2.9430802364846,
+          "psm1": 3.771419399499281
+        }
+      },
+      "native_render_metrics": {
+        "left": {
+          "visible_tool_loop": {
+            "visible_pixels": 1514,
+            "isolated_pixels": 1514,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 1.4142135381698608,
+              "p95": 4.656888484954834,
+              "maximum": 7.6157732009887695
+            },
+            "guide_to_visible_surface_px": {
+              "median": 0.0,
+              "p95": 2.8284270763397217,
+              "fraction_within_5px": 1.0
+            }
+          }
+        },
+        "right": {
+          "visible_tool_loop": {
+            "visible_pixels": 1440,
+            "isolated_pixels": 1440,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 2.0,
+              "p95": 6.324555397033691,
+              "maximum": 14.317821502685547
+            },
+            "guide_to_visible_surface_px": {
+              "median": 0.0,
+              "p95": 5.0,
+              "fraction_within_5px": 0.9575163398692811
+            }
+          }
+        },
+        "psm1": {
+          "visible_tool_loop": {
+            "visible_pixels": 604,
+            "isolated_pixels": 604,
+            "scene_occluded_pixels": 0,
+            "rendered_surface_to_guide_px": {
+              "median": 2.0,
+              "p95": 12.63123893737793,
+              "maximum": 14.317821502685547
+            },
+            "guide_to_visible_surface_px": {
+              "median": 1.0,
+              "p95": 7.736331462860107,
+              "fraction_within_5px": 0.8834355828220859
+            }
+          }
+        },
+        "psm2": {
+          "visible_tool_loop": {
+            "visible_pixels": 186,
+            "isolated_pixels": 186,
+            "scene_occluded_pixels": 0,
+            "source_observation": "unavailable; no image-fit metric"
+          }
+        }
+      },
+      "runtime": {
+        "sample_id": "tissue3_224616_approach",
+        "status": "passed",
+        "source_frame": 4,
+        "visual_shapes": 1,
+        "bodies": 0,
+        "joints": 0,
+        "collision_shapes": 0,
+        "pause_seek_reenable": "passed",
+        "thread_usd_sha256": "baa43f08f371bdac1f23d062c9e9f34ccc995945c30832f9c6567679ec57cd31",
+        "image_alignment_acceptance": false
+      },
+      "native_report": "../../src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_224616_approach/thread/render_review/thread_render_validation.json",
+      "native_four_views": "../../src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_224616_approach/thread/render_review/thread_four_views.jpg",
+      "source_evidence": "../../src/newton_solver_fem/examples/assets/suturebot/recordings/tissue3_224616_approach/thread/thread_evidence/source_observations.json"
+    }
+  ],
+  "repository_checks": {
+    "command": "NEWTON_TEST_DEVICE=cuda:0 uv run --no-sync python -m unittest discover -s tests -v",
+    "tests": 191,
+    "seconds": 173.3,
+    "result": "passed",
+    "ruff_check": "passed",
+    "ruff_format_files": 128,
+    "readme_generation_check": "passed",
+    "environment_note": "Used existing installed environment. uv run --locked attempted external Warp wheel metadata lookup and failed DNS before executing checks; no dependency sync was performed.",
+    "cli_tests": {
+      "tests": 8,
+      "result": "passed"
+    }
+  }
+}

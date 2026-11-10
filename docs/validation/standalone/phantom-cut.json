@@ -1,0 +1,140 @@
+{
+  "date": "2026-11-10",
+  "example": "fem_phantom_cut",
+  "run": "./docker/run.sh fem_phantom_cut",
+  "mesh": {
+    "original_vertices": 97489,
+    "original_tetrahedra": 413405,
+    "exterior_triangles": 110956,
+    "all_stored_partitions_loaded_and_welded": true,
+    "artificial_interface_pairs_removed": 11033,
+    "fixed_particles": 0,
+    "support": "gravity and floor surface contact",
+    "geometry_change_at_load": "Rigid Z translation placing lowest reference point at zero; no resampling."
+  },
+  "implementation": {
+    "standalone_cutting_modules_added": 13,
+    "general_fem_modules_unchanged": 12,
+    "initial_fragment_reserve": 429789,
+    "initial_fragment_polygon_vertices": 12,
+    "initial_fragment_polygon_faces": 12,
+    "node_copies": 4,
+    "cut_model": "User-directed finite geometric incisions and volume removal; no force-triggered fracture law.",
+    "rejected_edit_repair": "Restore the pre-edit velocity-increment warm start as well as state and topology."
+  },
+  "full_cuda_suite": {
+    "command": "NEWTON_TEST_DEVICE=cuda:0 uv run --locked python -m unittest discover -s tests -v",
+    "environment": {
+      "OPENBLAS_NUM_THREADS": "1"
+    },
+    "tests": 494,
+    "seconds": 415.28,
+    "result": "passed",
+    "skips": 0,
+    "log": "results/phantom-cut/cuda-tests.log"
+  },
+  "focused_cpu_checks": [
+    {
+      "scope": "Cutting pipeline, surface growth, reset, cylinder",
+      "tests": 19,
+      "seconds": 21.023,
+      "result": "passed",
+      "log": "results/phantom-cutting/cutting-cpu.log"
+    },
+    {
+      "scope": "Independent original USD full-mesh and interface oracle",
+      "tests": 2,
+      "seconds": 2.663,
+      "result": "passed",
+      "test_file": "tests/test_phantom_cut.py"
+    },
+    {
+      "scope": "Rejected edit warm-start restoration and next-step equivalence",
+      "tests": 2,
+      "seconds": 0.553,
+      "result": "passed",
+      "log": "results/phantom-cutting/rollback-warmstart-cpu.log"
+    }
+  ],
+  "full_pad_smoke": {
+    "frames": 2,
+    "device": "cuda:0",
+    "viewer": "null",
+    "test": true,
+    "result": "passed",
+    "log": "results/phantom-cut/smoke.log"
+  },
+  "recording": {
+    "movie": "docs/media/fem_phantom_cut.mp4",
+    "metadata": "docs/media/fem_phantom_cut.json",
+    "frames": 360,
+    "simulated_seconds": 5.999999999999984,
+    "scenario": {
+      "original_vertices": 97489,
+      "original_tetrahedra": 413405,
+      "all_material_active": true,
+      "fixed_nodes": 0,
+      "cuts": 1,
+      "events": [
+        {
+          "frame": 30,
+          "action": "finite_line_incision",
+          "material_components": 2,
+          "mass_before_kg": 0.1343255192041397,
+          "mass_after_kg": 0.1343255192041397
+        },
+        {
+          "frame": 60,
+          "action": "begin_surface_grip"
+        },
+        {
+          "frame": 211,
+          "action": "release_to_hold",
+          "target_lift_m": 0.03
+        },
+        {
+          "frame": 270,
+          "action": "release_cut_strip"
+        }
+      ],
+      "interaction": "finite incision and physical surface grip through example callbacks"
+    },
+    "integrity_checks": "Finite state and positive Jacobians every 60 frames and at completion.",
+    "visual_review_frames": [
+      0,
+      240,
+      354
+    ],
+    "result": "passed",
+    "recording_wall_seconds": 199.44698351500847,
+    "playback_is_performance_benchmark": false,
+    "scope": "All default physical settings. Capture precedes the rejected-cut warm-start-only repair; no cut was rejected in this capture."
+  },
+  "lint": {
+    "check": "passed",
+    "format_check": "passed",
+    "python_files": 189
+  },
+  "distributions": {
+    "newton_solver_suturebot-0.1.0-py3-none-any.whl": {
+      "bytes": 143709790,
+      "sha256": "a3bfdb1d896225d3cb11e20c02a355a567a5360434b8eaed2d8f1a44c18b9ea4"
+    },
+    "newton_solver_suturebot-0.1.0.tar.gz": {
+      "bytes": 137138997,
+      "sha256": "e036a3e8243cb45c64a879eff81421577e3dda562d8cc5d9b022890b40449a72"
+    }
+  },
+  "docker": {
+    "build": "passed",
+    "image": "newton-solver-suturebot:local",
+    "image_id": "sha256:3c07bfda4934e5292dcbe7d9c4cd7611000362a0ce22734107d6b331af37e40d",
+    "isolation_check": "Four examples discovered and complete 97,489-node/413,405-tetrahedron pad loaded.",
+    "network": "none",
+    "host_mounts": false,
+    "device": "cpu",
+    "result": "passed",
+    "log": "results/phantom-cut/docker-isolation.log"
+  },
+  "timing_scope": "Test and capture wall times include setup. No live 60 FPS claim."
+}

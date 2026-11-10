@@ -1,0 +1,2286 @@
+{
+  "schema_version": 1,
+  "assembled_utc": "2026-11-09T14:18:17.362484+00:00",
+  "scope": "Eight actual continuous/gap insertion runs at 16, 12, 10, 8 substeps, each compared to the fresh optimized 32-substep baseline for the same path. Only timestep/substep count changes; numerical and physical model coefficients and the 80-iteration FEM budget remain unchanged.",
+  "declared_engineering_checks": {
+    "task": "Baseline and candidate succeed with identical counts and ordered event kinds/reuse flags.",
+    "exit_error_vector_difference_m": 5e-05,
+    "maximum_interface_force_relative_difference": 0.05,
+    "maximum_deformation_relative_difference": 0.05,
+    "maximum_force_balance_error_N": 1e-08,
+    "maximum_torque_balance_error_Nm": 1e-09,
+    "accepted_state_finite": true,
+    "fixed_nodes_bitwise_at_rest": true
+  },
+  "default_decision": {
+    "status": "10_substeps_qualified_for_demonstrated_insertions_and_handling",
+    "selected_default_substeps": 10,
+    "lowest_tested_passing_substeps_for_these_two_insertions": 10,
+    "minimum_safe_substeps_not_established": true,
+    "qualification_basis": [
+      "Continuous and gap insertion checks pass at 10, 12 and 16 substeps against their preserved 32-substep reference.",
+      "The 10-substep paired 0.5 mm lateral-drive pulse passes every predeclared handling check against 32 substeps.",
+      "Final contact-query extent, block32 and radius-query changes pass 96 CUDA needle tests and 276 paired kernel evaluations with bitwise-identical outputs."
+    ],
+    "pending_qualification_evidence": [],
+    "runtime_or_default_modified_by_this_artifact": false,
+    "application_scope": "This artifact selects and qualifies 10 substeps. The example default is changed separately; the historical validation workflow remains explicitly 32/64 substeps."
+  },
+  "summary": {
+    "16": {
+      "base": {
+        "all_declared_checks_passed": true,
+        "success": true,
+        "physical_time_s": 3.787499999999865,
+        "exit_error_m": 1.0190842507604147e-05,
+        "failure_state_tip_to_target_distance_m": null,
+        "exit_error_vector_change_from_32_m": 1.567711947580094e-06,
+        "peak_force_relative_change_from_32": 0.00018098024411336957,
+        "peak_deformation_relative_change_from_32": 0.001132358195949687,
+        "sparse_post_entry_force_vector_relative_rms_difference": 0.11455586253340312
+      },
+      "gap": {
+        "all_declared_checks_passed": true,
+        "success": true,
+        "physical_time_s": 3.8052083333331974,
+        "exit_error_m": 9.640964231748197e-06,
+        "failure_state_tip_to_target_distance_m": null,
+        "exit_error_vector_change_from_32_m": 1.5701274827302576e-07,
+        "peak_force_relative_change_from_32": 0.0026033986737553096,
+        "peak_deformation_relative_change_from_32": 0.0011585309639901384,
+        "sparse_post_entry_force_vector_relative_rms_difference": 0.05839323740937446
+      }
+    },
+    "12": {
+      "base": {
+        "all_declared_checks_passed": true,
+        "success": true,
+        "physical_time_s": 3.7861111111113837,
+        "exit_error_m": 7.612704016653115e-06,
+        "failure_state_tip_to_target_distance_m": null,
+        "exit_error_vector_change_from_32_m": 1.4672008570557792e-06,
+        "peak_force_relative_change_from_32": 0.00030593650703985783,
+        "peak_deformation_relative_change_from_32": 0.0016629862191018007,
+        "sparse_post_entry_force_vector_relative_rms_difference": 0.05259149435719149
+      },
+      "gap": {
+        "all_declared_checks_passed": true,
+        "success": true,
+        "physical_time_s": 3.805555555555831,
+        "exit_error_m": 1.0982172294751692e-05,
+        "failure_state_tip_to_target_distance_m": null,
+        "exit_error_vector_change_from_32_m": 1.5555715806313767e-06,
+        "peak_force_relative_change_from_32": 0.004763404704740812,
+        "peak_deformation_relative_change_from_32": 0.0054341692751234735,
+        "sparse_post_entry_force_vector_relative_rms_difference": 0.14757724254135104
+      }
+    },
+    "10": {
+      "base": {
+        "all_declared_checks_passed": true,
+        "success": true,
+        "physical_time_s": 3.7866666666665023,
+        "exit_error_m": 9.776286996091979e-06,
+        "failure_state_tip_to_target_distance_m": null,
+        "exit_error_vector_change_from_32_m": 9.010906250523349e-07,
+        "peak_force_relative_change_from_32": 0.0032271560206406586,
+        "peak_deformation_relative_change_from_32": 0.013881930305540822,
+        "sparse_post_entry_force_vector_relative_rms_difference": 0.020614267348486655
+      },
+      "gap": {
+        "all_declared_checks_passed": true,
+        "success": true,
+        "physical_time_s": 3.8049999999998336,
+        "exit_error_m": 1.058089236073716e-05,
+        "failure_state_tip_to_target_distance_m": null,
+        "exit_error_vector_change_from_32_m": 1.2597873528532574e-06,
+        "peak_force_relative_change_from_32": 0.0017215106766327786,
+        "peak_deformation_relative_change_from_32": 0.004593377377059686,
+        "sparse_post_entry_force_vector_relative_rms_difference": 0.12370944586495686
+      }
+    },
+    "8": {
+      "base": {
+        "all_declared_checks_passed": false,
+        "success": false,
+        "physical_time_s": 0.3041666666666662,
+        "exit_error_m": null,
+        "failure_state_tip_to_target_distance_m": 0.009850790179117176,
+        "exit_error_vector_change_from_32_m": null,
+        "peak_force_relative_change_from_32": 1.0,
+        "peak_deformation_relative_change_from_32": 0.9999174565534901,
+        "sparse_post_entry_force_vector_relative_rms_difference": null
+      },
+      "gap": {
+        "all_declared_checks_passed": false,
+        "success": false,
+        "physical_time_s": 0.2312499999999998,
+        "exit_error_m": null,
+        "failure_state_tip_to_target_distance_m": 0.009998621237489161,
+        "exit_error_vector_change_from_32_m": null,
+        "peak_force_relative_change_from_32": 1.0,
+        "peak_deformation_relative_change_from_32": 0.9999095347959157,
+        "sparse_post_entry_force_vector_relative_rms_difference": null
+      }
+    }
+  },
+  "experiments": {
+    "reduced_base": {
+      "result_directory": "nsys/results/needle_reduced_substeps_base_20261109",
+      "declaration": {
+        "purpose": "Determine whether 16 or 8 substeps preserve the demonstrated 32-substep behavior.",
+        "changed_parameter": "substeps only; dt = (1/60 s) / substeps",
+        "unchanged_fem_solver_iterations": 80,
+        "nonfinite_numeric_serialization": "JSON null, accompanied by explicit failed-state/force diagnostics.",
+        "unchanged": [
+          "60 Hz frame/tangent-refresh interval",
+          "mesh, selected region, material, supports, and needle geometry",
+          "continuous/gap marked points and finite-force drive",
+          "physical interaction coefficients and sampling spacings",
+          "FEM linear-solve and outer coupling tolerances/budgets"
+        ],
+        "engineering_checks_declared_before_running": {
+          "task": "Baseline and candidate succeed with identical counts and ordered event kinds/reuse flags.",
+          "exit_error_vector_difference_m": 5e-05,
+          "maximum_interface_force_relative_difference": 0.05,
+          "maximum_deformation_relative_difference": 0.05,
+          "maximum_force_balance_error_N": 1e-08,
+          "maximum_torque_balance_error_Nm": 1e-09,
+          "accepted_state_finite": true,
+          "fixed_nodes_bitwise_at_rest": true
+        },
+        "scope": "Scenario-specific engineering checks, not physiological calibration or a convergence proof. Sparse force-history comparisons are observations without a pass threshold. Detailed accepted substep traces are saved separately; rejected trials are not labeled as accepted data. No default changes are made by this harness, and diagnostic wall time is not an FPS result.",
+        "source_sha256": {
+          "src/newton_solver_fem/_src/insertion.py": "d6d652b15653d4a6675ab9799c08abab0618882dee542125cae26bc0bd220fa4",
+          "src/newton_solver_fem/_src/coupling.py": "0414759276798a2ea3dafc59e256ab0bf1eb39cc610db177253c3de8825b278f",
+          "src/newton_solver_fem/_src/solvers/fem/solver.py": "cfec8aedc30c0b1a78b287d1896569bc795e019223685d43413b41f2ddfc1280",
+          "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "c566954c19092d4537d83fe3eaec6ede603516fd34f939d8c93b19b1729673f6",
+          "src/newton_solver_fem/examples/_needle_insertion_drive.py": "f68e6c83a5ffc6c30f3d51fa34c10809501d8603ac3cff8efe9399835225d2f4",
+          "tools/validate_needle_insertion.py": "51cba90ca29d52a816cbb78279fdfb0f413164d0151c5d518276c1cafbc69f64"
+        },
+        "harness_sha256": "ad9c61628c928565c6bc69878e12a01de5665a46864d1b4767dfa8aac27669ac",
+        "baseline_paths": {
+          "base": "/tmp/needle-optimized32-base.json",
+          "gap": "/tmp/needle-optimized32-gap.json"
+        },
+        "baseline_sha256": {
+          "base": "b5da43638cbbb4c1ef6a33d3af14bf786beb85caa1d6719b139af3d6ef5f1adc",
+          "gap": "78e560f88078e6155d6b61217dbe88f5c5983b7039564de3af1073770762cab1"
+        },
+        "baseline_provenance": "Caller supplies the fresh optimized 32-substep reports; no baseline is rerun or altered."
+      },
+      "declaration_sha256": "24ee9cbd95757822a0e5fa156afabfe7327b43896e8dce56f0de97fdbdbcd0e2",
+      "aggregate_comparison_path": "nsys/results/needle_reduced_substeps_base_20261109/comparison.json",
+      "aggregate_comparison_sha256": "50b430c30d3e9bba544455231a33b0b7a18b311f488180c7183659b5d64361f6",
+      "original_harness_path": "/tmp/validate_needle_reduced_substeps.py",
+      "preserved_harness_path": "nsys/results/needle_reduced_substeps_base_20261109/validate_needle_reduced_substeps.py",
+      "preserved_harness_sha256": "ad9c61628c928565c6bc69878e12a01de5665a46864d1b4767dfa8aac27669ac"
+    },
+    "reduced_gap": {
+      "result_directory": "nsys/results/needle_reduced_substeps_gap_20261109",
+      "declaration": {
+        "purpose": "Determine whether 16 or 8 substeps preserve the demonstrated 32-substep behavior.",
+        "changed_parameter": "substeps only; dt = (1/60 s) / substeps",
+        "unchanged_fem_solver_iterations": 80,
+        "nonfinite_numeric_serialization": "JSON null, accompanied by explicit failed-state/force diagnostics.",
+        "unchanged": [
+          "60 Hz frame/tangent-refresh interval",
+          "mesh, selected region, material, supports, and needle geometry",
+          "continuous/gap marked points and finite-force drive",
+          "physical interaction coefficients and sampling spacings",
+          "FEM linear-solve and outer coupling tolerances/budgets"
+        ],
+        "engineering_checks_declared_before_running": {
+          "task": "Baseline and candidate succeed with identical counts and ordered event kinds/reuse flags.",
+          "exit_error_vector_difference_m": 5e-05,
+          "maximum_interface_force_relative_difference": 0.05,
+          "maximum_deformation_relative_difference": 0.05,
+          "maximum_force_balance_error_N": 1e-08,
+          "maximum_torque_balance_error_Nm": 1e-09,
+          "accepted_state_finite": true,
+          "fixed_nodes_bitwise_at_rest": true
+        },
+        "scope": "Scenario-specific engineering checks, not physiological calibration or a convergence proof. Sparse force-history comparisons are observations without a pass threshold. Detailed accepted substep traces are saved separately; rejected trials are not labeled as accepted data. No default changes are made by this harness, and diagnostic wall time is not an FPS result.",
+        "source_sha256": {
+          "src/newton_solver_fem/_src/insertion.py": "d6d652b15653d4a6675ab9799c08abab0618882dee542125cae26bc0bd220fa4",
+          "src/newton_solver_fem/_src/coupling.py": "0414759276798a2ea3dafc59e256ab0bf1eb39cc610db177253c3de8825b278f",
+          "src/newton_solver_fem/_src/solvers/fem/solver.py": "cfec8aedc30c0b1a78b287d1896569bc795e019223685d43413b41f2ddfc1280",
+          "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "c566954c19092d4537d83fe3eaec6ede603516fd34f939d8c93b19b1729673f6",
+          "src/newton_solver_fem/examples/_needle_insertion_drive.py": "f68e6c83a5ffc6c30f3d51fa34c10809501d8603ac3cff8efe9399835225d2f4",
+          "tools/validate_needle_insertion.py": "51cba90ca29d52a816cbb78279fdfb0f413164d0151c5d518276c1cafbc69f64"
+        },
+        "harness_sha256": "ad9c61628c928565c6bc69878e12a01de5665a46864d1b4767dfa8aac27669ac",
+        "baseline_paths": {
+          "base": "/tmp/needle-optimized32-base.json",
+          "gap": "/tmp/needle-optimized32-gap.json"
+        },
+        "baseline_sha256": {
+          "base": "b5da43638cbbb4c1ef6a33d3af14bf786beb85caa1d6719b139af3d6ef5f1adc",
+          "gap": "78e560f88078e6155d6b61217dbe88f5c5983b7039564de3af1073770762cab1"
+        },
+        "baseline_provenance": "Caller supplies the fresh optimized 32-substep reports; no baseline is rerun or altered."
+      },
+      "declaration_sha256": "24ee9cbd95757822a0e5fa156afabfe7327b43896e8dce56f0de97fdbdbcd0e2",
+      "aggregate_comparison_path": "nsys/results/needle_reduced_substeps_gap_20261109/comparison.json",
+      "aggregate_comparison_sha256": "5bd04cfeeb214576601e917aca99b3546319b60371aba037130a97ec09a11950",
+      "original_harness_path": "/tmp/validate_needle_reduced_substeps.py",
+      "preserved_harness_path": "nsys/results/needle_reduced_substeps_gap_20261109/validate_needle_reduced_substeps.py",
+      "preserved_harness_sha256": "ad9c61628c928565c6bc69878e12a01de5665a46864d1b4767dfa8aac27669ac"
+    },
+    "intermediate_base": {
+      "result_directory": "nsys/results/needle_intermediate_substeps_base_20261109",
+      "declaration": {
+        "purpose": "Determine whether 12 or 10 substeps preserve the demonstrated 32-substep behavior.",
+        "changed_parameter": "substeps only; dt = (1/60 s) / substeps",
+        "unchanged_fem_solver_iterations": 80,
+        "nonfinite_numeric_serialization": "JSON null, accompanied by explicit failed-state/force diagnostics.",
+        "unchanged": [
+          "60 Hz frame/tangent-refresh interval",
+          "mesh, selected region, material, supports, and needle geometry",
+          "continuous/gap marked points and finite-force drive",
+          "physical interaction coefficients and sampling spacings",
+          "FEM linear-solve and outer coupling tolerances/budgets"
+        ],
+        "engineering_checks_declared_before_running": {
+          "task": "Baseline and candidate succeed with identical counts and ordered event kinds/reuse flags.",
+          "exit_error_vector_difference_m": 5e-05,
+          "maximum_interface_force_relative_difference": 0.05,
+          "maximum_deformation_relative_difference": 0.05,
+          "maximum_force_balance_error_N": 1e-08,
+          "maximum_torque_balance_error_Nm": 1e-09,
+          "accepted_state_finite": true,
+          "fixed_nodes_bitwise_at_rest": true
+        },
+        "scope": "Scenario-specific engineering checks, not physiological calibration or a convergence proof. Sparse force-history comparisons are observations without a pass threshold. Detailed accepted substep traces are saved separately; rejected trials are not labeled as accepted data. No default changes are made by this harness, and diagnostic wall time is not an FPS result.",
+        "source_sha256": {
+          "src/newton_solver_fem/_src/insertion.py": "d6d652b15653d4a6675ab9799c08abab0618882dee542125cae26bc0bd220fa4",
+          "src/newton_solver_fem/_src/coupling.py": "0414759276798a2ea3dafc59e256ab0bf1eb39cc610db177253c3de8825b278f",
+          "src/newton_solver_fem/_src/solvers/fem/solver.py": "cfec8aedc30c0b1a78b287d1896569bc795e019223685d43413b41f2ddfc1280",
+          "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "c566954c19092d4537d83fe3eaec6ede603516fd34f939d8c93b19b1729673f6",
+          "src/newton_solver_fem/examples/_needle_insertion_drive.py": "f68e6c83a5ffc6c30f3d51fa34c10809501d8603ac3cff8efe9399835225d2f4",
+          "tools/validate_needle_insertion.py": "51cba90ca29d52a816cbb78279fdfb0f413164d0151c5d518276c1cafbc69f64"
+        },
+        "harness_sha256": "739e3970cc47a7d72d8d76b11d401bfa65e3c17ed21db3d84f303ce6e5b991db",
+        "baseline_paths": {
+          "base": "/tmp/needle-optimized32-base.json",
+          "gap": "/tmp/needle-optimized32-gap.json"
+        },
+        "baseline_sha256": {
+          "base": "b5da43638cbbb4c1ef6a33d3af14bf786beb85caa1d6719b139af3d6ef5f1adc",
+          "gap": "78e560f88078e6155d6b61217dbe88f5c5983b7039564de3af1073770762cab1"
+        },
+        "baseline_provenance": "Caller supplies the fresh optimized 32-substep reports; no baseline is rerun or altered."
+      },
+      "declaration_sha256": "d690379a663e400f64785a7d7d2bddd77641e47c78cc7cdab39cdd2ffdaf572f",
+      "aggregate_comparison_path": "nsys/results/needle_intermediate_substeps_base_20261109/comparison.json",
+      "aggregate_comparison_sha256": "d350776010de2c53902ea96532a306a562011d981483e743b062c50c32728450",
+      "original_harness_path": "/tmp/validate_needle_intermediate_substeps.py",
+      "preserved_harness_path": "nsys/results/needle_intermediate_substeps_base_20261109/validate_needle_intermediate_substeps.py",
+      "preserved_harness_sha256": "739e3970cc47a7d72d8d76b11d401bfa65e3c17ed21db3d84f303ce6e5b991db"
+    },
+    "intermediate_gap": {
+      "result_directory": "nsys/results/needle_intermediate_substeps_gap_20261109",
+      "declaration": {
+        "purpose": "Determine whether 12 or 10 substeps preserve the demonstrated 32-substep behavior.",
+        "changed_parameter": "substeps only; dt = (1/60 s) / substeps",
+        "unchanged_fem_solver_iterations": 80,
+        "nonfinite_numeric_serialization": "JSON null, accompanied by explicit failed-state/force diagnostics.",
+        "unchanged": [
+          "60 Hz frame/tangent-refresh interval",
+          "mesh, selected region, material, supports, and needle geometry",
+          "continuous/gap marked points and finite-force drive",
+          "physical interaction coefficients and sampling spacings",
+          "FEM linear-solve and outer coupling tolerances/budgets"
+        ],
+        "engineering_checks_declared_before_running": {
+          "task": "Baseline and candidate succeed with identical counts and ordered event kinds/reuse flags.",
+          "exit_error_vector_difference_m": 5e-05,
+          "maximum_interface_force_relative_difference": 0.05,
+          "maximum_deformation_relative_difference": 0.05,
+          "maximum_force_balance_error_N": 1e-08,
+          "maximum_torque_balance_error_Nm": 1e-09,
+          "accepted_state_finite": true,
+          "fixed_nodes_bitwise_at_rest": true
+        },
+        "scope": "Scenario-specific engineering checks, not physiological calibration or a convergence proof. Sparse force-history comparisons are observations without a pass threshold. Detailed accepted substep traces are saved separately; rejected trials are not labeled as accepted data. No default changes are made by this harness, and diagnostic wall time is not an FPS result.",
+        "source_sha256": {
+          "src/newton_solver_fem/_src/insertion.py": "d6d652b15653d4a6675ab9799c08abab0618882dee542125cae26bc0bd220fa4",
+          "src/newton_solver_fem/_src/coupling.py": "0414759276798a2ea3dafc59e256ab0bf1eb39cc610db177253c3de8825b278f",
+          "src/newton_solver_fem/_src/solvers/fem/solver.py": "cfec8aedc30c0b1a78b287d1896569bc795e019223685d43413b41f2ddfc1280",
+          "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "c566954c19092d4537d83fe3eaec6ede603516fd34f939d8c93b19b1729673f6",
+          "src/newton_solver_fem/examples/_needle_insertion_drive.py": "f68e6c83a5ffc6c30f3d51fa34c10809501d8603ac3cff8efe9399835225d2f4",
+          "tools/validate_needle_insertion.py": "51cba90ca29d52a816cbb78279fdfb0f413164d0151c5d518276c1cafbc69f64"
+        },
+        "harness_sha256": "739e3970cc47a7d72d8d76b11d401bfa65e3c17ed21db3d84f303ce6e5b991db",
+        "baseline_paths": {
+          "base": "/tmp/needle-optimized32-base.json",
+          "gap": "/tmp/needle-optimized32-gap.json"
+        },
+        "baseline_sha256": {
+          "base": "b5da43638cbbb4c1ef6a33d3af14bf786beb85caa1d6719b139af3d6ef5f1adc",
+          "gap": "78e560f88078e6155d6b61217dbe88f5c5983b7039564de3af1073770762cab1"
+        },
+        "baseline_provenance": "Caller supplies the fresh optimized 32-substep reports; no baseline is rerun or altered."
+      },
+      "declaration_sha256": "d690379a663e400f64785a7d7d2bddd77641e47c78cc7cdab39cdd2ffdaf572f",
+      "aggregate_comparison_path": "nsys/results/needle_intermediate_substeps_gap_20261109/comparison.json",
+      "aggregate_comparison_sha256": "064deb714f7ca77d9955abb7e0efa2137f1c771a33fae26331903ba775111861",
+      "original_harness_path": "/tmp/validate_needle_intermediate_substeps.py",
+      "preserved_harness_path": "nsys/results/needle_intermediate_substeps_gap_20261109/validate_needle_intermediate_substeps.py",
+      "preserved_harness_sha256": "739e3970cc47a7d72d8d76b11d401bfa65e3c17ed21db3d84f303ce6e5b991db"
+    }
+  },
+  "cases": {
+    "base-16": {
+      "experiment": "reduced_base",
+      "case_result": {
+        "outcome": "Success: tip emerged, exit error 0.010 mm",
+        "success": true,
+        "task_status": "success",
+        "interaction_events": [
+          {
+            "kind": "puncture",
+            "time_s": 1.0906250000000182,
+            "position_m": [
+              0.03005178912275572,
+              -0.04006092781223249,
+              0.0011039759212278584
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 1.093750000000018,
+            "position_m": [
+              0.030081382021307945,
+              -0.039994172751903534,
+              0.0011693863198161125
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 3.787499999999865,
+            "position_m": [
+              0.03800995647907257,
+              -0.03999699279665947,
+              0.0014639515429735184
+            ],
+            "reused": false
+          }
+        ],
+        "entry_count": 1,
+        "exit_count": 1,
+        "physical_time_s": 3.787499999999865,
+        "exit_error_m": 1.0190842507604147e-05,
+        "exit_tolerance_m": 0.001,
+        "puncture_count": 1,
+        "track_samples": 33,
+        "track_section_count": 1,
+        "track_length_m": 0.008095748576693814,
+        "maximum_interface_force_N": 0.003072221037570577,
+        "maximum_deformation_m": 0.00015252518862932227,
+        "maximum_deformation_time_s": 1.0906250000000182,
+        "maximum_force_balance_error_N": 7.105150502020087e-10,
+        "maximum_torque_balance_error_Nm": 1.6671313260142924e-11,
+        "maximum_coupling_iterations": 12,
+        "maximum_coupling_residual_N": 6.327754023112376e-07,
+        "last_coupling_attempt_iterations": 1,
+        "last_coupling_attempt_residual_N": 3.384180409439253e-08,
+        "fem_graph_captures": 2,
+        "fem_graph_launches": 5095,
+        "fem_graph_status": "replaying",
+        "cutting_resistance_omitted": true,
+        "last_interface_load_on_fixed_nodes_N": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dt_s": 0.0010416666666666667,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "status": "outside",
+        "calibrated": false,
+        "runtime_solver_configuration": {
+          "parser_solver_iterations": 80,
+          "fem_linear_solver_maxiter": 80,
+          "fem_linear_solver_tolerance": 1e-05,
+          "coupling_max_iterations": 40,
+          "coupling_absolute_tolerance": 2e-07,
+          "coupling_relative_tolerance": 0.0002
+        },
+        "rejected_coupling_attempts": [],
+        "final_validation_failures": [],
+        "selection": {
+          "regions": [
+            1
+          ],
+          "entry_xy_m": [
+            0.03,
+            -0.04
+          ],
+          "exit_xy_m": [
+            0.038,
+            -0.04
+          ]
+        },
+        "accepted_trace": {
+          "path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem/nsys/results/needle_reduced_substeps_base_20261109/base-16-accepted.jsonl",
+          "accepted_steps": 3636,
+          "all_states_finite": true,
+          "fixed_nodes_bitwise_at_rest": true
+        },
+        "diagnostic_substeps": 16
+      },
+      "assessment": {
+        "case": "base",
+        "substeps": 16,
+        "engineering_checks": {
+          "baseline_succeeded": true,
+          "candidate_succeeded": true,
+          "no_rejected_coupling_attempts": true,
+          "final_state_validation_passed": true,
+          "fem_iteration_budget_unchanged_at_80": true,
+          "same_entry_count": true,
+          "same_exit_count": true,
+          "same_puncture_count": true,
+          "same_track_section_count": true,
+          "same_ordered_event_kinds_and_reuse": true,
+          "exit_error_vector_change_within_50um": true,
+          "maximum_interface_force_N_change_within_5percent": true,
+          "maximum_deformation_m_change_within_5percent": true,
+          "unchanged_track_spacing_m": true,
+          "unchanged_shaft_spacing_m": true,
+          "unchanged_exit_tolerance_m": true,
+          "unchanged_cutting_resistance_omitted": true,
+          "base_maximum_force_balance_error_N_under_1e-08N": true,
+          "base_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "timestep_maximum_force_balance_error_N_under_1e-08N": true,
+          "timestep_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "detailed_accepted_trace_present": true,
+          "all_accepted_states_finite": true,
+          "fixed_supports_remained_exactly_at_rest": true
+        },
+        "all_declared_checks_passed": true,
+        "relative_changes": {
+          "maximum_interface_force_N": 0.00018098024411336957,
+          "maximum_deformation_m": 0.001132358195949687
+        },
+        "observations": {
+          "exit_error_vector_change_m": 1.567711947580094e-06,
+          "emergence_time_change_s": 3.9968028886505635e-14,
+          "post_entry_force_trace_comparison": {
+            "shared_time_interval_s": [
+              1.1000000000000176,
+              3.787499999999825
+            ],
+            "base_saved_sample_count": 7,
+            "refined_saved_sample_count": 7,
+            "interpolation_knot_count": 12,
+            "vector_difference_rms_N": 3.195185946060697e-06,
+            "base_vector_rms_N": 2.7891946124791466e-05,
+            "vector_difference_relative_rms": 0.11455586253340312,
+            "maximum_interpolated_vector_difference_N": 3.880747355793201e-06,
+            "scope": "Piecewise-linear interpolation of sparse snapshots after first observed entry over shared physical time; no time warping or acceptance threshold. Unresolved substep transients and the entry transition before both first inserted samples are excluded. Rejected coupling-trial force diagnostics are excluded."
+          }
+        },
+        "force_law_assessment": {
+          "convergence_established": false,
+          "scope": "Task checks assess the selected insertion scenarios. Force/moment residuals assess endpoint force-law scatter, not every finite-tolerance applied iterate. Applied-load balance is covered independently by coupler regression tests. Sparse post-entry force-vector comparisons are observations without an acceptance threshold. Passing task checks does not establish convergence of full force histories or coupled energy."
+        }
+      },
+      "input_evidence": {
+        "report_path": "nsys/results/needle_reduced_substeps_base_20261109/base-16.json",
+        "report_sha256": "4261f0d153438f212088806f76aea62324f6b81a20051a520882f6f7fdfd13a2",
+        "assessment_path": "nsys/results/needle_reduced_substeps_base_20261109/base-16-comparison.json",
+        "assessment_sha256": "1820362f31f84eadf9a2a9094eeab300a1a5cedc49a69a36b70ac4b599a31cb5",
+        "accepted_trace_path": "nsys/results/needle_reduced_substeps_base_20261109/base-16-accepted.jsonl",
+        "accepted_trace_sha256": "e0c0958b1d3786430da195bd49f71cfc676c988035408a85ec4fcf757ca5e0f4",
+        "saved_sparse_trace_samples": 11
+      }
+    },
+    "base-8": {
+      "experiment": "reduced_base",
+      "case_result": {
+        "outcome": "Failed: Unresolved tip or shaft displacement; reduce timestep to resolve needle radius and track spacing",
+        "success": false,
+        "task_status": "failed",
+        "interaction_events": [],
+        "entry_count": 0,
+        "exit_count": 0,
+        "physical_time_s": 0.3041666666666662,
+        "exit_error_m": 0.009850790179117176,
+        "exit_tolerance_m": 0.001,
+        "puncture_count": 0,
+        "track_samples": 0,
+        "track_section_count": 0,
+        "track_length_m": 0.0,
+        "maximum_interface_force_N": 0.0,
+        "maximum_deformation_m": 1.2604227249070736e-08,
+        "maximum_deformation_time_s": 0.0020833333333333333,
+        "maximum_force_balance_error_N": 0.0,
+        "maximum_torque_balance_error_Nm": 0.0,
+        "maximum_coupling_iterations": 1,
+        "maximum_coupling_residual_N": 0.0,
+        "last_coupling_attempt_iterations": 1,
+        "last_coupling_attempt_residual_N": 0.0,
+        "fem_graph_captures": 2,
+        "fem_graph_launches": 145,
+        "fem_graph_status": "replaying",
+        "cutting_resistance_omitted": true,
+        "last_interface_load_on_fixed_nodes_N": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dt_s": 0.0020833333333333333,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "status": "failed",
+        "calibrated": false,
+        "runtime_solver_configuration": {
+          "parser_solver_iterations": 80,
+          "fem_linear_solver_maxiter": 80,
+          "fem_linear_solver_tolerance": 1e-05,
+          "coupling_max_iterations": 40,
+          "coupling_absolute_tolerance": 2e-07,
+          "coupling_relative_tolerance": 0.0002
+        },
+        "rejected_coupling_attempts": [],
+        "final_validation_failures": [],
+        "selection": {
+          "regions": [
+            1
+          ],
+          "entry_xy_m": [
+            0.03,
+            -0.04
+          ],
+          "exit_xy_m": [
+            0.038,
+            -0.04
+          ]
+        },
+        "accepted_trace": {
+          "path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem/nsys/results/needle_reduced_substeps_base_20261109/base-8-accepted.jsonl",
+          "accepted_steps": 146,
+          "all_states_finite": true,
+          "fixed_nodes_bitwise_at_rest": true
+        },
+        "diagnostic_substeps": 8
+      },
+      "assessment": {
+        "case": "base",
+        "substeps": 8,
+        "engineering_checks": {
+          "baseline_succeeded": true,
+          "candidate_succeeded": false,
+          "no_rejected_coupling_attempts": true,
+          "final_state_validation_passed": true,
+          "fem_iteration_budget_unchanged_at_80": true,
+          "same_entry_count": false,
+          "same_exit_count": false,
+          "same_puncture_count": false,
+          "same_track_section_count": false,
+          "same_ordered_event_kinds_and_reuse": false,
+          "exit_error_vector_change_within_50um": false,
+          "maximum_interface_force_N_change_within_5percent": false,
+          "maximum_deformation_m_change_within_5percent": false,
+          "unchanged_track_spacing_m": true,
+          "unchanged_shaft_spacing_m": true,
+          "unchanged_exit_tolerance_m": true,
+          "unchanged_cutting_resistance_omitted": true,
+          "base_maximum_force_balance_error_N_under_1e-08N": true,
+          "base_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "timestep_maximum_force_balance_error_N_under_1e-08N": true,
+          "timestep_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "detailed_accepted_trace_present": true,
+          "all_accepted_states_finite": true,
+          "fixed_supports_remained_exactly_at_rest": true
+        },
+        "all_declared_checks_passed": false,
+        "relative_changes": {
+          "maximum_interface_force_N": 1.0,
+          "maximum_deformation_m": 0.9999174565534901
+        },
+        "observations": {
+          "exit_error_vector_change_m": null,
+          "emergence_time_change_s": null,
+          "post_entry_force_trace_comparison": null
+        },
+        "force_law_assessment": {
+          "convergence_established": false,
+          "scope": "Task checks assess the selected insertion scenarios. Force/moment residuals assess endpoint force-law scatter, not every finite-tolerance applied iterate. Applied-load balance is covered independently by coupler regression tests. Sparse post-entry force-vector comparisons are observations without an acceptance threshold. Passing task checks does not establish convergence of full force histories or coupled energy."
+        }
+      },
+      "input_evidence": {
+        "report_path": "nsys/results/needle_reduced_substeps_base_20261109/base-8.json",
+        "report_sha256": "dda4d424dc15fcf26749e072be05f2f75f199a503434c2d4fb909ce55c0cb3d2",
+        "assessment_path": "nsys/results/needle_reduced_substeps_base_20261109/base-8-comparison.json",
+        "assessment_sha256": "94e98f81404c01ae6d175d83e0306220f5249b98c088f2fa0e4a3e88c2a02d11",
+        "accepted_trace_path": "nsys/results/needle_reduced_substeps_base_20261109/base-8-accepted.jsonl",
+        "accepted_trace_sha256": "a13919a60854f7b340138da96518c6f4232454def0435b0005749549beedde1a",
+        "saved_sparse_trace_samples": 2
+      },
+      "failure_diagnostics": {
+        "failure_time_s": 0.3041666666666662,
+        "reason": "Failed: Unresolved tip or shaft displacement; reduce timestep to resolve needle radius and track spacing",
+        "before_any_contact_load_or_puncture": true,
+        "coupled_accepted_steps_including_guard_failure": 146,
+        "no_exit_event": true,
+        "failure_state_tip_to_target_distance_m": 0.009850790179117176,
+        "rejected_coupling_attempts": 0,
+        "maximum_recorded_interface_force_N": 0.0,
+        "maximum_recorded_interface_torque_Nm": 0.0,
+        "maximum_recorded_angular_speed_rad_s": 23.61179259375636,
+        "last_tip_step_displacement_m": 8.012534074132228e-05,
+        "last_12_angular_velocity_consecutive_dot_products_negative": 11,
+        "last_12_angular_velocity_comparisons": 11,
+        "final_five_angular_velocity_samples": [
+          {
+            "time_s": 0.2958333333333329,
+            "angular_velocity_rad_s": [
+              -0.18788495659828186,
+              -12.112451553344727,
+              -11.560489654541016
+            ]
+          },
+          {
+            "time_s": 0.2979166666666662,
+            "angular_velocity_rad_s": [
+              0.1877712905406952,
+              12.901727676391602,
+              12.902172088623047
+            ]
+          },
+          {
+            "time_s": 0.29999999999999954,
+            "angular_velocity_rad_s": [
+              -0.20378491282463074,
+              -14.359755516052246,
+              -13.75236701965332
+            ]
+          },
+          {
+            "time_s": 0.30208333333333287,
+            "angular_velocity_rad_s": [
+              0.20312434434890747,
+              15.34524154663086,
+              15.296358108520508
+            ]
+          },
+          {
+            "time_s": 0.3041666666666662,
+            "angular_velocity_rad_s": [
+              -0.21856537461280823,
+              -17.028179168701172,
+              -16.355735778808594
+            ]
+          }
+        ],
+        "interpretation": "Alternating growing rigid angular velocity occurs before any interface load. The accepted-step tip/shaft motion-resolution guard stops the run. This is not a contact-force fixed-point failure or evidence that FEM contact caused the failure; it does not establish a general controller stability boundary.",
+        "state_force_labeling": "The terminal state was accepted by the coupled solve, then marked failed by the interaction motion-resolution guard. No failed coupling trial is relabeled as an accepted endpoint."
+      }
+    },
+    "gap-16": {
+      "experiment": "reduced_gap",
+      "case_result": {
+        "outcome": "Success: tip emerged, exit error 0.010 mm",
+        "success": true,
+        "task_status": "success",
+        "interaction_events": [
+          {
+            "kind": "puncture",
+            "time_s": 1.1270833333333494,
+            "position_m": [
+              0.03000643768458287,
+              -0.040034041238801034,
+              0.0010628060709507523
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 1.1291666666666826,
+            "position_m": [
+              0.029994646087288857,
+              -0.03998832032084465,
+              0.0011212052777409554
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 2.0249999999999653,
+            "position_m": [
+              0.030029118061065674,
+              -0.04295237362384796,
+              0.0007748603820800781
+            ],
+            "reused": false
+          },
+          {
+            "kind": "puncture",
+            "time_s": 2.8437499999999187,
+            "position_m": [
+              0.030048245995674343,
+              -0.04523276402154359,
+              0.0009055796115714497
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 2.845833333333252,
+            "position_m": [
+              0.030020449310541153,
+              -0.04517337307333946,
+              0.000967513769865036
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 3.8052083333331974,
+            "position_m": [
+              0.02999887242913246,
+              -0.04800967127084732,
+              0.002256150357425213
+            ],
+            "reused": false
+          }
+        ],
+        "entry_count": 2,
+        "exit_count": 2,
+        "physical_time_s": 3.8052083333331974,
+        "exit_error_m": 9.640964231748197e-06,
+        "exit_tolerance_m": 0.001,
+        "puncture_count": 2,
+        "track_samples": 25,
+        "track_section_count": 2,
+        "track_length_m": 0.0057950104320131125,
+        "maximum_interface_force_N": 0.003213885082139301,
+        "maximum_deformation_m": 0.0001391653839612502,
+        "maximum_deformation_time_s": 1.1270833333333494,
+        "maximum_force_balance_error_N": 1.6309185180797097e-09,
+        "maximum_torque_balance_error_Nm": 4.5146129727039286e-11,
+        "maximum_coupling_iterations": 18,
+        "maximum_coupling_residual_N": 7.32299453362964e-07,
+        "last_coupling_attempt_iterations": 1,
+        "last_coupling_attempt_residual_N": 2.6818952392204665e-08,
+        "fem_graph_captures": 2,
+        "fem_graph_launches": 7505,
+        "fem_graph_status": "replaying",
+        "cutting_resistance_omitted": true,
+        "last_interface_load_on_fixed_nodes_N": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dt_s": 0.0010416666666666667,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "status": "outside",
+        "calibrated": false,
+        "runtime_solver_configuration": {
+          "parser_solver_iterations": 80,
+          "fem_linear_solver_maxiter": 80,
+          "fem_linear_solver_tolerance": 1e-05,
+          "coupling_max_iterations": 40,
+          "coupling_absolute_tolerance": 2e-07,
+          "coupling_relative_tolerance": 0.0002
+        },
+        "rejected_coupling_attempts": [],
+        "final_validation_failures": [],
+        "selection": {
+          "regions": [
+            1
+          ],
+          "entry_xy_m": [
+            0.03,
+            -0.04
+          ],
+          "exit_xy_m": [
+            0.03,
+            -0.048
+          ]
+        },
+        "accepted_trace": {
+          "path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem/nsys/results/needle_reduced_substeps_gap_20261109/gap-16-accepted.jsonl",
+          "accepted_steps": 3653,
+          "all_states_finite": true,
+          "fixed_nodes_bitwise_at_rest": true
+        },
+        "diagnostic_substeps": 16
+      },
+      "assessment": {
+        "case": "gap",
+        "substeps": 16,
+        "engineering_checks": {
+          "baseline_succeeded": true,
+          "candidate_succeeded": true,
+          "no_rejected_coupling_attempts": true,
+          "final_state_validation_passed": true,
+          "fem_iteration_budget_unchanged_at_80": true,
+          "same_entry_count": true,
+          "same_exit_count": true,
+          "same_puncture_count": true,
+          "same_track_section_count": true,
+          "same_ordered_event_kinds_and_reuse": true,
+          "exit_error_vector_change_within_50um": true,
+          "maximum_interface_force_N_change_within_5percent": true,
+          "maximum_deformation_m_change_within_5percent": true,
+          "unchanged_track_spacing_m": true,
+          "unchanged_shaft_spacing_m": true,
+          "unchanged_exit_tolerance_m": true,
+          "unchanged_cutting_resistance_omitted": true,
+          "base_maximum_force_balance_error_N_under_1e-08N": true,
+          "base_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "timestep_maximum_force_balance_error_N_under_1e-08N": true,
+          "timestep_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "detailed_accepted_trace_present": true,
+          "all_accepted_states_finite": true,
+          "fixed_supports_remained_exactly_at_rest": true
+        },
+        "all_declared_checks_passed": true,
+        "relative_changes": {
+          "maximum_interface_force_N": 0.0026033986737553096,
+          "maximum_deformation_m": 0.0011585309639901384
+        },
+        "observations": {
+          "exit_error_vector_change_m": 1.5701274827302576e-07,
+          "emergence_time_change_s": -0.0005208333332933357,
+          "post_entry_force_trace_comparison": {
+            "shared_time_interval_s": [
+              1.133333333333349,
+              3.8052083333331974
+            ],
+            "base_saved_sample_count": 10,
+            "refined_saved_sample_count": 10,
+            "interpolation_knot_count": 18,
+            "vector_difference_rms_N": 4.8793045204538135e-06,
+            "base_vector_rms_N": 8.355941093395328e-05,
+            "vector_difference_relative_rms": 0.05839323740937446,
+            "maximum_interpolated_vector_difference_N": 2.3491250727045997e-05,
+            "scope": "Piecewise-linear interpolation of sparse snapshots after first observed entry over shared physical time; no time warping or acceptance threshold. Unresolved substep transients and the entry transition before both first inserted samples are excluded. Rejected coupling-trial force diagnostics are excluded."
+          }
+        },
+        "force_law_assessment": {
+          "convergence_established": false,
+          "scope": "Task checks assess the selected insertion scenarios. Force/moment residuals assess endpoint force-law scatter, not every finite-tolerance applied iterate. Applied-load balance is covered independently by coupler regression tests. Sparse post-entry force-vector comparisons are observations without an acceptance threshold. Passing task checks does not establish convergence of full force histories or coupled energy."
+        }
+      },
+      "input_evidence": {
+        "report_path": "nsys/results/needle_reduced_substeps_gap_20261109/gap-16.json",
+        "report_sha256": "f69fe14253d75be3e07af066b823fa66cff625bfc52c91c7259e8a7ce354bc7f",
+        "assessment_path": "nsys/results/needle_reduced_substeps_gap_20261109/gap-16-comparison.json",
+        "assessment_sha256": "757b84fbbd18de7bb41dd28e489b34a0d67e4c0a2a38828a8a8f8b722e8e1c8c",
+        "accepted_trace_path": "nsys/results/needle_reduced_substeps_gap_20261109/gap-16-accepted.jsonl",
+        "accepted_trace_sha256": "22d2a99f0dbd9104ac543ecb7cc924034f6a4ab3d4a7eb89c5bf01ab2b8ce72e",
+        "saved_sparse_trace_samples": 14
+      }
+    },
+    "gap-8": {
+      "experiment": "reduced_gap",
+      "case_result": {
+        "outcome": "Failed: Unresolved tip or shaft displacement; reduce timestep to resolve needle radius and track spacing",
+        "success": false,
+        "task_status": "failed",
+        "interaction_events": [],
+        "entry_count": 0,
+        "exit_count": 0,
+        "physical_time_s": 0.2312499999999998,
+        "exit_error_m": 0.009998621237489161,
+        "exit_tolerance_m": 0.001,
+        "puncture_count": 0,
+        "track_samples": 0,
+        "track_section_count": 0,
+        "track_length_m": 0.0,
+        "maximum_interface_force_N": 0.0,
+        "maximum_deformation_m": 1.2604227249070736e-08,
+        "maximum_deformation_time_s": 0.0020833333333333333,
+        "maximum_force_balance_error_N": 0.0,
+        "maximum_torque_balance_error_Nm": 0.0,
+        "maximum_coupling_iterations": 1,
+        "maximum_coupling_residual_N": 0.0,
+        "last_coupling_attempt_iterations": 1,
+        "last_coupling_attempt_residual_N": 0.0,
+        "fem_graph_captures": 2,
+        "fem_graph_launches": 110,
+        "fem_graph_status": "replaying",
+        "cutting_resistance_omitted": true,
+        "last_interface_load_on_fixed_nodes_N": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dt_s": 0.0020833333333333333,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "status": "failed",
+        "calibrated": false,
+        "runtime_solver_configuration": {
+          "parser_solver_iterations": 80,
+          "fem_linear_solver_maxiter": 80,
+          "fem_linear_solver_tolerance": 1e-05,
+          "coupling_max_iterations": 40,
+          "coupling_absolute_tolerance": 2e-07,
+          "coupling_relative_tolerance": 0.0002
+        },
+        "rejected_coupling_attempts": [],
+        "final_validation_failures": [],
+        "selection": {
+          "regions": [
+            1
+          ],
+          "entry_xy_m": [
+            0.03,
+            -0.04
+          ],
+          "exit_xy_m": [
+            0.03,
+            -0.048
+          ]
+        },
+        "accepted_trace": {
+          "path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem/nsys/results/needle_reduced_substeps_gap_20261109/gap-8-accepted.jsonl",
+          "accepted_steps": 111,
+          "all_states_finite": true,
+          "fixed_nodes_bitwise_at_rest": true
+        },
+        "diagnostic_substeps": 8
+      },
+      "assessment": {
+        "case": "gap",
+        "substeps": 8,
+        "engineering_checks": {
+          "baseline_succeeded": true,
+          "candidate_succeeded": false,
+          "no_rejected_coupling_attempts": true,
+          "final_state_validation_passed": true,
+          "fem_iteration_budget_unchanged_at_80": true,
+          "same_entry_count": false,
+          "same_exit_count": false,
+          "same_puncture_count": false,
+          "same_track_section_count": false,
+          "same_ordered_event_kinds_and_reuse": false,
+          "exit_error_vector_change_within_50um": false,
+          "maximum_interface_force_N_change_within_5percent": false,
+          "maximum_deformation_m_change_within_5percent": false,
+          "unchanged_track_spacing_m": true,
+          "unchanged_shaft_spacing_m": true,
+          "unchanged_exit_tolerance_m": true,
+          "unchanged_cutting_resistance_omitted": true,
+          "base_maximum_force_balance_error_N_under_1e-08N": true,
+          "base_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "timestep_maximum_force_balance_error_N_under_1e-08N": true,
+          "timestep_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "detailed_accepted_trace_present": true,
+          "all_accepted_states_finite": true,
+          "fixed_supports_remained_exactly_at_rest": true
+        },
+        "all_declared_checks_passed": false,
+        "relative_changes": {
+          "maximum_interface_force_N": 1.0,
+          "maximum_deformation_m": 0.9999095347959157
+        },
+        "observations": {
+          "exit_error_vector_change_m": null,
+          "emergence_time_change_s": null,
+          "post_entry_force_trace_comparison": null
+        },
+        "force_law_assessment": {
+          "convergence_established": false,
+          "scope": "Task checks assess the selected insertion scenarios. Force/moment residuals assess endpoint force-law scatter, not every finite-tolerance applied iterate. Applied-load balance is covered independently by coupler regression tests. Sparse post-entry force-vector comparisons are observations without an acceptance threshold. Passing task checks does not establish convergence of full force histories or coupled energy."
+        }
+      },
+      "input_evidence": {
+        "report_path": "nsys/results/needle_reduced_substeps_gap_20261109/gap-8.json",
+        "report_sha256": "2eeabd919ce74c08eefd8d9bdfb48507546ee7441148c97c323c6388876a816e",
+        "assessment_path": "nsys/results/needle_reduced_substeps_gap_20261109/gap-8-comparison.json",
+        "assessment_sha256": "7d499f620e4f212135daae6e1e0a52e94bf501cac4c1ee43be7d74982cea30a4",
+        "accepted_trace_path": "nsys/results/needle_reduced_substeps_gap_20261109/gap-8-accepted.jsonl",
+        "accepted_trace_sha256": "99e341c66621441b1898a69cc4d51b1b73f426af7138294076ba00a7bf645221",
+        "saved_sparse_trace_samples": 2
+      },
+      "failure_diagnostics": {
+        "failure_time_s": 0.2312499999999998,
+        "reason": "Failed: Unresolved tip or shaft displacement; reduce timestep to resolve needle radius and track spacing",
+        "before_any_contact_load_or_puncture": true,
+        "coupled_accepted_steps_including_guard_failure": 111,
+        "no_exit_event": true,
+        "failure_state_tip_to_target_distance_m": 0.009998621237489161,
+        "rejected_coupling_attempts": 0,
+        "maximum_recorded_interface_force_N": 0.0,
+        "maximum_recorded_interface_torque_Nm": 0.0,
+        "maximum_recorded_angular_speed_rad_s": 9.86083066385126,
+        "last_tip_step_displacement_m": 0.0002738583635881114,
+        "last_12_angular_velocity_consecutive_dot_products_negative": 11,
+        "last_12_angular_velocity_comparisons": 11,
+        "final_five_angular_velocity_samples": [
+          {
+            "time_s": 0.22291666666666649,
+            "angular_velocity_rad_s": [
+              -0.14606475830078125,
+              6.971763610839844,
+              -0.5254682302474976
+            ]
+          },
+          {
+            "time_s": 0.2249999999999998,
+            "angular_velocity_rad_s": [
+              -0.12271171808242798,
+              -7.598430633544922,
+              0.564915120601654
+            ]
+          },
+          {
+            "time_s": 0.22708333333333314,
+            "angular_velocity_rad_s": [
+              -0.1521158218383789,
+              8.278931617736816,
+              -0.6283574104309082
+            ]
+          },
+          {
+            "time_s": 0.22916666666666646,
+            "angular_velocity_rad_s": [
+              -0.12438029050827026,
+              -9.022882461547852,
+              0.6772738099098206
+            ]
+          },
+          {
+            "time_s": 0.2312499999999998,
+            "angular_velocity_rad_s": [
+              -0.15849429368972778,
+              9.830862998962402,
+              -0.7516605854034424
+            ]
+          }
+        ],
+        "interpretation": "Alternating growing rigid angular velocity occurs before any interface load. The accepted-step tip/shaft motion-resolution guard stops the run. This is not a contact-force fixed-point failure or evidence that FEM contact caused the failure; it does not establish a general controller stability boundary.",
+        "state_force_labeling": "The terminal state was accepted by the coupled solve, then marked failed by the interaction motion-resolution guard. No failed coupling trial is relabeled as an accepted endpoint."
+      }
+    },
+    "base-12": {
+      "experiment": "intermediate_base",
+      "case_result": {
+        "outcome": "Success: tip emerged, exit error 0.008 mm",
+        "success": true,
+        "task_status": "success",
+        "interaction_events": [
+          {
+            "kind": "puncture",
+            "time_s": 1.0902777777777743,
+            "position_m": [
+              0.03005241339983304,
+              -0.04006043418252862,
+              0.001103685713901025
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 1.0930555555555521,
+            "position_m": [
+              0.030080342665314674,
+              -0.0399937704205513,
+              0.0011692279949784279
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 3.7861111111113837,
+            "position_m": [
+              0.038007259368896484,
+              -0.03999759256839752,
+              0.0014628474600613117
+            ],
+            "reused": false
+          }
+        ],
+        "entry_count": 1,
+        "exit_count": 1,
+        "physical_time_s": 3.7861111111113837,
+        "exit_error_m": 7.612704016653115e-06,
+        "exit_tolerance_m": 0.001,
+        "puncture_count": 1,
+        "track_samples": 33,
+        "track_section_count": 1,
+        "track_length_m": 0.008130469532725974,
+        "maximum_interface_force_N": 0.0030718370748211658,
+        "maximum_deformation_m": 0.00015244416273966875,
+        "maximum_deformation_time_s": 1.0902777777777743,
+        "maximum_force_balance_error_N": 4.692851652099372e-10,
+        "maximum_torque_balance_error_Nm": 2.2128961173796485e-11,
+        "maximum_coupling_iterations": 14,
+        "maximum_coupling_residual_N": 6.714579692115386e-07,
+        "last_coupling_attempt_iterations": 1,
+        "last_coupling_attempt_residual_N": 9.363429853692651e-08,
+        "fem_graph_captures": 2,
+        "fem_graph_launches": 3952,
+        "fem_graph_status": "replaying",
+        "cutting_resistance_omitted": true,
+        "last_interface_load_on_fixed_nodes_N": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dt_s": 0.001388888888888889,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "status": "outside",
+        "calibrated": false,
+        "runtime_solver_configuration": {
+          "parser_solver_iterations": 80,
+          "fem_linear_solver_maxiter": 80,
+          "fem_linear_solver_tolerance": 1e-05,
+          "coupling_max_iterations": 40,
+          "coupling_absolute_tolerance": 2e-07,
+          "coupling_relative_tolerance": 0.0002
+        },
+        "rejected_coupling_attempts": [],
+        "final_validation_failures": [],
+        "selection": {
+          "regions": [
+            1
+          ],
+          "entry_xy_m": [
+            0.03,
+            -0.04
+          ],
+          "exit_xy_m": [
+            0.038,
+            -0.04
+          ]
+        },
+        "accepted_trace": {
+          "path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem/nsys/results/needle_intermediate_substeps_base_20261109/base-12-accepted.jsonl",
+          "accepted_steps": 2726,
+          "all_states_finite": true,
+          "fixed_nodes_bitwise_at_rest": true
+        },
+        "diagnostic_substeps": 12
+      },
+      "assessment": {
+        "case": "base",
+        "substeps": 12,
+        "engineering_checks": {
+          "baseline_succeeded": true,
+          "candidate_succeeded": true,
+          "no_rejected_coupling_attempts": true,
+          "final_state_validation_passed": true,
+          "fem_iteration_budget_unchanged_at_80": true,
+          "same_entry_count": true,
+          "same_exit_count": true,
+          "same_puncture_count": true,
+          "same_track_section_count": true,
+          "same_ordered_event_kinds_and_reuse": true,
+          "exit_error_vector_change_within_50um": true,
+          "maximum_interface_force_N_change_within_5percent": true,
+          "maximum_deformation_m_change_within_5percent": true,
+          "unchanged_track_spacing_m": true,
+          "unchanged_shaft_spacing_m": true,
+          "unchanged_exit_tolerance_m": true,
+          "unchanged_cutting_resistance_omitted": true,
+          "base_maximum_force_balance_error_N_under_1e-08N": true,
+          "base_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "timestep_maximum_force_balance_error_N_under_1e-08N": true,
+          "timestep_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "detailed_accepted_trace_present": true,
+          "all_accepted_states_finite": true,
+          "fixed_supports_remained_exactly_at_rest": true
+        },
+        "all_declared_checks_passed": true,
+        "relative_changes": {
+          "maximum_interface_force_N": 0.00030593650703985783,
+          "maximum_deformation_m": 0.0016629862191018007
+        },
+        "observations": {
+          "exit_error_vector_change_m": 1.4672008570557792e-06,
+          "emergence_time_change_s": -0.001388888888441464,
+          "post_entry_force_trace_comparison": {
+            "shared_time_interval_s": [
+              1.0999999999999965,
+              3.7861111111113837
+            ],
+            "base_saved_sample_count": 7,
+            "refined_saved_sample_count": 7,
+            "interpolation_knot_count": 12,
+            "vector_difference_rms_N": 1.4664795598816234e-06,
+            "base_vector_rms_N": 2.7884348558753084e-05,
+            "vector_difference_relative_rms": 0.05259149435719149,
+            "maximum_interpolated_vector_difference_N": 1.8429296266987402e-06,
+            "scope": "Piecewise-linear interpolation of sparse snapshots after first observed entry over shared physical time; no time warping or acceptance threshold. Unresolved substep transients and the entry transition before both first inserted samples are excluded. Rejected coupling-trial force diagnostics are excluded."
+          }
+        },
+        "force_law_assessment": {
+          "convergence_established": false,
+          "scope": "Task checks assess the selected insertion scenarios. Force/moment residuals assess endpoint force-law scatter, not every finite-tolerance applied iterate. Applied-load balance is covered independently by coupler regression tests. Sparse post-entry force-vector comparisons are observations without an acceptance threshold. Passing task checks does not establish convergence of full force histories or coupled energy."
+        }
+      },
+      "input_evidence": {
+        "report_path": "nsys/results/needle_intermediate_substeps_base_20261109/base-12.json",
+        "report_sha256": "80400a8cf52611b558e7f0687ef2768fc0b1247f7b399b09fd1dba94b277e457",
+        "assessment_path": "nsys/results/needle_intermediate_substeps_base_20261109/base-12-comparison.json",
+        "assessment_sha256": "177475d57eb43f7dcea5f79b70cdabe35a65f6c5e78bf4d6f79cfc13fd2b573c",
+        "accepted_trace_path": "nsys/results/needle_intermediate_substeps_base_20261109/base-12-accepted.jsonl",
+        "accepted_trace_sha256": "2e6758c4ca4cc4fa221edcf8743a310a7645fa6692864a2bd5d0335e0fff4185",
+        "saved_sparse_trace_samples": 11
+      }
+    },
+    "base-10": {
+      "experiment": "intermediate_base",
+      "case_result": {
+        "outcome": "Success: tip emerged, exit error 0.010 mm",
+        "success": true,
+        "task_status": "success",
+        "interaction_events": [
+          {
+            "kind": "puncture",
+            "time_s": 1.0916666666666783,
+            "position_m": [
+              0.030058909253120547,
+              -0.04005942526442747,
+              0.0011016280587686706
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 1.093333333333345,
+            "position_m": [
+              0.03007296845316887,
+              -0.03998814523220062,
+              0.001169322058558464
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 3.7866666666665023,
+            "position_m": [
+              0.038009412586688995,
+              -0.039996784180402756,
+              0.0014633997343480587
+            ],
+            "reused": false
+          }
+        ],
+        "entry_count": 1,
+        "exit_count": 1,
+        "physical_time_s": 3.7866666666665023,
+        "exit_error_m": 9.776286996091979e-06,
+        "exit_tolerance_m": 0.001,
+        "puncture_count": 1,
+        "track_samples": 33,
+        "track_section_count": 1,
+        "track_length_m": 0.008150022070080946,
+        "maximum_interface_force_N": 0.003082693480807395,
+        "maximum_deformation_m": 0.00015481784191989122,
+        "maximum_deformation_time_s": 1.0916666666666783,
+        "maximum_force_balance_error_N": 7.105150502020087e-10,
+        "maximum_torque_balance_error_Nm": 1.626953582672133e-11,
+        "maximum_coupling_iterations": 15,
+        "maximum_coupling_residual_N": 6.104321876260286e-07,
+        "last_coupling_attempt_iterations": 1,
+        "last_coupling_attempt_residual_N": 1.0226358426734805e-07,
+        "fem_graph_captures": 2,
+        "fem_graph_launches": 3456,
+        "fem_graph_status": "replaying",
+        "cutting_resistance_omitted": true,
+        "last_interface_load_on_fixed_nodes_N": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dt_s": 0.0016666666666666666,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "status": "outside",
+        "calibrated": false,
+        "runtime_solver_configuration": {
+          "parser_solver_iterations": 80,
+          "fem_linear_solver_maxiter": 80,
+          "fem_linear_solver_tolerance": 1e-05,
+          "coupling_max_iterations": 40,
+          "coupling_absolute_tolerance": 2e-07,
+          "coupling_relative_tolerance": 0.0002
+        },
+        "rejected_coupling_attempts": [],
+        "final_validation_failures": [],
+        "selection": {
+          "regions": [
+            1
+          ],
+          "entry_xy_m": [
+            0.03,
+            -0.04
+          ],
+          "exit_xy_m": [
+            0.038,
+            -0.04
+          ]
+        },
+        "accepted_trace": {
+          "path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem/nsys/results/needle_intermediate_substeps_base_20261109/base-10-accepted.jsonl",
+          "accepted_steps": 2272,
+          "all_states_finite": true,
+          "fixed_nodes_bitwise_at_rest": true
+        },
+        "diagnostic_substeps": 10
+      },
+      "assessment": {
+        "case": "base",
+        "substeps": 10,
+        "engineering_checks": {
+          "baseline_succeeded": true,
+          "candidate_succeeded": true,
+          "no_rejected_coupling_attempts": true,
+          "final_state_validation_passed": true,
+          "fem_iteration_budget_unchanged_at_80": true,
+          "same_entry_count": true,
+          "same_exit_count": true,
+          "same_puncture_count": true,
+          "same_track_section_count": true,
+          "same_ordered_event_kinds_and_reuse": true,
+          "exit_error_vector_change_within_50um": true,
+          "maximum_interface_force_N_change_within_5percent": true,
+          "maximum_deformation_m_change_within_5percent": true,
+          "unchanged_track_spacing_m": true,
+          "unchanged_shaft_spacing_m": true,
+          "unchanged_exit_tolerance_m": true,
+          "unchanged_cutting_resistance_omitted": true,
+          "base_maximum_force_balance_error_N_under_1e-08N": true,
+          "base_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "timestep_maximum_force_balance_error_N_under_1e-08N": true,
+          "timestep_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "detailed_accepted_trace_present": true,
+          "all_accepted_states_finite": true,
+          "fixed_supports_remained_exactly_at_rest": true
+        },
+        "all_declared_checks_passed": true,
+        "relative_changes": {
+          "maximum_interface_force_N": 0.0032271560206406586,
+          "maximum_deformation_m": 0.013881930305540822
+        },
+        "observations": {
+          "exit_error_vector_change_m": 9.010906250523349e-07,
+          "emergence_time_change_s": -0.0008333333333228055,
+          "post_entry_force_trace_comparison": {
+            "shared_time_interval_s": [
+              1.1000000000000119,
+              3.7866666666665023
+            ],
+            "base_saved_sample_count": 7,
+            "refined_saved_sample_count": 7,
+            "interpolation_knot_count": 12,
+            "vector_difference_rms_N": 5.748780666934853e-07,
+            "base_vector_rms_N": 2.7887387748257208e-05,
+            "vector_difference_relative_rms": 0.020614267348486655,
+            "maximum_interpolated_vector_difference_N": 8.06560381893676e-07,
+            "scope": "Piecewise-linear interpolation of sparse snapshots after first observed entry over shared physical time; no time warping or acceptance threshold. Unresolved substep transients and the entry transition before both first inserted samples are excluded. Rejected coupling-trial force diagnostics are excluded."
+          }
+        },
+        "force_law_assessment": {
+          "convergence_established": false,
+          "scope": "Task checks assess the selected insertion scenarios. Force/moment residuals assess endpoint force-law scatter, not every finite-tolerance applied iterate. Applied-load balance is covered independently by coupler regression tests. Sparse post-entry force-vector comparisons are observations without an acceptance threshold. Passing task checks does not establish convergence of full force histories or coupled energy."
+        }
+      },
+      "input_evidence": {
+        "report_path": "nsys/results/needle_intermediate_substeps_base_20261109/base-10.json",
+        "report_sha256": "a6a82475a64eafa70b5ea40141be8f266f9b92b3ee6610d7e5105185731d4a5e",
+        "assessment_path": "nsys/results/needle_intermediate_substeps_base_20261109/base-10-comparison.json",
+        "assessment_sha256": "cc091571925e170d78bc8fbe2976f4b6dc0bcb1009ffe16cb83b3d5454a38321",
+        "accepted_trace_path": "nsys/results/needle_intermediate_substeps_base_20261109/base-10-accepted.jsonl",
+        "accepted_trace_sha256": "73438ec903840a4a0ed8e94ab36f8852958e7df08e6b96228302daf793e82520",
+        "saved_sparse_trace_samples": 11
+      }
+    },
+    "gap-12": {
+      "experiment": "intermediate_gap",
+      "case_result": {
+        "outcome": "Success: tip emerged, exit error 0.011 mm",
+        "success": true,
+        "task_status": "success",
+        "interaction_events": [
+          {
+            "kind": "puncture",
+            "time_s": 1.1263888888888853,
+            "position_m": [
+              0.03000643211728058,
+              -0.04003349347073028,
+              0.0010629560674627018
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 1.1277777777777742,
+            "position_m": [
+              0.02999424934387207,
+              -0.039971157908439636,
+              0.0011218376457691193
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 2.0249999999999972,
+            "position_m": [
+              0.030029062181711197,
+              -0.04295304790139198,
+              0.0007746098563075066
+            ],
+            "reused": false
+          },
+          {
+            "kind": "puncture",
+            "time_s": 2.8430555555556807,
+            "position_m": [
+              0.030048310522179163,
+              -0.04523216730211233,
+              0.0009052170901321402
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 2.84444444444457,
+            "position_m": [
+              0.03002004884183407,
+              -0.04515916854143143,
+              0.0009600305929780006
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 3.805555555555831,
+            "position_m": [
+              0.029998738318681717,
+              -0.048011112958192825,
+              0.00225661788135767
+            ],
+            "reused": false
+          }
+        ],
+        "entry_count": 2,
+        "exit_count": 2,
+        "physical_time_s": 3.805555555555831,
+        "exit_error_m": 1.0982172294751692e-05,
+        "exit_tolerance_m": 0.001,
+        "puncture_count": 2,
+        "track_samples": 25,
+        "track_section_count": 2,
+        "track_length_m": 0.005832947464839176,
+        "maximum_interface_force_N": 0.0032069249509827638,
+        "maximum_deformation_m": 0.00013856967296436642,
+        "maximum_deformation_time_s": 1.1263888888888853,
+        "maximum_force_balance_error_N": 1.4163282731538605e-09,
+        "maximum_torque_balance_error_Nm": 3.1347895746174046e-11,
+        "maximum_coupling_iterations": 18,
+        "maximum_coupling_residual_N": 7.251217622174732e-07,
+        "last_coupling_attempt_iterations": 1,
+        "last_coupling_attempt_residual_N": 8.185725164366886e-08,
+        "fem_graph_captures": 2,
+        "fem_graph_launches": 6059,
+        "fem_graph_status": "replaying",
+        "cutting_resistance_omitted": true,
+        "last_interface_load_on_fixed_nodes_N": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dt_s": 0.001388888888888889,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "status": "outside",
+        "calibrated": false,
+        "runtime_solver_configuration": {
+          "parser_solver_iterations": 80,
+          "fem_linear_solver_maxiter": 80,
+          "fem_linear_solver_tolerance": 1e-05,
+          "coupling_max_iterations": 40,
+          "coupling_absolute_tolerance": 2e-07,
+          "coupling_relative_tolerance": 0.0002
+        },
+        "rejected_coupling_attempts": [],
+        "final_validation_failures": [],
+        "selection": {
+          "regions": [
+            1
+          ],
+          "entry_xy_m": [
+            0.03,
+            -0.04
+          ],
+          "exit_xy_m": [
+            0.03,
+            -0.048
+          ]
+        },
+        "accepted_trace": {
+          "path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem/nsys/results/needle_intermediate_substeps_gap_20261109/gap-12-accepted.jsonl",
+          "accepted_steps": 2740,
+          "all_states_finite": true,
+          "fixed_nodes_bitwise_at_rest": true
+        },
+        "diagnostic_substeps": 12
+      },
+      "assessment": {
+        "case": "gap",
+        "substeps": 12,
+        "engineering_checks": {
+          "baseline_succeeded": true,
+          "candidate_succeeded": true,
+          "no_rejected_coupling_attempts": true,
+          "final_state_validation_passed": true,
+          "fem_iteration_budget_unchanged_at_80": true,
+          "same_entry_count": true,
+          "same_exit_count": true,
+          "same_puncture_count": true,
+          "same_track_section_count": true,
+          "same_ordered_event_kinds_and_reuse": true,
+          "exit_error_vector_change_within_50um": true,
+          "maximum_interface_force_N_change_within_5percent": true,
+          "maximum_deformation_m_change_within_5percent": true,
+          "unchanged_track_spacing_m": true,
+          "unchanged_shaft_spacing_m": true,
+          "unchanged_exit_tolerance_m": true,
+          "unchanged_cutting_resistance_omitted": true,
+          "base_maximum_force_balance_error_N_under_1e-08N": true,
+          "base_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "timestep_maximum_force_balance_error_N_under_1e-08N": true,
+          "timestep_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "detailed_accepted_trace_present": true,
+          "all_accepted_states_finite": true,
+          "fixed_supports_remained_exactly_at_rest": true
+        },
+        "all_declared_checks_passed": true,
+        "relative_changes": {
+          "maximum_interface_force_N": 0.004763404704740812,
+          "maximum_deformation_m": 0.0054341692751234735
+        },
+        "observations": {
+          "exit_error_vector_change_m": 1.5555715806313767e-06,
+          "emergence_time_change_s": -0.00017361111065961055,
+          "post_entry_force_trace_comparison": {
+            "shared_time_interval_s": [
+              1.1333333333333298,
+              3.805555555555831
+            ],
+            "base_saved_sample_count": 10,
+            "refined_saved_sample_count": 10,
+            "interpolation_knot_count": 18,
+            "vector_difference_rms_N": 1.2331543929965179e-05,
+            "base_vector_rms_N": 8.355992914361364e-05,
+            "vector_difference_relative_rms": 0.14757724254135104,
+            "maximum_interpolated_vector_difference_N": 5.577504945011279e-05,
+            "scope": "Piecewise-linear interpolation of sparse snapshots after first observed entry over shared physical time; no time warping or acceptance threshold. Unresolved substep transients and the entry transition before both first inserted samples are excluded. Rejected coupling-trial force diagnostics are excluded."
+          }
+        },
+        "force_law_assessment": {
+          "convergence_established": false,
+          "scope": "Task checks assess the selected insertion scenarios. Force/moment residuals assess endpoint force-law scatter, not every finite-tolerance applied iterate. Applied-load balance is covered independently by coupler regression tests. Sparse post-entry force-vector comparisons are observations without an acceptance threshold. Passing task checks does not establish convergence of full force histories or coupled energy."
+        }
+      },
+      "input_evidence": {
+        "report_path": "nsys/results/needle_intermediate_substeps_gap_20261109/gap-12.json",
+        "report_sha256": "ec5007b83bc1a86081d1c50af900520948cb5bd376b1563b37dbd96b3de2b6b5",
+        "assessment_path": "nsys/results/needle_intermediate_substeps_gap_20261109/gap-12-comparison.json",
+        "assessment_sha256": "a220ce21e23585cd3e074738ea2463ce01a7b14dfb3fdab5aa01a05906b7edd8",
+        "accepted_trace_path": "nsys/results/needle_intermediate_substeps_gap_20261109/gap-12-accepted.jsonl",
+        "accepted_trace_sha256": "0f71eae37abdd124a1ae7b6efb03c18c1cc0ff5f33225cd94f10e9491fd39f27",
+        "saved_sparse_trace_samples": 14
+      }
+    },
+    "gap-10": {
+      "experiment": "intermediate_gap",
+      "case_result": {
+        "outcome": "Success: tip emerged, exit error 0.011 mm",
+        "success": true,
+        "task_status": "success",
+        "interaction_events": [
+          {
+            "kind": "puncture",
+            "time_s": 1.1266666666666791,
+            "position_m": [
+              0.030006354860011034,
+              -0.040033350694674605,
+              0.0010625373157408253
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 1.1283333333333458,
+            "position_m": [
+              0.029995564371347427,
+              -0.03999268263578415,
+              0.0011183014139533043
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 2.0250000000000297,
+            "position_m": [
+              0.03002910502254963,
+              -0.04295433312654495,
+              0.0007749218493700027
+            ],
+            "reused": false
+          },
+          {
+            "kind": "puncture",
+            "time_s": 2.843333333333273,
+            "position_m": [
+              0.03004818167426843,
+              -0.045232485098152996,
+              0.0009053718499603501
+            ],
+            "reused": false
+          },
+          {
+            "kind": "entry",
+            "time_s": 2.8449999999999394,
+            "position_m": [
+              0.03002171590924263,
+              -0.04517838731408119,
+              0.0009666150435805321
+            ],
+            "reused": false
+          },
+          {
+            "kind": "exit",
+            "time_s": 3.8049999999998336,
+            "position_m": [
+              0.02999882958829403,
+              -0.048010703176259995,
+              0.0022567501291632652
+            ],
+            "reused": false
+          }
+        ],
+        "entry_count": 2,
+        "exit_count": 2,
+        "physical_time_s": 3.8049999999998336,
+        "exit_error_m": 1.058089236073716e-05,
+        "exit_tolerance_m": 0.001,
+        "puncture_count": 2,
+        "track_samples": 25,
+        "track_section_count": 2,
+        "track_length_m": 0.005808833491970894,
+        "maximum_interface_force_N": 0.0032167267668555925,
+        "maximum_deformation_m": 0.00013868681780762016,
+        "maximum_deformation_time_s": 1.1266666666666791,
+        "maximum_force_balance_error_N": 1.4080246988628762e-09,
+        "maximum_torque_balance_error_Nm": 3.8715000580473793e-11,
+        "maximum_coupling_iterations": 21,
+        "maximum_coupling_residual_N": 7.238204900774639e-07,
+        "last_coupling_attempt_iterations": 1,
+        "last_coupling_attempt_residual_N": 7.358903530985117e-08,
+        "fem_graph_captures": 2,
+        "fem_graph_launches": 5501,
+        "fem_graph_status": "replaying",
+        "cutting_resistance_omitted": true,
+        "last_interface_load_on_fixed_nodes_N": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "dt_s": 0.0016666666666666666,
+        "track_spacing_m": 0.00025,
+        "shaft_spacing_m": 0.00014,
+        "status": "outside",
+        "calibrated": false,
+        "runtime_solver_configuration": {
+          "parser_solver_iterations": 80,
+          "fem_linear_solver_maxiter": 80,
+          "fem_linear_solver_tolerance": 1e-05,
+          "coupling_max_iterations": 40,
+          "coupling_absolute_tolerance": 2e-07,
+          "coupling_relative_tolerance": 0.0002
+        },
+        "rejected_coupling_attempts": [],
+        "final_validation_failures": [],
+        "selection": {
+          "regions": [
+            1
+          ],
+          "entry_xy_m": [
+            0.03,
+            -0.04
+          ],
+          "exit_xy_m": [
+            0.03,
+            -0.048
+          ]
+        },
+        "accepted_trace": {
+          "path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem/nsys/results/needle_intermediate_substeps_gap_20261109/gap-10-accepted.jsonl",
+          "accepted_steps": 2283,
+          "all_states_finite": true,
+          "fixed_nodes_bitwise_at_rest": true
+        },
+        "diagnostic_substeps": 10
+      },
+      "assessment": {
+        "case": "gap",
+        "substeps": 10,
+        "engineering_checks": {
+          "baseline_succeeded": true,
+          "candidate_succeeded": true,
+          "no_rejected_coupling_attempts": true,
+          "final_state_validation_passed": true,
+          "fem_iteration_budget_unchanged_at_80": true,
+          "same_entry_count": true,
+          "same_exit_count": true,
+          "same_puncture_count": true,
+          "same_track_section_count": true,
+          "same_ordered_event_kinds_and_reuse": true,
+          "exit_error_vector_change_within_50um": true,
+          "maximum_interface_force_N_change_within_5percent": true,
+          "maximum_deformation_m_change_within_5percent": true,
+          "unchanged_track_spacing_m": true,
+          "unchanged_shaft_spacing_m": true,
+          "unchanged_exit_tolerance_m": true,
+          "unchanged_cutting_resistance_omitted": true,
+          "base_maximum_force_balance_error_N_under_1e-08N": true,
+          "base_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "timestep_maximum_force_balance_error_N_under_1e-08N": true,
+          "timestep_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+          "detailed_accepted_trace_present": true,
+          "all_accepted_states_finite": true,
+          "fixed_supports_remained_exactly_at_rest": true
+        },
+        "all_declared_checks_passed": true,
+        "relative_changes": {
+          "maximum_interface_force_N": 0.0017215106766327786,
+          "maximum_deformation_m": 0.004593377377059686
+        },
+        "observations": {
+          "exit_error_vector_change_m": 1.2597873528532574e-06,
+          "emergence_time_change_s": -0.0007291666666571217,
+          "post_entry_force_trace_comparison": {
+            "shared_time_interval_s": [
+              1.133333333333346,
+              3.8049999999998336
+            ],
+            "base_saved_sample_count": 10,
+            "refined_saved_sample_count": 10,
+            "interpolation_knot_count": 18,
+            "vector_difference_rms_N": 1.0337049976226165e-05,
+            "base_vector_rms_N": 8.355910014753641e-05,
+            "vector_difference_relative_rms": 0.12370944586495686,
+            "maximum_interpolated_vector_difference_N": 4.972283340206092e-05,
+            "scope": "Piecewise-linear interpolation of sparse snapshots after first observed entry over shared physical time; no time warping or acceptance threshold. Unresolved substep transients and the entry transition before both first inserted samples are excluded. Rejected coupling-trial force diagnostics are excluded."
+          }
+        },
+        "force_law_assessment": {
+          "convergence_established": false,
+          "scope": "Task checks assess the selected insertion scenarios. Force/moment residuals assess endpoint force-law scatter, not every finite-tolerance applied iterate. Applied-load balance is covered independently by coupler regression tests. Sparse post-entry force-vector comparisons are observations without an acceptance threshold. Passing task checks does not establish convergence of full force histories or coupled energy."
+        }
+      },
+      "input_evidence": {
+        "report_path": "nsys/results/needle_intermediate_substeps_gap_20261109/gap-10.json",
+        "report_sha256": "860f3079defdd889c05d1fa5516bec90cacf5b658de2e88f9abd1b5624a6499f",
+        "assessment_path": "nsys/results/needle_intermediate_substeps_gap_20261109/gap-10-comparison.json",
+        "assessment_sha256": "00fc835f075b012ac94fcde7f452dbe7f30c218557f1c74359a8ec2249b09e1d",
+        "accepted_trace_path": "nsys/results/needle_intermediate_substeps_gap_20261109/gap-10-accepted.jsonl",
+        "accepted_trace_sha256": "56ce07ffac3d965ebafb27754485e3af0fa3d10694d955bdffc466c65c6b1928",
+        "saved_sparse_trace_samples": 14
+      }
+    }
+  },
+  "baseline_reference": {
+    "artifact_path": "nsys/results/needle_final32_validation_20261109/needle-insertion-optimized32.previous.json",
+    "artifact_sha256": "ec34f34e605480f6dda8214b9efa161d99980e8cec0ebd03d781924bf254e540",
+    "input_baseline_report_sha256": {
+      "base": "b5da43638cbbb4c1ef6a33d3af14bf786beb85caa1d6719b139af3d6ef5f1adc",
+      "gap": "78e560f88078e6155d6b61217dbe88f5c5983b7039564de3af1073770762cab1"
+    },
+    "scope": "Historical optimized 32-substep baseline used by these reduced-step runs, preserved byte-for-byte. The current optimized32 report may describe later exact query optimizations; these observations retain their original input hashes."
+  },
+  "limitations": [
+    "Passing the predeclared engineering checks is specific to these two insertion tasks; it is not a material calibration, global stability proof, or a proven minimum timestep budget.",
+    "Sparse force RMS observations interpolate seven or more saved post-entry snapshots over shared physical time, without time warping. They do not resolve every contact transition and have no pass threshold.",
+    "Passing exit/peak/balance checks does not establish convergence of full force histories or coupled energy. Reduced-step force differences can be nonmonotonic.",
+    "The 8-substep cases terminate before contact loads. Their zero force and near-zero tissue displacement cannot be interpreted as an accurate contact result. Their raw case exit_error_m field is the stopped tip-to-target distance; no physical exit occurred, so the summary reports actual exit error as null.",
+    "Correctness jobs shared the GPU; their elapsed wall time and the extra accepted-state recorder overhead are not FPS measurements.",
+    "Full sparse traces remain unchanged in the hashed raw case reports; detailed accepted traces and byte-identical harness copies are retained in the ignored result directories."
+  ],
+  "qualification_updated_utc": "2026-11-09T14:30:52.949464+00:00",
+  "handling_qualification": {
+    "artifact_path": "docs/validation/needle-handling-response.json",
+    "artifact_sha256": "0ca0f644e0c49ebf2ac375b424b8ce24ae30f486419d07825d1a1b768210dd6f",
+    "section": "timestep_qualification_10_substeps",
+    "raw_report_path": "nsys/results/needle_lateral_push_10substeps_20261109/needle-optimized-lateral-push-10.json",
+    "raw_report_sha256": "bfce8e68fd3c21842143198ed93428ddd91de9751cd7ed1b7787320877af733e",
+    "criteria_declared_at_utc": "2026-11-09T14:17:03.599674+00:00",
+    "source_sha256_recorded_at_run": {
+      "src/newton_solver_fem/_src/insertion.py": "67e8bcdc847bbcb9d16f923f910b0ccb67a70c2dc3e6b9211358b6f2393004d7",
+      "src/newton_solver_fem/_src/coupling.py": "0414759276798a2ea3dafc59e256ab0bf1eb39cc610db177253c3de8825b278f",
+      "src/newton_solver_fem/_src/solvers/fem/solver.py": "cfec8aedc30c0b1a78b287d1896569bc795e019223685d43413b41f2ddfc1280",
+      "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "c566954c19092d4537d83fe3eaec6ede603516fd34f939d8c93b19b1729673f6"
+    },
+    "assessment": {
+      "passed": true,
+      "checks": {
+        "control_completed": true,
+        "control_embedded": true,
+        "control_finite": true,
+        "control_fixed_positions_exact": true,
+        "control_force_balance_N": true,
+        "control_torque_balance_Nm": true,
+        "push_completed": true,
+        "push_embedded": true,
+        "push_finite": true,
+        "push_fixed_positions_exact": true,
+        "push_force_balance_N": true,
+        "push_torque_balance_Nm": true,
+        "parameters_and_budgets_unchanged": true,
+        "input_assets_unchanged": true,
+        "requested_candidate_substeps": true,
+        "push_peak_force_N": true,
+        "push_peak_deformation_m": true,
+        "sampled_tip_peak_difference": true
+      },
+      "comparisons": {
+        "force_N": {
+          "baseline": 0.0009766523441641435,
+          "candidate": 0.0009696304403933541,
+          "relative_change": 0.0071897679995833194
+        },
+        "deformation_m": {
+          "baseline": 4.573054339189548e-05,
+          "candidate": 4.5503309188590076e-05,
+          "relative_change": 0.0049689810452958234
+        },
+        "sampled_tip_peak_difference_m": {
+          "baseline": 0.00038722530007362366,
+          "candidate": 0.00038679689168930054,
+          "absolute_change_m": 4.284083843231201e-07
+        }
+      },
+      "decision": "accept handling check"
+    },
+    "both_branches_completed_remained_embedded_finite_and_fixed_exact": true,
+    "maximum_force_balance_error_N": 2.400239056908567e-10,
+    "maximum_torque_balance_error_Nm": 1.0917636537471405e-11,
+    "direct_support_force_N": 0.0,
+    "scope": "Matched post-entry pulse interval 1.6\u20132.4 s; own timestep prelude, identical restored start within each pair. Not a global-insertion peak comparison or physiological calibration."
+  },
+  "final_exact_query_optimization_validation": {
+    "scope": "Exact radius-query reuse, finite-support surface query extent, surface launch block32; no physical law, coefficient, or numerical budget change",
+    "original_source_sha256": "d6d652b15653d4a6675ab9799c08abab0618882dee542125cae26bc0bd220fa4",
+    "candidate_source_sha256": "67e8bcdc847bbcb9d16f923f910b0ccb67a70c2dc3e6b9211358b6f2393004d7",
+    "cuda_needle_tests": 96,
+    "cuda_kernel_parity_tests": 47,
+    "paired_kernel_evaluations": 276,
+    "maximum_absolute_difference": {
+      "particle_force_N": 0.0,
+      "body_force_N": 0.0,
+      "body_torque_Nm": 0.0,
+      "diagnostics": 0.0
+    },
+    "contact_and_support_flags": "exact equality",
+    "artifacts_sha256": {
+      "candidate_insertion.py": "67e8bcdc847bbcb9d16f923f910b0ccb67a70c2dc3e6b9211358b6f2393004d7",
+      "needle_surface_extent_kernel.py": "f472cd91a546558c952cea005579c519054fd1fce913c8a86b9c7a708f291fa6",
+      "needle_surface_extent_parity.py": "977a808b63fca3fb0b8528319601876f2c9f36ab05ec2ee15c538131afd3dace",
+      "needle-surface-extent-cuda-parity.log": "604aef2a8cea8b8972b93df32b425ac62c1ecf0ebca60d719f1844c9ae28a064",
+      "needle-final-extent-cuda-tests.log": "15b6b0375925dac63e5ede1d509293349eb099c6bf5e3c117e188370250e81de"
+    }
+  },
+  "eight_substep_failure_distinction": {
+    "status": "rejected",
+    "stage": "Free-space finite-drive approach, before any contact load or puncture",
+    "failure_times_s": {
+      "base": 0.3041666666666662,
+      "gap": 0.2312499999999998
+    },
+    "reported_guard": "Unresolved tip or shaft displacement; reduce timestep to resolve needle radius and track spacing",
+    "rejected_coupling_attempts": 0,
+    "interpretation": "The contact interface was unloaded and its solve converged. The displacement guard rejected underresolved rigid handling. Zero contact force and nearly undeformed tissue are not accurate contact results, and no physical exit occurred."
+  },
+  "final_source_default10_continuous_confirmation": {
+    "status": "passed_comparable_final_source_continuous_case_checks",
+    "scope": "Fresh continuous insertion after changing the example default to 10 and pinning the refinement validator to 32; historical reduced-step and handling observations remain separate.",
+    "assembled_utc": "2026-11-09T14:48:10.768996+00:00",
+    "source_hashes_captured_after_completed_run": {
+      "src/newton_solver_fem/_src/insertion.py": "67e8bcdc847bbcb9d16f923f910b0ccb67a70c2dc3e6b9211358b6f2393004d7",
+      "src/newton_solver_fem/_src/coupling.py": "0414759276798a2ea3dafc59e256ab0bf1eb39cc610db177253c3de8825b278f",
+      "src/newton_solver_fem/_src/solvers/fem/solver.py": "cfec8aedc30c0b1a78b287d1896569bc795e019223685d43413b41f2ddfc1280",
+      "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "fe4c514c4db16eec4dc289c6fb5e2254592c42c18f28944f21124ebc8864db3a",
+      "src/newton_solver_fem/examples/example_fem_phantom_regions.py": "3c9c107beb1e9764f132930e12cc22d76568276f90a1fbe74276c937737a2c9c",
+      "src/newton_solver_fem/examples/_needle_insertion_drive.py": "f68e6c83a5ffc6c30f3d51fa34c10809501d8603ac3cff8efe9399835225d2f4",
+      "tools/validate_needle_insertion.py": "0553ca1b5c31fdeed5de7e4214f35f97bec4271e8e5eff60af83d84122a20f05",
+      "pyproject.toml": "938a14af0f2254ad73dfd9929f2819f1362561d79f550c2fef823ec739195609",
+      "uv.lock": "93165d29b06fc45d1c1b45532ded3f763f8c45ecfdd59551e2d458a54709c537"
+    },
+    "source_capture_scope": "Hashes captured at archival after the completed run; runtime remained frozen during this confirmation. The source hash was not embedded by the validator itself.",
+    "candidate_substeps": 10,
+    "reference_substeps": 32,
+    "fem_iteration_budget": 80,
+    "thresholds": {
+      "task": "Baseline and candidate succeed with identical counts and ordered event kinds/reuse flags.",
+      "exit_error_vector_difference_m": 5e-05,
+      "maximum_interface_force_relative_difference": 0.05,
+      "maximum_deformation_relative_difference": 0.05,
+      "maximum_force_balance_error_N": 1e-08,
+      "maximum_torque_balance_error_Nm": 1e-09
+    },
+    "checks": {
+      "reference_succeeded": true,
+      "candidate_succeeded": true,
+      "reference_dt_is_32_substeps": true,
+      "candidate_dt_is_10_substeps": true,
+      "same_selection": true,
+      "same_entry_count": true,
+      "same_exit_count": true,
+      "same_puncture_count": true,
+      "same_track_section_count": true,
+      "same_ordered_event_kinds_and_reuse": true,
+      "exit_error_vector_change_within_50um": true,
+      "maximum_interface_force_N_change_within_5percent": true,
+      "maximum_deformation_m_change_within_5percent": true,
+      "unchanged_track_spacing_m": true,
+      "unchanged_shaft_spacing_m": true,
+      "unchanged_exit_tolerance_m": true,
+      "unchanged_cutting_resistance_omitted": true,
+      "base_maximum_force_balance_error_N_under_1e-08N": true,
+      "base_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+      "timestep_maximum_force_balance_error_N_under_1e-08N": true,
+      "timestep_maximum_torque_balance_error_Nm_under_1e-09Nm": true,
+      "interaction_and_solver_sources_match_final32": true
+    },
+    "all_comparable_checks_passed": true,
+    "candidate": {
+      "success": true,
+      "physical_time_s": 3.7866666666665023,
+      "exit_error_m": 9.748373220748815e-06,
+      "entry_count": 1,
+      "exit_count": 1,
+      "puncture_count": 1,
+      "track_section_count": 1,
+      "maximum_interface_force_N": 0.0030713634896829337,
+      "maximum_deformation_m": 0.0001523812708075519,
+      "maximum_force_balance_error_N": 4.835091451484521e-10,
+      "maximum_torque_balance_error_Nm": 1.8550124927397645e-11,
+      "maximum_coupling_iterations": 15,
+      "fem_graph_captures": 2,
+      "fem_graph_launches": 3443,
+      "dt_s": 0.0016666666666666666
+    },
+    "reference": {
+      "success": true,
+      "physical_time_s": 3.787499999999825,
+      "exit_error_m": 8.931956565824851e-06,
+      "maximum_interface_force_N": 0.003072840741296896,
+      "maximum_deformation_m": 0.0001526955888349629,
+      "dt_s": 0.0005208333333333333
+    },
+    "relative_changes": {
+      "maximum_interface_force_N": 0.00048074460680933,
+      "maximum_deformation_m": 0.002058461739524943
+    },
+    "numerical_observations": {
+      "exit_error_vector_change_m": 8.783334224533317e-07,
+      "emergence_time_change_s": -0.0008333333333228055,
+      "post_entry_force_trace_comparison": {
+        "shared_time_interval_s": [
+          1.1000000000000119,
+          3.7866666666665023
+        ],
+        "base_saved_sample_count": 7,
+        "refined_saved_sample_count": 7,
+        "interpolation_knot_count": 12,
+        "vector_difference_rms_N": 4.98691238274123e-07,
+        "base_vector_rms_N": 2.788712257773895e-05,
+        "vector_difference_relative_rms": 0.017882491708635657,
+        "maximum_interpolated_vector_difference_N": 7.92307824146298e-07,
+        "scope": "Piecewise-linear interpolation of sparse snapshots after first observed entry over shared physical time; no time warping or acceptance threshold. Unresolved substep transients and the entry transition before both first inserted samples are excluded. Rejected coupling-trial force diagnostics are excluded."
+      }
+    },
+    "state_validation_scope": {
+      "per_substep_finite_state_guard": "The example checks particle positions/velocities and rigid pose/velocity after every accepted substep; success implies no nonfinite-state failure.",
+      "final_state_validation": "The validator calls test_final before saving: finite particle/rigid states, positive tetrahedron orientation, and bitwise-rest fixed nodes.",
+      "detailed_accepted_state_trace_recorded": false,
+      "per_substep_fixed_node_bitwise_recheck_in_this_confirmation": false,
+      "prior_evidence": "Detailed per-substep finite/fixed-support checks remain in the historical reduced-step and paired handling trials; this ordinary validator run does not repeat that recorder."
+    },
+    "performance_claim": false,
+    "limitations": [
+      "This is an additional continuous-path confirmation, not a rerun of every earlier declared accepted-state recorder or the gap task.",
+      "Sparse post-entry force observations do not establish full force-history convergence.",
+      "Diagnostic wall time is not an FPS or speedup measurement."
+    ],
+    "provenance": {
+      "candidate_report": "nsys/results/needle_final_default10_validation_20261109/needle-final-default10-base.json",
+      "candidate_report_sha256": "f9d480f67da96523fdb72d2c3c6657d2aacb12d118669d5390ecf3dad329f68f",
+      "candidate_log": "nsys/results/needle_final_default10_validation_20261109/needle-final-default10-base.log",
+      "candidate_log_sha256": "518fb3dab70df9151ea2fb793d18004bbdefa585f859d60d324cc184ce84f48b",
+      "reference_report": "docs/validation/needle-insertion-optimized32.json",
+      "reference_report_sha256": "50e9a7345dc3cf012933c56af90912ebc6cbcbf1291e32565e10803367e8eeda",
+      "reference_raw_base_report": "nsys/results/needle_final32_validation_20261109/needle-final32-base.json",
+      "reference_raw_base_report_sha256": "d067cf44a4068c4e51d1d4d2dd462e9a0faf1c8e7e6b5fbfba1207cf52f0cafc",
+      "assessment_uses": "Existing validator reporting functions extracted with AST; no Warp import, simulation or GPU work.",
+      "assessment_script": "nsys/results/needle_final_default10_validation_20261109/assemble_needle_final_default10.py",
+      "assessment_script_sha256": "ff9aeef7651c1b04de09f105555f4ceba5e1f2a53437d4638bed511e8c669db5"
+    },
+    "reproduction_command": "OPENBLAS_NUM_THREADS=1 WARP_CACHE_PATH=/tmp/needle-warp-cache UV_CACHE_DIR=/tmp/needle-uv-cache uv run --locked --no-sync python tools/validate_needle_insertion.py --device cuda:0 --case base --substeps 10 --output /tmp/needle-final-default10-base.json",
+    "command_scope": "Reproduction command; not an exact shell transcript of the original invocation."
+  },
+  "final_source_default10_gap_confirmation": {
+    "status": "passed_comparable_final_source_gap_checks_in_both_runs",
+    "scope": "Two completed fresh GL gap insertions using final-source default 10, assessed against both the fresh final-source 32-step correctness case and the clean 32-step benchmark. Existing reduced-step, continuous and handling records are preserved.",
+    "assembled_utc": "2026-11-09T14:54:49.094939+00:00",
+    "candidate_substeps": 10,
+    "reference_substeps": 32,
+    "fem_iteration_budget": 80,
+    "thresholds": {
+      "task": "Baseline and candidate succeed with identical counts and ordered event kinds/reuse flags.",
+      "exit_error_vector_difference_m": 5e-05,
+      "maximum_interface_force_relative_difference": 0.05,
+      "maximum_deformation_relative_difference": 0.05,
+      "maximum_force_balance_error_N": 1e-08,
+      "maximum_torque_balance_error_Nm": 1e-09
+    },
+    "all_comparable_checks_passed": true,
+    "runs": {
+      "default_10_first": {
+        "all_comparable_checks_passed": true,
+        "candidate": {
+          "success": true,
+          "physical_time_s": 3.8049999999998336,
+          "exit_error_m": 1.058060812222618e-05,
+          "maximum_interface_force_N": 0.003216681961399973,
+          "maximum_deformation_m": 0.00013868185481104788,
+          "maximum_force_balance_error_N": 1.6571941869422712e-09,
+          "maximum_torque_balance_error_Nm": 5.868884110860264e-11,
+          "maximum_coupling_iterations": 22,
+          "entry_count": 2,
+          "exit_count": 2,
+          "puncture_count": 2,
+          "track_section_count": 2,
+          "dt_s": 0.0016666666666666666
+        },
+        "comparisons": {
+          "fresh32_validation": {
+            "checks": {
+              "reference_and_candidate_succeeded": true,
+              "same_ordered_event_kinds_and_reuse": true,
+              "same_two_punctures_entries_exits_sections": true,
+              "candidate_exit_within_1mm": true,
+              "exit_error_vector_difference_proven_below_50um_by_norm_bound": true,
+              "peak_force_change_within_5percent": true,
+              "peak_deformation_change_within_5percent": true,
+              "force_law_scatter_balance_under_1e-8N": true,
+              "force_law_scatter_moment_balance_under_1e-9Nm": true,
+              "unchanged_sampling_and_exit_tolerance": true,
+              "reference32_candidate10": true
+            },
+            "all_comparable_checks_passed": true,
+            "relative_peak_changes": {
+              "maximum_interface_force_N": 0.0016974330792247552,
+              "maximum_deformation_m": 0.004608137420597711
+            },
+            "exit_error_scalar_change_m": 9.805580558400648e-07,
+            "exit_error_vector_difference_upper_bound_m": 2.0180658188612296e-05,
+            "actual_final_exit_point_difference_m": 1.2704933118684706e-06,
+            "event_time_differences_s": [
+              -0.0004166666666303165,
+              -0.0008333333332968262,
+              1.0436096431476471e-13,
+              -0.0004166666666058916,
+              -0.0008333333332726234,
+              -0.0007291666666571217
+            ],
+            "track_samples_reference_candidate": [
+              26,
+              25
+            ],
+            "track_length_relative_change": -0.03535906509401853
+          },
+          "fresh32_benchmark": {
+            "checks": {
+              "reference_and_candidate_succeeded": true,
+              "same_ordered_event_kinds_and_reuse": true,
+              "same_two_punctures_entries_exits_sections": true,
+              "candidate_exit_within_1mm": true,
+              "exit_error_vector_difference_proven_below_50um_by_norm_bound": true,
+              "peak_force_change_within_5percent": true,
+              "peak_deformation_change_within_5percent": true,
+              "force_law_scatter_balance_under_1e-8N": true,
+              "force_law_scatter_moment_balance_under_1e-9Nm": true,
+              "unchanged_sampling_and_exit_tolerance": true,
+              "reference32_candidate10": true
+            },
+            "all_comparable_checks_passed": true,
+            "relative_peak_changes": {
+              "maximum_interface_force_N": 0.001750758198022935,
+              "maximum_deformation_m": 0.004653732021593105
+            },
+            "exit_error_scalar_change_m": 9.803716396658925e-07,
+            "exit_error_vector_difference_upper_bound_m": 2.0180844604786466e-05,
+            "actual_final_exit_point_difference_m": 1.2722224302976183e-06,
+            "event_time_differences_s": [
+              -0.0004166666666303165,
+              -0.0008333333332968262,
+              1.0436096431476471e-13,
+              -0.0004166666666058916,
+              -0.0008333333332726234,
+              -0.0007291666666571217
+            ],
+            "track_samples_reference_candidate": [
+              26,
+              25
+            ],
+            "track_length_relative_change": -0.03535796457691838
+          }
+        },
+        "raw_benchmark": "nsys/results/needle_unprofiled_default10_20261109/benchmark.json",
+        "raw_benchmark_sha256": "cc2f0a355434d1af80b1dddda3ed3a89f8aeb85822cabf3b65ffbf859dccd656",
+        "raw_workload_sha256": "54debe05933fe149729b9ae695909cfeb5845d2d694062319a48e75669ce5126"
+      },
+      "default_10_repeat": {
+        "all_comparable_checks_passed": true,
+        "candidate": {
+          "success": true,
+          "physical_time_s": 3.8049999999998336,
+          "exit_error_m": 1.0580953863387799e-05,
+          "maximum_interface_force_N": 0.0032166822391639315,
+          "maximum_deformation_m": 0.00013868406475210502,
+          "maximum_force_balance_error_N": 1.1701631077742026e-09,
+          "maximum_torque_balance_error_Nm": 4.760750863461872e-11,
+          "maximum_coupling_iterations": 21,
+          "entry_count": 2,
+          "exit_count": 2,
+          "puncture_count": 2,
+          "track_section_count": 2,
+          "dt_s": 0.0016666666666666666
+        },
+        "comparisons": {
+          "fresh32_validation": {
+            "checks": {
+              "reference_and_candidate_succeeded": true,
+              "same_ordered_event_kinds_and_reuse": true,
+              "same_two_punctures_entries_exits_sections": true,
+              "candidate_exit_within_1mm": true,
+              "exit_error_vector_difference_proven_below_50um_by_norm_bound": true,
+              "peak_force_change_within_5percent": true,
+              "peak_deformation_change_within_5percent": true,
+              "force_law_scatter_balance_under_1e-8N": true,
+              "force_law_scatter_moment_balance_under_1e-9Nm": true,
+              "unchanged_sampling_and_exit_tolerance": true,
+              "reference32_candidate10": true
+            },
+            "all_comparable_checks_passed": true,
+            "relative_peak_changes": {
+              "maximum_interface_force_N": 0.0016973468747208187,
+              "maximum_deformation_m": 0.004592275523249626
+            },
+            "exit_error_scalar_change_m": 9.809037970016834e-07,
+            "exit_error_vector_difference_upper_bound_m": 2.0181003929773914e-05,
+            "actual_final_exit_point_difference_m": 1.2712468710130334e-06,
+            "event_time_differences_s": [
+              -0.0004166666666303165,
+              -0.0008333333332968262,
+              1.0436096431476471e-13,
+              -0.0004166666666058916,
+              -0.0008333333332726234,
+              -0.0007291666666571217
+            ],
+            "track_samples_reference_candidate": [
+              26,
+              25
+            ],
+            "track_length_relative_change": -0.03535730128291003
+          },
+          "fresh32_benchmark": {
+            "checks": {
+              "reference_and_candidate_succeeded": true,
+              "same_ordered_event_kinds_and_reuse": true,
+              "same_two_punctures_entries_exits_sections": true,
+              "candidate_exit_within_1mm": true,
+              "exit_error_vector_difference_proven_below_50um_by_norm_bound": true,
+              "peak_force_change_within_5percent": true,
+              "peak_deformation_change_within_5percent": true,
+              "force_law_scatter_balance_under_1e-8N": true,
+              "force_law_scatter_moment_balance_under_1e-9Nm": true,
+              "unchanged_sampling_and_exit_tolerance": true,
+              "reference32_candidate10": true
+            },
+            "all_comparable_checks_passed": true,
+            "relative_peak_changes": {
+              "maximum_interface_force_N": 0.0017506719981236801,
+              "maximum_deformation_m": 0.004637870850810012
+            },
+            "exit_error_scalar_change_m": 9.80717380827511e-07,
+            "exit_error_vector_difference_upper_bound_m": 2.0181190345948085e-05,
+            "actual_final_exit_point_difference_m": 1.2729814388212081e-06,
+            "event_time_differences_s": [
+              -0.0004166666666303165,
+              -0.0008333333332968262,
+              1.0436096431476471e-13,
+              -0.0004166666666058916,
+              -0.0008333333332726234,
+              -0.0007291666666571217
+            ],
+            "track_samples_reference_candidate": [
+              26,
+              25
+            ],
+            "track_length_relative_change": -0.03535620076379762
+          }
+        },
+        "raw_benchmark": "nsys/results/needle_unprofiled_default10_repeat_20261109/benchmark.json",
+        "raw_benchmark_sha256": "7cfcd4a709e86de307ee9645c230bc93adbe608df5ec962c82fd23c2be5641af",
+        "raw_workload_sha256": "baf86a4276270e9a69038bd6a10d202957268928a6969605aae972df37adec1d"
+      }
+    },
+    "source_sha256": {
+      "src/newton_solver_fem/_src/insertion.py": "67e8bcdc847bbcb9d16f923f910b0ccb67a70c2dc3e6b9211358b6f2393004d7",
+      "src/newton_solver_fem/_src/coupling.py": "0414759276798a2ea3dafc59e256ab0bf1eb39cc610db177253c3de8825b278f",
+      "src/newton_solver_fem/_src/solvers/fem/solver.py": "cfec8aedc30c0b1a78b287d1896569bc795e019223685d43413b41f2ddfc1280",
+      "src/newton_solver_fem/examples/example_fem_needle_insertion.py": "fe4c514c4db16eec4dc289c6fb5e2254592c42c18f28944f21124ebc8864db3a"
+    },
+    "source_transition": {
+      "32_to_10_changed_files": {
+        "src/newton_solver_fem/examples/example_fem_needle_insertion.py": {
+          "reference": "c566954c19092d4537d83fe3eaec6ede603516fd34f939d8c93b19b1729673f6",
+          "candidate": "fe4c514c4db16eec4dc289c6fb5e2254592c42c18f28944f21124ebc8864db3a"
+        }
+      },
+      "exact_change": "Only parser.set_defaults(substeps=32, regions=[1]) becomes substeps=10; verified by reconstructing the recorded 32-step source hash."
+    },
+    "exit_vector_bound": "Benchmark metadata does not store the deformed marked-target vector. Each reported exit error is the norm of its actual tip-to-target vector. By the triangle inequality, the norm of the difference between two such vectors is at most the sum of their norms. The approximately 20.2 micrometre bound proves the existing 50 micrometre criterion; actual final exit-point differences are separate observations, not substituted error vectors.",
+    "state_validation_scope": {
+      "accepted_state_finite": "The example checks particle/rigid states after each accepted substep; no failure occurred.",
+      "final_validation": "The shared runner used --test and calls test_final after the synchronized frame loop: finite states, positive tetrahedron orientation, fixed nodes at rest.",
+      "detailed_per_substep_fixed_node_recorder_repeated": false,
+      "sparse_or_full_force_history_recorded": false
+    },
+    "limitations": [
+      "Additional final-source gap confirmation, not a rerun of every historical per-substep state recorder or handling pulse.",
+      "Track quadrature sample counts are 25 at 10 substeps versus 26 at 32; track-length changes are retained as observations without a new threshold.",
+      "Peak, exit, event and balance agreement does not establish full force-history convergence, a global stability guarantee, physiological calibration or a proven minimum timestep budget.",
+      "Force/moment balance fields measure force-law scatter, not every finite-tolerance applied coupling iterate.",
+      "These raw runs also support separately defined unprofiled timings; no new timing claim is introduced by this validation section."
+    ],
+    "provenance": {
+      "reference_validation": "docs/validation/needle-insertion-optimized32.json",
+      "reference_validation_sha256": "50e9a7345dc3cf012933c56af90912ebc6cbcbf1291e32565e10803367e8eeda",
+      "reference_32_benchmark": "nsys/results/needle_unprofiled_final32_20261109/benchmark.json",
+      "reference_32_benchmark_sha256": "3b61c829096a751b05a08ccf4eeb0163b5b79db994fa3a7f9921c65100fef5f6",
+      "prior_substeps_artifact_sha256": "510bf9b6e90ae6bdda70786a9e25535f1daa94bef287ea5fdff68fbed2c8fd02",
+      "prior_substeps_archive": "nsys/results/needle_final_default10_validation_20261109/needle-insertion-substeps.before-gap-confirmation.json",
+      "assessment_script": "nsys/results/needle_final_default10_validation_20261109/audit_needle_final_default10.py",
+      "assessment_script_sha256": "0f12ec6e975c52df1fc6d0d9a819d7f96af32a34a8f50433a70848eb0608c653"
+    }
+  }
+}

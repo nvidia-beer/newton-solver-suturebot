@@ -1,0 +1,13 @@
+{
+  "completed": true,
+  "source_unchanged": true,
+  "error": null,
+  "lift_m": 0.002,
+  "anchor_samples": 2158,
+  "outside_away_from_openings": 0,
+  "maximum_anchor_shaft_offset_m": 0.000283211759187805,
+  "maximum_deformation_m": 0.0017567054593640432,
+  "final_engaged_length_m": 0.0,
+  "step_refinements": 0,
+  "limitations": "Sampled material anchors only; finite-compliance tunnel; not a hard containment guarantee for arbitrary handling."
+}

@@ -1,0 +1,308 @@
+{
+  "source_project": "newton-solver-fem",
+  "destination_project": "newton-solver-suturebot",
+  "date": "2026-11-10",
+  "scope": "Imported documentation, historical validation and recorded demonstrations. Original media/JSON metadata remain byte-identical; their namespace, parameters and paths describe their original capture, not a fresh standalone run.",
+  "files": {
+    "docs/media/fem_needle_insertion.mp4": {
+      "original_path": "docs/media/fem_needle_insertion.mp4",
+      "original_sha256": "c95aef837d7dcc2aa7ba0ce1ea8915131ee32b1746a12329ca20911153916853",
+      "copied_sha256": "c95aef837d7dcc2aa7ba0ce1ea8915131ee32b1746a12329ca20911153916853",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/fem_needle_insertion.gif": {
+      "original_path": "docs/media/fem_needle_insertion.gif",
+      "original_sha256": "55fb435012993bdf7a3dee2aee07a9b14de1fdc403adc87b1b9555d867669ede",
+      "copied_sha256": "55fb435012993bdf7a3dee2aee07a9b14de1fdc403adc87b1b9555d867669ede",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/fem_needle_insertion.jpg": {
+      "original_path": "docs/media/fem_needle_insertion.jpg",
+      "original_sha256": "2501e5e338382d602e8fd0cc375e41a32a12eb2847a89d1ba9a19ecef7053840",
+      "copied_sha256": "2501e5e338382d602e8fd0cc375e41a32a12eb2847a89d1ba9a19ecef7053840",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/fem_needle_insertion.json": {
+      "original_path": "docs/media/fem_needle_insertion.json",
+      "original_sha256": "d5e7399c40607c6dff9ae8be56ab0ac7e2fa8041bbfb7ad92f802fa1c618e861",
+      "copied_sha256": "d5e7399c40607c6dff9ae8be56ab0ac7e2fa8041bbfb7ad92f802fa1c618e861",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/fem_phantom_regions.mp4": {
+      "original_path": "docs/media/fem_phantom_regions.mp4",
+      "original_sha256": "4cf8b58adf166d40ddeafb98f3eba1d6f6eb4311293272bb606a0882578a047b",
+      "copied_sha256": "4cf8b58adf166d40ddeafb98f3eba1d6f6eb4311293272bb606a0882578a047b",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/fem_phantom_regions.gif": {
+      "original_path": "docs/media/fem_phantom_regions.gif",
+      "original_sha256": "8528c0ff8f5feb436a796ab4ac6363d2d9487e94b7027c423971e792cdcd0e48",
+      "copied_sha256": "8528c0ff8f5feb436a796ab4ac6363d2d9487e94b7027c423971e792cdcd0e48",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/fem_phantom_regions.jpg": {
+      "original_path": "docs/media/fem_phantom_regions.jpg",
+      "original_sha256": "db593e2dd46d8e9b842a94f625fafa3efe8a836ea6c53c8052e7c3269797a42e",
+      "copied_sha256": "db593e2dd46d8e9b842a94f625fafa3efe8a836ea6c53c8052e7c3269797a42e",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/fem_phantom_regions.json": {
+      "original_path": "docs/media/fem_phantom_regions.json",
+      "original_sha256": "c8fa99c4fc5729010652880f0375a235f5bfe9772d0f62382aa33d4f5d92d709",
+      "copied_sha256": "c8fa99c4fc5729010652880f0375a235f5bfe9772d0f62382aa33d4f5d92d709",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/fem_dvrk.mp4": {
+      "original_path": "docs/media/fem_suturebot.mp4",
+      "original_sha256": "61c02546ec340a537395600d18eec94cda7d5086feed9c0a9fce7d1518f289a6",
+      "copied_sha256": "61c02546ec340a537395600d18eec94cda7d5086feed9c0a9fce7d1518f289a6",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/fem_dvrk.gif": {
+      "original_path": "docs/media/fem_suturebot.gif",
+      "original_sha256": "759ecb5c8340e99dc2440011fc7f6dade976ff0d261a2382701217cb3d5d3d1c",
+      "copied_sha256": "759ecb5c8340e99dc2440011fc7f6dade976ff0d261a2382701217cb3d5d3d1c",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/fem_dvrk.jpg": {
+      "original_path": "docs/media/fem_suturebot.jpg",
+      "original_sha256": "b7e7b87f3ea78d539438fc418a62d54b6540839fd53cc8c08e75dde6d702bf9a",
+      "copied_sha256": "b7e7b87f3ea78d539438fc418a62d54b6540839fd53cc8c08e75dde6d702bf9a",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/fem_dvrk.json": {
+      "original_path": "docs/media/fem_suturebot.json",
+      "original_sha256": "5e1c2a041b6f74e1f50457bad7586ad0bca8abec3cef69ee2daf57901afa5f65",
+      "copied_sha256": "5e1c2a041b6f74e1f50457bad7586ad0bca8abec3cef69ee2daf57901afa5f65",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/fem_suturebot_alignment.jpg": {
+      "original_path": "docs/media/fem_suturebot_alignment.jpg",
+      "original_sha256": "a26284d331e942bd55c8e4c5d5019879093f853dfb17312db4e79b9640cf5d96",
+      "copied_sha256": "a26284d331e942bd55c8e4c5d5019879093f853dfb17312db4e79b9640cf5d96",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/fem_suturebot_boundary.png": {
+      "original_path": "docs/media/fem_suturebot_boundary.png",
+      "original_sha256": "891a459c1aa470a292c3b4f0a1ed259200a5a4c45e3bbc08cbe8b7d4df14e64d",
+      "copied_sha256": "891a459c1aa470a292c3b4f0a1ed259200a5a4c45e3bbc08cbe8b7d4df14e64d",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/fem_suturebot_point_labels.png": {
+      "original_path": "docs/media/fem_suturebot_point_labels.png",
+      "original_sha256": "8bec7c787a6cb1c92be27d8eca42a3713d0a0c226b445bf6245dc9037d8537ac",
+      "copied_sha256": "8bec7c787a6cb1c92be27d8eca42a3713d0a0c226b445bf6245dc9037d8537ac",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/fem_suturebot_thread.jpg": {
+      "original_path": "docs/media/fem_suturebot_thread.jpg",
+      "original_sha256": "0583a5d849c6a0f17b1a849137976736eef194570262feb322e5b23b750c9ad1",
+      "copied_sha256": "0583a5d849c6a0f17b1a849137976736eef194570262feb322e5b23b750c9ad1",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/needle-handling-response.json": {
+      "original_path": "docs/validation/needle-handling-response.json",
+      "original_sha256": "0ca0f644e0c49ebf2ac375b424b8ce24ae30f486419d07825d1a1b768210dd6f",
+      "copied_sha256": "0ca0f644e0c49ebf2ac375b424b8ce24ae30f486419d07825d1a1b768210dd6f",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/needle-insertion-final-20261110.json": {
+      "original_path": "docs/validation/needle-insertion-final-20261110.json",
+      "original_sha256": "a119676feb973c15d37179241d64e2b6a77dbd50126867b89cfc25344ae67381",
+      "copied_sha256": "a119676feb973c15d37179241d64e2b6a77dbd50126867b89cfc25344ae67381",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/needle-insertion-optimized32.json": {
+      "original_path": "docs/validation/needle-insertion-optimized32.json",
+      "original_sha256": "50e9a7345dc3cf012933c56af90912ebc6cbcbf1291e32565e10803367e8eeda",
+      "copied_sha256": "50e9a7345dc3cf012933c56af90912ebc6cbcbf1291e32565e10803367e8eeda",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/needle-insertion-performance.json": {
+      "original_path": "docs/validation/needle-insertion-performance.json",
+      "original_sha256": "d8ae9acee5b77231a0371d973101b4e1f44a134258639ce2f160dd20bc1a82a9",
+      "copied_sha256": "d8ae9acee5b77231a0371d973101b4e1f44a134258639ce2f160dd20bc1a82a9",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/needle-insertion-substeps.json": {
+      "original_path": "docs/validation/needle-insertion-substeps.json",
+      "original_sha256": "9880e6c0a38ad9e2c35ef99ae740e8997deea02f43e68cbbd422941a71d42148",
+      "copied_sha256": "9880e6c0a38ad9e2c35ef99ae740e8997deea02f43e68cbbd422941a71d42148",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/needle-insertion.json": {
+      "original_path": "docs/validation/needle-insertion.json",
+      "original_sha256": "50eb2abc33b47e7285e5666a012779f28387c3f513d7429f7149169df78eb5e3",
+      "copied_sha256": "50eb2abc33b47e7285e5666a012779f28387c3f513d7429f7149169df78eb5e3",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/needle-optimization-tests.json": {
+      "original_path": "docs/validation/needle-optimization-tests.json",
+      "original_sha256": "7f124c69ece91a744fed437c9daf7848200c776abd4a9b6218c7f08167ef4e59",
+      "copied_sha256": "7f124c69ece91a744fed437c9daf7848200c776abd4a9b6218c7f08167ef4e59",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/needle-region-selection.json": {
+      "original_path": "docs/validation/needle-region-selection.json",
+      "original_sha256": "82e19e6fb915abeb0e4ff53012daeefe25eb5d0d628f91ac90de088874da14fa",
+      "copied_sha256": "82e19e6fb915abeb0e4ff53012daeefe25eb5d0d628f91ac90de088874da14fa",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/needle-source-video-review.json": {
+      "original_path": "docs/validation/needle-source-video-review.json",
+      "original_sha256": "efb5a98f1d5c1ab720b270469c9dcf6e20f8161f904a8db2e42841ed4f6f4c70",
+      "copied_sha256": "efb5a98f1d5c1ab720b270469c9dcf6e20f8161f904a8db2e42841ed4f6f4c70",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/phantom-regions.json": {
+      "original_path": "docs/validation/phantom-regions.json",
+      "original_sha256": "8d8ee4e493c424bd61c3c89b3414631afe3e77d8642766f640b3f22e68e6678e",
+      "copied_sha256": "8d8ee4e493c424bd61c3c89b3414631afe3e77d8642766f640b3f22e68e6678e",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/suturebot-approaches.json": {
+      "original_path": "docs/validation/suturebot-approaches.json",
+      "original_sha256": "7e700e321b866a5d5659317eab8fe20034f095701a364db486bd78143aec1fce",
+      "copied_sha256": "7e700e321b866a5d5659317eab8fe20034f095701a364db486bd78143aec1fce",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/suturebot-prepush.json": {
+      "original_path": "docs/validation/suturebot-prepush.json",
+      "original_sha256": "d62619b20c97700ae3ba31bf3dc3c18533613c853876808f4af789ecc08e8f62",
+      "copied_sha256": "d62619b20c97700ae3ba31bf3dc3c18533613c853876808f4af789ecc08e8f62",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/suturebot-press.json": {
+      "original_path": "docs/validation/suturebot-press.json",
+      "original_sha256": "b4c1261b14fc7bc5b6f238fd81bba4045fd76e8f4f27469d0e6bbad3c96eae2e",
+      "copied_sha256": "b4c1261b14fc7bc5b6f238fd81bba4045fd76e8f4f27469d0e6bbad3c96eae2e",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/suturebot-recording.json": {
+      "original_path": "docs/validation/suturebot-recording.json",
+      "original_sha256": "74796fd09480208b21fb0afef452f582ab206478c5570e129c813f1047968e3a",
+      "copied_sha256": "74796fd09480208b21fb0afef452f582ab206478c5570e129c813f1047968e3a",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/suturebot-thread-additions.json": {
+      "original_path": "docs/validation/suturebot-thread-additions.json",
+      "original_sha256": "1d83d772d4390d00cc60bfd96affb5635c62fd06f1b45fbe82192251340cc539",
+      "copied_sha256": "1d83d772d4390d00cc60bfd96affb5635c62fd06f1b45fbe82192251340cc539",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/suturebot-thread-attachment.json": {
+      "original_path": "docs/validation/suturebot-thread-attachment.json",
+      "original_sha256": "8f2b4f6cd776bf908b7cda525b49098c2bebc2fedb8d20ab809b8ba534d1ec9e",
+      "copied_sha256": "8f2b4f6cd776bf908b7cda525b49098c2bebc2fedb8d20ab809b8ba534d1ec9e",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/validation/suturebot-thread.json": {
+      "original_path": "docs/validation/suturebot-thread.json",
+      "original_sha256": "0d84690b20bf2eec46c62bf9638cf8975e74a9bb6f1d0cf38164d1f40444d646",
+      "copied_sha256": "0d84690b20bf2eec46c62bf9638cf8975e74a9bb6f1d0cf38164d1f40444d646",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/videos.json": {
+      "original_path": "docs/videos.json",
+      "original_sha256": "c9d0ee412c25a1cbbe95e2e18c811d0fbbfb4981fc95ada53b9e7e7866a818a4",
+      "copied_sha256": "a88faeae27d4caba11c9e5fc2ab2a3b5fc3297bf52e7032c0a1493c966cb0d39",
+      "handling": "adapted standalone documentation; original source hash retained"
+    },
+    "docs/method.md": {
+      "original_path": "docs/method.md",
+      "original_sha256": "0b5735987a3db730e2e290f08923f2e09acce68e46c454481a81525aeba469da",
+      "copied_sha256": "4139eebe70e117cbc6ec0cec6f795fc1e1688880f5a240d1c812a2e1b12c78af",
+      "handling": "adapted standalone documentation; original source hash retained"
+    },
+    "docs/papers.md": {
+      "original_path": "docs/papers.md",
+      "original_sha256": "a53c623a61bd49df4cce6be18e585bc5d186b4ce720faaa3910a32b7f86cd058",
+      "copied_sha256": "792faf0a09d3486a278ca8c61bacc1d0044941d24c91a849255e9a9486df743b",
+      "handling": "adapted standalone documentation; original source hash retained"
+    },
+    "docs/phantom-regions.md": {
+      "original_path": "docs/phantom-regions.md",
+      "original_sha256": "82ffaa8c74d9cc752322f15a74d76db03025ba87d74e7022cec7b484d5a20fcd",
+      "copied_sha256": "a688e0e2e58425f77f0d3b94f0322b41c15f358793de1cbe0f18da32dd4a90a5",
+      "handling": "adapted standalone documentation; original source hash retained"
+    },
+    "docs/needle-insertion.md": {
+      "original_path": "docs/needle-insertion.md",
+      "original_sha256": "e812cd58af5b79815beb118e35da9707ebc04776c8f2eae1a00add50b0abbd9c",
+      "copied_sha256": "2a6dc3d02c065ad93dcd4f46e3e8712e5960425929fb56408b17764dd004b94b",
+      "handling": "adapted standalone documentation; original source hash retained"
+    },
+    "docs/suturebot-recording.md": {
+      "original_path": "docs/suturebot-recording.md",
+      "original_sha256": "94b5da3cc984007a305615662816af16c954159ddbeb49b32a21b4f477b1a757",
+      "copied_sha256": "eaab8be7262dfe612b9494f5dd5212ff871190fa6d2ecec4f8854b14753e930a",
+      "handling": "adapted standalone documentation; original source hash retained"
+    },
+    "docs/usage.md": {
+      "original_path": "docs/usage.md",
+      "original_sha256": "30d9d8ee2dc5456a523b32dc053dbdc1fb31e03d1371d5e86e63185f1b75997d",
+      "copied_sha256": "e83bfff27a427b8f8a27e461393330e57a9b91330b413e82ff51d57cc6f19459",
+      "handling": "adapted standalone documentation; original source hash retained"
+    },
+    "docs/validation.md": {
+      "original_path": "docs/validation.md",
+      "original_sha256": "9ec031612ec2e1897b84cebe8bb3a12224f733cfadd90eb9d651381110b4fbcc",
+      "copied_sha256": "27fac7b316cf5f699b05a0caa1529b42b7ebc0ea87387ee3e0a5894e43ad6a1a",
+      "handling": "adapted standalone documentation; original source hash retained"
+    },
+    "docs/validation/frame-budget/decision.json": {
+      "original_path": "nsys/results/needle_frame_budget_20261110/decision.json",
+      "original_sha256": "8d7b916277631289a0f2a322f9ba3d43ac934fd6ef9afffbfedb4443b486c326",
+      "copied_sha256": "8d7b916277631289a0f2a322f9ba3d43ac934fd6ef9afffbfedb4443b486c326",
+      "handling": "byte-identical historical compact evidence; source paths may reference original ignored outputs"
+    },
+    "docs/validation/frame-budget/direct-counter-analysis.json": {
+      "original_path": "nsys/results/needle_frame_budget_20261110/direct-counter-analysis.json",
+      "original_sha256": "1a9e987c08777e2877bbb126ebcdb3a848b1f39b3f32009bf7f79431f25013ca",
+      "copied_sha256": "1a9e987c08777e2877bbb126ebcdb3a848b1f39b3f32009bf7f79431f25013ca",
+      "handling": "byte-identical historical compact evidence; source paths may reference original ignored outputs"
+    },
+    "docs/validation/frame-budget/ui-abba-summary.json": {
+      "original_path": "nsys/results/needle_frame_budget_20261110/ui-abba-summary.json",
+      "original_sha256": "c83e4962c0308c59450e7593ce6e677b97fe120ea32c1c7cb70f47a9fb418c00",
+      "copied_sha256": "c83e4962c0308c59450e7593ce6e677b97fe120ea32c1c7cb70f47a9fb418c00",
+      "handling": "byte-identical historical compact evidence; source paths may reference original ignored outputs"
+    },
+    "docs/validation/frame-budget/ui-copy-once-summary.json": {
+      "original_path": "nsys/results/needle_frame_budget_20261110/ui-copy-once-summary.json",
+      "original_sha256": "829e3acc629dde4ce6a9cf619f0a9feeba0958542a0407d8166c1317988cd816",
+      "copied_sha256": "829e3acc629dde4ce6a9cf619f0a9feeba0958542a0407d8166c1317988cd816",
+      "handling": "byte-identical historical compact evidence; source paths may reference original ignored outputs"
+    },
+    "docs/validation/frame-budget/comparison-copy-once.json": {
+      "original_path": "nsys/results/needle_frame_budget_20261110/comparison-copy-once.json",
+      "original_sha256": "0181fb25bb49692d10ae8a5c651ae388d75e4ee5bd47c08b825abb657665dec2",
+      "copied_sha256": "0181fb25bb49692d10ae8a5c651ae388d75e4ee5bd47c08b825abb657665dec2",
+      "handling": "byte-identical historical compact evidence; source paths may reference original ignored outputs"
+    },
+    "docs/validation/frame-budget/comparison-prepared.json": {
+      "original_path": "nsys/results/needle_frame_budget_20261110/comparison-prepared.json",
+      "original_sha256": "e9636648d83facba4da13e243e0b7033723a48f416529d6292107bf685c6c7cd",
+      "copied_sha256": "e9636648d83facba4da13e243e0b7033723a48f416529d6292107bf685c6c7cd",
+      "handling": "byte-identical historical compact evidence; source paths may reference original ignored outputs"
+    },
+    "docs/validation/frame-budget/comparison-baseline-repeat.json": {
+      "original_path": "nsys/results/needle_frame_budget_20261110/comparison-baseline-repeat.json",
+      "original_sha256": "0918f006a62e52216c186438d1ce7c065a26a59d30cfbfe5913b259d73141f34",
+      "copied_sha256": "0918f006a62e52216c186438d1ce7c065a26a59d30cfbfe5913b259d73141f34",
+      "handling": "byte-identical historical compact evidence; source paths may reference original ignored outputs"
+    },
+    "docs/validation/frame-budget/confinement-summary.json": {
+      "original_path": "nsys/results/needle_frame_budget_20261110/confinement-summary.json",
+      "original_sha256": "bbd67927893d9905ef803671b4ce4d173257cd6f9fde7d36316484cfe19e90f4",
+      "copied_sha256": "bbd67927893d9905ef803671b4ce4d173257cd6f9fde7d36316484cfe19e90f4",
+      "handling": "byte-identical historical compact evidence; source paths may reference original ignored outputs"
+    },
+    "tools/build_readme.py": {
+      "original_path": "tools/build_readme.py",
+      "original_sha256": "bc862d96119eafb4d71dbbcdcbc7a4505876cb9c0e5d0675eff91ceea968c8ec",
+      "copied_sha256": "96af78cc44fea9a9d1add125c235c814fa360f60eafabbeeaefa62544936bbc6",
+      "handling": "adapted standalone documentation; original source hash retained"
+    }
+  }
+}

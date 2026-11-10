@@ -1,0 +1,1646 @@
+{
+  "scope": "Current fivefold-stiffer compliant ALM, default partitioned solver, identical hidden600-frame1mm handling workload. Diagnostic counters, not wall/FPS measurement. Trajectory comparison is a separate audit.",
+  "counter_validity": {
+    "baseline": {
+      "report": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem/nsys/results/needle_frame_budget_20261110/diagnostic-baseline-v2/diagnostics.json",
+      "sha256": "1774fe54d0afe34f8bb8e841312611020b24dce7b5a2e584cde28c50cf9566cb",
+      "source_root": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem/nsys/results/needle_frame_budget_20261110/baseline/source",
+      "wrapper_sha256": "07c716f565617dd81833706ec84c72857725946864021294eb0a5343ccbf8b47",
+      "source_unchanged": true,
+      "frame_and_attempt_and_application_totals_match": true,
+      "physical_settings": {
+        "dt_s": 0.016666666666666666,
+        "tunnel_compliance_m2_per_N": 3.3333333333333333e-06,
+        "tunnel_penalty_N_per_m2": 60000.0,
+        "fem_relative_tolerance": 0.003,
+        "coupling_absolute_tolerance_N": 2e-06,
+        "coupling_relative_tolerance": 0.001,
+        "coupling_iteration_cap": 160
+      }
+    },
+    "prepared": {
+      "report": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem/nsys/results/needle_frame_budget_20261110/diagnostic-prepared/diagnostics.json",
+      "sha256": "687a15724160c9536b0ac4d168b848482843c76ca287d6a0e99c7b1728ae5ebd",
+      "source_root": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem/nsys/results/needle_frame_budget_20261110/prepared/source",
+      "wrapper_sha256": "07c716f565617dd81833706ec84c72857725946864021294eb0a5343ccbf8b47",
+      "source_unchanged": true,
+      "frame_and_attempt_and_application_totals_match": true,
+      "physical_settings": {
+        "dt_s": 0.016666666666666666,
+        "tunnel_compliance_m2_per_N": 3.3333333333333333e-06,
+        "tunnel_penalty_N_per_m2": 60000.0,
+        "fem_relative_tolerance": 0.003,
+        "coupling_absolute_tolerance_N": 2e-06,
+        "coupling_relative_tolerance": 0.001,
+        "coupling_iteration_cap": 160
+      }
+    }
+  },
+  "cases": {
+    "baseline": {
+      "insertion": {
+        "attempts": 132,
+        "accepted": 132,
+        "rejected": 0,
+        "force_map_trials": 261,
+        "dual_updates": 3,
+        "max_attempt_trials": 7,
+        "graph": {
+          "coupling_graph_captures": 41,
+          "coupling_graph_launches": 68,
+          "coupling_graph_fallbacks": 13,
+          "coupling_graph_verifications": 55,
+          "trials": 125,
+          "dual_updates": 1,
+          "final_tolerance_level_counts": {
+            "0": 68
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 262,
+            "iterations": 13851,
+            "zero_iteration_solves": 3,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 85,
+            "mean_iterations_per_solve": 52.86641221374046,
+            "mean_iterations_per_nonzero_solve": 53.47876447876448,
+            "iterations_per_accepted_step": 104.93181818181819
+          },
+          "fem_prepared": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "shaft_preconditioner": {
+            "solves": 70,
+            "iterations": 2425,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 40,
+            "mean_iterations_per_solve": 34.642857142857146,
+            "mean_iterations_per_nonzero_solve": 34.642857142857146,
+            "iterations_per_accepted_step": 18.37121212121212
+          },
+          "fem_combined": {
+            "solves": 262,
+            "iterations": 13851,
+            "zero_iteration_solves": 3,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 85,
+            "mean_iterations_per_solve": 52.86641221374046,
+            "mean_iterations_per_nonzero_solve": 53.47876447876448,
+            "iterations_per_accepted_step": 104.93181818181819
+          }
+        }
+      },
+      "settle": {
+        "attempts": 12,
+        "accepted": 12,
+        "rejected": 0,
+        "force_map_trials": 17,
+        "dual_updates": 0,
+        "max_attempt_trials": 2,
+        "graph": {
+          "coupling_graph_captures": 1,
+          "coupling_graph_launches": 12,
+          "coupling_graph_fallbacks": 0,
+          "coupling_graph_verifications": 12,
+          "trials": 17,
+          "dual_updates": 0,
+          "final_tolerance_level_counts": {
+            "0": 12
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 17,
+            "iterations": 774,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 57,
+            "mean_iterations_per_solve": 45.529411764705884,
+            "mean_iterations_per_nonzero_solve": 45.529411764705884,
+            "iterations_per_accepted_step": 64.5
+          },
+          "fem_prepared": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "shaft_preconditioner": {
+            "solves": 5,
+            "iterations": 105,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 21,
+            "mean_iterations_per_solve": 21.0,
+            "mean_iterations_per_nonzero_solve": 21.0,
+            "iterations_per_accepted_step": 8.75
+          },
+          "fem_combined": {
+            "solves": 17,
+            "iterations": 774,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 57,
+            "mean_iterations_per_solve": 45.529411764705884,
+            "mean_iterations_per_nonzero_solve": 45.529411764705884,
+            "iterations_per_accepted_step": 64.5
+          }
+        },
+        "loaded_trial_identity": {
+          "accepted_endpoints": 12,
+          "dual_update_repeats": 0,
+          "preconditioned_corrections": 5,
+          "sum": 17,
+          "equals_force_map_trials": true
+        }
+      },
+      "lift": {
+        "attempts": 30,
+        "accepted": 30,
+        "rejected": 0,
+        "force_map_trials": 313,
+        "dual_updates": 72,
+        "max_attempt_trials": 34,
+        "graph": {
+          "coupling_graph_captures": 0,
+          "coupling_graph_launches": 30,
+          "coupling_graph_fallbacks": 0,
+          "coupling_graph_verifications": 30,
+          "trials": 313,
+          "dual_updates": 72,
+          "final_tolerance_level_counts": {
+            "0": 30
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 313,
+            "iterations": 14067,
+            "zero_iteration_solves": 73,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 83,
+            "mean_iterations_per_solve": 44.94249201277955,
+            "mean_iterations_per_nonzero_solve": 58.6125,
+            "iterations_per_accepted_step": 468.9
+          },
+          "fem_prepared": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "shaft_preconditioner": {
+            "solves": 211,
+            "iterations": 4715,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 40,
+            "mean_iterations_per_solve": 22.345971563981042,
+            "mean_iterations_per_nonzero_solve": 22.345971563981042,
+            "iterations_per_accepted_step": 157.16666666666666
+          },
+          "fem_combined": {
+            "solves": 313,
+            "iterations": 14067,
+            "zero_iteration_solves": 73,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 83,
+            "mean_iterations_per_solve": 44.94249201277955,
+            "mean_iterations_per_nonzero_solve": 58.6125,
+            "iterations_per_accepted_step": 468.9
+          }
+        },
+        "loaded_trial_identity": {
+          "accepted_endpoints": 30,
+          "dual_update_repeats": 72,
+          "preconditioned_corrections": 211,
+          "sum": 313,
+          "equals_force_map_trials": true
+        }
+      },
+      "hold": {
+        "attempts": 12,
+        "accepted": 12,
+        "rejected": 0,
+        "force_map_trials": 38,
+        "dual_updates": 2,
+        "max_attempt_trials": 8,
+        "graph": {
+          "coupling_graph_captures": 0,
+          "coupling_graph_launches": 12,
+          "coupling_graph_fallbacks": 0,
+          "coupling_graph_verifications": 12,
+          "trials": 38,
+          "dual_updates": 2,
+          "final_tolerance_level_counts": {
+            "0": 12
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 38,
+            "iterations": 1993,
+            "zero_iteration_solves": 2,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 76,
+            "mean_iterations_per_solve": 52.44736842105263,
+            "mean_iterations_per_nonzero_solve": 55.361111111111114,
+            "iterations_per_accepted_step": 166.08333333333334
+          },
+          "fem_prepared": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "shaft_preconditioner": {
+            "solves": 24,
+            "iterations": 413,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 31,
+            "mean_iterations_per_solve": 17.208333333333332,
+            "mean_iterations_per_nonzero_solve": 17.208333333333332,
+            "iterations_per_accepted_step": 34.416666666666664
+          },
+          "fem_combined": {
+            "solves": 38,
+            "iterations": 1993,
+            "zero_iteration_solves": 2,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 76,
+            "mean_iterations_per_solve": 52.44736842105263,
+            "mean_iterations_per_nonzero_solve": 55.361111111111114,
+            "iterations_per_accepted_step": 166.08333333333334
+          }
+        },
+        "loaded_trial_identity": {
+          "accepted_endpoints": 12,
+          "dual_update_repeats": 2,
+          "preconditioned_corrections": 24,
+          "sum": 38,
+          "equals_force_map_trials": true
+        }
+      },
+      "lower": {
+        "attempts": 30,
+        "accepted": 30,
+        "rejected": 0,
+        "force_map_trials": 434,
+        "dual_updates": 110,
+        "max_attempt_trials": 25,
+        "graph": {
+          "coupling_graph_captures": 0,
+          "coupling_graph_launches": 30,
+          "coupling_graph_fallbacks": 0,
+          "coupling_graph_verifications": 30,
+          "trials": 434,
+          "dual_updates": 110,
+          "final_tolerance_level_counts": {
+            "0": 21,
+            "1": 9
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 434,
+            "iterations": 19593,
+            "zero_iteration_solves": 111,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 87,
+            "mean_iterations_per_solve": 45.145161290322584,
+            "mean_iterations_per_nonzero_solve": 60.6594427244582,
+            "iterations_per_accepted_step": 653.1
+          },
+          "fem_prepared": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "shaft_preconditioner": {
+            "solves": 294,
+            "iterations": 5766,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 39,
+            "mean_iterations_per_solve": 19.612244897959183,
+            "mean_iterations_per_nonzero_solve": 19.612244897959183,
+            "iterations_per_accepted_step": 192.2
+          },
+          "fem_combined": {
+            "solves": 434,
+            "iterations": 19593,
+            "zero_iteration_solves": 111,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 87,
+            "mean_iterations_per_solve": 45.145161290322584,
+            "mean_iterations_per_nonzero_solve": 60.6594427244582,
+            "iterations_per_accepted_step": 653.1
+          }
+        },
+        "loaded_trial_identity": {
+          "accepted_endpoints": 30,
+          "dual_update_repeats": 110,
+          "preconditioned_corrections": 294,
+          "sum": 434,
+          "equals_force_map_trials": true
+        }
+      },
+      "recovery": {
+        "attempts": 12,
+        "accepted": 12,
+        "rejected": 0,
+        "force_map_trials": 31,
+        "dual_updates": 4,
+        "max_attempt_trials": 6,
+        "graph": {
+          "coupling_graph_captures": 0,
+          "coupling_graph_launches": 12,
+          "coupling_graph_fallbacks": 0,
+          "coupling_graph_verifications": 12,
+          "trials": 31,
+          "dual_updates": 4,
+          "final_tolerance_level_counts": {
+            "0": 12
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 31,
+            "iterations": 1338,
+            "zero_iteration_solves": 4,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 78,
+            "mean_iterations_per_solve": 43.16129032258065,
+            "mean_iterations_per_nonzero_solve": 49.55555555555556,
+            "iterations_per_accepted_step": 111.5
+          },
+          "fem_prepared": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "shaft_preconditioner": {
+            "solves": 15,
+            "iterations": 422,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 36,
+            "mean_iterations_per_solve": 28.133333333333333,
+            "mean_iterations_per_nonzero_solve": 28.133333333333333,
+            "iterations_per_accepted_step": 35.166666666666664
+          },
+          "fem_combined": {
+            "solves": 31,
+            "iterations": 1338,
+            "zero_iteration_solves": 4,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 78,
+            "mean_iterations_per_solve": 43.16129032258065,
+            "mean_iterations_per_nonzero_solve": 49.55555555555556,
+            "iterations_per_accepted_step": 111.5
+          }
+        },
+        "loaded_trial_identity": {
+          "accepted_endpoints": 12,
+          "dual_update_repeats": 4,
+          "preconditioned_corrections": 15,
+          "sum": 31,
+          "equals_force_map_trials": true
+        }
+      },
+      "withdrawal": {
+        "attempts": 118,
+        "accepted": 118,
+        "rejected": 0,
+        "force_map_trials": 222,
+        "dual_updates": 1,
+        "max_attempt_trials": 3,
+        "graph": {
+          "coupling_graph_captures": 4,
+          "coupling_graph_launches": 118,
+          "coupling_graph_fallbacks": 41,
+          "coupling_graph_verifications": 77,
+          "trials": 170,
+          "dual_updates": 1,
+          "final_tolerance_level_counts": {
+            "0": 118
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 222,
+            "iterations": 12954,
+            "zero_iteration_solves": 1,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 76,
+            "mean_iterations_per_solve": 58.351351351351354,
+            "mean_iterations_per_nonzero_solve": 58.61538461538461,
+            "iterations_per_accepted_step": 109.77966101694915
+          },
+          "fem_prepared": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "shaft_preconditioner": {
+            "solves": 61,
+            "iterations": 2142,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 41,
+            "mean_iterations_per_solve": 35.114754098360656,
+            "mean_iterations_per_nonzero_solve": 35.114754098360656,
+            "iterations_per_accepted_step": 18.152542372881356
+          },
+          "fem_combined": {
+            "solves": 222,
+            "iterations": 12954,
+            "zero_iteration_solves": 1,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 76,
+            "mean_iterations_per_solve": 58.351351351351354,
+            "mean_iterations_per_nonzero_solve": 58.61538461538461,
+            "iterations_per_accepted_step": 109.77966101694915
+          }
+        }
+      },
+      "unloaded_hold": {
+        "attempts": 18,
+        "accepted": 18,
+        "rejected": 0,
+        "force_map_trials": 18,
+        "dual_updates": 0,
+        "max_attempt_trials": 1,
+        "graph": {
+          "coupling_graph_captures": 0,
+          "coupling_graph_launches": 18,
+          "coupling_graph_fallbacks": 0,
+          "coupling_graph_verifications": 18,
+          "trials": 18,
+          "dual_updates": 0,
+          "final_tolerance_level_counts": {
+            "0": 18
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 18,
+            "iterations": 944,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 55,
+            "mean_iterations_per_solve": 52.44444444444444,
+            "mean_iterations_per_nonzero_solve": 52.44444444444444,
+            "iterations_per_accepted_step": 52.44444444444444
+          },
+          "fem_prepared": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "shaft_preconditioner": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "fem_combined": {
+            "solves": 18,
+            "iterations": 944,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 55,
+            "mean_iterations_per_solve": 52.44444444444444,
+            "mean_iterations_per_nonzero_solve": 52.44444444444444,
+            "iterations_per_accepted_step": 52.44444444444444
+          }
+        },
+        "loaded_trial_identity": {
+          "accepted_endpoints": 18,
+          "dual_update_repeats": 0,
+          "preconditioned_corrections": 0,
+          "sum": 18,
+          "equals_force_map_trials": true
+        }
+      },
+      "all": {
+        "attempts": 364,
+        "accepted": 364,
+        "rejected": 0,
+        "force_map_trials": 1334,
+        "dual_updates": 192,
+        "max_attempt_trials": 34,
+        "graph": {
+          "coupling_graph_captures": 46,
+          "coupling_graph_launches": 300,
+          "coupling_graph_fallbacks": 54,
+          "coupling_graph_verifications": 246,
+          "trials": 1146,
+          "dual_updates": 190,
+          "final_tolerance_level_counts": {
+            "0": 291,
+            "1": 9
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 1335,
+            "iterations": 65514,
+            "zero_iteration_solves": 194,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 87,
+            "mean_iterations_per_solve": 49.07415730337079,
+            "mean_iterations_per_nonzero_solve": 57.41805433829974,
+            "iterations_per_accepted_step": 179.9835164835165
+          },
+          "fem_prepared": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "shaft_preconditioner": {
+            "solves": 680,
+            "iterations": 15988,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 41,
+            "mean_iterations_per_solve": 23.511764705882353,
+            "mean_iterations_per_nonzero_solve": 23.511764705882353,
+            "iterations_per_accepted_step": 43.92307692307692
+          },
+          "fem_combined": {
+            "solves": 1335,
+            "iterations": 65514,
+            "zero_iteration_solves": 194,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 87,
+            "mean_iterations_per_solve": 49.07415730337079,
+            "mean_iterations_per_nonzero_solve": 57.41805433829974,
+            "iterations_per_accepted_step": 179.9835164835165
+          }
+        }
+      }
+    },
+    "prepared": {
+      "insertion": {
+        "attempts": 132,
+        "accepted": 132,
+        "rejected": 0,
+        "force_map_trials": 260,
+        "dual_updates": 2,
+        "max_attempt_trials": 7,
+        "graph": {
+          "coupling_graph_captures": 41,
+          "coupling_graph_launches": 68,
+          "coupling_graph_fallbacks": 13,
+          "coupling_graph_verifications": 55,
+          "trials": 125,
+          "dual_updates": 1,
+          "final_tolerance_level_counts": {
+            "0": 68
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 135,
+            "iterations": 6882,
+            "zero_iteration_solves": 1,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 85,
+            "mean_iterations_per_solve": 50.977777777777774,
+            "mean_iterations_per_nonzero_solve": 51.35820895522388,
+            "iterations_per_accepted_step": 52.13636363636363
+          },
+          "fem_prepared": {
+            "solves": 125,
+            "iterations": 6901,
+            "zero_iteration_solves": 1,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 77,
+            "mean_iterations_per_solve": 55.208,
+            "mean_iterations_per_nonzero_solve": 55.653225806451616,
+            "iterations_per_accepted_step": 52.28030303030303
+          },
+          "shaft_preconditioner": {
+            "solves": 70,
+            "iterations": 2417,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 40,
+            "mean_iterations_per_solve": 34.52857142857143,
+            "mean_iterations_per_nonzero_solve": 34.52857142857143,
+            "iterations_per_accepted_step": 18.310606060606062
+          },
+          "fem_combined": {
+            "solves": 260,
+            "iterations": 13783,
+            "zero_iteration_solves": 2,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 85,
+            "mean_iterations_per_solve": 53.011538461538464,
+            "mean_iterations_per_nonzero_solve": 53.42248062015504,
+            "iterations_per_accepted_step": 104.41666666666667
+          }
+        }
+      },
+      "settle": {
+        "attempts": 12,
+        "accepted": 12,
+        "rejected": 0,
+        "force_map_trials": 17,
+        "dual_updates": 0,
+        "max_attempt_trials": 2,
+        "graph": {
+          "coupling_graph_captures": 1,
+          "coupling_graph_launches": 12,
+          "coupling_graph_fallbacks": 0,
+          "coupling_graph_verifications": 12,
+          "trials": 17,
+          "dual_updates": 0,
+          "final_tolerance_level_counts": {
+            "0": 12
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "fem_prepared": {
+            "solves": 17,
+            "iterations": 783,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 57,
+            "mean_iterations_per_solve": 46.05882352941177,
+            "mean_iterations_per_nonzero_solve": 46.05882352941177,
+            "iterations_per_accepted_step": 65.25
+          },
+          "shaft_preconditioner": {
+            "solves": 5,
+            "iterations": 105,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 21,
+            "mean_iterations_per_solve": 21.0,
+            "mean_iterations_per_nonzero_solve": 21.0,
+            "iterations_per_accepted_step": 8.75
+          },
+          "fem_combined": {
+            "solves": 17,
+            "iterations": 783,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 57,
+            "mean_iterations_per_solve": 46.05882352941177,
+            "mean_iterations_per_nonzero_solve": 46.05882352941177,
+            "iterations_per_accepted_step": 65.25
+          }
+        },
+        "loaded_trial_identity": {
+          "accepted_endpoints": 12,
+          "dual_update_repeats": 0,
+          "preconditioned_corrections": 5,
+          "sum": 17,
+          "equals_force_map_trials": true
+        }
+      },
+      "lift": {
+        "attempts": 30,
+        "accepted": 30,
+        "rejected": 0,
+        "force_map_trials": 317,
+        "dual_updates": 71,
+        "max_attempt_trials": 34,
+        "graph": {
+          "coupling_graph_captures": 0,
+          "coupling_graph_launches": 30,
+          "coupling_graph_fallbacks": 0,
+          "coupling_graph_verifications": 30,
+          "trials": 317,
+          "dual_updates": 71,
+          "final_tolerance_level_counts": {
+            "0": 30
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "fem_prepared": {
+            "solves": 317,
+            "iterations": 14288,
+            "zero_iteration_solves": 73,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 82,
+            "mean_iterations_per_solve": 45.072555205047315,
+            "mean_iterations_per_nonzero_solve": 58.557377049180324,
+            "iterations_per_accepted_step": 476.26666666666665
+          },
+          "shaft_preconditioner": {
+            "solves": 216,
+            "iterations": 4729,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 40,
+            "mean_iterations_per_solve": 21.89351851851852,
+            "mean_iterations_per_nonzero_solve": 21.89351851851852,
+            "iterations_per_accepted_step": 157.63333333333333
+          },
+          "fem_combined": {
+            "solves": 317,
+            "iterations": 14288,
+            "zero_iteration_solves": 73,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 82,
+            "mean_iterations_per_solve": 45.072555205047315,
+            "mean_iterations_per_nonzero_solve": 58.557377049180324,
+            "iterations_per_accepted_step": 476.26666666666665
+          }
+        },
+        "loaded_trial_identity": {
+          "accepted_endpoints": 30,
+          "dual_update_repeats": 71,
+          "preconditioned_corrections": 216,
+          "sum": 317,
+          "equals_force_map_trials": true
+        }
+      },
+      "hold": {
+        "attempts": 12,
+        "accepted": 12,
+        "rejected": 0,
+        "force_map_trials": 41,
+        "dual_updates": 2,
+        "max_attempt_trials": 6,
+        "graph": {
+          "coupling_graph_captures": 0,
+          "coupling_graph_launches": 12,
+          "coupling_graph_fallbacks": 0,
+          "coupling_graph_verifications": 12,
+          "trials": 41,
+          "dual_updates": 2,
+          "final_tolerance_level_counts": {
+            "0": 12
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "fem_prepared": {
+            "solves": 41,
+            "iterations": 2180,
+            "zero_iteration_solves": 2,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 77,
+            "mean_iterations_per_solve": 53.170731707317074,
+            "mean_iterations_per_nonzero_solve": 55.8974358974359,
+            "iterations_per_accepted_step": 181.66666666666666
+          },
+          "shaft_preconditioner": {
+            "solves": 27,
+            "iterations": 488,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 35,
+            "mean_iterations_per_solve": 18.074074074074073,
+            "mean_iterations_per_nonzero_solve": 18.074074074074073,
+            "iterations_per_accepted_step": 40.666666666666664
+          },
+          "fem_combined": {
+            "solves": 41,
+            "iterations": 2180,
+            "zero_iteration_solves": 2,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 77,
+            "mean_iterations_per_solve": 53.170731707317074,
+            "mean_iterations_per_nonzero_solve": 55.8974358974359,
+            "iterations_per_accepted_step": 181.66666666666666
+          }
+        },
+        "loaded_trial_identity": {
+          "accepted_endpoints": 12,
+          "dual_update_repeats": 2,
+          "preconditioned_corrections": 27,
+          "sum": 41,
+          "equals_force_map_trials": true
+        }
+      },
+      "lower": {
+        "attempts": 30,
+        "accepted": 30,
+        "rejected": 0,
+        "force_map_trials": 412,
+        "dual_updates": 97,
+        "max_attempt_trials": 26,
+        "graph": {
+          "coupling_graph_captures": 0,
+          "coupling_graph_launches": 30,
+          "coupling_graph_fallbacks": 0,
+          "coupling_graph_verifications": 30,
+          "trials": 412,
+          "dual_updates": 97,
+          "final_tolerance_level_counts": {
+            "0": 20,
+            "1": 10
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "fem_prepared": {
+            "solves": 412,
+            "iterations": 19100,
+            "zero_iteration_solves": 98,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 91,
+            "mean_iterations_per_solve": 46.359223300970875,
+            "mean_iterations_per_nonzero_solve": 60.82802547770701,
+            "iterations_per_accepted_step": 636.6666666666666
+          },
+          "shaft_preconditioner": {
+            "solves": 285,
+            "iterations": 5485,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 39,
+            "mean_iterations_per_solve": 19.24561403508772,
+            "mean_iterations_per_nonzero_solve": 19.24561403508772,
+            "iterations_per_accepted_step": 182.83333333333334
+          },
+          "fem_combined": {
+            "solves": 412,
+            "iterations": 19100,
+            "zero_iteration_solves": 98,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 91,
+            "mean_iterations_per_solve": 46.359223300970875,
+            "mean_iterations_per_nonzero_solve": 60.82802547770701,
+            "iterations_per_accepted_step": 636.6666666666666
+          }
+        },
+        "loaded_trial_identity": {
+          "accepted_endpoints": 30,
+          "dual_update_repeats": 97,
+          "preconditioned_corrections": 285,
+          "sum": 412,
+          "equals_force_map_trials": true
+        }
+      },
+      "recovery": {
+        "attempts": 12,
+        "accepted": 12,
+        "rejected": 0,
+        "force_map_trials": 31,
+        "dual_updates": 4,
+        "max_attempt_trials": 6,
+        "graph": {
+          "coupling_graph_captures": 0,
+          "coupling_graph_launches": 12,
+          "coupling_graph_fallbacks": 0,
+          "coupling_graph_verifications": 12,
+          "trials": 31,
+          "dual_updates": 4,
+          "final_tolerance_level_counts": {
+            "0": 12
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "fem_prepared": {
+            "solves": 31,
+            "iterations": 1341,
+            "zero_iteration_solves": 4,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 78,
+            "mean_iterations_per_solve": 43.25806451612903,
+            "mean_iterations_per_nonzero_solve": 49.666666666666664,
+            "iterations_per_accepted_step": 111.75
+          },
+          "shaft_preconditioner": {
+            "solves": 15,
+            "iterations": 423,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 36,
+            "mean_iterations_per_solve": 28.2,
+            "mean_iterations_per_nonzero_solve": 28.2,
+            "iterations_per_accepted_step": 35.25
+          },
+          "fem_combined": {
+            "solves": 31,
+            "iterations": 1341,
+            "zero_iteration_solves": 4,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 78,
+            "mean_iterations_per_solve": 43.25806451612903,
+            "mean_iterations_per_nonzero_solve": 49.666666666666664,
+            "iterations_per_accepted_step": 111.75
+          }
+        },
+        "loaded_trial_identity": {
+          "accepted_endpoints": 12,
+          "dual_update_repeats": 4,
+          "preconditioned_corrections": 15,
+          "sum": 31,
+          "equals_force_map_trials": true
+        }
+      },
+      "withdrawal": {
+        "attempts": 118,
+        "accepted": 118,
+        "rejected": 0,
+        "force_map_trials": 223,
+        "dual_updates": 1,
+        "max_attempt_trials": 3,
+        "graph": {
+          "coupling_graph_captures": 4,
+          "coupling_graph_launches": 118,
+          "coupling_graph_fallbacks": 41,
+          "coupling_graph_verifications": 77,
+          "trials": 169,
+          "dual_updates": 1,
+          "final_tolerance_level_counts": {
+            "0": 118
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 54,
+            "iterations": 3294,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 74,
+            "mean_iterations_per_solve": 61.0,
+            "mean_iterations_per_nonzero_solve": 61.0,
+            "iterations_per_accepted_step": 27.915254237288135
+          },
+          "fem_prepared": {
+            "solves": 169,
+            "iterations": 9738,
+            "zero_iteration_solves": 1,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 76,
+            "mean_iterations_per_solve": 57.62130177514793,
+            "mean_iterations_per_nonzero_solve": 57.964285714285715,
+            "iterations_per_accepted_step": 82.52542372881356
+          },
+          "shaft_preconditioner": {
+            "solves": 62,
+            "iterations": 2174,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 41,
+            "mean_iterations_per_solve": 35.064516129032256,
+            "mean_iterations_per_nonzero_solve": 35.064516129032256,
+            "iterations_per_accepted_step": 18.423728813559322
+          },
+          "fem_combined": {
+            "solves": 223,
+            "iterations": 13032,
+            "zero_iteration_solves": 1,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 76,
+            "mean_iterations_per_solve": 58.43946188340807,
+            "mean_iterations_per_nonzero_solve": 58.7027027027027,
+            "iterations_per_accepted_step": 110.44067796610169
+          }
+        }
+      },
+      "unloaded_hold": {
+        "attempts": 18,
+        "accepted": 18,
+        "rejected": 0,
+        "force_map_trials": 18,
+        "dual_updates": 0,
+        "max_attempt_trials": 1,
+        "graph": {
+          "coupling_graph_captures": 0,
+          "coupling_graph_launches": 18,
+          "coupling_graph_fallbacks": 0,
+          "coupling_graph_verifications": 18,
+          "trials": 18,
+          "dual_updates": 0,
+          "final_tolerance_level_counts": {
+            "0": 18
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "fem_prepared": {
+            "solves": 18,
+            "iterations": 946,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 55,
+            "mean_iterations_per_solve": 52.55555555555556,
+            "mean_iterations_per_nonzero_solve": 52.55555555555556,
+            "iterations_per_accepted_step": 52.55555555555556
+          },
+          "shaft_preconditioner": {
+            "solves": 0,
+            "iterations": 0,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 0,
+            "mean_iterations_per_solve": null,
+            "mean_iterations_per_nonzero_solve": null,
+            "iterations_per_accepted_step": 0.0
+          },
+          "fem_combined": {
+            "solves": 18,
+            "iterations": 946,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 55,
+            "mean_iterations_per_solve": 52.55555555555556,
+            "mean_iterations_per_nonzero_solve": 52.55555555555556,
+            "iterations_per_accepted_step": 52.55555555555556
+          }
+        },
+        "loaded_trial_identity": {
+          "accepted_endpoints": 18,
+          "dual_update_repeats": 0,
+          "preconditioned_corrections": 0,
+          "sum": 18,
+          "equals_force_map_trials": true
+        }
+      },
+      "all": {
+        "attempts": 364,
+        "accepted": 364,
+        "rejected": 0,
+        "force_map_trials": 1319,
+        "dual_updates": 177,
+        "max_attempt_trials": 34,
+        "graph": {
+          "coupling_graph_captures": 46,
+          "coupling_graph_launches": 300,
+          "coupling_graph_fallbacks": 54,
+          "coupling_graph_verifications": 246,
+          "trials": 1130,
+          "dual_updates": 176,
+          "final_tolerance_level_counts": {
+            "0": 290,
+            "1": 10
+          },
+          "nonfinite_attempts": 0,
+          "nonconverged_attempts": 0
+        },
+        "cg": {
+          "fem_ordinary": {
+            "solves": 189,
+            "iterations": 10176,
+            "zero_iteration_solves": 1,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 85,
+            "mean_iterations_per_solve": 53.84126984126984,
+            "mean_iterations_per_nonzero_solve": 54.12765957446808,
+            "iterations_per_accepted_step": 27.956043956043956
+          },
+          "fem_prepared": {
+            "solves": 1130,
+            "iterations": 55277,
+            "zero_iteration_solves": 179,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 91,
+            "mean_iterations_per_solve": 48.91769911504425,
+            "mean_iterations_per_nonzero_solve": 58.12513144058885,
+            "iterations_per_accepted_step": 151.8598901098901
+          },
+          "shaft_preconditioner": {
+            "solves": 680,
+            "iterations": 15821,
+            "zero_iteration_solves": 0,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 41,
+            "mean_iterations_per_solve": 23.266176470588235,
+            "mean_iterations_per_nonzero_solve": 23.266176470588235,
+            "iterations_per_accepted_step": 43.464285714285715
+          },
+          "fem_combined": {
+            "solves": 1319,
+            "iterations": 65453,
+            "zero_iteration_solves": 180,
+            "at_iteration_cap": 0,
+            "recursive_tolerance_failed": 0,
+            "maximum_iterations": 91,
+            "mean_iterations_per_solve": 49.62319939347991,
+            "mean_iterations_per_nonzero_solve": 57.46532045654082,
+            "iterations_per_accepted_step": 179.81593406593407
+          }
+        }
+      }
+    }
+  },
+  "comparison": {
+    "insertion": {
+      "trials": {
+        "baseline": 261,
+        "prepared": 260,
+        "change_percent": -0.3831417624521105
+      },
+      "dual_updates": {
+        "baseline": 3,
+        "prepared": 2,
+        "change_percent": -33.333333333333336
+      },
+      "fem_cg_iterations": {
+        "baseline": 13851,
+        "prepared": 13783,
+        "change_percent": -0.49093928236227935
+      },
+      "fem_zero_iteration_solves": {
+        "baseline": 3,
+        "prepared": 2,
+        "change_percent": -33.333333333333336
+      },
+      "pc_cg_iterations": {
+        "baseline": 2425,
+        "prepared": 2417,
+        "change_percent": -0.3298969072164981
+      },
+      "base_mechanics_evaluations_inferred_from_code": {
+        "baseline": 262,
+        "prepared": 203,
+        "explanation": "One base mechanics evaluation per ordinary FEM solve versus one prepare_step per captured physical attempt plus ordinary fallback solves. Includes baseline one-off preparation solve. Does not count frame tangent assembly, which remains once per frame here."
+      }
+    },
+    "settle": {
+      "trials": {
+        "baseline": 17,
+        "prepared": 17,
+        "change_percent": 0.0
+      },
+      "dual_updates": {
+        "baseline": 0,
+        "prepared": 0,
+        "change_percent": null
+      },
+      "fem_cg_iterations": {
+        "baseline": 774,
+        "prepared": 783,
+        "change_percent": 1.1627906976744207
+      },
+      "fem_zero_iteration_solves": {
+        "baseline": 0,
+        "prepared": 0,
+        "change_percent": null
+      },
+      "pc_cg_iterations": {
+        "baseline": 105,
+        "prepared": 105,
+        "change_percent": 0.0
+      },
+      "base_mechanics_evaluations_inferred_from_code": {
+        "baseline": 17,
+        "prepared": 12,
+        "explanation": "One base mechanics evaluation per ordinary FEM solve versus one prepare_step per captured physical attempt plus ordinary fallback solves. Includes baseline one-off preparation solve. Does not count frame tangent assembly, which remains once per frame here."
+      }
+    },
+    "lift": {
+      "trials": {
+        "baseline": 313,
+        "prepared": 317,
+        "change_percent": 1.2779552715654896
+      },
+      "dual_updates": {
+        "baseline": 72,
+        "prepared": 71,
+        "change_percent": -1.388888888888884
+      },
+      "fem_cg_iterations": {
+        "baseline": 14067,
+        "prepared": 14288,
+        "change_percent": 1.5710528186535955
+      },
+      "fem_zero_iteration_solves": {
+        "baseline": 73,
+        "prepared": 73,
+        "change_percent": 0.0
+      },
+      "pc_cg_iterations": {
+        "baseline": 4715,
+        "prepared": 4729,
+        "change_percent": 0.2969247083775217
+      },
+      "base_mechanics_evaluations_inferred_from_code": {
+        "baseline": 313,
+        "prepared": 30,
+        "explanation": "One base mechanics evaluation per ordinary FEM solve versus one prepare_step per captured physical attempt plus ordinary fallback solves. Includes baseline one-off preparation solve. Does not count frame tangent assembly, which remains once per frame here."
+      }
+    },
+    "hold": {
+      "trials": {
+        "baseline": 38,
+        "prepared": 41,
+        "change_percent": 7.8947368421052655
+      },
+      "dual_updates": {
+        "baseline": 2,
+        "prepared": 2,
+        "change_percent": 0.0
+      },
+      "fem_cg_iterations": {
+        "baseline": 1993,
+        "prepared": 2180,
+        "change_percent": 9.382839939789257
+      },
+      "fem_zero_iteration_solves": {
+        "baseline": 2,
+        "prepared": 2,
+        "change_percent": 0.0
+      },
+      "pc_cg_iterations": {
+        "baseline": 413,
+        "prepared": 488,
+        "change_percent": 18.159806295399505
+      },
+      "base_mechanics_evaluations_inferred_from_code": {
+        "baseline": 38,
+        "prepared": 12,
+        "explanation": "One base mechanics evaluation per ordinary FEM solve versus one prepare_step per captured physical attempt plus ordinary fallback solves. Includes baseline one-off preparation solve. Does not count frame tangent assembly, which remains once per frame here."
+      }
+    },
+    "lower": {
+      "trials": {
+        "baseline": 434,
+        "prepared": 412,
+        "change_percent": -5.0691244239631335
+      },
+      "dual_updates": {
+        "baseline": 110,
+        "prepared": 97,
+        "change_percent": -11.818181818181817
+      },
+      "fem_cg_iterations": {
+        "baseline": 19593,
+        "prepared": 19100,
+        "change_percent": -2.516204767008623
+      },
+      "fem_zero_iteration_solves": {
+        "baseline": 111,
+        "prepared": 98,
+        "change_percent": -11.711711711711715
+      },
+      "pc_cg_iterations": {
+        "baseline": 5766,
+        "prepared": 5485,
+        "change_percent": -4.873395768296918
+      },
+      "base_mechanics_evaluations_inferred_from_code": {
+        "baseline": 434,
+        "prepared": 30,
+        "explanation": "One base mechanics evaluation per ordinary FEM solve versus one prepare_step per captured physical attempt plus ordinary fallback solves. Includes baseline one-off preparation solve. Does not count frame tangent assembly, which remains once per frame here."
+      }
+    },
+    "recovery": {
+      "trials": {
+        "baseline": 31,
+        "prepared": 31,
+        "change_percent": 0.0
+      },
+      "dual_updates": {
+        "baseline": 4,
+        "prepared": 4,
+        "change_percent": 0.0
+      },
+      "fem_cg_iterations": {
+        "baseline": 1338,
+        "prepared": 1341,
+        "change_percent": 0.22421524663676085
+      },
+      "fem_zero_iteration_solves": {
+        "baseline": 4,
+        "prepared": 4,
+        "change_percent": 0.0
+      },
+      "pc_cg_iterations": {
+        "baseline": 422,
+        "prepared": 423,
+        "change_percent": 0.23696682464455776
+      },
+      "base_mechanics_evaluations_inferred_from_code": {
+        "baseline": 31,
+        "prepared": 12,
+        "explanation": "One base mechanics evaluation per ordinary FEM solve versus one prepare_step per captured physical attempt plus ordinary fallback solves. Includes baseline one-off preparation solve. Does not count frame tangent assembly, which remains once per frame here."
+      }
+    },
+    "withdrawal": {
+      "trials": {
+        "baseline": 222,
+        "prepared": 223,
+        "change_percent": 0.45045045045044585
+      },
+      "dual_updates": {
+        "baseline": 1,
+        "prepared": 1,
+        "change_percent": 0.0
+      },
+      "fem_cg_iterations": {
+        "baseline": 12954,
+        "prepared": 13032,
+        "change_percent": 0.6021306160259421
+      },
+      "fem_zero_iteration_solves": {
+        "baseline": 1,
+        "prepared": 1,
+        "change_percent": 0.0
+      },
+      "pc_cg_iterations": {
+        "baseline": 2142,
+        "prepared": 2174,
+        "change_percent": 1.4939309056956063
+      },
+      "base_mechanics_evaluations_inferred_from_code": {
+        "baseline": 222,
+        "prepared": 172,
+        "explanation": "One base mechanics evaluation per ordinary FEM solve versus one prepare_step per captured physical attempt plus ordinary fallback solves. Includes baseline one-off preparation solve. Does not count frame tangent assembly, which remains once per frame here."
+      }
+    },
+    "unloaded_hold": {
+      "trials": {
+        "baseline": 18,
+        "prepared": 18,
+        "change_percent": 0.0
+      },
+      "dual_updates": {
+        "baseline": 0,
+        "prepared": 0,
+        "change_percent": null
+      },
+      "fem_cg_iterations": {
+        "baseline": 944,
+        "prepared": 946,
+        "change_percent": 0.21186440677967155
+      },
+      "fem_zero_iteration_solves": {
+        "baseline": 0,
+        "prepared": 0,
+        "change_percent": null
+      },
+      "pc_cg_iterations": {
+        "baseline": 0,
+        "prepared": 0,
+        "change_percent": null
+      },
+      "base_mechanics_evaluations_inferred_from_code": {
+        "baseline": 18,
+        "prepared": 18,
+        "explanation": "One base mechanics evaluation per ordinary FEM solve versus one prepare_step per captured physical attempt plus ordinary fallback solves. Includes baseline one-off preparation solve. Does not count frame tangent assembly, which remains once per frame here."
+      }
+    },
+    "all": {
+      "trials": {
+        "baseline": 1334,
+        "prepared": 1319,
+        "change_percent": -1.1244377811094441
+      },
+      "dual_updates": {
+        "baseline": 192,
+        "prepared": 177,
+        "change_percent": -7.8125
+      },
+      "fem_cg_iterations": {
+        "baseline": 65514,
+        "prepared": 65453,
+        "change_percent": -0.09310986964617962
+      },
+      "fem_zero_iteration_solves": {
+        "baseline": 194,
+        "prepared": 180,
+        "change_percent": -7.216494845360821
+      },
+      "pc_cg_iterations": {
+        "baseline": 15988,
+        "prepared": 15821,
+        "change_percent": -1.0445334000500406
+      },
+      "base_mechanics_evaluations_inferred_from_code": {
+        "baseline": 1335,
+        "prepared": 489,
+        "explanation": "One base mechanics evaluation per ordinary FEM solve versus one prepare_step per captured physical attempt plus ordinary fallback solves. Includes baseline one-off preparation solve. Does not count frame tangent assembly, which remains once per frame here."
+      }
+    }
+  },
+  "limitations": [
+    "Counts come from public persistent-CG device return arrays and device-written graph results, independently of failed Nsight kernel-name attribution.",
+    "CG residual/tolerance counters refer to the recursive squared residual and squared threshold. They are not independent true residual measurements.",
+    "CG iteration costs differ between FEM and shaft PC. Iteration shares are work counts, not GPU time shares.",
+    "Only final per-attempt FEM tolerance level is recorded, so this audit cannot assign each inner iteration to a tolerance level.",
+    "Extra per-solve counter kernels and frame/attempt readbacks perturb scheduling; this is not an isolated speed comparison or deterministic trajectory proof."
+  ],
+  "source_differences": [
+    "src/newton_solver_fem/_src/coupling_graph.py"
+  ],
+  "conclusion": [
+    "Prepared reuse removes repeated invariant internal force/predictor/RHS preparation, but it does not remove per-trial FEM solves or PC correction solves. Overall actual FEM Krylov work changes only 65,514\u219265,453 iterations (\u22120.09%), PC 15,988\u219215,821 (\u22121.04%).",
+    "Lowering retains 30 endpoint solves + 97 dual-update repetitions + 285 preconditioned corrections = 412 force-map/FEM trials. Baseline 30 + 110 + 294 = 434. Finite normal response is already exact; these ALM dual repetitions are driven by tangential consistency.",
+    "Lowering final inner tolerance escalates from 0.003 to 0.0003 in 9 baseline versus 10 prepared steps. No recorded FEM or PC cap hits, recursive-tolerance failures, nonfinite results or rejected physical attempts occur in either run.",
+    "Many FEM calls already stop at zero iterations: overall 194\u2192180; lowering 111\u219298 and lift 73\u219273. Lowering zero-iteration counts nearly equal dual updates 110\u219297, consistent with unchanged-load dual repeats reusing a converged warm guess. Aggregate counters do not establish a one-to-one assignment, but show why skipping those solves alone need not remove substantial Krylov work.",
+    "The small wall improvement reported separately is consistent with removing one component of each trial while retaining nearly all Krylov iteration work and graph/force evaluation. These counters do not establish GPU time fractions or justify changing physical compliance/acceptance gates."
+  ]
+}

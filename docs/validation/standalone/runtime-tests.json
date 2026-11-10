@@ -1,0 +1,91 @@
+{
+  "recommended_groups": {
+    "generic_fem": [
+      "test_solver.py",
+      "test_activation_gradients.py",
+      "test_fem_prepared_step.py",
+      "test_fixed_particles.py",
+      "test_reference_builder.py",
+      "test_reference_block_preconditioner.py",
+      "test_reference_component_scaling.py",
+      "test_reference_streaming.py",
+      "test_solver_conditional_graph.py",
+      "test_solver_cpu_batch.py",
+      "test_solver_timestep.py"
+    ],
+    "geometry": [
+      "test_mesh_regions.py",
+      "test_mesh_refit.py"
+    ],
+    "needle_and_coupling": [
+      "test_needle_adaptive_inner.py",
+      "test_needle_alm_preconditioner.py",
+      "test_needle_certified_finish.py",
+      "test_needle_coupling_copy_once.py",
+      "test_needle_coupling_graph.py",
+      "test_needle_coupling_graph_control.py",
+      "test_needle_drive.py",
+      "test_needle_insertion_aabb.py",
+      "test_needle_insertion_contact_guards.py",
+      "test_needle_insertion_device_queries.py",
+      "test_needle_insertion_example.py",
+      "test_needle_insertion_geometry.py",
+      "test_needle_insertion_geometry_cache.py",
+      "test_needle_insertion_physics.py",
+      "test_needle_insertion_surface_patch.py",
+      "test_needle_insertion_validation_report.py",
+      "test_needle_insertion_vectorization.py",
+      "test_needle_manual_controller.py",
+      "test_needle_query_policy.py",
+      "test_needle_shaft_preconditioner.py",
+      "test_needle_step_resolution.py",
+      "test_needle_tip_certificate.py",
+      "test_needle_tissue_coupler.py",
+      "test_needle_trial_commit.py",
+      "test_needle_trial_forces.py",
+      "test_needle_trial_geometry.py",
+      "test_needle_tunnel_alm.py",
+      "test_needle_tunnel_coupler.py",
+      "test_needle_tunnel_lift.py",
+      "test_needle_validation_scenarios.py"
+    ],
+    "mujoco_backends": [
+      "test_mujoco_fem_control.py",
+      "test_mujoco_fem_equations.py",
+      "test_mujoco_fem_solver.py",
+      "test_mujoco_free_body.py",
+      "test_mujoco_free_body_gpu.py"
+    ],
+    "selected_examples": [
+      "test_suturebot_cameras.py",
+      "test_suturebot_cli.py",
+      "test_suturebot_example.py",
+      "test_suturebot_needle.py",
+      "test_suturebot_point_labels.py",
+      "test_suturebot_press.py",
+      "test_suturebot_recording.py",
+      "test_suturebot_thread.py",
+      "test_phantom_regions_example.py",
+      "test_region_map.py"
+    ]
+  },
+  "shared_helpers": [
+    "fem_fixture.py"
+  ],
+  "fixture_assets_required": [
+    "src/newton_solver_suturebot/examples/assets/tet_grid.usda",
+    "src/newton_solver_suturebot/examples/assets/hex_grid.usda",
+    "src/newton_solver_suturebot/examples/assets/tet_cantilever.usda"
+  ],
+  "excluded_from_runtime_recommendation": [
+    "test_cut*.py: excluded cutting subsystem",
+    "test_bear_training.py: excluded training example",
+    "test_assets.py: excluded generic geometry.assets API and unrelated bundled shapes"
+  ],
+  "notes": [
+    "The copied needle tests import fixture helpers from other needle, phantom and prepared-FEM modules; retain the whole listed group.",
+    "CUDA-only graph tests must be rerun in the new namespace because Warp compilation and graph kernels are namespace-sensitive.",
+    "No tests are edited or run by this recommendation; root owns the copied tests and complete CPU/CUDA validation.",
+    "Runtime kernels, forces, tolerances and integration semantics are unchanged from old source; only import/help namespace and public exports differ."
+  ]
+}
