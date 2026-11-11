@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Device trial integration for the supported MuJoCo 3.15.0 free-body case.
+"""Device trial integration for the supported MuJoCo 3.17.0 free-body case.
 
 This is a specialization of the native implicitfast equations, not a generic
 MuJoCo replacement. Trials do not advance native time or integration history.
@@ -10,7 +10,7 @@ import mujoco
 import numpy as np
 import warp as wp
 
-from .mujoco_free_body import MuJoCoFreeBody
+from .mujoco_free_body import MuJoCoFreeBody, synchronizes_every_step
 
 
 @wp.kernel(enable_backward=False)
@@ -86,12 +86,12 @@ class MuJoCoFreeBodyGPU:
     Native contacts, gravity, actuators, constraints, callbacks, fluid forces,
     armature, springs and friction loss are excluded. The caller owns physical
     acceptance, native-history synchronization and rollback. This specialization
-    is non-differentiable and qualified only against MuJoCo 3.15.0.
+    is non-differentiable and qualified only against MuJoCo 3.17.0.
     """
 
     @staticmethod
     def _native_supported(solver):
-        if mujoco.__version__ != "3.15.0" or mujoco.mj_version() != 3015000:
+        if mujoco.__version__ != "3.17.0" or mujoco.mj_version() != 3017000:
             return False
         if any(
             callback() is not None
@@ -106,7 +106,7 @@ class MuJoCoFreeBodyGPU:
         native = solver.mj_model
         return bool(
             solver.use_mujoco_cpu
-            and solver.update_data_interval == 1
+            and synchronizes_every_step(solver)
             and native.nbody == 2
             and native.nq == 7
             and native.nv == 6
@@ -146,7 +146,7 @@ class MuJoCoFreeBodyGPU:
 
     def __init__(self, model, solver):
         if not self.supports(model, solver):
-            raise ValueError("Device free-body trials require the supported MuJoCo 3.15.0 implicitfast model")
+            raise ValueError("Device free-body trials require the supported MuJoCo 3.17.0 implicitfast model")
         native = solver.mj_model
         rotation = np.empty(9)
         mujoco.mju_quat2Mat(rotation, native.body_iquat[1])

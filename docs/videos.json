@@ -52,5 +52,25 @@
       "--test"
     ],
     "caption": "Generated kinematic preview of two supplied CMR Versius distal needle holders above a static phantom, with two illustrative stereo views. The video panels contain unrelated dVRK placeholder footage, not measured Versius recordings or calibrated image alignment. Playback rate is not live FPS."
+  },
+  "needle_thread": {
+    "frames": 300,
+    "fps": 60,
+    "poster_frame": 55,
+    "show_ui": true,
+    "args": [
+      "--test"
+    ],
+    "caption": "Simulation-time playback: a spring hold lifts the free MuJoCo needle on its thread, whose far end is pinned to the floor, and lets it go. The needle and the thread act on each other; there is no tissue. Illustrative needle mass and thread stiffness. Playback rate does not measure live FPS."
+  },
+  "fem_needle_suture": {
+    "frames": 2760,
+    "fps": 60,
+    "poster_frame": 2080,
+    "show_ui": true,
+    "args": [
+      "--test"
+    ],
+    "caption": "Simulation-time playback: the MuJoCo needle makes three planned stitches across the region 1 wound and its thread follows through every track and lies on the pad with friction. The thread is then tied at the first entry and pulled until the tissue limit, which narrows the wound from 2.4 mm to about 1.2 mm, tied at the last exit, and the needle is let go. Blue and orange spheres mark where the thread enters and leaves the tissue. Illustrative forces; no calibration. Playback rate does not measure live FPS."
   }
 }

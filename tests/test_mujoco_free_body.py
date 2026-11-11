@@ -4,6 +4,7 @@
 
 import os
 import unittest
+import warnings
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -41,10 +42,7 @@ class MuJoCoFreeBodyTests(unittest.TestCase):
                 builder.add_shape_sphere(body, radius=0.005)
                 builder.add_ground_plane()
             model = builder.finalize()
-            solvers = [
-                SolverMuJoCo(model, use_mujoco_cpu=True, integrator="implicitfast", update_data_interval=1)
-                for _ in range(2)
-            ]
+            solvers = [SolverMuJoCo(model, use_mujoco_cpu=True, integrator="implicitfast") for _ in range(2)]
             return model, solvers
 
     def state(self, model, pose, velocity, wrench):
@@ -132,10 +130,13 @@ class MuJoCoFreeBodyTests(unittest.TestCase):
     def test_guard_rejects_unsupported_sync_frames_and_custom_solver_step(self):
         model, (solver, _) = self.build()
         self.assertTrue(MuJoCoFreeBody.supports(model, solver))
-        for interval in (0, 2):
-            solver.update_data_interval = interval
-            self.assertFalse(MuJoCoFreeBody.supports(model, solver))
-        solver.update_data_interval = 1
+        with warnings.catch_warnings():
+            # Newton 1.8 deprecates the interval; setting it is the only way to build the rejected case.
+            warnings.simplefilter("ignore", newton.NewtonDeprecationWarning)
+            for interval in (0, 2):
+                solver.update_data_interval = interval
+                self.assertFalse(MuJoCoFreeBody.supports(model, solver))
+            solver.update_data_interval = 1
         for name, changed in (
             ("body_com", [[0.001, 0, 0]]),
             ("gravity", [[0, 0, -9.81]]),

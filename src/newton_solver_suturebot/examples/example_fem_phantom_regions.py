@@ -377,6 +377,11 @@ class Example:
 
     def render(self):
         self.viewer.begin_frame(self.sim_time)
+        self.render_pad()
+        self.viewer.end_frame()
+
+    def render_pad(self):
+        """Draw the pad inside a viewer frame; derived examples add their own geometry around it."""
         if self.solver is not None:
             wp.launch(
                 _scatter_selected,
@@ -395,7 +400,6 @@ class Example:
                 metallic=0.0,
                 backface_culling=False,
             )
-        self.viewer.end_frame()
 
     def gui(self, ui):
         ui.text("Phantom: active FEM region")

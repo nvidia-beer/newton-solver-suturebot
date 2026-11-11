@@ -139,8 +139,8 @@ its virtual passage is not this cutting model.
 ## Differentiation contract
 
 The copied FEM core retains its fixed-matrix differentiation API. The physical
-needle interaction, fixed-boundary option and simultaneous solver are not
-differentiable. Material-hold helpers support the tissue viewers. Cut topology
+needle interaction, fixed-boundary option, simultaneous solver and thread
+solver are not differentiable. Material-hold helpers support the tissue viewers. Cut topology
 changes are discrete and are not differentiated.
 
 For a fixed assembled $A$, differentiable mode records the force/predictor and
@@ -235,6 +235,57 @@ must reach $F_p$ to authorize an opening.
 This is an illustrative force criterion, not a measured fracture threshold.
 Authorization is committed by `accept`
 after an accepted physical step; it never creates the future planned passage.
+
+The optional `surface_sample_stiffness` $k_1$ puts a floor under the shaft
+weights. With $L_i$ the length represented by shaft sample $i\geq1$,
+
+$$
+w_i=\max\left(\frac{L_i}{\sum_{j\geq1}L_j},\frac{k_1}{k_s}\right),\qquad w_0=1 .
+$$
+
+One shaft sample then has stiffness $w_ik_s\geq k_1$ and damping coefficient
+$w_ic_s\geq k_1c_s/k_s$; the tip and the puncture criterion are unchanged. The
+shaft weights no longer sum to one: a shaft lying along the surface is as
+stiff as the sum over its samples in contact, which grows with their number
+and with the sampling density. Without $k_1$ (the default) the weights are the
+shares alone. $k_1$ follows from the load one sample must carry within one
+radius, the depth at which `_surface_forces` flags a sample's centre inside
+fixed or inactive material. A needle of weight $mg$ set down on one sample
+without speed dips to twice its static depth $mg/k_1$. If it arrives with
+normal speed $v$, or falls freely through a clearance $h$ so that $v^2=2gh$,
+and the contact dissipates nothing, $k_1r^2/2=mv^2/2+mgr$. Hence
+
+$$
+k_1=\frac{2mg}{r}\quad(v=0),\qquad
+k_1=\frac{2mg}{r}+\frac{mv^2}{r^2}=\frac{2mg(h+r)}{r^2}\quad(\text{free fall}).
+$$
+
+For the bundled needle ($m=0.3$ g, $r=0.28$ mm) these are 21 N/m and, for
+$h=3$ mm, 246 N/m.
+
+`NeedleTissueCoupler` applies the interface load to the needle as an explicit
+wrench within a trial and evaluates the contact at the trial's end state. For
+a free body with native linear damping $d$ and step $\Delta t$, a change of the
+load moves a contact point by $\Delta t^2/(m+d\,\Delta t)$ per newton, more
+with rotation. The normal stiffness of $n$ samples in contact, and the
+regularized friction of a contact that carries $F_n$ and slips slower than
+$v_\epsilon$, then give the trial map gains of about
+
+$$
+\gamma_n=\frac{n\,k_1\,\Delta t^2}{m+d\,\Delta t},\qquad
+\gamma_t=\frac{\mu F_n}{v_\epsilon}\,\frac{\Delta t}{m+d\,\Delta t}.
+$$
+
+Aitken relaxation has to undo these gains; its factor is bounded below by
+0.001. At $\Delta t=1/60$ s, with $k_1=21$ N/m, $\mu=0.2$,
+$v_\epsilon=0.2$ mm/s and $F_n=mg$, the needle drive's damping (0.69 N·s/m)
+gives $\gamma_n=0.49$ per sample and $\gamma_t=4.1$; without native damping
+they are 19.5 per sample and 163. This is why a needle with only its weight
+is carried at the nominal step while the drive's damping stays in MuJoCo, and
+needs many trials and much smaller steps without it; the
+[usage notes](usage.md#physical-needle-handling) give the measurements. The
+shaft preconditioner does not contain the surface contact's normal or
+friction tangent.
 
 Accepted actual tip samples are embedded as $x=\sum_a N_a q_a$ using current
 tetrahedral barycentrics. Their material-coordinate lengths provide track
@@ -527,8 +578,10 @@ substeps. Halving never changes the target, contact law or convergence tolerance
 
 The FEM material tangent is still refreshed once per display frame; convergence
 of this interface solve is not convergence of a full nonlinear FEM equilibrium.
-The coupler requires MuJoCo's CPU backend and `update_data_interval=1` so that
-each trial exposes its endpoint state. Input and output `body_f` retain only
+The coupler requires MuJoCo's CPU backend with its data synchronized from the
+input state on every step, so that each trial exposes its endpoint state. This
+is Newton's default; a solver created with the deprecated `update_data_interval`
+set to another value is rejected. Input and output `body_f` retain only
 the caller's external wrench; interface reactions are kept separately and
 are not carried into the next step as an extra external force.
 
@@ -588,8 +641,10 @@ reaction. Graph replay, swapped input buffers and retries therefore refresh
 the same state fields without repeating the other full-state copies.
 
 For the supported single COM free body, the device integrator reproduces
-MuJoCo 3.15.0's `implicitfast` update in double precision, with Newton's original
-float32 coordinate conversions. With local inertia $I$, local angular velocity
+MuJoCo 3.17.0's `implicitfast` update in double precision, with Newton's original
+float32 coordinate conversions. The MuJoCo model must have no equality
+constraint: Newton adds an inactive weld to every free root unless the solver
+is created with `kinematic_switchable_roots=False`, as the needle example does. With local inertia $I$, local angular velocity
 $\omega$, damping $D$, and torque $\tau$, its angular increment solves
 
 $$
@@ -815,7 +870,7 @@ validated single zero-COM `implicitfast` free body, supported CUDA capture,
 assembled non-differentiable FEM and positive tunnel compliance. Penalty,
 hard-wall and unsupported configurations retain the established integration
 path; there is no articulated-body, cable or coupled-gradient implementation
-here. The equations and local reference tests do not establish trajectory
+in this solver. The equations and local reference tests do not establish trajectory
 equivalence, unconditional stability, physiological accuracy or a frame rate.
 Primary-method inspiration and implementation boundaries are mapped in
 [papers](papers.md#simultaneous-momentumfriction-solve).
@@ -907,3 +962,312 @@ termination or insertion deadline. Reset restores automatic control.
 These event and
 contact kernels have backward recording disabled; no coupled gradient is
 claimed. The track does not change topology, stiffness, mass or damage state.
+
+## Suture thread and its needle attachment
+
+`SolverThread` integrates chains of two-node cubic Hermite cable elements. A
+node has a position $\mathbf r$ and a slope $\mathbf r'$ along the reference
+length. With the Green strain $\varepsilon=(|\mathbf r'|^2/|\mathbf r_0'|^2-1)/2$
+and the curvature $\kappa=|\mathbf r'\times\mathbf r''|/|\mathbf r'|^3$, the
+elastic energy of a straight reference is
+
+$$
+U=\int_0^L\Big(\tfrac12EA\,\varepsilon^2+\tfrac12EI\,\kappa^2\Big)\,ds ,
+$$
+
+integrated with five Gauss points per element; a curved reference uses
+$(\kappa-\kappa_0)^2$. The mass is the consistent Hermite mass. There is no
+twist and no shear.
+
+Time integration is backward Euler. A slack thread buckles, Newton's method is
+then slow, and a second-order step that stops before it has converged passes
+an acceleration error to its next predictor: the thread vibrates without end.
+A backward Euler step is the minimum of a step potential,
+
+$$
+\Phi(\mathbf q)=\frac1{2h^2}(\mathbf q-\widetilde{\mathbf q})^T\mathbf M(\mathbf q-\widetilde{\mathbf q})
++\frac{c}{2h}(\mathbf q-\mathbf q_n)^T\mathbf M(\mathbf q-\mathbf q_n)
++U(\mathbf q)+V_{\rm floor}(\mathbf q)-\mathbf q^T\mathbf M\mathbf g,
+\qquad \widetilde{\mathbf q}=\mathbf q_n+h\mathbf v_n,\quad \mathbf v=(\mathbf q-\mathbf q_n)/h,
+$$
+
+with the mass damping rate $c$. The Newton loop stops at a tolerance or at a
+fixed number of updates, and its line search never raises $\Phi$. A step cut
+short therefore ends no higher than its first iterate, and it is a damped,
+stable step only if that iterate is one. The free nodes start at
+$\widetilde{\mathbf q}$, where $\Phi$ has no inertial part; whatever else the
+first iterate strains stays in the thread when the updates run out. The
+attachment below starts node 0 accordingly.
+The forces are exact. The iteration matrix is positive semidefinite: it keeps the axial
+geometric stiffness only in tension and the Gauss-Newton part of the bending
+tangent. Each chain takes the multiple of its Newton update, from the fixed set
+$\{4,2,1,\tfrac12,\tfrac14,\tfrac1{16},\tfrac1{64},0\}$, with the lowest $\Phi$.
+The two smallest serve a straight slack thread held at one end: it has no
+stiffness across itself, the update of a load across it stretches it, and
+with a quarter as the smallest multiple it did not move at all. The tangent of a chain
+is block tridiagonal with one 6-by-6 block per node and is eliminated directly:
+on a CPU block by block from the far end, one kernel thread per chain, and on a
+GPU by cyclic reduction, in which every level eliminates the two neighbours of
+all nodes at once at a stride that doubles, so a chain of $n$ nodes takes
+$\lceil\log_2 n\rceil$ levels. Contact acts on the nodes, each against its own
+plane with point $\mathbf p$ and unit normal $\mathbf n$; a level floor is the
+same plane for every node. With the thread radius $r$,
+$d=r-\mathbf n\cdot(\mathbf r-\mathbf p)$ and $p=(d+\sqrt{d^2+s^2})/2$,
+$V_{\rm floor}=kp^2/2$. A step reads nothing back to the host and can be
+captured in a CUDA graph; its Newton loop is a conditional graph node.
+
+Friction and eyelets serve a thread on tissue. Their tangents are positive
+semidefinite, so the iteration matrix stays so.
+
+Friction on a contact plane. A node in contact is tied to an anchor
+$\mathbf a$ on its plane by a spring whose force stops at the Coulomb limit
+$f_c=\mu N$, with the node's normal force $N$ at the end of the previous
+step. With the offset $\mathbf d=(\mathbf I-\mathbf n\mathbf n^T)(\mathbf r-\mathbf a)$
+and the contact stiffness $k$,
+
+$$
+V_{\rm f}(\mathbf d)=
+\begin{cases}
+\tfrac12k|\mathbf d|^2, & k|\mathbf d|\le f_c,\\
+f_c\big(|\mathbf d|-f_c/2k\big), & \text{otherwise.}
+\end{cases}
+$$
+
+A node that sticks holds any force up to $f_c$ and stays; a node that slides
+feels $f_c$ against its way. After the step the anchor of a sliding node is
+moved to the point $f_c/k$ behind the node, and a node without grip has its
+anchor at its own position.
+
+The curvature of $V_{\rm f}$ along a sliding direction is zero. A Newton
+update with it overshoots, and the fixed set of multiples then finds no
+descent: with that tangent, and with a friction law in the step's velocity
+before it, the capped loop stalled, contact forces rose to a thousand times a
+node's weight and returned through the next step's limit. The tangent is
+therefore that of the spring that has the same force at the current offset,
+
+$$
+\mathbf K_{\rm f}=\min\!\big(k,\;f_c/|\mathbf d|\big)\,(\mathbf I-\mathbf n\mathbf n^T).
+$$
+
+That spring's energy touches $V_{\rm f}$ at the current offset and lies above
+it everywhere else, so an update with it cannot raise $V_{\rm f}$. On a level
+plane a thread of 20 elements dragged along its axis is held back by
+$\mu\sum N$ to within 4 % with two updates per step and 0.4 % with eight, and
+it is at rest, with its tension locked in, after the drag stops.
+
+Eyelets. An eyelet is a point $\mathbf x$ the thread must pass through but
+may slide through. It keeps a chain coordinate, an element and a position
+$\xi$ on it, which at the start of every step moves to the chain point
+nearest to $\mathbf x$. With the centreline point $\mathbf r(\xi)$ there and
+its unit tangent $\mathbf t$ at the start of the step,
+
+$$
+V_{\rm eyelet}=\tfrac12k_e\,\big|(\mathbf I-\mathbf t\mathbf t^T)(\mathbf r(\xi)-\mathbf x)\big|^2 ,
+$$
+
+a spring across the thread. Along the thread the eyelet has the friction of
+the contact planes in one dimension: it keeps an anchored chain coordinate
+$\xi_a$, the offset is $d=\mathbf t\cdot(\mathbf r(\xi_a)-\mathbf x)$, the
+stiffness is $k_e$ and the limit is $\mu$ times the force across the thread
+at the end of the previous step. The anchored point stays while the thread
+sticks and otherwise trails the tracked point by $f_c/k_e$. A taut thread
+drawn over a quarter circle of seven eyelets with $\mu=0.2$ needs 1.38 times
+the tension behind them; Coulomb friction at an eyelet that turns the thread
+by $\alpha$ gives the factor $(1+\mu\sin\tfrac\alpha2)/(1-\mu\sin\tfrac\alpha2)$,
+1.37 for these seven. When the draw stops, a ratio of 1.2 stays locked in.
+
+Obstacles on elements. Besides the planes on its nodes, an element can have
+a plane on one of its own points $\mathbf r(\xi)$, with the contact potential
+of the node planes in the height $\mathbf n\cdot(\mathbf r(\xi)-\mathbf p)$ and
+without friction. Two uses share it, and both find $\xi$ on the element's
+chord at the start of the step.
+
+With self-contact every element looks for the nearest other stretch of its
+chain; elements closer than three apart along the chain are left out. The
+plane lies midway between the two closest points, with the normal from the
+other stretch, and the element is kept one thread radius from it. Both
+stretches do the same, so their centres keep one diameter, and an overlap of
+two like stretches is taken back by half from each side instead of in full
+from both. A thread that springs open across itself on a floor keeps
+0.26 mm or more between the centres of two stretches of diameter 0.30 mm;
+without self-contact they pass through each other.
+
+`ThreadCapsuleContact` gives every element the nearest point of a rigid
+body's capsule axis, a polyline at the body's current pose, as its obstacle,
+at the capsule radius plus the thread radius. The opposite forces go to the
+body as a wrench in its next step, relaxed like the loads on the tissue with
+$K/(K+k)$, where $K=m/h^2+c/h$ is the least stiffness with which the body
+resists a force within a step. A thread of 20 elements laid over a bar above
+a floor stays 0.44 mm from the bar's axis for radii of 0.43 mm, and its
+weight of 31.62 µN is carried by the floor, 5.66 µN, the bar, 19.35 µN, and
+its held end, 6.61 µN.
+
+`ThreadAttachment` ties node 0 of a chain to a rigid body that another solver
+owns. A light body cannot take the thread's force one step late, so the body's
+response is an unknown of the thread's solve. The rigid solver first steps the
+body without the thread; that predicted pose has centre $\mathbf c$ and
+includes contact and every other load. Node 0 then sits on a rigid head that
+moves by a translation $\mathbf u$ and a rotation vector $\boldsymbol\theta$
+from that pose,
+
+$$
+\mathbf r_0=\mathbf c+\mathbf u+\mathbf R(\boldsymbol\theta)\mathbf a,\qquad
+\mathbf r_0'=\mathbf R(\boldsymbol\theta)\mathbf s,\qquad
+\Phi_{\rm head}=\frac1{2h^2}\mathbf m^T\mathbf M_b\mathbf m,\quad
+\mathbf m=(\mathbf u,\boldsymbol\theta),
+$$
+
+with the lever $\mathbf a$ and slope $\mathbf s$ at the predicted pose and the
+body's mass and inertia $\mathbf M_b$. $\Phi_{\rm head}$ is added to $\Phi$:
+a wrench $\mathbf W$ moves a free body by $h^2\mathbf M_b^{-1}\mathbf W$ within
+one semi-implicit Euler step. The head's rows of the residual use the exact
+Jacobian, $d\mathbf r_0=d\mathbf u+(\mathbf T\,d\boldsymbol\theta)\times\mathbf R\mathbf a$
+and $d\mathbf r_0'=(\mathbf T\,d\boldsymbol\theta)\times\mathbf R\mathbf s$, with
+the tangent operator of the rotation vector,
+
+$$
+\mathbf T=\mathbf I+\frac{1-\cos\theta}{\theta^2}[\boldsymbol\theta]_\times
++\frac{\theta-\sin\theta}{\theta^3}[\boldsymbol\theta]_\times^2 ,
+$$
+
+so they are the gradient of $\Phi$ that the line search needs. The rigid
+solver then repeats its step from the same state with
+$\mathbf W=\mathbf M_b\mathbf m/h^2$ added.
+
+The head's first iterate puts node 0 where the thread's own motion carries
+it, like every free node: $\boldsymbol\theta^0$ is the smallest rotation that
+turns $\mathbf s$ onto the extrapolated slope
+$\widetilde{\mathbf r}_0'$, and
+$\mathbf u^0=\widetilde{\mathbf r}_0-\mathbf c-\mathbf R(\boldsymbol\theta^0)\mathbf a$.
+That iterate strains no element. Its offset from the predicted pose costs
+$\Phi_{\rm head}(\mathbf m^0)$, which is quadratic, so one update removes it,
+and which is of the order of the kinetic energy $\tfrac12m|\Delta\mathbf v|^2$
+of the change $\Delta\mathbf v$ that the prediction made to the body's
+velocity. A first iterate at the predicted pose, with the head's last motion,
+instead moves node 0 by $h\,\Delta\mathbf v$ against its neighbour: an
+elastic energy of the order of $EA\,(h\,\Delta v)^2/2\ell$ for elements of
+length $\ell$, which grows with the modulus and has no bound in the body's
+energy. In `needle_thread` at 2e9 Pa a needle that landed at 0.78 m/s then
+left 2.2e-3 J in the thread after two updates, nineteen times the energy of
+the whole scene, and the wrench threw the needle back up; from 5e8 Pa
+released needles gained energy and some runs became non-finite. With node 0
+at $\widetilde{\mathbf r}_0$ the same runs, and releases from pulled and
+pinned threads, did not gain energy with two updates from 2e6 to 2e9 Pa.
+Lagged mode keeps the head's last motion as its first iterate.
+
+The head moves as a free body would. Where the rigid solver constrains the
+body, by contact or a grasp, the body yields less than the head did and the
+thread's pull on it is underestimated; node 0 is then off the attachment
+point by the head's motion $\mathbf m$. A body held by a gripper should
+prescribe node 0 instead.
+
+`ThreadTissueCoupling` couples one thread to a tetrahedral tissue. Before the
+thread's step every node takes the nearest point of the pad's triangle surface
+within a margin, and the outward normal of that triangle, as its contact
+plane. The surface vertices that are tissue particles move with them; the
+bounding volume hierarchy is refitted in place. A stitch's track is a group
+of eyelets at material points of the tissue, ordered from entry to exit. A
+node between the first and the last threaded eyelet of a group is inside the
+tissue and takes no contact plane; while a group is only partly threaded, so
+is the thread from its first node to the group's last threaded eyelet.
+
+The friction anchor of a node that has grip is kept as a point of the surface
+triangle under it and moves with the surface, so a thread that sticks rides
+on the tissue.
+
+After the thread's step the contact force of a node, normal and friction,
+with the opposite sign, is spread over the tissue particles among the three
+vertices of its triangle, and the force on an eyelet over the four vertices
+of its tetrahedron. The tissue receives these loads in its next step. Passed on
+at once, this staggered exchange diverges when the thread's spring $k$ is
+stiffer than the tissue node $K$ it acts on, because each side overcorrects
+the other, so the applied load $\mathbf f_a$ is relaxed towards the thread's
+current force $\mathbf f$:
+
+$$
+\mathbf f_a\leftarrow\mathbf f_a+\frac{K}{K+k}\,(\mathbf f-\mathbf f_a) .
+$$
+
+The examples take $k=Eh$ for the contact and the eyelet spring, with the
+tissue's Young's modulus $E$ and mean edge length $h$, as the give of the
+tissue around the thread that the mesh does not resolve, and $K=Eh/4$ as the
+lower bound of the measured stiffness of a single tissue node. The tissue
+then feels a change of the thread's pull after about five steps.
+
+In `fem_needle_suture` the stitches are planned before the run. A stitch is
+an insertion plan between an entry and an exit; it is kept when that plan's
+checks pass and the needle's sweep from the plan's finish angle until the
+tail has left the tissue touches no pad material. Its track points are the
+plan's circle sampled inside the tissue. During the run the track point at
+angle $\varphi$ becomes an eyelet once the tip angle exceeds $\varphi$ plus the
+needle's angular span, that is when the tail has passed it. The thread is
+stepped once per accepted step of the needle and the tissue, with that step's
+size, and the relaxed loads enter the next step as external forces.
+
+Between two stitches of the planned row, which are copies of each other, the
+needle makes the rest of its full turn while its circle's centre moves on.
+Picked stitches may point anywhere. Between them the centre rises to
+$z_{\rm top}+t+R$, with the pad's highest point $z_{\rm top}$, the needle's
+thickness $t$ and its radius $R$, moves level while the orientation is
+interpolated along the shorter arc, and comes down. Every point of the needle
+stays within $R$ of the centre, so it cannot touch the pad on the way.
+
+An eyelet can be held: it then keeps its point of the chain and its spring
+acts in every direction, $V=\tfrac12k_e|\mathbf r(\xi)-\mathbf x|^2$, a knot
+at a material point. `fem_needle_suture` holds the first track point of the
+first stitch once the row is made, and moves the needle's target on along
+$\mathbf d=\cos\beta\,\mathbf l+\sin\beta\,\mathbf e_z$. Here $\mathbf l$ is
+the horizontal direction from the last exit back across the wound and one
+stitch on, towards where the next entry would be, and
+$\beta=\arcsin(c/2R)$ is the slope of the track at the exit for the stitch's
+chord $c$ and the needle's radius $R$. A thread that turns back over the
+wound at an exit pulls that lip towards the other one. The wound's width is
+measured as the mean distance between the last track point in one lip and the
+first in the other. The pull ends when that width is below the thread's
+diameter, when the smallest volume ratio of the tissue's tetrahedra falls
+below a chosen fraction, one half by default, or when the needle's circle
+reaches the pad's edge.
+
+The needle in `fem_needle_suture` is stepped with the tissue once per time
+step and that step cannot be repeated, so `ThreadAttachment` runs in its
+lagged mode. The needle's step takes the wrench $\mathbf W_n$ of the thread's
+last step. A drive with stiffness $k$ and damping $c$ holds the needle, so
+within a step a wrench moves it by $\mathbf Z^{-1}\mathbf W$ with
+
+$$
+\mathbf Z=\frac{\mathbf M_b}{h^2}+\frac{\mathbf c}{h}+\mathbf k .
+$$
+
+The pose the needle would have reached without the thread is therefore its
+new pose moved back by $\mathbf Z^{-1}\mathbf W_n$. The head is placed there
+with $\mathbf Z$ in place of $\mathbf M_b/h^2$, and the solved motion gives
+$\mathbf W_{n+1}=\mathbf Z\,\mathbf m$. For a thread of stiffness
+$\mathbf K$ at the head this is the relaxation
+$\mathbf W_{n+1}=\mathbf W_n+\mathbf Z(\mathbf Z+\mathbf K)^{-1}(\mathbf W-\mathbf W_n)$
+towards the thread's wrench $\mathbf W$ at the needle's pose: a slack thread
+is felt at once, a taut one along its own direction over a few steps. Node 0
+is off the tail by $\mathbf Z^{-1}(\mathbf W_{n+1}-\mathbf W_n)$ until the
+wrench has settled; in the default run that stays below 0.01 mm. Tissue
+around the needle makes it stiffer than $\mathbf Z$, which only slows the
+approach.
+
+When the pull ends the last track point of the last stitch is held as well,
+so the thread between the two knots keeps its tension. The drop removes the
+drive's spring, also from $\mathbf Z$, and adds the needle's weight
+$m\mathbf g$ at its centre of mass; the model's gravity stays zero, as the
+needle-tissue coupling requires. The drive's damping stays in MuJoCo, so
+the needle sinks at $mg/c$ for the drive's damping $c$, about 4 mm/s in the
+example, instead of falling.
+
+Before a run the thread is laid unstrained, level with the top of the pad,
+and lowered. For that its mass damping is raised to $g h/r$, at which its
+weight moves a node by the thread's radius $r$ per step, and it is stepped
+for one and a half times the way to the lowest point of the pad under it;
+then the damping is set back and the velocities are cleared. Laid straight
+onto the pad's steps instead, the thread starts strained, and dropped freely
+it lands at a speed at which the capped loop does not resolve the contact.
+
+There is no friction between the thread and itself or the needle, and an
+element keeps only its nearest contact of each kind. Backward recording is disabled in its kernels;
+no gradient is claimed. These equations and the examples' checks do not
+establish calibrated suture behaviour or a frame rate.

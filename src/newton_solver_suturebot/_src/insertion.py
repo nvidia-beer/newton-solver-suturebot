@@ -699,6 +699,11 @@ class NeedleTissueInteraction:
     ``sample_points_local`` must be an ordered shaft polyline, tip first.
     Stiffness is tip contact N/m and total shaft surface N/m; the tip is a
     separate contact sample and shaft quadrature weights sum to one.
+    ``surface_sample_stiffness`` [N/m] is optional: every shaft sample is then
+    at least this stiff, with its damping raised in the same ratio, so that a
+    single sample can carry a load; the tip keeps ``stiffness``. The default
+    ``None`` keeps the shared shaft stiffness alone, and
+    :meth:`set_surface_sample_stiffness` changes it between steps.
     Surface normal damping is ``damping * penetration / sample_radius`` during
     compression and zero during separation, so its force is continuous at onset.
     Surface reactions blend nearby blocking facets over half the proxy radius,
@@ -754,6 +759,7 @@ class NeedleTissueInteraction:
         reference_to_active=None,
         stiffness=80.0,
         damping=0.025,
+        surface_sample_stiffness=None,
         puncture_force=0.003,
         shaft_stiffness_per_m=1500.0,
         shaft_damping_per_m=0.5,
@@ -807,6 +813,10 @@ class NeedleTissueInteraction:
             or min(stiffness, puncture_force, track_spacing, speed_scale) <= 0
         ):
             raise ValueError("Insertion parameters must be finite and nonnegative; thresholds and scales positive")
+        if surface_sample_stiffness is not None and not (
+            np.isfinite(surface_sample_stiffness) and surface_sample_stiffness > 0
+        ):
+            raise ValueError("surface_sample_stiffness must be finite and positive, or None")
         if (
             len(self.samples) < 2
             or self.samples.shape[1:] != (3,)
@@ -856,9 +866,11 @@ class NeedleTissueInteraction:
         weights[0] = 0.0
         weights /= weights.sum()
         weights[0] = 1.0
+        self._surface_shares = weights
+        self.surface_sample_stiffness = surface_sample_stiffness
         self._samples = wp.array(self.samples, dtype=wp.vec3, device=self.device)
         self._radii = wp.array(self.radii, dtype=float, device=self.device)
-        self._weights = wp.array(weights, dtype=float, device=self.device)
+        self._weights = wp.array(self._surface_weights(), dtype=float, device=self.device)
         self._mapping = wp.array(self.mapping, dtype=int, device=self.device)
         self._opening_faces = np.zeros(len(self.surface_triangles), dtype=np.int32)
         self._openings = []
@@ -969,6 +981,22 @@ class NeedleTissueInteraction:
                 clearance=tunnel_clearance,
                 tolerance=tunnel_tolerance,
             )
+
+    def _surface_weights(self):
+        """Surface weight of every sample: its share, raised to the optional least sample stiffness."""
+        weights = self._surface_shares.copy()
+        if self.surface_sample_stiffness is not None:
+            # The kernel scales stiffness and damping by a sample's weight, so
+            # a floor on the weight is a floor on both. The tip keeps its own.
+            weights[1:] = np.maximum(weights[1:], self.surface_sample_stiffness / self.stiffness)
+        return weights
+
+    def set_surface_sample_stiffness(self, value):
+        """Change ``surface_sample_stiffness`` between steps; ``None`` restores the shared stiffness."""
+        if value is not None and not (np.isfinite(value) and value > 0):
+            raise ValueError("surface_sample_stiffness must be finite and positive, or None")
+        self.surface_sample_stiffness = value
+        self._weights.assign(self._surface_weights())
 
     @property
     def track_count(self):

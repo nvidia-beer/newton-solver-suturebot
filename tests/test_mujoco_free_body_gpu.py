@@ -48,7 +48,9 @@ class MuJoCoFreeBodyGPUTests(unittest.TestCase):
                 builder.add_shape_sphere(body, radius=0.005)
                 builder.add_ground_plane()
             model = builder.finalize()
-            native = SolverMuJoCo(model, use_mujoco_cpu=True, integrator="implicitfast", update_data_interval=1)
+            native = SolverMuJoCo(
+                model, use_mujoco_cpu=True, integrator="implicitfast", kinematic_switchable_roots=False
+            )
             return model, native
 
     def random_state(self, model, rng, *, angular_speed=2):
@@ -134,9 +136,9 @@ class MuJoCoFreeBodyGPUTests(unittest.TestCase):
             self.assertFalse(MuJoCoFreeBodyGPU.supports(other_model, other_native))
             with self.assertRaises(ValueError):
                 MuJoCoFreeBodyGPU(other_model, other_native)
-        with patch.object(mujoco, "__version__", "3.15.1"):
+        with patch.object(mujoco, "__version__", "3.17.1"):
             self.assertFalse(MuJoCoFreeBodyGPU.supports(model, native))
-        with patch.object(mujoco, "mj_version", return_value=3016000):
+        with patch.object(mujoco, "mj_version", return_value=3018000):
             self.assertFalse(MuJoCoFreeBodyGPU.supports(model, native))
         for callback in ("get_mjcb_passive", "get_mjcb_control", "get_mjcb_sensor", "get_mjcb_contactfilter"):
             with patch.object(mujoco, callback, return_value=lambda *_: None):

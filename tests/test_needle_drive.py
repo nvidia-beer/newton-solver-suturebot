@@ -26,7 +26,7 @@ def _body(*, com=(0, 0, 0)):
             label="needle",
         )
         model = builder.finalize()
-        solver = SolverMuJoCo(model, use_mujoco_cpu=True, integrator="implicitfast", update_data_interval=1)
+        solver = SolverMuJoCo(model, use_mujoco_cpu=True, integrator="implicitfast")
         yield model, solver, NeedleDrive(model, body)
 
 

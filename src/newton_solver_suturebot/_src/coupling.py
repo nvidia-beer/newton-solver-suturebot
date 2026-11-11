@@ -9,7 +9,7 @@ trial advances material history. No controller or target geometry enters here.
 import numpy as np
 import warp as wp
 
-from .mujoco_free_body import MuJoCoFreeBody
+from .mujoco_free_body import MuJoCoFreeBody, synchronizes_every_step
 from .shaft_preconditioner import _ShaftPreconditioner
 from .solvers.fem import SolverFEM
 from .solvers.fem.differentiation import active_tape
@@ -252,7 +252,7 @@ class NeedleTissueCoupler:
         self._mujoco = mujoco
         if not rigid_solver.use_mujoco_cpu or rigid_solver.mj_data is None:
             raise ValueError("NeedleTissueCoupler requires the CPU MuJoCo backend")
-        if rigid_solver.update_data_interval != 1:
+        if not synchronizes_every_step(rigid_solver):
             raise ValueError("NeedleTissueCoupler requires MuJoCo update_data_interval=1 for repeatable trials")
         if not np.isfinite([absolute_tolerance, relative_tolerance, moment_length, relaxation]).all():
             raise ValueError("Coupling parameters must be finite")

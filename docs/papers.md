@@ -101,3 +101,20 @@ The use of projection equations does not confer a general semismooth-Newton
 convergence guarantee on this quasi-Newton implementation. Prepared FEM still
 uses its selected material linearization; contact topology is committed only
 after acceptance. Differentiation through the joint solve is unsupported.
+
+## Suture thread
+
+The thread solver uses the element below; its integration, iteration matrix
+and needle attachment are implementation choices described in
+[method.md](method.md#suture-thread-and-its-needle-attachment).
+
+| Paper | Implemented portion and code |
+| --- | --- |
+| Gerstmayr and Shabana, [Analysis of Thin Beams and Cables Using the Absolute Nodal Co-ordinate Formulation (2006)](https://doi.org/10.1007/s11071-006-1856-1) | The two-node cable element with position and slope coordinates, cubic Hermite interpolation, axial Green strain and curvature bending is evaluated by `evaluate_elements` in [kernels.py](../src/newton_solver_suturebot/_src/solvers/thread/kernels.py). The paper's time integration and examples are not reproduced; the tangent here is a positive semidefinite approximation. |
+| Heller, [Some Aspects of the Cyclic Reduction Algorithm for Block Tridiagonal Linear Systems (1976)](https://doi.org/10.1137/0713042); the parallel variant, in which every level eliminates both neighbours of every node, follows Hockney and Jesshope, Parallel Computers (1981) | The solve of a chain's block-tridiagonal Newton system on CUDA devices: `begin_reduction`, `condense_nodes`, `reduce_nodes` and `solve_reduced` in [thread/kernels.py](../src/newton_solver_suturebot/_src/solvers/thread/kernels.py). CPU devices eliminate block by block. |
+
+This is not the spline thread of Lenoir et al. listed above, and no paper is
+claimed for the backward Euler step with a fixed update budget or for the
+rigid head that carries the needle. None is claimed either for the contact
+damping, the eyelets, the relaxed exchange of forces with the tissue or the
+closing pull.

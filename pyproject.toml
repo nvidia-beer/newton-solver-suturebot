@@ -10,19 +10,19 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = "Apache-2.0"
 license-files = ["LICENSE", "THIRD_PARTY_NOTICES"]
-dependencies = ["newton==1.7.0", "warp-lang==1.17.0", "numpy>=2,<3"]
+dependencies = ["newton==1.8.0", "warp-lang==1.17.0", "numpy>=2,<3"]
 
 [project.optional-dependencies]
 profiling = ["nvtx>=0.2.13,<0.3"]
 examples = [
-    "newton[sim]==1.7.0",
+    "newton[sim]==1.8.0",
     "usd-exchange>=3.0.1,<4; sys_platform == 'linux' and platform_machine == 'aarch64'",
     "usd-core>=26.8,<27; sys_platform != 'linux' or platform_machine != 'aarch64'",
     "pyglet>=2.1.6,<3",
     "imgui-bundle>=1.92,<2",
     "Pillow>=11.3",
     "PyOpenGL>=3.1.9,<4",
-    "newton-usd-schemas>=0.5,<0.6",
+    "newton-usd-schemas>=0.6,<0.7",
 ]
 
 [dependency-groups]

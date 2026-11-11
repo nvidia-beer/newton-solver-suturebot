@@ -29,7 +29,16 @@ class StandalonePackageTests(unittest.TestCase):
     def test_requested_examples_are_discovered_from_the_package(self):
         examples = discover()
         self.assertEqual(
-            set(examples), {"fem_needle_insertion", "fem_phantom_regions", "fem_dvrk", "fem_phantom_cut", "fem_versius"}
+            set(examples),
+            {
+                "fem_needle_insertion",
+                "fem_needle_suture",
+                "fem_phantom_regions",
+                "fem_dvrk",
+                "fem_phantom_cut",
+                "fem_versius",
+                "needle_thread",
+            },
         )
         for description, _headless, module in examples.values():
             with self.subTest(module=module):

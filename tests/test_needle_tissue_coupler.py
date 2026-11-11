@@ -4,6 +4,7 @@
 
 import os
 import unittest
+import warnings
 from unittest.mock import patch
 
 import mujoco
@@ -436,16 +437,19 @@ class NeedleTissueCouplerTests(unittest.TestCase):
         with _example() as example:
             _prepare(example)
             example.start()
-            with patch.object(example.rigid_solver, "update_data_interval", 2):
-                with self.assertRaisesRegex(ValueError, "update_data_interval=1"):
-                    NeedleTissueCoupler(
-                        example.model,
-                        example.solver,
-                        example.rigid_solver,
-                        example.interaction,
-                        example.needle_body,
-                        example.drive.com,
-                    )
+            with warnings.catch_warnings():
+                # Newton 1.8 deprecates the interval; setting it is the only way to build the rejected case.
+                warnings.simplefilter("ignore", newton.NewtonDeprecationWarning)
+                example.rigid_solver.update_data_interval = 2
+            with self.assertRaisesRegex(ValueError, "update_data_interval=1"):
+                NeedleTissueCoupler(
+                    example.model,
+                    example.solver,
+                    example.rigid_solver,
+                    example.interaction,
+                    example.needle_body,
+                    example.drive.com,
+                )
 
     def test_withdrawal_and_offset_reentry_commit_engagement_after_convergence(self):
         with _example() as example:

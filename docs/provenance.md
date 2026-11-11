@@ -1,11 +1,29 @@
 # Standalone package and evidence provenance
 
-This repository contains the required implementation and data for five
+This repository contains the required implementation and data for seven
 examples: `fem_phantom_cut`, `fem_needle_insertion`, `fem_phantom_regions` and
-`fem_dvrk`, plus `fem_versius`. The FEM core, embedded cutting, prepared mechanics, partitioned needle coupling, optional
+`fem_dvrk`, plus `fem_versius`, `needle_thread` and `fem_needle_suture`. The FEM core, embedded cutting, prepared mechanics, partitioned needle coupling, optional
 `SolverMuJoCoFEM`, geometry queries and viewer helpers live under
 `src/newton_solver_suturebot/`. Newton, Warp, MuJoCo and the other locked
 packages are external dependencies installed normally by `uv`.
+
+The thread solver under `_src/solvers/thread/` and the `needle_thread` example
+were added on 2026-11-11. The solver was developed in the sibling
+`newton-solver-ancf` working tree and is included here as self-contained code:
+its element, mass, integration and floor-contact functions are local, and it
+imports nothing from that package. On that tree's reference scenarios the two
+implementations gave identical step histories on CPU. The example reuses the
+bundled needle and adds no data. The original extraction reports below do not
+cover it.
+
+The thread's contact planes, friction, eyelets, self-contact and capsule
+contact, the lagged mode of `ThreadAttachment`, `ThreadTissueCoupling`, the
+cyclic reduction of the chain solve on CUDA and the `fem_needle_suture`
+example were written in this repository on the same day. They reuse the bundled pad and needle, add no data and are not covered by the
+extraction reports either. With these features left off and the line search's
+multiples set to the reference's `(4, 2, 1, 0.5, 0.25, 0)`, the CPU solver
+still gives the reference scenarios' step histories bit for bit; its default
+line search has two smaller multiples and does not.
 
 The full-pad cutting workflow uses the local cutting and material-grip
 implementation. Its Line, Cylinder and Sphere tools use embedded Tet4

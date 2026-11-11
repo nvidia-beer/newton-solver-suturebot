@@ -26,6 +26,13 @@ from ._src.geometry import (
 from ._src.insertion import NeedleStepTooLarge, NeedleTissueInteraction
 from ._src.solvers import FEMBuilder, LinearFEMData, SolverFEM, SolverLinearFEM
 from ._src.solvers.mujoco_fem.solver import SolverMuJoCoFEM
+from ._src.solvers.thread import (
+    SolverThread,
+    ThreadAttachment,
+    ThreadCapsuleContact,
+    ThreadModel,
+    ThreadTissueCoupling,
+)
 
 __all__ = [
     "CutConnectivityDebug",
@@ -48,7 +55,12 @@ __all__ = [
     "SolverFEM",
     "SolverLinearFEM",
     "SolverMuJoCoFEM",
+    "SolverThread",
     "TetrahedralTunnelGuide",
+    "ThreadAttachment",
+    "ThreadCapsuleContact",
+    "ThreadModel",
+    "ThreadTissueCoupling",
     "boundary_faces",
     "hex_quadrature",
     "list_mesh_regions",

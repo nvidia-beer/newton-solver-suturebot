@@ -6,10 +6,23 @@ The native MuJoCo model, integrator and integration history are unchanged.
 Unsupported models continue through Newton's general SolverMuJoCo adapter.
 """
 
+import warnings
+
 import newton
 import numpy as np
 import warp as wp
 from newton.solvers import SolverMuJoCo
+
+
+def synchronizes_every_step(solver):
+    """Whether MuJoCo data follows the input state on every step.
+
+    Newton 1.8 deprecates ``update_data_interval`` and warns on each read. A
+    solver created with another interval is still possible and is rejected.
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", newton.NewtonDeprecationWarning)
+        return solver.update_data_interval == 1
 
 
 @wp.kernel(enable_backward=False)
@@ -71,7 +84,7 @@ class MuJoCoFreeBody:
             or getattr(solver.step, "__func__", None) is not SolverMuJoCo.step
             or solver.model is not model
             or not solver.use_mujoco_cpu
-            or solver.update_data_interval != 1
+            or not synchronizes_every_step(solver)
             or model.body_count != 1
             or model.joint_count != 1
             or model.joint_coord_count != 7

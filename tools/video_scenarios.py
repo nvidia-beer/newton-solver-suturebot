@@ -15,7 +15,15 @@ def configure(name, example):
     elif name in ("fem_dvrk", "fem_versius"):
         example.recording_seen_frames = set()
         example.recording_view_changes = []
-    if name in ("fem_phantom_regions", "fem_dvrk", "fem_versius", "fem_needle_insertion", "fem_phantom_cut"):
+    if name in (
+        "fem_phantom_regions",
+        "fem_dvrk",
+        "fem_versius",
+        "fem_needle_insertion",
+        "fem_phantom_cut",
+        "fem_needle_suture",
+        "needle_thread",
+    ):
         if name in ("fem_dvrk", "fem_versius") or getattr(example.screen_pick, "window", None) is not None:
             # Use the ordinary example panel, with unrelated viewer sections
             # collapsed so its clickable pad map remains visible in the clip.
@@ -295,6 +303,10 @@ def frame_label(name, example):
         regions = ", ".join(str(value) for value in example.selected_region_ids) or "none"
         action = "Right-drag: physical spring grab" if example.recording_drag else "Click pad map | fixed inactive pad"
         return f"Active: {regions} | {len(example.selection.indices):,} tets | {action}"
+    if name == "fem_needle_suture":
+        return f"{example.outcome} | Simulation-time playback | illustrative thread and tissue forces"
+    if name == "needle_thread":
+        return "Simulation-time playback | illustrative thread forces"
     return ""
 
 

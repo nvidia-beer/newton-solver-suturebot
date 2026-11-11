@@ -230,7 +230,13 @@ class Example(PhantomExample):
         if self.model.body_count != 1:
             raise ValueError("Needle insertion needs exactly one free rigid body")
         self.rigid_solver = SolverMuJoCo(
-            self.model, use_mujoco_cpu=True, iterations=30, ls_iterations=10, integrator="implicitfast"
+            self.model,
+            use_mujoco_cpu=True,
+            iterations=30,
+            ls_iterations=10,
+            integrator="implicitfast",
+            # The needle is never made kinematic; the captured trials need a model without the weld for that.
+            kinematic_switchable_roots=False,
         )
         self.drive = NeedleDrive(
             self.model,
@@ -330,6 +336,7 @@ class Example(PhantomExample):
                 self.geometry.tip,
                 device=self.device,
                 stiffness=self.args.contact_stiffness,
+                surface_sample_stiffness=self.args.contact_sample_stiffness,
                 puncture_force=self.args.puncture_force,
                 friction=self.args.shaft_friction,
                 shaft_stiffness_per_m=self.args.shaft_stiffness,
@@ -636,8 +643,8 @@ class Example(PhantomExample):
             color,
         )
 
-    def render(self):
-        self.viewer.begin_frame(self.sim_time)
+    def render_pad(self):
+        """Draw the pad, the needle and the insertion markers inside a viewer frame."""
         if self.solver is not None:
             wp.launch(
                 _scatter_selected,
@@ -707,7 +714,6 @@ class Example(PhantomExample):
             desired_points = self.geometry.centerline @ rotation.T + self.desired_pose[:3]
         self._lines("/insertion/desired_needle", desired_points, (1.0, 0.8, 0.1))
         self._lines("/insertion/actual_tip", self.actual_tip_history, (1.0, 0.45, 0.1))
-        self.viewer.end_frame()
 
     def _action(self, function, *args, **kwargs):
         try:
@@ -951,6 +957,12 @@ class Example(PhantomExample):
         parser.add_argument("--puncture-force", type=float, default=0.003, help="Illustrative puncture threshold [N]")
         parser.add_argument(
             "--contact-stiffness", type=float, default=20.0, help="Illustrative surface stiffness [N/m]"
+        )
+        parser.add_argument(
+            "--contact-sample-stiffness",
+            type=float,
+            default=None,
+            help="Least surface stiffness of one shaft sample [N/m]; default shares --contact-stiffness over the shaft",
         )
         parser.add_argument("--shaft-friction", type=float, default=0.2, help="Illustrative shaft friction coefficient")
         parser.add_argument(

@@ -4,14 +4,15 @@ This repository is self-contained: keep required FEM, cutting, MuJoCo needle int
 geometry, assets and examples here. Do not import a sibling solver package or
 modify installed Newton, Warp or MuJoCo code. Preserve upstream licenses.
 
-FEM mechanics live in `src/newton_solver_suturebot/_src/solvers/fem/` and the
-simultaneous needle/FEM solver in `_src/solvers/mujoco_fem/`. Preserve physical
+FEM mechanics live in `src/newton_solver_suturebot/_src/solvers/fem/`, the
+simultaneous needle/FEM solver in `_src/solvers/mujoco_fem/` and the suture
+thread solver in `_src/solvers/thread/`. Preserve physical
 laws, sparse operators, fixed boundaries, gradient contracts and convergence
 checks during refactoring. Recorded-motion replay is not physical insertion.
 
 Examples use the public package API; shared viewer helpers belong in `examples`.
 Discover runnable `example_*.py` files automatically. Each needs a module
-docstring and a `__main__` guard. Keep the five SutureBot examples and their
+docstring and a `__main__` guard. Keep the seven examples and their
 required data bundled; external dataset preparation is optional.
 
 Keep shared platform models under `assets/dvrk/models` and `assets/versius/models`;

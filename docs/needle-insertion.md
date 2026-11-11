@@ -164,6 +164,7 @@ original needle positions; the span does not depend on sampling spacing.
 | Automatic desired tip speed | 3 mm/s | `--insertion-speed`; illustrative speed with a 0.5 s smooth initial ramp |
 | Translational and rotational drive stiffness | 400 N/m; 0.05 N·m/rad | Finite stiffness PD drive with native implicit damping and spring linearization; damping estimated from mass/inertia |
 | Surface penalty stiffness and damping | 20 N/m; 0.025 N·s/m | Damping scales with penetration/radius and acts only during compression; 0.025 is its effective coefficient at one-radius penetration. Tip and length-weighted shaft contact are separate. |
+| Least surface stiffness of one shaft sample | None | `--contact-sample-stiffness`; off by default, so each of the 193 shaft samples holds its length share of the 20 N/m, about 0.1 N/m. When given, every shaft sample is at least this stiff with damping in the same ratio; the tip is unchanged. See [usage](usage.md#physical-needle-handling) |
 | Surface facet blending width | Half the proxy radius, 0.14 mm | Compact area/orientation weighting of nearby blocking facets; independent of contact-sample spacing |
 | Puncture criterion | 3 mN | Illustrative threshold on the norm of the summed tip normal-force vectors, excluding friction |
 | Cutting resistance | Omitted | No resistance or fracture work for creating the passage after puncture |
@@ -345,7 +346,8 @@ host-controlled coupling for comparison. The generic public coupler keeps
 free-needle, contact, Aitken and ALM iterations together, with device-side
 convergence decisions. It requires `capture_fem=True` and
 `shaft_preconditioner=True`, as already configured by this example.
-The rigid branch matches MuJoCo 3.15.0 `implicitfast`; native MuJoCo advances its
+The rigid branch matches MuJoCo 3.17.0 `implicitfast` for a solver created with
+`kinematic_switchable_roots=False`; native MuJoCo advances its
 history once and its joint/body endpoint must match bit for bit. Material
 history, swept-motion checks and ambiguous surface events retain their exact
 host path. This option does not make every operation GPU-only. Reports on the
