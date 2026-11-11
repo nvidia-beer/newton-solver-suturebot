@@ -5,7 +5,7 @@
 
 Loads a prepared recording.json, USD geometry and timestamped poses. All camera
 fitting, frame extraction and asset preparation live in the MSc workbench.
-Prepared point labels remain fixed to the phantom's UV surface. Source-defined
+Dataset insertion/exit labels appear as spheres on the phantom surface. Source-defined
 approach clips retain their original frame numbers. The prepared scene contains
 the tools, cameras, fixture and phantom; motion is replayed without dynamics.
 

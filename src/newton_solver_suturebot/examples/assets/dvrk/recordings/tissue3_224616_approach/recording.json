@@ -742,7 +742,6 @@
     "reviewed_wrist_wound.json",
     "slit_review_validation.json",
     "source_phases.json",
-    "textures/point_labels.png",
     "wrist_export_validation.json"
   ],
   "region_identification": "region_identification.json",
@@ -757,7 +756,6 @@
   },
   "point_labels": {
     "report": "point_labels.json",
-    "texture": "textures/point_labels.png",
     "count": 2,
     "display_color_rgb": [
       0,

@@ -77,7 +77,7 @@ preparation assumption. That experiment models contact without needle puncture
 or thread mechanics.
 
 The current `fem_dvrk` example loads samples under `recordings/`, including their
-camera rays, source images and placement/UV-label layers. Geometry and materials
+camera rays, source images, placement layers and point-label reports. Geometry and materials
 live in the shared `models/` library, with fitted fixture and legacy-tool variants
 kept explicit. Copy the entire examples assets tree, not a recording folder in
 isolation; each manifest's `asset_root: "../../../"` defines that boundary.

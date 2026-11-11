@@ -37,7 +37,7 @@ Needle and thread models are excluded from this example. Their appearances in th
 
 The complete examples/assets tree is required. Reusable geometry and tool
 materials live in this platform's `models/` directory. Recording USD layers
-retain placement, calibration, UV/label and scene-specific material opinions;
+retain placement, calibration, label and scene-specific material opinions;
 local rig/phantom layers reference shared geometry. Motion and camera arrays
 and images remain recording-local. The explicit `asset_root` covers only the
 bundled examples/assets tree; no simulator checkout is needed at runtime.

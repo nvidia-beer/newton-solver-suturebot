@@ -319,8 +319,8 @@
       "bytes": 854027
     },
     "phantom.usdc": {
-      "sha256": "ea046d474aab6f0be7917e22bb5cf78de9b1e4b03b48073a5100945ebee6a0f7",
-      "bytes": 7052997
+      "sha256": "f598d78b796065a1a8b26a1aadfd4986cf29dd8c7127a4bc2f6d093e9b8ba18d",
+      "bytes": 7054408
     },
     "motion.npz": {
       "sha256": "efa2609e32d0a66219097c0f4a89d5b500f74f9b64f28fc1a9e8d796b0ac5ff7",
@@ -345,7 +345,7 @@
       "hash_definition": "SHA256 of sorted relative-path + NUL + file-SHA256 + newline records"
     }
   },
-  "numerical_payloads_byte_identical_to_prepared_source": true,
+  "numerical_payloads_byte_identical_to_prepared_source": false,
   "additional_metadata_policy": "Additional JSON retains numerical values and acceptance decisions; only host provenance paths are replaced by portable source identities.",
   "additional_payloads": {
     "pad_placement.json": {
@@ -357,18 +357,14 @@
       "bytes": 11637
     },
     "point_labels.json": {
-      "sha256": "8be2dbd353a2ee8ad3b6d843bba38bb8c57d75f4b9a74feb79398b282589f2bf",
-      "bytes": 4411
+      "sha256": "35e08fc816ebe4f4211298f29b2effc563353a990f3ea34614aa32580cf91fb7",
+      "bytes": 4083
     },
     "point_labels_source": {
       "file_count": 2,
       "bytes": 1617,
       "sha256": "245d13c756f73a1449e80e7ac01d3d6a397735ac86ed93f67e344f99d20a91f0",
       "hash_definition": "SHA256 of sorted relative-path + NUL + file-SHA256 + newline records"
-    },
-    "textures/point_labels.png": {
-      "sha256": "358d0c01cfe97f91ad847e5be2e6334ae118ce891340aaa694071e7947e2ce0e",
-      "bytes": 1747
     }
   },
   "example_feature_removal": {
@@ -383,5 +379,27 @@
     "retained_numerical_payloads_byte_identical": true,
     "source_data_modified": false,
     "alignment_acceptance_changed": false
+  },
+  "point_label_texture_removal": {
+    "date": "2026-11-11",
+    "reason": "User requested the dataset insertion/exit labels as spheres only; the baked UV atlas and its phantom material binding were removed.",
+    "removed_files": [
+      "textures/point_labels.png"
+    ],
+    "modified_files": [
+      "phantom.usdc",
+      "point_labels.json",
+      "recording.json",
+      "recording_mesh_preview.json"
+    ],
+    "phantom_change": "All region meshes rebound to the plain pad material; face-varying primvars:st and the PointLabels material removed",
+    "byte_identical_exceptions": [
+      "phantom.usdc"
+    ],
+    "phantom_mesh_attributes_unchanged": true,
+    "label_bindings_unchanged": true,
+    "source_data_modified": false,
+    "alignment_acceptance_changed": false,
+    "display": "The replay builds one visual-only sphere per label at position_world_m, colored display_color_rgb"
   }
 }

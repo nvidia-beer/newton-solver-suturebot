@@ -30,11 +30,11 @@ Positions are metres in the fixed calibrated scene frame, with Z up. Body poses 
 Recorded tools use position replay with estimated visual alignment. Fixture ports anchor the calibrated arm bases. The table follows the fixture feet; the parallel phantom's independently fitted displacement is recorded in the rig report. The transparent endoscope remains rigidly attached to the calibrated stereo optics, with recorded ECM insertion length. Unmeasured housing dimensions and port-midpoint residuals are explicit in `recording.json` `rig_geometry`. `alignment.json` records residuals at original image resolution; absolute metric accuracy is unvalidated. Source names and preparation-script hashes in `provenance.json` document derivation only.
 
 `pad_edge_alignment.json` records a separate constant rigid phantom placement with tools, cameras, fixture and table held fixed. `phantom.T_world_from_native` applies to the unchanged regional geometry. Earlier calibration fit reports describe the predecessor pad placement. Current placement is assessed only within the explicit source-defined playback scope; see its screening and visual-review reports above.
-Both original source labels were rebound onto Region01 after this correction. `point_labels.json` records source pixels, triangle/barycentric bindings and green UV texture. These bindings are conditional on the estimated camera/pad alignment.
+Both original source labels were rebound onto Region01 after this correction. `point_labels.json` records source pixels, triangle/barycentric bindings and the green display color. These bindings are conditional on the estimated camera/pad alignment.
 
 `automatic_fit_metrics.json` records episode-specific image registration, region identification and validation; inherited camera parameters remain explicit priors.
 
-The dataset point labels are rendered through the tetrahedral exterior's USD UV texture. The original source mask remains unchanged. Earlier region3 fits and failed boundary reports remain historical evidence and are superseded for current pad placement.
+The dataset point labels are shown as spheres at their bound points on the tetrahedral exterior. The original source mask remains unchanged. Earlier region3 fits and failed boundary reports remain historical evidence and are superseded for current pad placement.
 
 Needle and thread models are excluded from this example. Their appearances in the original source images are retained. Tools, pad, cameras, fixture, recorded motion and available point labels are unchanged; existing calibration limitations still apply. Historical feature assets and reports were archived separately under the provenance archive ID.
 
@@ -42,7 +42,7 @@ Needle and thread models are excluded from this example. Their appearances in th
 
 The complete examples/assets tree is required. Reusable geometry and tool
 materials live in this platform's `models/` directory. Recording USD layers
-retain placement, calibration, UV/label and scene-specific material opinions;
+retain placement, calibration, label and scene-specific material opinions;
 local rig/phantom layers reference shared geometry. Motion and camera arrays
 and images remain recording-local. The explicit `asset_root` covers only the
 bundled examples/assets tree; no simulator checkout is needed at runtime.

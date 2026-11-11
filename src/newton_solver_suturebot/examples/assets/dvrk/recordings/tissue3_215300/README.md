@@ -30,7 +30,7 @@ Recorded tools use position replay with estimated visual alignment. Fixture port
 `pad_placement.json` records a separate constant phantom translation with tools, cameras, fixture and table held fixed. `phantom.T_world_from_native` applies to the unchanged regional geometry. Earlier calibration fit reports describe the predecessor pad placement. The current translation remains an unvalidated visual estimate.
 Material-label bindings were transported with the pad; their source-pixel displacement is retained in `point_labels.json`.
 
-Dataset point labels are projected to the preserved tetrahedral exterior and rendered through its USD UV texture. `point_labels.json` records the pixel-to-surface bindings and display color. The original source mask is retained unchanged; marker display colors improve visibility without changing label coverage or bindings.
+Dataset point labels are projected to the preserved tetrahedral exterior and shown as spheres at their bound surface points. `point_labels.json` records the pixel-to-surface bindings and display color. The original source mask is retained unchanged; the sphere display color improves visibility without changing label bindings.
 
 Needle and thread models are excluded from this example. Their appearances in the original source images are retained. Tools, pad, cameras, fixture, recorded motion and available point labels are unchanged; existing calibration limitations still apply. Historical feature assets and reports were archived separately under the provenance archive ID.
 
@@ -38,7 +38,7 @@ Needle and thread models are excluded from this example. Their appearances in th
 
 The complete examples/assets tree is required. Reusable geometry and tool
 materials live in this platform's `models/` directory. Recording USD layers
-retain placement, calibration, UV/label and scene-specific material opinions;
+retain placement, calibration, label and scene-specific material opinions;
 local rig/phantom layers reference shared geometry. Motion and camera arrays
 and images remain recording-local. The explicit `asset_root` covers only the
 bundled examples/assets tree; no simulator checkout is needed at runtime.

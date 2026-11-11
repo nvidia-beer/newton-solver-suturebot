@@ -3,8 +3,8 @@
 The implementation, examples and required assets are included in this repository.
 
 Platform geometry and materials are authored once in `examples/assets/dvrk/models/`
-and `examples/assets/versius/models/`. Recordings keep motion, images, calibration
-and small scene layers for placement and UV labels. Relative USD references join
+and `examples/assets/versius/models/`. Recordings keep motion, images, calibration,
+small placement layers and point-label reports. Relative USD references join
 them; fitted fixture and legacy-tool variants stay explicit. The Versius preview
 references the existing `examples/assets/phantom_pad/` volume data. Copy the full
 examples assets tree for a portable export, preserving these relative paths.

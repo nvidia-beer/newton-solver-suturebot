@@ -690,12 +690,10 @@
     "pad_placement.json",
     "pad_placement_correction.json",
     "point_labels.json",
-    "point_labels_source",
-    "textures/point_labels.png"
+    "point_labels_source"
   ],
   "point_labels": {
     "report": "point_labels.json",
-    "texture": "textures/point_labels.png",
     "count": 2,
     "display_color_rgb": [
       0,

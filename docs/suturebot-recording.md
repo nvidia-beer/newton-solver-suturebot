@@ -21,8 +21,8 @@ availability and remaining alignment issues. Enter `q` to quit before the viewer
 It replays the measured tool poses and wrist joints over the original phantom,
 with the RCM fixture, supporting table and transparent endoscope housing in the
 same fitted scene. Four small model/video overlays show the left/right endoscope
-and PSM1/PSM2 wrist cameras. Dataset point labels are UV-textured onto the phantom
-surface. Needle and thread estimates have been removed from the prepared examples
+and PSM1/PSM2 wrist cameras. Dataset insertion/exit point labels appear as green
+spheres on the phantom surface. Needle and thread estimates have been removed from the prepared examples
 and their runtime controls. The source videos are unchanged. This is a kinematic
 scene replay with a static phantom.
 
@@ -55,8 +55,8 @@ The `tissue3_215300_mesh_preview` compatibility name remains available through
 ```
 
 The recordings reference one platform library under `assets/dvrk/models/`.
-Tool meshes and phantom geometry are shared; recording-specific placement,
-phantom UV labels and textures remain with each recording. Fitted fixture and
+Tool meshes and phantom geometry are shared; recording-specific placement and
+point-label reports remain with each recording. Fitted fixture and
 legacy-tool geometry variants are retained explicitly. This preserves recorded
 motion, opening angles, cameras and phantom. The DeBakey shape is an estimate refined against the reference
 photo; four-view calibration remains unfinished. The four recording choices and
@@ -174,7 +174,11 @@ python -m suturebot.simulation.prepare_recording_batch \
 ```
 
 The pipeline extracts source evidence, fits constant transforms, verifies motion
-and input preservation, prepares UV labels and renders review views. It prepares
+and input preservation, binds point labels to the pad surface and renders review
+views. Its label stage also bakes a UV texture atlas, which the bundled recordings
+no longer use: remove that texture, its `PointLabels` material binding and the
+phantom `primvars:st` before publishing (see each recording's
+`provenance.json`, `point_label_texture_removal`). It prepares
 tools, cameras, rig and pad only; caches with needle or thread extensions are
 rebuilt. Publication rejects bundles containing those extensions. Reprepared
 packages need a fresh four-view review. Publication uses `--publish-root` and
@@ -203,7 +207,7 @@ is static; this does not add FEM stepping.
   timing, alignment status and provenance.
 - Scene USD layers and shared model references: tools, cameras, fixture, table,
   endoscope housing and unchanged phantom surface geometry in a common world
-  frame; per-recording placement and UV-label opinions remain separate.
+  frame; per-recording placement opinions remain separate.
 - `motion.npz`: exact source timestamps and body transforms in declared order.
 - `calibration.json`: fitted transforms, camera intrinsics/distortion, source
   evidence, held-out image residuals and explicit accuracy limitations.
@@ -212,8 +216,8 @@ is static; this does not add FEM stepping.
 - `camera_poses.npz`: four optical poses and explicit availability per frame.
 - Prepared camera rays and indexed JPEGs: original camera geometry at the small
   overlay resolution, with no runtime dependency on the source-data checkout.
-- `point_labels.json`, `point_labels_source/`, `textures/`: original point labels,
-  their mesh bindings and the baked UV atlas.
+- `point_labels.json`, `point_labels_source/`: original point labels and their
+  surface bindings; the viewer draws each label as a sphere.
 ## Bounded approach samples
 
 Two additional recordings are bundled as short approaches before visible
@@ -233,7 +237,7 @@ the frame slider and playback use only the declared approach. The later motion
 is available for diagnostics but is not validated as a static-pad replay.
 
 These samples contain tools, the fixture, estimated cameras and pad placement,
-and the existing dataset point labels rendered in green on the mesh.
+and the existing dataset point labels shown as green spheres on the pad.
 Four-camera image thresholds and source-motion preservation are checked
 within each approach. Calibration remains an estimate with `accepted: false`;
 passing those scoped checks does not establish absolute dimensions, exact
@@ -279,7 +283,7 @@ example only loads prepared data.
 `tissue_3/1_needle_pickup/20250428-215248-974340`. It preserves the complete
 supported pickup motion before tissue interaction, with the same conditional
 camera/tool/pad calibration policy as the approaches. Its source recording has
-no clicked-point labels, so it contains no UV markers. All 278 supported source
+no clicked-point labels, so it contains no label spheres. All 278 supported source
 frames retain their recorded tool motion. Pad alignment still differs from the
 videos; the camera calibration remains an estimate. Earlier pose-replay results
 are recorded in the [structured validation report](validation/suturebot-approaches.json).
@@ -334,13 +338,15 @@ clamping the optical pose to a valid endpoint.
 The dataset's two final-left-frame point labels are intersected with the visible
 tetrahedral exterior during preparation. For a hit on triangle $(a,b,c)$,
 the stored barycentric coordinates give $p=\lambda_a a+\lambda_b b+\lambda_c c$,
-with $\sum\lambda=1$. Face-varying USD texture coordinates map each exterior
-triangle into its own atlas tile. Rasterizing the original colored mask through
-the calibrated rays produces material marks without changing vertices, region
-ownership or triangle indices. Visibility testing prevents labels from painting
-through a nearer surface. The existing USD texture path supplies both the
-viewer and camera renderer. These bindings can follow updated triangle vertices,
-but the default replay does not deform them.
+with $\sum\lambda=1$; `point_labels.json` stores the bindings and the resulting
+world point. The replay adds one visual-only sphere per label at that point, so
+the viewer and the camera renderer show the same marks. Its 0.31 mm radius is the
+dataset mark's own footprint: each label is a 9×9-pixel click in the
+1091.9 px-focal left camera about 67 mm from the pad (0.30–0.32 mm on the
+surface). The sphere is centred on the surface, so that footprint stays visible
+without changing vertices, region ownership or triangle indices. The bindings
+can follow updated triangle vertices, but the default replay does not deform
+them.
 
 [_suturebot_cameras.py](../src/newton_solver_suturebot/examples/_suturebot_cameras.py)
 uses the public Newton `SensorCamera` renderer. Lens inversion and frame
@@ -537,7 +543,7 @@ Source: Haworth et al., [SutureBot (2025)](https://suturebot.github.io/static/Su
 | Checking model placement against recorded pixels | [FourCameraOverlay](../src/newton_solver_suturebot/examples/_suturebot_cameras.py) renders actual Newton model geometry through prepared inverse-lens rays and camera-to-world poses, then blends visible surfaces and outlines onto indexed source frames. This rendering/registration workflow is an implementation addition, not a claimed algorithm or calibration result from the paper. Numerical projection tests do not establish accuracy of the fitted recording alignment. |
 | Visible tool-shaft alignment | Offline preparation compares independently observed wrist-image cylinder edges with finite perspective tangents of the retained shaft CAD, and checks the result against actual triangle renders. The [shaft objective](#suturebot-recorded-motion-and-camera-overlays) estimates mount/lens alignment; an own-shaft view cannot independently determine global tool/table height. This is an implementation addition, not a calibration procedure or measured optical specification supplied by the paper. |
 | Fig. 2: pad, RCM fixture and endoscope arrangement | Offline preparation ties each constant arm-base calibration to a fixture port, constrains wrist optical axes parallel to shafts and the pad normal parallel to fixture support, and fits the pad's independent displacement. The source fixture feet define the table plane. A transparent endoscope housing follows the stereo optics; its optical-to-shaft angle is unmeasured. These scene-registration constraints are implementation choices, not measured hand-eye calibration supplied by the paper. |
-| Dataset point targets | Existing final-frame clicked points bind to the unchanged tet exterior through barycentric coordinates and a USD UV atlas. The bindings and static replay surface preserve the supplied material targets. |
+| Dataset point targets | Existing final-frame clicked points bind to the unchanged tet exterior through barycentric coordinates and appear as visual-only spheres at their bound surface points. The bindings and static replay surface preserve the supplied material targets. |
 | Earlier approximate physical rig demonstration | [_suturebot_contact_demo.py](../src/newton_solver_suturebot/examples/_suturebot_contact_demo.py) retains the MuJoCo tools/free needle and sampled two-way FEM contact experiment. Available instrument CAD includes a documented DeBakey surrogate. The [legacy contact method](#legacy-suturebot-rigid-and-deformable-contact-experiment) and press validation are separate from the default recording replay. |
 
 All fitting, source-image decoding and USD preparation remain under the MSc

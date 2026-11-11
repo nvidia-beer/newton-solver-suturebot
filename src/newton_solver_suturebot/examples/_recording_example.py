@@ -4,6 +4,7 @@
 """Shared viewer for prepared USD scenes, pose arrays and camera image sequences."""
 
 import argparse
+import json
 
 import newton
 import newton.examples
@@ -11,6 +12,32 @@ import numpy as np
 import warp as wp
 
 from newton_solver_suturebot.examples._suturebot_recording import Recording
+
+# Dataset labels are 9x9-pixel clicks in the 1091.9 px-focal left camera about
+# 67 mm from the pad: 0.30-0.32 mm on the surface. A sphere centred on the
+# surface point leaves that footprint visible.
+POINT_LABEL_RADIUS = 3.1e-4
+
+
+def add_point_label_spheres(builder, recording):
+    """Add the dataset's insertion/exit labels as visual-only spheres; return shape indices by label."""
+    labels = recording.manifest.get("point_labels")
+    if labels is None:
+        return {}
+    report = json.loads(recording.asset(labels["report"]).read_text())
+    color = tuple(channel / 255.0 for channel in labels["display_color_rgb"])
+    visual = newton.ModelBuilder.ShapeConfig(has_shape_collision=False, has_particle_collision=False)
+    return {
+        point["label"]: builder.add_shape_sphere(
+            -1,
+            xform=wp.transform(wp.vec3(*point["position_world_m"]), wp.quat_identity()),
+            radius=POINT_LABEL_RADIUS,
+            cfg=visual,
+            color=color,
+            label=f"/PointLabels/{point['label']}",
+        )
+        for point in report["points"]
+    }
 
 
 class RecordingExample:
@@ -48,6 +75,7 @@ class RecordingExample:
             self.overlay = None
         builder = newton.ModelBuilder()
         builder.add_usd(str(self.recording.scene_path), collapse_fixed_joints=False, hide_collision_shapes=True)
+        add_point_label_spheres(builder, self.recording)
         self.model = builder.finalize(device=self.device)
         self.model.set_gravity((0, 0, 0))
         self.state_0 = self.model.state()
@@ -165,7 +193,7 @@ class RecordingExample:
             if self.recording.manifest["point_labels"].get("binding_valid") is False:
                 ui.text_wrapped("Green marker bindings are superseded and need refitting.")
             else:
-                ui.text("Dataset point labels on phantom surface")
+                ui.text("Dataset insertion/exit labels: spheres on the phantom")
 
     def camera_gui(self, ui):
         if self.show_overlays and self.overlay is not None:

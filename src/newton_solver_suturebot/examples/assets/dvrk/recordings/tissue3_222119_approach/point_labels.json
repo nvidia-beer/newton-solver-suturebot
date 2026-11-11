@@ -3,7 +3,6 @@
   "camera": "left",
   "annotation_frame": 574,
   "annotation_semantics": "final-frame insertion and exit pixels; static material labels, not contact events",
-  "texture": "textures/point_labels.png",
   "source_csv": "point_labels_source/clicked_point.csv",
   "source_mask": "point_labels_source/clicked_point_mask.png",
   "source_csv_sha256": "2055ee6cb6e427d20606a90d900756951823b6afe6453c79ad0f59a035003c7b",
@@ -14,19 +13,12 @@
     255,
     0
   ],
-  "display_color_policy": "All labelled texels use display_color_rgb for visibility; source pixels and material bindings are unchanged",
+  "display_color_policy": "Label spheres use display_color_rgb for visibility; source pixels and surface bindings are unchanged",
   "source_nonzero_pixels": 162,
   "visible_source_pixels": 162,
-  "painted_triangles": 9,
-  "atlas_size": [
-    256,
-    256
-  ],
-  "tile_size": 64,
-  "uv_interpolation": "faceVarying; disjoint triangle tiles with filtering gutters",
   "geometry_arrays_unchanged": true,
   "geometry_role": "Original tetrahedral exterior boundary triangles and reference vertex indices; replay surface is static",
-  "material_transport": "With updated triangle vertices X_i(t), the label is sum_i barycentric_i*X_i(t); fixed face-varying UVs travel with that face. This replay does not evolve FEM vertices.",
+  "material_transport": "With updated triangle vertices X_i(t), the label is sum_i barycentric_i*X_i(t). The replay surface is static, so the viewer draws each label as a sphere at position_world_m; this replay does not evolve FEM vertices.",
   "camera_poses_sha256": "9696a79c554178c474860b1713d50f2882d1745923d80a1afe20886ef6b6209d",
   "motion_sha256": "f09a6a6b7f00e12441a7385b4976b2beba39f9348627be7fee8c69be2e75750b",
   "geometry_arrays_sha256": "83f19c60e99bc20f4ea33569365180d719f27e28c661ae9950cd2f0b2a9e883a",
@@ -54,10 +46,6 @@
         0.039630873214588615,
         -0.03814256546691876,
         -0.0061290569508556225
-      ],
-      "uv": [
-        0.2663442244356702,
-        0.714065365593342
       ],
       "ray_reconstruction_error_m": 1.661074289248109e-09,
       "translated_projection_px": [
@@ -89,10 +77,6 @@
         0.03980098074150028,
         -0.04408590778025758,
         -0.0062484304473112845
-      ],
-      "uv": [
-        0.35143612674437463,
-        0.39124439377337694
       ],
       "ray_reconstruction_error_m": 3.343447813388853e-09,
       "translated_projection_px": [

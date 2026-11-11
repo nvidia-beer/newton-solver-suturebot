@@ -273,8 +273,8 @@
       "bytes": 854480
     },
     "phantom.usdc": {
-      "sha256": "bb880b7541b65eacb5738babf042a930fa8835cac2126eba9e34dfe6c7f25b97",
-      "bytes": 12380687
+      "sha256": "faf3142bb0dccebc18ffa23a817e02a5afb0fa49633bcd931bf9fbf8c7788921",
+      "bytes": 12382101
     },
     "motion.npz": {
       "sha256": "c2d51121053594d7e589d98147ac8e12432203934373c229fb4737df7a960314",
@@ -377,8 +377,8 @@
       "bytes": 585
     },
     "point_labels.json": {
-      "sha256": "45ccec6ccdc53f0133176f39403e7a9f53834e3ab9a52d2d7068d5096b0015cf",
-      "bytes": 3393
+      "sha256": "bd3c8bb31237fe1436fd17b6f9352ce0b2b585fa02cdc7fe13ae467b84d0a1bc",
+      "bytes": 3067
     },
     "point_labels_source": {
       "file_count": 2,
@@ -437,10 +437,6 @@
     "source_phases.json": {
       "sha256": "8336faa311506d15a370d223f2552631e70ff331c5c6390fe284361c646a21a5",
       "bytes": 38811
-    },
-    "textures/point_labels.png": {
-      "sha256": "aba45d8c1181887ab0010caa45cb3f7be0fae54465d40ea393ebe3067ddf8f61",
-      "bytes": 2109
     },
     "wrist_export_validation.json": {
       "sha256": "692312d8f4b64b292c49b109f3b6e99e6f6d80d387aff65d2c940861e7057b23",
@@ -541,5 +537,26 @@
     "retained_numerical_payloads_byte_identical": true,
     "source_data_modified": false,
     "alignment_acceptance_changed": false
+  },
+  "point_label_texture_removal": {
+    "date": "2026-11-11",
+    "reason": "User requested the dataset insertion/exit labels as spheres only; the baked UV atlas and its phantom material binding were removed.",
+    "removed_files": [
+      "textures/point_labels.png"
+    ],
+    "modified_files": [
+      "phantom.usdc",
+      "point_labels.json",
+      "recording.json"
+    ],
+    "phantom_change": "All region meshes rebound to the plain pad material; face-varying primvars:st and the PointLabels material removed",
+    "byte_identical_exceptions": [
+      "phantom.usdc"
+    ],
+    "phantom_mesh_attributes_unchanged": true,
+    "label_bindings_unchanged": true,
+    "source_data_modified": false,
+    "alignment_acceptance_changed": false,
+    "display": "The replay builds one visual-only sphere per label at position_world_m, colored display_color_rgb"
   }
 }

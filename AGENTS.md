@@ -15,7 +15,7 @@ docstring and a `__main__` guard. Keep the five SutureBot examples and their
 required data bundled; external dataset preparation is optional.
 
 Keep shared platform models under `assets/dvrk/models` and `assets/versius/models`;
-recordings hold motion, images, calibration and small placement/UV-label layers.
+recordings hold motion, images, calibration, small placement layers and point-label reports.
 Their `asset_root: "../../../"` permits references within the common examples
 assets tree. Portable exports must include that tree, not just a recording folder.
 External preparation lives in the source project's `preparation/newton_shared_assets/`,
