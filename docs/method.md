@@ -1271,3 +1271,35 @@ There is no friction between the thread and itself or the needle, and an
 element keeps only its nearest contact of each kind. Backward recording is disabled in its kernels;
 no gradient is claimed. These equations and the examples' checks do not
 establish calibrated suture behaviour or a frame rate.
+
+## Independent action-controlled scenes
+
+The `parallel` module executes the existing accepted-step needle/FEM algorithm
+in spawned processes, one scene per process. It changes scheduling and the
+source of the desired rigid pose, while preserving the implicit drive, FEM
+operator, contact laws, convergence criteria, adaptive timestep retry and
+accepted-event transaction. Every process owns its native rigid state, tissue
+arrays, solver warm starts and material history. There is no shared mechanical
+state and no cross-scene contact. A selected reset rebuilds that scene only.
+
+A normalized six-vector increments the held world-space position and rotation
+target. Its rotation vector is converted to a quaternion and left-multiplied
+onto the target quaternion. Target jumps carry zero velocity feedforward, as
+in manual insertion, so discontinuous actions do not invent a target-velocity
+impulse. The drive's finite wrench determines actual motion. The reference
+insertion plan remains optional privileged information; it is never applied
+as a kinematic state trajectory.
+
+Only reset may initialize the body pose. Seeded translation perturbations are
+independent across scene IDs and advance only when the corresponding scene
+resets. Event-to-target errors are frozen against the accepted state's deformed
+material targets when an entry or exit is committed. A later tissue deformation
+therefore cannot change the accuracy of an earlier event.
+
+The process interface is not differentiable across IPC and makes no new
+gradient claim. In Warp 1.17, `ScopedStream` changes the shared device stream
+and host array conversions temporarily select the null stream; using these
+existing solver paths from independent Python threads would race stream
+selection. Process isolation avoids that hazard. Its performance must be
+measured with loaded contact and identical numerical budgets; inactive tissue
+and additional CUDA contexts can substantially change throughput.

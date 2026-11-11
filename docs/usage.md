@@ -374,3 +374,63 @@ is stepped once per accepted needle step; on CUDA that step is a captured
 graph, while the needle and the tissue step as in `fem_needle_insertion`.
 The stitch geometry, thread stiffness and contact parameters are not
 calibrated against measurements, and no frame rate is claimed here.
+
+## Parallel action-controlled insertion scenes
+
+`newton_solver_suturebot.parallel` provides `SutureSceneConfig` and
+`ParallelSutureScenes` for training integrations. Each spawned worker owns an
+independent native MuJoCo needle, FEM region, convergence workspaces and accepted
+puncture history. Every worker receives its action before the parent waits for
+results. This is process parallelism; it is not a fused GPU multi-world solver.
+
+```python
+import numpy as np
+from newton_solver_suturebot.parallel import ParallelSutureScenes, SutureSceneConfig
+
+if __name__ == "__main__":
+    config = SutureSceneConfig(device="cuda:0", reset_position_noise_m=0.0007, seed=42)
+    with ParallelSutureScenes(config, num_envs=8, log_dir="results/parallel") as scenes:
+        geometry = scenes.geometry()
+        states = scenes.step(np.zeros((8, 6)))
+        states_to_reset = scenes.reset([0, 3])
+```
+
+Actions are finite values in `[-1, 1]`, ordered world-space translation and
+rotation vector `[dx, dy, dz, rx, ry, rz]`. Each control step increments the
+held servo target by up to 0.1 mm per translation axis and 0.01 rad per rotation
+axis. A zero action holds the previous target. The finite wrench drive advances
+the actual needle; policy steps never overwrite its simulated pose. The default
+control interval is 1/60 s with four nominal physical substeps, and retains the
+source example's material, interaction and convergence settings.
+
+`step()` and `observe()` return lists of state dictionaries with actual needle
+pose (XYZ plus quaternion XYZW), velocity, tip, deformed material entry/exit
+targets, FEM positions and velocities, and the source numerical diagnostics.
+Pass `include_tissue=False` to `step()` or `observe()` for a compact privileged
+teacher observation: material landmarks are gathered on device and full tissue
+positions/velocities are omitted from IPC. The default includes them for camera
+rendering and physical validation.
+Accepted events record `entry_error_m` and `exit_error_m` against the material
+targets at the event time. Evaluate task success from accepted chronological
+entry/exit events and physics failure status, not target pose proximity.
+`geometry()` returns fixed topology, canonical ready pose, needle centerline,
+material normals and reference insertion plan. Reference-plan information is
+privileged controller/validation data, not a camera observation.
+
+Resets rebuild only selected scenes, clearing numerical warm starts and
+puncture history. Optional initial translation noise uses independent seeded
+streams per scene; its Z offset is upward. It changes actual and target pose
+only during reset before physical time advances. The default noise is zero.
+
+The scene currently includes tissue and a freely simulated needle. It has no
+articulated robot, gripper, thread, knot or camera renderer. Training projects
+can render the returned geometry from separate calibrated left/right cameras.
+The insertion/contact laws remain illustrative and uncalibrated. Benchmark
+loaded contact separately from motion above resting tissue; eight active
+processes alone do not imply an eightfold throughput increase.
+
+The optional authored-mesh isolation and seeded-reset tests run with:
+
+```bash
+NEWTON_TEST_PARALLEL=1 NEWTON_TEST_DEVICE=cuda:0 uv run --locked python -m unittest discover -s tests -p test_parallel_scenes.py -v
+```
