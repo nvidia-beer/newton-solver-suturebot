@@ -44,7 +44,6 @@ class TestPreparedFEMStep(unittest.TestCase):
                 preconditioner_type="block_diag",
                 linear_solver_maxiter=150,
                 linear_solver_tolerance=1e-7,
-                self_contact_ke=0,
                 linear_damping=0.4,
                 min_stretch=0.98,
                 max_stretch=1.02,
@@ -187,7 +186,7 @@ class TestPreparedFEMStep(unittest.TestCase):
             builder.add_particle(pos=wp.vec3(*point), vel=wp.vec3(0.0), mass=0.002)
         builder.add_triangle(0, 1, 2, tri_ke=30, tri_ka=50, tri_kd=0.02)
         model = builder.finalize(device=self.device)
-        solver = SolverFEM(model, dt=self.dt, preconditioner_type="block_diag", self_contact_ke=0)
+        solver = SolverFEM(model, dt=self.dt, preconditioner_type="block_diag")
         current, actual, expected = model.state(), model.state(), model.state()
         current.particle_qd.assign(np.arange(9, dtype=np.float32).reshape(3, 3) * 0.001)
         load = wp.array(np.full((3, 3), 0.002, dtype=np.float32), dtype=wp.vec3, device=self.device)

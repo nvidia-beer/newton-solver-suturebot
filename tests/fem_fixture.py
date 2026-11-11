@@ -82,7 +82,6 @@ class Example:
             ground_plane=(0.0, 0.0, 1.0, 0.0),
             ground_ke=1.0e3,
             ground_kd=5.0,
-            self_contact_ke=0.0,
         )
         self.state_0, self.state_1 = self.model.state(), self.model.state()
         self._tet_indices = self.model.tet_indices.numpy()

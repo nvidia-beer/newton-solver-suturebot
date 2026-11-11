@@ -57,7 +57,6 @@ def make_solver(model, *, differentiable=True, dt=DT, **options):
         linear_solver_maxiter=128,
         solver_type="cg",
         preconditioner_type="block_diag",
-        self_contact_ke=0.0,
         min_stretch=-1.0,
     )
     args.update(options)

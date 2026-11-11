@@ -238,8 +238,8 @@ def _buffer(solver, key, reference, grad):
 def prepare(solver):
     if solver._streaming is not None or solver._component_scaling is not None:
         raise NotImplementedError("Differentiation requires fixed topology without streaming/component scaling")
-    if solver._soft_surface_contacts is not None or solver.model.particle_ke > 0.0:
-        raise NotImplementedError("Differentiation supports analytic ground contact; disable particle/surface contacts")
+    if solver._soft_surface_contacts is not None:
+        raise NotImplementedError("Differentiation supports analytic ground contact; disable surface contacts")
     fixed = [
         "particle_mass",
         "particle_inv_mass",

@@ -17,7 +17,7 @@
 
 Handles tetrahedral and/or hexahedral FEM elements based on what is present in
 the model (``model.tet_count`` and ``self.hex_count``), plus springs, triangle
-membranes, gravity, particle-particle interactions, and soft-rigid contacts.
+membranes, gravity and an optional analytic ground plane.
 
 Design
 ======
@@ -85,9 +85,7 @@ from .kernels import (
     eval_gravity_from_array,
     eval_hexahedra,
     eval_linear_damping_kernel,
-    eval_particle_forces,
     eval_particle_ground_contacts,
-    eval_soft_contacts,
     eval_springs,
     eval_springs_linear_and_torque,
     eval_tet_activations,
@@ -137,10 +135,9 @@ class SolverFEM(SolverBase):
     """Linearly implicit Backward-Euler FEM soft-body solver.
 
     Handles tetrahedral and/or hexahedral Neo-Hookean FEM, springs, triangle
-    membrane FEM, gravity, particle-particle interactions, soft-rigid contacts,
-    and an optional analytic ground plane.  Which element types are active is
-    determined by ``model.tet_count`` and ``self.hex_count``; both may be
-    non-zero simultaneously.
+    membrane FEM, gravity, and an optional analytic ground plane.  Which
+    element types are active is determined by ``model.tet_count`` and
+    ``self.hex_count``; both may be non-zero simultaneously.
 
     Args:
         model: The Newton model owning the particles.
@@ -174,9 +171,6 @@ class SolverFEM(SolverBase):
         torque_damping: Spring bend-torque damping [N·m·s/rad].
         spring_rest_direction: Per-spring rest-frame direction vectors,
             shape ``[spring_count, 3]``. ``None`` means no torque.
-        self_contact_ke: Particle-particle self-contact penalty stiffness [N/m].
-            Pass ``0.0`` to disable; the hash-grid build is skipped entirely.
-        self_contact_kd: Particle-particle self-contact damping [N·s/m].
         linear_damping: Mass-proportional Rayleigh damping coefficient [1/s].
         differentiable: Enable owned per-step data and a checked sparse
             transpose-solve VJP on native ``wp.Tape``. The cached matrix is
@@ -227,8 +221,6 @@ class SolverFEM(SolverBase):
         torque_stiffness: float = 0.0,
         torque_damping: float = 0.0,
         spring_rest_direction: "object | None" = None,
-        self_contact_ke: float = 1.0e3,
-        self_contact_kd: float = 1.0e2,
         linear_damping: float = 0.0,
         differentiable: bool = False,
         enable_tet_activations: bool = False,
@@ -261,10 +253,17 @@ class SolverFEM(SolverBase):
                 raise ValueError("tet_volume_weights must be finite and nonnegative")
 
         self._tet_volume_weights = tet_volume_weights
+        # Tangent-value bookkeeping for projected-operator reuse. The version
+        # counts host-visible assembled-value changes; a mutation recorded
+        # inside CUDA graph capture cannot be counted on replay, so it
+        # permanently disables version trust for this solver.
+        self._tangent_version = 0
+        self._tangent_refresh_captured = False
+        # Opt-in for owners (the needle coupler) that re-project eagerly
+        # before every captured-graph launch, allowing captured FEM trials to
+        # omit the per-trial projection of unchanged assembled values.
+        self._projection_before_graph = False
         super().__init__(model=model)
-
-        model.particle_ke = float(self_contact_ke)
-        model.particle_kd = float(self_contact_kd)
 
         self.mass = float(mass)
         self.linear_damping = float(linear_damping)
@@ -272,6 +271,17 @@ class SolverFEM(SolverBase):
         self.solver_type = solver_type
         self.linear_solver_maxiter = linear_solver_maxiter
         self.linear_solver_use_cuda_graph = bool(linear_solver_use_cuda_graph)
+        # Chebyshev acceleration of the block-Jacobi preconditioner for the
+        # conditional CUDA CG path: degree >= 2 enables it, 0 keeps the plain
+        # 3x3 block-Jacobi inverse. The spectral interval is
+        # [lambda_max/ratio, lambda_max] from a free-subspace Gershgorin bound.
+        self.linear_solver_chebyshev_degree = 0
+        self.linear_solver_chebyshev_ratio = 256.0
+        self._chebyshev_instances = {}
+        # Solve the Krylov system on free nodes only when stationary Dirichlet
+        # boundaries exist: gathers/scatters at solve boundaries, identical
+        # block values, exact zeros dropped from every inner product.
+        self.linear_solver_compact = True
         # 0 = graph-capturable, with device-side early exit when conditional
         # graphs are enabled and supported; otherwise runs the full budget.
         # >0 = host-side residual checks, which are not graph-capturable.
@@ -573,9 +583,7 @@ class SolverFEM(SolverBase):
             self.eval_tetrahedral_forces(model, control, state_in),
             self.eval_hexahedral_forces(model, control, state_in),
             self.eval_triangle_forces(model, control, state_in),
-            self.eval_particle_particle_forces(model, control, state_in),
             self.eval_particle_ground_contact_forces(model, control, state_in),
-            self.eval_soft_contact_forces(model, state_in, contacts),
             self.eval_gravity_forces(model),
             self.eval_linear_damping_forces(model, state_in),
             surface_contact_forces,
@@ -588,7 +596,26 @@ class SolverFEM(SolverBase):
                 device=model.device,
             )
 
+    def _mark_tangent_values_changed(self) -> None:
+        self._tangent_version += 1
+        if self.model.device.is_capturing:
+            self._tangent_refresh_captured = True
+
+    def _projection_values_version(self):
+        """Version token for skipping redundant projected-value refreshes.
+
+        ``None`` requests an unconditional refresh: when a tangent mutation was
+        ever captured (replays mutate values without advancing the counter), or
+        during capture unless the owner re-projects before every graph launch.
+        """
+        if self._tangent_refresh_captured:
+            return None
+        if self.model.device.is_capturing and not self._projection_before_graph:
+            return None
+        return self._tangent_version
+
     def _write_element_blocks(self, particle_q: wp.array[wp.vec3], dt: float) -> None:
+        self._mark_tangent_values_changed()
         model = self.model
         if model.tet_count > 0:
             wp.launch(
@@ -1012,6 +1039,7 @@ class SolverFEM(SolverBase):
         Hessian blocks are written here for the rest pose (F=I) and then
         refreshed per-step via :meth:`_rebuild_element_blocks`.
         """
+        self._mark_tangent_values_changed()
         offset = 0
         particle_q = model.particle_q if particle_q is None else particle_q
 
@@ -1199,6 +1227,9 @@ class SolverFEM(SolverBase):
             ],
             device=self.model.device,
         )
+        if self._fixed_particles is not None and self._fixed_particles.compact_matrix is not None:
+            self._fixed_particles.gather_diagonal(self._pc_inv_diag)
+        self._refresh_chebyshev()
 
     def _linear_solver_settings(self, tolerance=None):
         """Numerical settings shared by normal and captured solve workspaces."""
@@ -1214,11 +1245,93 @@ class SolverFEM(SolverBase):
             self.linear_solver_check_every,
             self.linear_solver_tolerance if tolerance is None else tolerance,
             use_cuda_graph,
+            int(self.linear_solver_chebyshev_degree) if use_cuda_graph else 0,
+            bool(self.linear_solver_compact and use_cuda_graph),
         )
+
+    def _chebyshev_preconditioner(self, operator, inverse_diagonal):
+        """Create or reuse a Chebyshev acceleration of the block-Jacobi inverse."""
+        from .chebyshev import ChebyshevJacobi  # noqa: PLC0415
+
+        operator = aslinearoperator(operator)
+        key = (
+            id(operator),
+            inverse_diagonal.ptr,
+            int(self.linear_solver_chebyshev_degree),
+            float(self.linear_solver_chebyshev_ratio),
+        )
+        instance = self._chebyshev_instances.get(key)
+        if instance is None:
+            if len(self._chebyshev_instances) >= 4:
+                self._chebyshev_instances.clear()
+            instance = ChebyshevJacobi(
+                operator,
+                inverse_diagonal,
+                degree=int(self.linear_solver_chebyshev_degree),
+                ratio=float(self.linear_solver_chebyshev_ratio),
+                device=self.model.device,
+            )
+            self._chebyshev_instances[key] = instance
+            self._refresh_chebyshev()
+        return instance
+
+    def _refresh_chebyshev(self):
+        # The spectral bound always comes from the assembled matrix and its
+        # full-indexed inverse diagonal: the free-free blocks are identical in
+        # the compact formulation, so one bound serves every instance.
+        fixed = None if self._fixed_particles is None else self._fixed_particles.mask
+        for instance in self._chebyshev_instances.values():
+            instance.refresh(self.A_bsr, fixed=fixed, bound_diagonal=self._pc_inv_diag)
+
+    def _compact_jacobi(self, fixed):
+        operator = getattr(fixed, "compact_preconditioner", None)
+        if operator is None or operator.shape[0] != fixed.free.size:
+            count = fixed.free.size
+            diagonal = fixed.compact_diagonal
+
+            def compact_jacobi_mv(x, y, z, alpha, beta):
+                wp.launch(
+                    kernel=block_jacobi_mv_kernel,
+                    dim=count,
+                    inputs=[diagonal, x, y, z, wp.float32(alpha), wp.float32(beta)],
+                    device=self.model.device,
+                )
+
+            operator = LinearOperator((count, count), wp.vec3, self.model.device, compact_jacobi_mv)
+            fixed.compact_preconditioner = operator
+        return operator
 
     def _make_linear_solver(self, operator, inverse, settings, *, rhs=None, increment=None):
         """Allocate persistent Krylov scratch without running a discarded solve."""
-        kind, maxiter, check_every, tolerance, use_cuda_graph = settings
+        kind, maxiter, check_every, tolerance, use_cuda_graph, chebyshev_degree, compact = settings
+        standard = (
+            kind == "cg"
+            and inverse is self.M_bsr
+            and self.preconditioner_type == "block_diag"
+            and self._pc_inv_diag is not None
+            and self._streaming is None
+        )
+        fixed = self._fixed_particles
+        compact_solve = (
+            compact
+            and standard
+            and rhs is None
+            and increment is None
+            and fixed is not None
+            and getattr(fixed, "compact_operator", None) is not None
+            and operator is fixed.operator
+        )
+        if compact_solve:
+            fixed.gather_diagonal(self._pc_inv_diag)
+            operator = fixed.compact_operator
+            rhs, increment = fixed.compact_rhs, fixed.compact_increment
+            inverse = self._compact_jacobi(fixed)
+            if chebyshev_degree >= 2:
+                inverse = self._chebyshev_preconditioner(operator, fixed.compact_diagonal).preconditioner
+        elif chebyshev_degree >= 2 and standard:
+            # Same matrix, right-hand side and stopping rule; only the SPD
+            # preconditioner improves. See chebyshev.py for the construction.
+            inverse = self._chebyshev_preconditioner(operator, self._pc_inv_diag).preconditioner
         solve = {"cg": cg, "bicgstab": bicgstab, "gmres": gmres, "cr": cr}.get(kind)
         if solve is None:
             raise ValueError(f"Invalid solver type: {kind}")
@@ -1236,7 +1349,7 @@ class SolverFEM(SolverBase):
                     batch_offsets=wp.array([0, scalar_count], dtype=int, device=self.model.device),
                     max_batch_length=scalar_count,
                 )
-        return solve(
+        functor = solve(
             operator,
             self._normalized_rhs if rhs is None else rhs,
             self.dv if increment is None else increment,
@@ -1250,6 +1363,12 @@ class SolverFEM(SolverBase):
             use_cuda_graph=use_cuda_graph,
             run=False,
         )
+        # Callers pass M explicitly on every call; record the preconditioner
+        # this workspace was built around so they apply the same one.
+        functor.bound_preconditioner = inverse
+        functor.compact_solve = compact_solve
+        functor.bound_rhs = self._normalized_rhs if rhs is None else rhs
+        return functor
 
     def implicit_integration(
         self,
@@ -1293,7 +1412,7 @@ class SolverFEM(SolverBase):
         inverse = self.M_bsr
         if self._fixed_particles is not None:
             self._fixed_particles.project_rhs(rhs)
-            if self._fixed_particles.prepare(self.A_bsr):
+            if self._fixed_particles.prepare(self.A_bsr, values_version=self._projection_values_version()):
                 self._lin_solver = None
                 self._lin_solver_key = None
             operator = self._fixed_particles.operator
@@ -1322,7 +1441,14 @@ class SolverFEM(SolverBase):
         if self._lin_solver is None or self._lin_solver_key != key:
             self._lin_solver = self._make_linear_solver(operator, inverse, key)
             self._lin_solver_key = key
-        result = self._lin_solver(b=self._normalized_rhs, M=inverse)
+        if getattr(self._lin_solver, "compact_solve", False):
+            self._fixed_particles.gather_solve_operands(self._normalized_rhs, self.dv)
+        result = self._lin_solver(
+            b=getattr(self._lin_solver, "bound_rhs", self._normalized_rhs),
+            M=getattr(self._lin_solver, "bound_preconditioner", inverse),
+        )
+        if getattr(self._lin_solver, "compact_solve", False):
+            self._fixed_particles.scatter_increment(self.dv)
         wp.launch(
             restore_linear_increment,
             dim=model.particle_count,
@@ -1474,40 +1600,6 @@ class SolverFEM(SolverBase):
             )
         return forces
 
-    def eval_particle_particle_forces(self, model: Model, control: Control, state: State):
-        """Hash-grid particle-particle penalty + Coulomb friction [N]."""
-        forces = self._forces("particle")
-        if (
-            model.particle_ke <= 0.0
-            or model.particle_count <= 1
-            or model.particle_max_radius <= 0.0
-            or model.particle_grid is None
-        ):
-            return forces
-        search_radius = model.particle_max_radius * 2.0 + model.particle_cohesion
-        with wp.ScopedDevice(model.device):
-            model.particle_grid.build(state.particle_q, radius=search_radius)
-        wp.launch(
-            kernel=eval_particle_forces,
-            dim=model.particle_count,
-            inputs=[
-                model.particle_grid.id,
-                state.particle_q,
-                state.particle_qd,
-                model.particle_radius,
-                model.particle_flags,
-                model.particle_ke,
-                model.particle_kd,
-                model.particle_kf,
-                model.particle_mu,
-                model.particle_cohesion,
-                model.particle_max_radius,
-            ],
-            outputs=[forces],
-            device=model.device,
-        )
-        return forces
-
     def eval_particle_ground_contact_forces(self, model: Model, control: Control, state: State):
         """Particle vs analytic ground plane (penalty + Coulomb friction) [N].
 
@@ -1531,33 +1623,6 @@ class SolverFEM(SolverBase):
                 self._ground_mu,
                 self._ground_plane,
                 self._get_gravity_array(model),
-            ],
-            outputs=[forces],
-            device=model.device,
-        )
-        return forces
-
-    def eval_soft_contact_forces(self, model: Model, state: State, contacts: Contacts):
-        """Force-based soft-rigid contact from ``model.collide(state)`` [N]."""
-        forces = self._forces("soft_contact")
-        if contacts is None or not hasattr(contacts, "soft_contact_count"):
-            return forces
-        wp.launch(
-            kernel=eval_soft_contacts,
-            dim=contacts.soft_contact_max,
-            inputs=[
-                state.particle_q,
-                state.particle_qd,
-                contacts.soft_contact_count,
-                contacts.soft_contact_particle,
-                contacts.soft_contact_body_pos,
-                contacts.soft_contact_body_vel,
-                contacts.soft_contact_normal,
-                model.soft_contact_ke,
-                model.soft_contact_kd,
-                model.soft_contact_kf,
-                model.soft_contact_mu,
-                model.particle_radius,
             ],
             outputs=[forces],
             device=model.device,

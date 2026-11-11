@@ -108,7 +108,6 @@ def optimize_load(*, iterations=15, device="cpu"):
         preconditioner_type="block_diag",
         differentiable=True,
         min_stretch=-1.0,
-        self_contact_ke=0.0,
     )
     reference = wp.array([-0.2], dtype=float, device=device, requires_grad=True)
     target = wp.clone(rollout(model, solver, weights, reference)[-1].particle_q, requires_grad=False)

@@ -50,6 +50,52 @@ def triangle_data(id: wp.uint64, edges: wp.array[float]):
     _triangle(id, wp.tid(), edges)
 
 
+# Identical bound/edge arithmetic; faces whose vertices cannot move retain the
+# values this helper already wrote for them, which recomputing would reproduce.
+@wp.func_native("""
+wp::Mesh& mesh = *(wp::Mesh*)id;
+if (index < mesh.num_tris && face_dynamic.data[index] != 0) {
+    int i=mesh.indices.data[3*index];
+    int j=mesh.indices.data[3*index+1];
+    int k=mesh.indices.data[3*index+2];
+    wp::vec3 p=mesh.points.data[i], q=mesh.points.data[j], r=mesh.points.data[k];
+    mesh.lowers[index] = wp::min(wp::min(p,q),r);
+    mesh.uppers[index] = wp::max(wp::max(p,q),r);
+    edges.data[index] = wp::length(p-q)+wp::length(p-r)+wp::length(q-r);
+}
+if (index < mesh.bvh.max_nodes) mesh.bvh.node_counts[index] = 0;
+""")
+def _triangle_masked(id: wp.uint64, index: int, face_dynamic: wp.array[int], edges: wp.array[float]): ...
+
+
+@wp.kernel(enable_backward=False)
+def triangle_data_masked(id: wp.uint64, face_dynamic: wp.array[int], edges: wp.array[float]):
+    _triangle_masked(id, wp.tid(), face_dynamic, edges)
+
+
+@wp.func_native("""
+const wp::Mesh& mesh = *(const wp::Mesh*)id;
+const wp::BVH& bvh = mesh.bvh;
+if (index < bvh.max_nodes) {
+    const wp::BVHPackedNodeHalf& lower = bvh.node_lowers[index];
+    const wp::BVHPackedNodeHalf& upper = bvh.node_uppers[index];
+    int flag = 0;
+    if (lower.b) {
+        for (int k = lower.i; k < upper.i; ++k) {
+            if (face_dynamic.data[bvh.primitive_indices[k]] != 0) flag = 1;
+        }
+    }
+    node_dynamic.data[index] = flag;
+}
+""")
+def _leaf_flags(id: wp.uint64, index: int, face_dynamic: wp.array[int], node_dynamic: wp.array[int]): ...
+
+
+@wp.kernel(enable_backward=False)
+def leaf_flags(id: wp.uint64, face_dynamic: wp.array[int], node_dynamic: wp.array[int]):
+    _leaf_flags(id, wp.tid(), face_dynamic, node_dynamic)
+
+
 @wp.kernel(enable_backward=False)
 def reduce_edges(edges: wp.array[float], partial: wp.array[wp.float64]):
     chunk = wp.tid()
@@ -193,6 +239,126 @@ def refit_leaves(id: wp.uint64):
     _refit_leaf(id, wp.tid())
 
 
+# The walk, hierarchy handoff and internal-node updates are identical to
+# _refit_leaf. Only the per-primitive leaf bound recomputation is skipped for
+# leaves whose primitives cannot move; their stored bounds equal what the
+# recomputation would produce, so every updated node receives identical values.
+@wp.func_native("""
+#if defined(__CUDA_ARCH__)
+wp::Mesh& mesh = *(wp::Mesh*)id;
+wp::BVH& bvh = mesh.bvh;
+const int n = bvh.num_leaf_nodes;
+const int* parents=bvh.node_parents;
+int* child_count=bvh.node_counts;
+const int* primitive_indices=bvh.primitive_indices;
+wp::BVHPackedNodeHalf* node_lowers=bvh.node_lowers;
+wp::BVHPackedNodeHalf* node_uppers=bvh.node_uppers;
+const wp::vec3* item_lowers=bvh.item_lowers;
+const wp::vec3* item_uppers=bvh.item_uppers;
+using wp::BVHPackedNodeHalf;
+using wp::bounds3;
+using wp::vec3;
+using wp::min;
+using wp::max;
+    if (index < n) {
+        bool leaf = node_lowers[index].b;
+        int parent = parents[index];
+
+        if (leaf) {
+            BVHPackedNodeHalf& lower = node_lowers[index];
+            BVHPackedNodeHalf& upper = node_uppers[index];
+            // update the leaf node
+
+            // Single-node trees store the root leaf without a parent.
+            if ((parent == -1 || !node_lowers[parent].b) && node_dynamic.data[index] != 0) {
+                const int start = lower.i;
+                const int end = upper.i;
+
+                bounds3 bound;
+                for (int primitive_counter = start; primitive_counter < end; primitive_counter++) {
+                    const int primitive = primitive_indices[primitive_counter];
+                    bound.add_bounds(item_lowers[primitive], item_uppers[primitive]);
+                }
+                (vec3&)lower = bound.lower;
+                (vec3&)upper = bound.upper;
+            }
+        } else {
+            // only keep leaf threads
+            return;
+        }
+
+        // update hierarchy
+        for (;;) {
+            parent = parents[index];
+            // reached root
+            if (parent == -1)
+                return;
+
+            // ensure all writes are visible
+            __threadfence();
+
+            int finished = atomicAdd(&child_count[parent], 1);
+
+            // if we have are the last thread (such that the parent node is now complete)
+            // then update its bounds and move onto the next parent in the hierarchy
+            if (finished == 1) {
+                BVHPackedNodeHalf& parent_lower = node_lowers[parent];
+                BVHPackedNodeHalf& parent_upper = node_uppers[parent];
+                if (parent_lower.b)
+                // a packed leaf node can still be a parent in LBVH, we need to recompute its bounds
+                // since we've lost its left and right child node index in the muting process
+                {
+                    // update the leaf node
+                    int parent_parent = parents[parent];
+
+                    // only need to compute bound when this is a valid leaf node
+                    if ((parent_parent == -1 || !node_lowers[parent_parent].b) && node_dynamic.data[parent] != 0) {
+                        const int start = parent_lower.i;
+                        const int end = parent_upper.i;
+                        bounds3 bound;
+                        for (int primitive_counter = start; primitive_counter < end; primitive_counter++) {
+                            const int primitive = primitive_indices[primitive_counter];
+                            bound.add_bounds(item_lowers[primitive], item_uppers[primitive]);
+                        }
+
+                        (vec3&)parent_lower = bound.lower;
+                        (vec3&)parent_upper = bound.upper;
+                    }
+                } else {
+                    const int left_child = parent_lower.i;
+                    const int right_child = parent_upper.i;
+
+                    vec3 left_lower = (vec3&)(node_lowers[left_child]);
+                    vec3 left_upper = (vec3&)(node_uppers[left_child]);
+                    vec3 right_lower = (vec3&)(node_lowers[right_child]);
+                    vec3 right_upper = (vec3&)(node_uppers[right_child]);
+
+                    // union of child bounds
+                    vec3 lower = min(left_lower, right_lower);
+                    vec3 upper = max(left_upper, right_upper);
+
+                    // write new BVH nodes
+                    (vec3&)parent_lower = lower;
+                    (vec3&)parent_upper = upper;
+                }
+                // move onto processing the parent
+                index = parent;
+            } else {
+                // parent not ready (we are the first child), terminate thread
+                break;
+            }
+        }
+    }
+#endif
+""")
+def _refit_leaf_masked(id: wp.uint64, index: int, node_dynamic: wp.array[int]): ...
+
+
+@wp.kernel(enable_backward=False)
+def refit_leaves_masked(id: wp.uint64, node_dynamic: wp.array[int]):
+    _refit_leaf_masked(id, wp.tid(), node_dynamic)
+
+
 class GraphMeshRefit:
     """Persistent scratch for one fixed-topology, non-winding CUDA mesh.
 
@@ -200,9 +366,17 @@ class GraphMeshRefit:
     in place. Construction reads four metadata integers once; refitting only
     launches kernels. Rebuild this helper if mesh storage or topology changes.
     The caller must supply finite positions and valid indices, as for Mesh.refit.
+
+    ``moving_vertex_mask`` optionally marks the vertices whose positions may
+    change between refits (nonzero entries, length equal to the mesh's vertex
+    count). Faces and BVH leaves made only of unmarked vertices then skip their
+    bound/edge recomputation: their stored values are the ones recomputation
+    would produce, so every refit result is identical to the unmasked refit.
+    Construction performs one full refit so that the retained values come from
+    this helper's own arithmetic. The caller must not move unmarked vertices.
     """
 
-    def __init__(self, mesh):
+    def __init__(self, mesh, moving_vertex_mask=None):
         if wp.__version__ != "1.17.0":
             raise ValueError("GraphMeshRefit supports only the validated Warp 1.17.0 native Mesh/BVH layout")
         if not mesh.device.is_cuda:
@@ -220,11 +394,39 @@ class GraphMeshRefit:
         self.edges = wp.empty(count, dtype=float, device=self.device)
         self.partial = wp.empty((count + 255) // 256, dtype=wp.float64, device=self.device)
         self.points, self.indices = mesh.points, mesh.indices
+        self.face_dynamic = self.node_dynamic = None
+        if moving_vertex_mask is not None:
+            import numpy as np
 
-    def refit(self):
-        if self.mesh.points is not self.points or self.mesh.indices is not self.indices:
-            raise ValueError("Rebuild GraphMeshRefit after replacing mesh storage")
+            moving = np.asarray(moving_vertex_mask).astype(bool)
+            if moving.shape != (len(mesh.points),):
+                raise ValueError("moving_vertex_mask must mark every mesh vertex")
+            faces = mesh.indices.numpy().reshape(-1, 3)
+            self.face_dynamic = wp.array(np.any(moving[faces], axis=1).astype(np.int32), dtype=int, device=self.device)
+            self.node_dynamic = wp.empty(self.nodes, dtype=int, device=self.device)
+            wp.launch(leaf_flags, self.nodes, [mesh.id, self.face_dynamic, self.node_dynamic], device=self.device)
+            # Establish every retained static bound/edge with this helper's own
+            # kernels once; masked refits then reproduce the unmasked results.
+            self._refit_full()
+
+    def _refit_full(self):
         wp.launch(triangle_data, max(self.count, self.nodes), [self.mesh.id, self.edges], device=self.device)
         wp.launch(reduce_edges, self.partial.size, [self.edges, self.partial], device=self.device)
         wp.launch(set_mean, 1, [self.mesh.id, self.partial], device=self.device)
         wp.launch(refit_leaves, self.leaves, [self.mesh.id], device=self.device)
+
+    def refit(self):
+        if self.mesh.points is not self.points or self.mesh.indices is not self.indices:
+            raise ValueError("Rebuild GraphMeshRefit after replacing mesh storage")
+        if self.face_dynamic is None:
+            self._refit_full()
+            return
+        wp.launch(
+            triangle_data_masked,
+            max(self.count, self.nodes),
+            [self.mesh.id, self.face_dynamic, self.edges],
+            device=self.device,
+        )
+        wp.launch(reduce_edges, self.partial.size, [self.edges, self.partial], device=self.device)
+        wp.launch(set_mean, 1, [self.mesh.id, self.partial], device=self.device)
+        wp.launch(refit_leaves_masked, self.leaves, [self.mesh.id, self.node_dynamic], device=self.device)

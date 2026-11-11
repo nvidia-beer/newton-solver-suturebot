@@ -40,7 +40,6 @@ class TestFixedParticles(unittest.TestCase):
             model,
             dt=self.dt,
             fixed_particle_indices=fixed,
-            self_contact_ke=0,
             preconditioner_type="block_diag",
             solver_type="cg",
             linear_solver_maxiter=64,

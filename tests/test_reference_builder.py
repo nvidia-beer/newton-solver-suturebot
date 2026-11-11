@@ -31,9 +31,7 @@ class TestReferenceBuilder(unittest.TestCase):
         np.testing.assert_allclose(builder.spring_damping, 3.0)
         model = builder.finalize(device=os.environ.get("NEWTON_TEST_DEVICE", "cpu"))
         self.assertAlmostEqual(float(model.particle_mass.numpy().sum()), 1.0)
-        solver = SolverLinearFEM(
-            model, dt=0.001, preconditioner_type="block_diag", solver_type="cg", self_contact_ke=0.0
-        )
+        solver = SolverLinearFEM(model, dt=0.001, preconditioner_type="block_diag", solver_type="cg")
         state, result = model.state(), model.state()
         solver.step(state, result, None, None, 0.001)
         np.testing.assert_allclose(result.particle_q.numpy(), state.particle_q.numpy(), atol=2e-6)
@@ -55,9 +53,7 @@ class TestReferenceBuilder(unittest.TestCase):
             model.fem.hex_inv_J0.numpy(), np.broadcast_to(np.diag([1.0, 2 / 3, 0.5]), (1, 8, 3, 3)), atol=2e-7
         )
         self.assertFalse(hasattr(model, "hex_count"))
-        solver = SolverLinearFEM(
-            model, dt=0.001, preconditioner_type="block_diag", solver_type="cg", self_contact_ke=0.0
-        )
+        solver = SolverLinearFEM(model, dt=0.001, preconditioner_type="block_diag", solver_type="cg")
         state, result = model.state(), model.state()
         solver.step(state, result, None, None, 0.001)
         np.testing.assert_allclose(result.particle_qd.numpy()[:, 2], -0.00981, atol=1e-7)

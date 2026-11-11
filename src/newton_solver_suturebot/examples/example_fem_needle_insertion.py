@@ -44,6 +44,18 @@ def _gather_region_points(points: wp.array[wp.vec3], indices: wp.array[int], com
 
 
 @wp.kernel(enable_backward=False)
+def _marker_positions(
+    nodes: wp.array[wp.vec3i],
+    weights: wp.array[wp.vec3],
+    q: wp.array[wp.vec3],
+    points: wp.array[wp.vec3],
+):
+    i = wp.tid()
+    ids, weight = nodes[i], weights[i]
+    points[i] = weight[0] * q[ids[0]] + weight[1] * q[ids[1]] + weight[2] * q[ids[2]]
+
+
+@wp.kernel(enable_backward=False)
 def _tissue_integrity(
     q: wp.array[wp.vec3],
     qd: wp.array[wp.vec3],
@@ -202,6 +214,10 @@ class Example(PhantomExample):
             # Contact iteration requires a repeatable structural response below
             # the interface residual tolerance, including small nodal masses.
             self.solver.linear_solver_tolerance = self.args.fem_tolerance
+            # Chebyshev-accelerated block-Jacobi preconditioning: identical
+            # matrix, right-hand side and stopping criterion with fewer, denser
+            # Krylov iterations on the conditional CUDA path.
+            self.solver.linear_solver_chebyshev_degree = self.args.fem_chebyshev_degree
         self.control = self.model.control()
         self._external_forces = wp.zeros(self.model.particle_count, dtype=wp.vec3, device=self.device)
         self._frame_particle_q = wp.empty_like(self.model.particle_q)
@@ -381,8 +397,8 @@ class Example(PhantomExample):
         maximum = (self.plan.finish_angle - self.plan.initial_angle) * self.geometry.radius
         if insertion is not None and (not np.isfinite(insertion) or not 0 <= insertion <= maximum):
             raise ValueError("Insertion target must be finite and within the previewed arc")
-        if lift is not None and (not np.isfinite(lift) or abs(lift) > 0.002):
-            raise ValueError("Lift target must be finite and within +/-2 mm")
+        if lift is not None and (not np.isfinite(lift) or abs(lift) > 0.005):
+            raise ValueError("Lift target must be finite and within +/-5 mm")
         self.use_manual_control()
         if insertion is not None:
             self.manual_target[0] = insertion
@@ -654,12 +670,36 @@ class Example(PhantomExample):
                 opacity=opacity,
             )
         self._pad_upload_key = upload_key
-        q = None if self.state_0.particle_q is None else self.state_0.particle_q.numpy()
-        for which, color in (("entry", (0.2, 1.0, 0.3)), ("exit", (1.0, 0.25, 0.7))):
+        # Follow the deforming material without downloading nodal positions:
+        # gather the two barycentric marker points on the device each frame.
+        key = (id(self.entry), id(self.exit))
+        if getattr(self, "_marker_key", None) != key:
+            self._marker_key = key
+            nodes, weights = np.zeros((2, 3), np.int32), np.zeros((2, 3), np.float32)
+            for row, marker in enumerate((self.entry, self.exit)):
+                if marker is not None:
+                    nodes[row] = marker.node_indices
+                    weights[row] = marker.weights
+            self._marker_nodes = wp.array(nodes, dtype=wp.vec3i, device=self.device)
+            self._marker_weights = wp.array(weights, dtype=wp.vec3, device=self.device)
+            self._marker_points = wp.zeros(2, dtype=wp.vec3, device=self.device)
+            self._marker_colors = wp.array([(0.2, 1.0, 0.3), (1.0, 0.25, 0.7)], dtype=wp.vec3, device=self.device)
+        if self.state_0.particle_q is not None and (self.entry is not None or self.exit is not None):
+            wp.launch(
+                _marker_positions,
+                2,
+                [self._marker_nodes, self._marker_weights, self.state_0.particle_q, self._marker_points],
+                device=self.device,
+            )
+        for row, which in enumerate(("entry", "exit")):
             marker = getattr(self, which)
-            point = None if marker is None else wp.array([marker.position(q)], dtype=wp.vec3, device=self.device)
-            colors = wp.array([color], dtype=wp.vec3, device=self.device)
-            self.viewer.log_points(f"/insertion/{which}", point, radii=0.0005, colors=colors, hidden=marker is None)
+            self.viewer.log_points(
+                f"/insertion/{which}",
+                None if marker is None else self._marker_points[row : row + 1],
+                radii=0.0005,
+                colors=self._marker_colors[row : row + 1],
+                hidden=marker is None,
+            )
         self._lines("/insertion/desired_tip", None if self.plan is None else self.plan.path_points, (0.1, 0.9, 1.0))
         desired_points = None
         if self.desired_pose is not None:
@@ -723,7 +763,7 @@ class Example(PhantomExample):
             changed, insertion = ui.slider_float("Insert/retract", 1000 * target[0], 0.0, 1000 * maximum, "%.2f mm")
             if changed:
                 self._action(self.set_manual_target, insertion=float(np.clip(insertion / 1000, 0, maximum)))
-            changed, lift = ui.slider_float("Lift/lower", 1000 * target[1], -2.0, 2.0, "%.2f mm")
+            changed, lift = ui.slider_float("Lift/lower", 1000 * target[1], -5.0, 5.0, "%.2f mm")
             if changed:
                 self._action(self.set_manual_target, lift=lift / 1000)
             if self.manual_control:
@@ -946,6 +986,12 @@ class Example(PhantomExample):
             "--coupling-relative-tolerance", type=float, default=1e-3, help="Relative interface force tolerance"
         )
         parser.add_argument("--fem-tolerance", type=float, default=3e-3, help="Relative FEM linear residual tolerance")
+        parser.add_argument(
+            "--fem-chebyshev-degree",
+            type=int,
+            default=4,
+            help="Chebyshev acceleration degree of the FEM block-Jacobi preconditioner; 0 disables",
+        )
         parser.add_argument(
             "--capture-coupling",
             action=BooleanOptionalAction,

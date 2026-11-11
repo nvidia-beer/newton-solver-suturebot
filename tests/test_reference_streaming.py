@@ -70,7 +70,6 @@ def _solver(model, weights, *, streaming=False):
         solver_type="cg",
         preconditioner_type="block_diag",
         linear_solver_maxiter=30,
-        self_contact_ke=0.0,
     )
     if streaming:
         solver.prepare_tetrahedral_updates(_ORIGINAL_NODES)

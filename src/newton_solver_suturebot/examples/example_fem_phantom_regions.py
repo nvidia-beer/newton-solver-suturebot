@@ -255,8 +255,6 @@ class Example:
                 solver_type="cg",
                 linear_solver_maxiter=self.args.solver_iterations,
                 ground_plane=None,
-                self_contact_ke=0.0,
-                self_contact_kd=0.0,
                 linear_damping=self.args.linear_damping,
                 min_stretch=0.2,
                 max_stretch=5.0,

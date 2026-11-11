@@ -49,7 +49,6 @@ class TestConditionalLinearGraph(unittest.TestCase):
         options = dict(
             dt=self.dt,
             fixed_particle_indices=(0, 1),
-            self_contact_ke=0,
             preconditioner_type="block_diag",
             solver_type="cg",
             linear_solver_maxiter=80,

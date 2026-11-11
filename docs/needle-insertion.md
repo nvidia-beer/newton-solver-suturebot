@@ -58,7 +58,7 @@ After preview, the controls are:
 | Control | Action |
 | --- | --- |
 | **Insert / retract (mm)** | Set travel along the planned curve, from zero at preview to the planned finish |
-| **Lift / lower (mm)** | Set a world-Z offset between −2 and +2 mm |
+| **Lift / lower (mm)** | Set a world-Z offset between −5 and +5 mm |
 | **Pause** / **Resume sliders** | Freeze physical time / resume the force-driven response to the slider settings |
 | **Reset** | Restore tissue, clear markers and return to automatic mode |
 | **Space** | Toggle the viewer's separate global pause |
@@ -373,6 +373,53 @@ on this workload. Lowering's 95th-percentile frame time improved from
 iterations and graph rebuilding still cost time. No convergence tolerances,
 substep guards or force laws were weakened for these measurements.
 
+### November 11 single-scene latency round
+
+A later optimization round reduced per-trial latency without changing force
+laws, residual definitions, acceptance tolerances or the 160-trial budget.
+Five changes were adopted; each is exact or iteration-level only:
+
+| Change | Nature |
+| --- | --- |
+| Assembled-value projection and the compact-operator refresh run once per tangent version instead of once per captured trial | Exact; identical projected values |
+| A dual-only ALM repetition reuses the previous trial's identical candidate, geometry, permissions and surface forces, re-evaluating only tunnel forces, the residual and convergence | Exact for the measured workloads: the applied load is unchanged and the warm linear solve was already converged, so the primal evaluation it skips is a recomputation of the same state |
+| Exterior/active BVH refits recompute bounds only for faces and leaves containing movable vertices (4.76% of the 110,956 exterior faces in region 1) | Bitwise identical bounds; unit-verified |
+| The FEM Krylov solve runs on the 5,364 free nodes (65,902 of 88,719 blocks) with gathers/scatters at solve boundaries, and its block-Jacobi preconditioner is Chebyshev-accelerated (`--fem-chebyshev-degree`, default 4, interval `[λmax/256, λmax]` from a free-subspace block-Gershgorin bound) | Same matrix, right-hand side and stopping rule; preconditioner and reduction order change. Lowering's preconditioned iterations fell 19,494→7,811 while total operator actions rose about 1.6× at much lower per-action overhead |
+| The shaft preconditioner's tissue rows reuse the native projected sparse operator, whose constrained rows are already the identity this system needs | Same values; different accumulation order than the masked row loop |
+
+On the scripted region-1 handling workload (2.2 s automatic entry, 1 mm lift
+over 0.5 s, hold, lowering, recovery; no GL viewer; complete `step` wall time
+with a final device synchronization, five runs of the final configuration on
+NVIDIA GB10), mean frame times changed from 31.6–31.9 ms to 27.8–28.3 ms
+during lift and from 41.2–41.9 ms to 36.0–36.4 ms during lowering; lowering's
+95th-percentile fell from 63.6–65.2 ms to 53.8–56.6 ms. Trial counts were
+unchanged, so the gain is per-trial cost, not convergence behavior. These are
+physics-side rates; with headless 1280 × 720 GL rendering added to the same
+loop, complete frames measured 30.2–31.3 ms during lift and 38.6–38.8 ms
+during lowering. The interactive window's event polling and presentation are
+still excluded, and sustained 60 FPS during loaded handling remains unmet.
+
+Four cumulative-stack comparison runs against the unchanged source measured
+1.16, 1.25, 1.34 and 2.25 µm maximum common-frame nodal difference, three of
+four within the declared 2 µm gate and all within the same-source repeat
+envelope (1.0–5.0 µm measured here; 12–13 µm historically on the region-1
+engagement transition); force RMS stayed at or below 0.058%, the repeat-noise
+level. The complete 500-test CUDA suite, the six region-1 nominal-1
+robustness scenarios, the region-3 insertion and the 32-substep refinement
+suite (all 21 declared checks, 2.26 µm base exit error) passed with the same
+accepted/rejected attempt counts as before.
+
+Two investigated changes were rejected and are not shipped: a fused
+conditional-graph CG (per-iteration cost on this hardware is a memory-latency
+floor, not launch count; the public Warp solver is equal or faster) and
+depth-two Anderson acceleration of the correction update, which left trial
+counts unchanged on smooth handling and reduced abrupt-click trials by only
+1.2% — the dual-update restarts leave correction windows of one or two
+iterations where its history cannot engage. The Anderson implementation was
+removed after that measurement; the adaptive Aitken update is the correction
+rule. Chebyshev degrees 4–8 and interval ratios 64–1024 performed within
+noise of each other; degree 0 restores the plain block-Jacobi inverse.
+
 The separate physical checks retained finite states, exact fixed nodes,
 positive element determinants and matching entry/exit sequences. Region 3
 passed the declared 2 µm trajectory and 1% force-history comparisons. Region 1
@@ -521,10 +568,30 @@ integrity check stopped subsequent motion and displayed the failure; it retained
 the committed failed state and required reset. This is distinct from the
 pre-commit motion and force-iteration rejections that permit smaller-step retries.
 Separate −2 mm and −1 mm sequences completed; the −2 mm hold displaced tissue
-by 1.407 mm with a 93.02 mN load. The demonstration therefore limits lift targets
-to ±2 mm in both its slider and `set_manual_target`. This is an example control
-policy based on the checked region-1 sequences, not a general physical limit or
-validation of every selected path and region.
+by 1.407 mm with a 93.02 mN load. The demonstration's slider and
+`set_manual_target` accept lift targets of ±5 mm. Under the current 25 kPa
+defaults, a scripted region-1 excursion at the 2 mm/s drive rate
+(`nsys/results/lift_range_5mm_20261111/`) completed a +5 mm lift, hold and
+return with 4.41 mm peak deformation, 0.225 N peak interface force and no step
+refinements, while the matching downward sequence initially inverted an element
+at a −2.63 mm target. That failure exposed a constitutive gap, not a geometric
+one: the volumetric force was evaluated on the stretch-clamped deformation
+gradient, so once an element compressed past the σ = 0.2 clamp its response
+froze and a finite drive force pushed it through inversion at constant speed.
+The volumetric term now measures the raw det(F) and gains a C² compression
+barrier below J = 0.2 (λ-scaled; zero at and above the threshold, diverging as
+J → 0⁺; see `J_BARRIER` in the FEM kernels). The threshold sits below the
+measured validated-regime floor (element J reaches 0.943 during entry, 0.313
+during −2 mm lowering, 0.544 during the +5 mm lift), and reruns confirm the
+±2 mm and +5 mm sequences are unchanged within same-physics repeat noise
+(5.4 µm maximum deformation delta against a 4.7 µm repeat calibration). With
+the barrier, the −5 mm sequence no longer inverts (minimum J stays at 0.045):
+the needle stalls against the stiffening tissue and stops at a −3.57 mm target
+with the fixed/inactive-tissue guard, because region 1's free tissue extends
+only about 3.6 mm below the embedded track before its fixed cut boundary.
+Deeper downward targets require a deeper active region. The widened range is
+an example control policy, not a physical limit or validation of every
+selected path and region.
 
 A historical [paired lateral-drive experiment](validation/needle-handling-response.json)
 starts both branches from the same accepted embedded state at 1.6 s. One

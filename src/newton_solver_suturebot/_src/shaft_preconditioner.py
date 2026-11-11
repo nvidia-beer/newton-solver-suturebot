@@ -183,6 +183,13 @@ def mass_action(
 
 
 @wp.kernel(enable_backward=False)
+def rigid_mass_action(rigid_blocks: wp.array[wp.mat33], x: wp.array[wp.vec3], out: wp.array[wp.vec3]):
+    i = wp.tid()
+    count = x.shape[0] - 2
+    out[count + i] = rigid_blocks[i] * x[count + i]
+
+
+@wp.kernel(enable_backward=False)
 def contact_action(
     fixed: wp.array[int],
     nodes: wp.array[wp.vec4i],
@@ -451,6 +458,16 @@ class _ShaftPreconditioner:
         )
 
     def mass_apply(self, x, out):
+        # The projected operator's fixed rows are exactly the identity this
+        # system needs, and its values stay fresh for the FEM solves; reuse it
+        # for the tissue rows. The masked row loop remains the fallback.
+        fixed_particles = self.coupler.fem_solver._fixed_particles
+        projected = None if fixed_particles is None else fixed_particles._projected
+        if projected is not None:
+            count = self.n - 2
+            fixed_particles.operator.matvec(x[:count], out[:count], out[:count], alpha=1.0, beta=0.0)
+            wp.launch(rigid_mass_action, 2, [self.rigid_blocks, x, out], device=self.device)
+            return
         matrix = self.coupler.fem_solver.A_bsr
         wp.launch(
             mass_action,
@@ -636,6 +653,8 @@ class _ShaftPreconditioner:
         )
         wp.launch(invert_diagonal, self.n, [self.diagonal, self.inverse_diagonal], device=self.device)
         wp.launch(unpack, self.n, [residual, self.rhs], device=self.device)
+        fixed_particles = c.fem_solver._fixed_particles
+        projected = None if fixed_particles is None else fixed_particles._projected
         arrays = (
             matrix.offsets,
             matrix.columns,
@@ -646,6 +665,7 @@ class _ShaftPreconditioner:
             self.levers,
             residual,
             output,
+            *(() if projected is None else (projected.values,)),
         )
         key = (self.count, tuple((array.ptr, array.shape, array.dtype) for array in arrays))
         if not self._conditional:

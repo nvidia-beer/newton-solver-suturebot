@@ -29,7 +29,6 @@ class TestLinearFEMBlockPreconditioner(unittest.TestCase):
             solver_type=method,
             preconditioner_type="block_diag",
             linear_solver_maxiter=8,
-            self_contact_ke=0.0,
         )
         return model, solver
 

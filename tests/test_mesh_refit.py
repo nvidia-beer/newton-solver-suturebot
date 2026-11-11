@@ -224,6 +224,42 @@ class RefitTests(unittest.TestCase):
                     self.assertNotEqual(float(custom[2][0]), previous_mean)
                 previous_mean = float(custom[2][0])
 
+    def test_masked_refit_matches_unmasked_bitwise(self):
+        rng = np.random.default_rng(417)
+        for n in (4, 16):
+            base, triangles = cube(n)
+            initial = (base * 0.01 + [0.03, -0.04, 0.006]).astype(np.float32)
+            # Only vertices in the moving half-space may deform; the mask marks
+            # exactly those, so every static face keeps bitwise-equal bounds.
+            moving = initial[:, 2] > 0.006
+            ids_a = wp.array(triangles.reshape(-1), dtype=int, device=self.device)
+            a = wp.Mesh(wp.array(initial, dtype=wp.vec3, device=self.device), ids_a)
+            b = wp.Mesh(wp.array(initial, dtype=wp.vec3, device=self.device), ids_a)
+            full = GraphMeshRefit(a)
+            masked = GraphMeshRefit(b, moving_vertex_mask=moving)
+            self.assertGreater(int(masked.face_dynamic.numpy().sum()), 0)
+            self.assertLess(int(masked.face_dynamic.numpy().sum()), len(triangles))
+            for _step in range(4):
+                q = initial.copy()
+                q[moving] += rng.uniform(-0.002, 0.002, (int(moving.sum()), 3)).astype(np.float32)
+                a.points.assign(q)
+                b.points.assign(q)
+                full.refit()
+                masked.refit()
+                probes = wp.array(
+                    rng.uniform(initial.min(0) - 0.003, initial.max(0) + 0.003, (500, 3)),
+                    dtype=wp.vec3,
+                    device=self.device,
+                )
+                x = measurements(a, len(triangles), probes)
+                y = measurements(b, len(triangles), probes)
+                for expected, actual in zip(x, y, strict=True):
+                    np.testing.assert_array_equal(expected, actual)
+                tree_a = tree_bounds(a, full.nodes)
+                tree_b = tree_bounds(b, masked.nodes)
+                for expected, actual in zip(tree_a, tree_b, strict=True):
+                    np.testing.assert_array_equal(expected, actual)
+
     def test_winding_mesh_rejected_without_mutation(self):
         q, triangles = cube(1)
         device = os.environ.get("NEWTON_TEST_DEVICE", "cuda:0")

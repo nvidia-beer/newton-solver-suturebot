@@ -5,7 +5,7 @@
 import numpy as np
 import warp as wp
 from warp.optim.linear import LinearOperator, aslinearoperator
-from warp.sparse import bsr_copy
+from warp.sparse import bsr_copy, bsr_set_from_triplets, bsr_zeros
 
 
 @wp.kernel(enable_backward=False)
@@ -13,6 +13,34 @@ def _restore(indices: wp.array[int], reference: wp.array[wp.vec3], q: wp.array[w
     node = indices[wp.tid()]
     q[node] = reference[node]
     v[node] = wp.vec3(0.0)
+
+
+@wp.kernel(enable_backward=False)
+def _gather_compact_values(
+    slots: wp.array[int],
+    values: wp.array[wp.mat33f],
+    compact: wp.array[wp.mat33f],
+):
+    i = wp.tid()
+    compact[i] = values[slots[i]]
+
+
+@wp.kernel(enable_backward=False)
+def _gather_free(free: wp.array[int], source: wp.array[wp.vec3], compact: wp.array[wp.vec3]):
+    i = wp.tid()
+    compact[i] = source[free[i]]
+
+
+@wp.kernel(enable_backward=False)
+def _gather_free_blocks(free: wp.array[int], source: wp.array[wp.mat33f], compact: wp.array[wp.mat33f]):
+    i = wp.tid()
+    compact[i] = source[free[i]]
+
+
+@wp.kernel(enable_backward=False)
+def _scatter_free(free: wp.array[int], compact: wp.array[wp.vec3], destination: wp.array[wp.vec3]):
+    i = wp.tid()
+    destination[free[i]] = compact[i]
 
 
 @wp.kernel(enable_backward=False)
@@ -101,9 +129,90 @@ class FixedParticles:
         self._masked_operator = self.operator
         self._projected = None
         self._projected_key = None
+        self._projected_version = None
+        # Optional exact reduction to the free-free subblock. The Krylov
+        # iteration then runs on free nodes only, with gathers/scatters at the
+        # solve boundaries; fixed rows carry exact zeros in both formulations.
+        self.free = wp.array(np.flatnonzero(mask == 0).astype(np.int32), dtype=int, device=self.device)
+        self.compact_matrix = None
+        self.compact_operator = None
+        self._compact_slots = None
+        self._compact_version = None
 
-    def prepare(self, matrix):
-        """Refresh the derived operator once per solve; retain the predictor's A."""
+    def _prepare_compact(self, matrix, offsets, columns):
+        """Build the free-free block structure and its source-slot gather map."""
+        mask = self.mask.numpy().astype(bool)
+        free = np.flatnonzero(~mask)
+        renumber = np.full(mask.size, -1, dtype=np.int64)
+        renumber[free] = np.arange(free.size)
+        # Storage has reserve capacity; only the first nrow+1 offsets and the
+        # blocks they reference are live.
+        offsets = np.asarray(offsets[: matrix.nrow + 1], dtype=np.int64)
+        columns = np.asarray(columns[: offsets[-1]], dtype=np.int64)
+        rows = np.repeat(np.arange(mask.size), np.diff(offsets))
+        keep = ~mask[rows] & ~mask[columns]
+        if free.size == 0 or not np.any(keep):
+            self.compact_matrix = self.compact_operator = None
+            return
+        compact_rows = renumber[rows[keep]].astype(np.int32)
+        compact_columns = renumber[columns[keep]].astype(np.int32)
+        compact = bsr_zeros(free.size, free.size, wp.mat33f, device=self.device)
+        bsr_set_from_triplets(
+            compact,
+            wp.array(compact_rows, dtype=wp.int32, device=self.device),
+            wp.array(compact_columns, dtype=wp.int32, device=self.device),
+            # Placeholder values define the retained structure; pruning would
+            # discard it before the first numerical gather.
+            wp.array(np.zeros((compact_rows.size, 3, 3), np.float32), dtype=wp.mat33f, device=self.device),
+            prune_numerical_zeros=False,
+        )
+        # Map every stored compact block back to its source slot explicitly;
+        # column lists are sorted within each row of the canonical structure.
+        compact_offsets = compact.offsets.numpy()[: compact.nrow + 1].astype(np.int64)
+        stored_columns = compact.columns.numpy()[: compact_offsets[-1]].astype(np.int64)
+        source_slots = np.empty(compact_offsets[-1], dtype=np.int64)
+        for compact_row in range(compact.nrow):
+            row = free[compact_row]
+            row_columns = columns[offsets[row] : offsets[row + 1]]
+            for slot in range(compact_offsets[compact_row], compact_offsets[compact_row + 1]):
+                column = free[stored_columns[slot]]
+                position = np.searchsorted(row_columns, column)
+                if position >= row_columns.size or row_columns[position] != column:
+                    raise RuntimeError("Compact structure does not match the source matrix")
+                source_slots[slot] = offsets[row] + position
+        self.compact_matrix = compact
+        self._compact_slots = wp.array(source_slots, dtype=int, device=self.device)
+        self.compact_operator = aslinearoperator(compact)
+        self._compact_version = None
+        self.compact_rhs = wp.zeros(free.size, dtype=wp.vec3, device=self.device)
+        self.compact_increment = wp.zeros(free.size, dtype=wp.vec3, device=self.device)
+        self.compact_diagonal = wp.zeros(free.size, dtype=wp.mat33f, device=self.device)
+
+    def gather_solve_operands(self, rhs, increment):
+        wp.launch(_gather_free, self.free.size, [self.free, rhs, self.compact_rhs], device=self.device)
+        wp.launch(_gather_free, self.free.size, [self.free, increment, self.compact_increment], device=self.device)
+
+    def scatter_increment(self, increment):
+        wp.launch(_scatter_free, self.free.size, [self.free, self.compact_increment, increment], device=self.device)
+
+    def gather_diagonal(self, inverse_diagonal):
+        if self.compact_matrix is not None:
+            wp.launch(
+                _gather_free_blocks,
+                self.free.size,
+                [self.free, inverse_diagonal, self.compact_diagonal],
+                device=self.device,
+            )
+
+    def prepare(self, matrix, *, values_version=None):
+        """Refresh the derived operator once per solve; retain the predictor's A.
+
+        ``values_version`` is an optional caller-maintained counter of the
+        source matrix's assembled numerical values. When it matches the version
+        already projected into the derived operator, the (pure, elementwise)
+        value projection launch is skipped; the result is identical. ``None``
+        always refreshes, preserving the original behavior.
+        """
         if not self.device.is_cuda:
             return False
         key = (
@@ -136,16 +245,29 @@ class FixedParticles:
                 self._projected.columns = matrix.columns
                 self._projected.nnz_sync()
                 self.operator = aslinearoperator(self._projected)
+                self._prepare_compact(matrix, offsets, columns)
             else:
                 self.operator = self._masked_operator
+                self.compact_matrix = self.compact_operator = None
             self._projected_key = key
-        if self._projected is not None:
+            self._projected_version = None
+        if self._projected is not None and (
+            changed or values_version is None or values_version != self._projected_version
+        ):
             wp.launch(
                 _project_values,
                 matrix.nrow,
                 [self.mask, matrix.offsets, matrix.columns, matrix.values, self._projected.values],
                 device=self.device,
             )
+            if self.compact_matrix is not None:
+                wp.launch(
+                    _gather_compact_values,
+                    self._compact_slots.size,
+                    [self._compact_slots, matrix.values, self.compact_matrix.values],
+                    device=self.device,
+                )
+            self._projected_version = values_version
         return changed
 
     def restore(self, state):

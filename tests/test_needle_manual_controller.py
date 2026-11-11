@@ -293,8 +293,8 @@ class NeedleManualControllerTests(unittest.TestCase):
                 {"insertion": -1e-6},
                 {"insertion": maximum + 1e-6},
                 {"lift": np.inf},
-                {"lift": 0.002001},
-                {"lift": -0.002001},
+                {"lift": 0.005001},
+                {"lift": -0.005001},
                 {"insertion": 1e-4, "lift": np.nan},
             )
             for command in commands:

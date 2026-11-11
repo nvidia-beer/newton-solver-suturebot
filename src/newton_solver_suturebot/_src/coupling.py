@@ -304,6 +304,15 @@ class NeedleTissueCoupler:
         self._shaft_preconditioner = (
             _ShaftPreconditioner(self) if shaft_preconditioner and _ShaftPreconditioner.supports(self) else None
         )
+        if (
+            type(fem_solver) is SolverFEM
+            and getattr(fem_solver, "_fixed_particles", None) is not None
+            and model.device.is_cuda
+        ):
+            # This coupler re-projects unchanged assembled values eagerly
+            # before every captured launch (see _refresh_projection), so its
+            # captured FEM trials may omit the per-trial projection.
+            fem_solver._projection_before_graph = True
         self.shaft_preconditioner_status = (
             "enabled"
             if self._shaft_preconditioner is not None
@@ -348,12 +357,8 @@ class NeedleTissueCoupler:
             reason = "additional element or activation system"
         elif solver._streaming is not None or solver._component_scaling is not None:
             reason = "streaming or component-scaled system"
-        elif (
-            solver.soft_surface_contacts is not None
-            or solver._ground_plane is not None
-            or (model.particle_ke > 0 and model.particle_max_radius > 0)
-        ):
-            reason = "additional surface, ground or particle contact"
+        elif solver.soft_surface_contacts is not None or solver._ground_plane is not None:
+            reason = "additional surface or ground contact"
         elif control is None:
             reason = "implicit control allocation"
         elif any(array.requires_grad for array in (state_in.particle_q, state_in.particle_qd, state_in.particle_f)):
@@ -411,12 +416,29 @@ class NeedleTissueCoupler:
             )
             self._fem_graphs[state_key] = entry
             self.fem_graph_captures += 1
+        self._refresh_projection()
         wp.capture_launch(entry[0])
         self.fem_graph_launches += 1
         self.fem_graph_status = "replaying"
 
     def _restore_native(self):
         self._mujoco.mj_setState(self.rigid_solver.mj_model, self.rigid_solver.mj_data, self._native, self._state_spec)
+
+    def _refresh_projection(self):
+        """Re-project assembled values changed since the last captured launch.
+
+        Captured FEM trials omit the projection of invariant values; every
+        graph-replay site must therefore refresh the projected operator
+        eagerly whenever the tangent values changed. Unchanged versions skip
+        the launch; the projected values are identical either way.
+        """
+        solver = self.fem_solver
+        fixed = getattr(solver, "_fixed_particles", None)
+        if fixed is None or not getattr(solver, "_projection_before_graph", False):
+            return
+        if fixed.prepare(solver.A_bsr, values_version=solver._projection_values_version()):
+            solver._lin_solver = None
+            solver._lin_solver_key = None
 
     def _evaluate(self, state, dt, *, trial, start_state=None):
         self._forces.zero_()

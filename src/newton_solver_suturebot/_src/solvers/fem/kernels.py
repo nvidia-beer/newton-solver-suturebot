@@ -418,6 +418,33 @@ def skew3(v: wp.vec3) -> wp.mat33:
     )
 
 
+# Stable Neo-Hookean (Smith 2018) keeps the volumetric force λ(J−α) bounded as
+# J → 0, so a finite external load (for example the needle's PD drive) can push
+# a tetrahedron through inversion. Committed states must satisfy J > 0, so the
+# volumetric response gains a C² compression barrier below J_BARRIER:
+#
+#   ψ_b(J) = (λ/2)·(J_BARRIER − J)³ / J          for J < J_BARRIER, else 0
+#   ψ_b'(J) = −(λ/2)·(J_BARRIER − J)²·(2J + J_BARRIER) / J²   (adds to f_volume)
+#   ψ_b''(J) = λ·((J_BARRIER/J)³ − 1)            (adds to the PSD rank-1 tangent)
+#
+# ψ_b, ψ_b' and ψ_b'' all vanish at J = J_BARRIER (C² engagement) and diverge
+# as J → 0⁺, so a converged solve cannot invert an element: the driving body
+# stalls against the stiffening tissue instead. J here is the RAW volume
+# ratio det(F) of the unclamped deformation gradient: the principal-stretch
+# clamp freezes the clamped det(F) near min_stretch³·(lateral stretches),
+# which would otherwise saturate compression resistance exactly when the
+# barrier is needed. The threshold sits below the measured validated-regime
+# floor (region-1 2 mm/s probes: entry reaches element J = 0.943, a −2 mm
+# lowering 0.313, a +5 mm lift 0.545; see
+# nsys/results/lift_range_5mm_20261111/), so those sequences evaluate an
+# unchanged force. The λ factor gives the barrier the volumetric term's own
+# scale with no new material parameter.
+J_BARRIER = 0.2
+# Backstop floor for constitutive evaluation of J when the stretch clamp is
+# disabled; also keeps the barrier tangent coefficient finite and positive.
+J_MIN = 0.01
+
+
 @wp.func
 def clamp_deformation_stretch(F: wp.mat33, min_stretch: float, max_stretch: float):
     """Principal-stretch clamp on the deformation gradient.
@@ -528,8 +555,12 @@ def eval_tetrahedra(
     gradient is passed through :func:`clamp_deformation_stretch` first, so an
     inverted or over-stretched tet can never drive the stress to blow up
     (a principal-stretch clamp; see that function for how it relates to and
-    differs from invertible FEM, Irving et al. 2004). ``J`` is additionally
-    clamped at ``J_MIN = 0.01`` as a backstop when the stretch clamp is disabled.
+    differs from invertible FEM, Irving et al. 2004).
+
+    The volumetric term evaluates the RAW ``J = det(F_raw)`` (floored at
+    ``J_MIN = 0.01``), not the clamped one, and below ``J_BARRIER`` it gains
+    the compression barrier ``ψ_b'(J)`` (module-level derivation), so
+    compression resistance diverges as J → 0⁺ instead of saturating.
     """
     tid = wp.tid()
 
@@ -581,10 +612,10 @@ def eval_tetrahedra(
     k_damp = k_damp * rest_volume
 
     # F = Ds · Dm   and  dF/dt = (velocity-gradient-shape) · Dm.
-    F = Ds * Dm
+    F_raw = Ds * Dm
     # Invertible-FEM stretch clamp (no-op unless both bounds are non-negative);
     # keeps an inverted / over-stretched tet from blowing up the stress.
-    F = clamp_deformation_stretch(F, min_stretch, max_stretch)
+    F = clamp_deformation_stretch(F_raw, min_stretch, max_stretch)
     dFdt = wp.matrix_from_cols(v10, v20, v30) * Dm
 
     col1 = wp.vec3(F[0, 0], F[1, 0], F[2, 0])
@@ -605,8 +636,12 @@ def eval_tetrahedra(
 
     # Volumetric: f_volume = λ · (J − α) along ∂J/∂x_a (== ½·(x_b×x_c)
     # for opposite-face pair).
-    J = wp.determinant(F)
-    J_MIN = 0.01
+    # The volumetric response measures the RAW volume ratio, not the clamped
+    # one: the stretch clamp freezes det(F) at min_stretch³·(lateral
+    # stretches), which would saturate compression resistance and blind the
+    # barrier while the physical element collapses on through inversion.
+    # ∂J/∂x below is likewise the raw geometric volume gradient.
+    J = wp.determinant(F_raw)
     J = wp.max(J, J_MIN)
 
     s = inv_rest_volume / 6.0
@@ -615,6 +650,10 @@ def eval_tetrahedra(
     dJdx3 = wp.cross(x10, x20) * s
 
     f_volume = (J - alpha) * k_lambda
+    if J < J_BARRIER:
+        # Compression barrier ψ_b'(J); see the J_BARRIER derivation above.
+        gap = J_BARRIER - J
+        f_volume -= 0.5 * k_lambda * gap * gap * (2.0 * J + J_BARRIER) / (J * J)
     f_damp = (wp.dot(dJdx1, v10) + wp.dot(dJdx2, v20) + wp.dot(dJdx3, v30)) * k_damp
 
     f_total = f_volume + f_damp
@@ -659,7 +698,8 @@ def build_system_matrix_tet_kernel(
     where ``Dm_row_k = Dm[k-1, :]`` (k-th row of Dm) for nodes k=1,2,3, and
     ``Dm_row_0 = −(Dm_row_1 + Dm_row_2 + Dm_row_3)`` (Newton's law: Σ=0).
 
-    Volumetric: ``H_vol[a,b] = λ · (dJ/dx_a) ⊗ (dJ/dx_b)`` (rank-1 PSD).
+    Volumetric: ``H_vol[a,b] = (λ + ψ_b''(J)) · (dJ/dx_a) ⊗ (dJ/dx_b)``
+    (rank-1 PSD; the barrier term ψ_b'' is zero at and above ``J_BARRIER``).
 
     The geometric stiffness ``λ(J−α)·d²J/∂xₐ∂x_b = geo·skew3(w_ab)`` is
     intentionally omitted.  Although its coefficient can be clamped to ≥0,
@@ -730,10 +770,10 @@ def build_system_matrix_tet_kernel(
     k_mu = k_mu * rest_volume
     k_lambda = k_lambda * rest_volume
 
-    F = Ds * Dm
+    F_raw = Ds * Dm
     # Same principal-stretch clamp as the force kernel, so the tangent is
     # built from the same (clamped) F and stays consistent with the force.
-    F = clamp_deformation_stretch(F, min_stretch, max_stretch)
+    F = clamp_deformation_stretch(F_raw, min_stretch, max_stretch)
     col1 = wp.vec3(F[0, 0], F[1, 0], F[2, 0])
     col2 = wp.vec3(F[0, 1], F[1, 1], F[2, 1])
     col3 = wp.vec3(F[0, 2], F[1, 2], F[2, 2])
@@ -742,6 +782,16 @@ def build_system_matrix_tet_kernel(
     Ic1 = wp.max(Ic1, 1e-6)
     s = 1.0 - 1.0 / Ic1
     coef = k_mu * 2.0 / (Ic1 * Ic1)
+
+    # Compression-barrier stiffening of the volumetric rank-1 term:
+    # λ → λ + ψ_b''(J) = λ·(J_BARRIER/J)³ below J_BARRIER (PSD-preserving,
+    # consistent with the barrier force in eval_tetrahedra, which measures
+    # the RAW volume ratio so the stretch clamp cannot saturate it).
+    k_vol = k_lambda
+    J = wp.max(wp.determinant(F_raw), J_MIN)
+    if J < J_BARRIER:
+        ratio = J_BARRIER / J
+        k_vol = k_lambda * ratio * ratio * ratio
 
     # ∂J/∂x_a: per-node gradient of det(F).
     s_vol = inv_rest_volume / 6.0
@@ -827,8 +877,8 @@ def build_system_matrix_tet_kernel(
             dot_ab = wp.dot(dm_row_a, dm_row_b)
             K_dev_ab = wp.identity(n=3, dtype=float) * (k_mu * s * dot_ab) + wp.outer(F_dm_a, F_dm_b) * coef
 
-            # Volumetric rank-1: H_vol[a,b] = λ · (dJ/dx_a) ⊗ (dJ/dx_b).
-            K_vol_ab = wp.outer(dJdx, dJdx_b) * k_lambda
+            # Volumetric rank-1: H_vol[a,b] = (λ + ψ_b''(J)) · (dJ/dx_a) ⊗ (dJ/dx_b).
+            K_vol_ab = wp.outer(dJdx, dJdx_b) * k_vol
 
             # geo_coeff == 0: K_geo_ab is dropped (see comment above).
             K_ab = (K_dev_ab + K_vol_ab) * scale
@@ -1066,70 +1116,6 @@ def particle_force(n: wp.vec3, v: wp.vec3, c: float, k_n: float, k_d: float, k_f
 
 
 @wp.kernel
-def eval_particle_forces(
-    grid: wp.uint64,
-    particle_x: wp.array[wp.vec3],
-    particle_v: wp.array[wp.vec3],
-    particle_radius: wp.array[float],
-    particle_flags: wp.array[wp.int32],
-    k_contact: float,
-    k_damp: float,
-    k_friction: float,
-    k_mu: float,
-    k_cohesion: float,
-    max_radius: float,
-    # outputs
-    particle_f: wp.array[wp.vec3],
-):
-    """Aggregate per-particle force from hash-grid neighbour pairs ``[N]``."""
-    tid = wp.tid()
-
-    i = wp.hash_grid_point_id(grid, tid)
-    if i == -1:
-        # Hash grid not built yet.
-        return
-    if (particle_flags[i] & PARTICLE_FLAG_ACTIVE) == 0:
-        return
-
-    x = particle_x[i]
-    v = particle_v[i]
-    radius = particle_radius[i]
-
-    f = wp.vec3()
-    query = wp.hash_grid_query(grid, x, radius + max_radius + k_cohesion)
-    index = int(0)
-
-    while wp.hash_grid_query_next(query, index):
-        if (particle_flags[index] & PARTICLE_FLAG_ACTIVE) != 0 and index != i:
-            n = x - particle_x[index]
-            d = wp.length(n)
-            if d < 1.0e-10:  # Co-located vertices have no contact direction.
-                continue
-            err = d - radius - particle_radius[index]
-            if err <= k_cohesion:
-                n = n / d
-                vrel = v - particle_v[index]
-                f = f + particle_force(n, vrel, err, k_contact, k_damp, k_friction, k_mu)
-
-    particle_f[i] = f
-
-
-# =====================================================================
-# 8. Particle-rigid contact
-# =====================================================================
-#
-# Three flavours, picked per-solver-config:
-#
-# * Analytic ground plane n·x + d = 0 — penalty + Coulomb.
-# * Force-based soft-rigid contact from ``model.collide(state)`` output.
-# * Constraint-based PBD-style post-integration position projection (relaxed
-#   Gauss–Seidel; no XPBD compliance term or running Lagrange multiplier)
-#   with per-particle / per-body delta accumulation; the
-#   ``apply_particle_corrections`` kernel applies the deltas with clamps.
-# =====================================================================
-
-
-@wp.kernel
 def eval_particle_ground_contacts(
     particle_x: wp.array[wp.vec3],
     particle_v: wp.array[wp.vec3],
@@ -1193,81 +1179,6 @@ def eval_particle_ground_contacts(
     ft = wp.min(vs * kf, mu * fn_eff)
 
     f[tid] = f[tid] - n * fn - vt * ft
-
-
-@wp.kernel
-def eval_soft_contacts(
-    particle_x: wp.array[wp.vec3],
-    particle_v: wp.array[wp.vec3],
-    soft_contact_count: wp.array[wp.int32],
-    soft_contact_particle: wp.array[int],
-    soft_contact_body_pos: wp.array[wp.vec3],
-    soft_contact_body_vel: wp.array[wp.vec3],
-    soft_contact_normal: wp.array[wp.vec3],
-    ke: float,
-    kd: float,
-    kf: float,
-    mu: float,
-    particle_radius: wp.array[float],
-    f: wp.array[wp.vec3],
-):
-    """Force-based soft-rigid contact from the collision pipeline output ``[N]``.
-
-    Penalty + damping + Coulomb friction. Reads contact pairs from
-    ``contacts.soft_contact_*``; the kernel returns early past ``count`` so
-    the launch dim can safely be ``soft_contact_max`` (no host sync needed).
-    """
-    tid = wp.tid()
-
-    count = soft_contact_count[0]
-    if tid >= count:
-        return
-
-    particle_idx = soft_contact_particle[tid]
-    if particle_idx < 0:
-        return
-
-    body_pos = soft_contact_body_pos[tid]
-    body_vel = soft_contact_body_vel[tid]
-    n = soft_contact_normal[tid]
-
-    x = particle_x[particle_idx]
-    v = particle_v[particle_idx]
-    radius = particle_radius[particle_idx]
-
-    # Penetration: contact normal points body → particle.
-    d = wp.dot(x - body_pos, n)
-    penetration = radius - d
-
-    if penetration > 0.0:
-        rel_v = v - body_vel
-        vn = wp.dot(rel_v, n)
-        vt = rel_v - vn * n
-
-        # Normal: spring + dissipative damping (only opposing approach).
-        fn = ke * penetration - kd * wp.min(vn, 0.0)
-
-        # Coulomb cap with non-negative normal (damping shouldn't make
-        # friction reverse direction).
-        vt_mag = wp.length(vt)
-        if vt_mag > 1.0e-6:
-            fn_safe = wp.max(0.0, fn)
-            ft_max = mu * fn_safe
-            ft = wp.min(kf * vt_mag, ft_max)
-            force = fn * n - ft * (vt / vt_mag)
-        else:
-            force = fn * n
-
-        wp.atomic_add(f, particle_idx, force)
-
-
-# =====================================================================
-# 9. Gravity
-# =====================================================================
-#
-# Reads gravity from a length-1 device array so there's no host sync inside
-# CUDA-graph capture (``model.gravity.numpy()`` would break capture).
-# =====================================================================
 
 
 @wp.kernel
@@ -1548,7 +1459,7 @@ def eval_hexahedra(
         dN7 = inv_J0_gT * _hex_dN_dxi(7, xi_g, eta_g, zeta_g)
 
         # Deformation gradient F = Σ_a x_a^curr ⊗ ∇_X N_a
-        F = (
+        F_raw = (
             wp.outer(x0, dN0)
             + wp.outer(x1, dN1)
             + wp.outer(x2, dN2)
@@ -1558,7 +1469,7 @@ def eval_hexahedra(
             + wp.outer(x6, dN6)
             + wp.outer(x7, dN7)
         )
-        F = _clamp_stretch(F, min_stretch, max_stretch)
+        F = _clamp_stretch(F_raw, min_stretch, max_stretch)
 
         # Velocity gradient dF/dt (for Rayleigh damping)
         dFdt = (
@@ -1581,13 +1492,20 @@ def eval_hexahedra(
         # Deviatoric PK1 + Rayleigh damping
         P = F * (k_mu * (1.0 - 1.0 / (Ic + 1.0))) + dFdt * k_damp
 
-        # Volumetric PK1: P_vol = λ·(J−α+act) · cof(F)
-        J = wp.max(wp.determinant(F), wp.float32(0.01))
+        # Volumetric PK1: P_vol = (λ·(J−α+act) + ψ_b'(J)) · cof(F); the
+        # compression barrier ψ_b' (module-level derivation at J_BARRIER)
+        # diverges as J → 0⁺ so compression resistance cannot saturate. J is
+        # the RAW volume ratio: the stretch clamp must not freeze it.
+        J = wp.max(wp.determinant(F_raw), J_MIN)
         cof_col0 = wp.cross(fc1, fc2)
         cof_col1 = wp.cross(fc2, fc0)
         cof_col2 = wp.cross(fc0, fc1)
         cof_F = wp.matrix_from_cols(cof_col0, cof_col1, cof_col2)
-        P = P + cof_F * (k_lambda * (J - alpha))
+        g_vol = k_lambda * (J - alpha)
+        if J < J_BARRIER:
+            gap = J_BARRIER - J
+            g_vol -= 0.5 * k_lambda * gap * gap * (2.0 * J + J_BARRIER) / (J * J)
+        P = P + cof_F * g_vol
 
         # Nodal forces: f_a −= det_J0_g · P · ∇_X N_a
         w = det_J0_g
@@ -1639,7 +1557,10 @@ def build_system_matrix_hex_kernel(
 
     K[a,b] = Σ_g det_J0_g · [ k_mu·s · dot(∇N_a,∇N_b)·I
                               + 2·k_mu/(I_C+1)² · (F·∇N_a)⊗(F·∇N_b)
-                              + k_lambda · (cof(F)·∇N_a)⊗(cof(F)·∇N_b) ]
+                              + (k_lambda + ψ_b''(J)) · (cof(F)·∇N_a)⊗(cof(F)·∇N_b) ]
+
+    where ψ_b'' is the compression-barrier stiffening (zero at and above
+    ``J_BARRIER``; see the module-level derivation).
 
     ``dirty[eid] == 0`` skips assembly (stale-but-correct triplets remain).
     """
@@ -1698,7 +1619,7 @@ def build_system_matrix_hex_kernel(
         dN7g = inv_J0_gT * _hex_dN_dxi(7, xi_g, eta_g, zeta_g)
 
         # Deformation gradient
-        F = (
+        F_raw = (
             wp.outer(x0, dN0g)
             + wp.outer(x1, dN1g)
             + wp.outer(x2, dN2g)
@@ -1708,7 +1629,7 @@ def build_system_matrix_hex_kernel(
             + wp.outer(x6, dN6g)
             + wp.outer(x7, dN7g)
         )
-        F = _clamp_stretch(F, min_stretch, max_stretch)
+        F = _clamp_stretch(F_raw, min_stretch, max_stretch)
 
         fc0 = wp.vec3f(F[0, 0], F[1, 0], F[2, 0])
         fc1 = wp.vec3f(F[0, 1], F[1, 1], F[2, 1])
@@ -1737,7 +1658,15 @@ def build_system_matrix_hex_kernel(
         I3 = wp.identity(n=3, dtype=wp.float32)
 
         K_dev = I3 * (k_mu * s * dot_ab) + wp.outer(Fd_a, Fd_b) * coef
-        K_vol = wp.outer(dJ_a, dJ_b) * k_lambda
+        # Barrier stiffening λ → λ·(J_BARRIER/J)³ below J_BARRIER, consistent
+        # with the ψ_b' force term in eval_hexahedra (PSD-preserving; raw J,
+        # so the stretch clamp cannot saturate it).
+        k_vol = k_lambda
+        J = wp.max(wp.determinant(F_raw), J_MIN)
+        if J < J_BARRIER:
+            ratio = J_BARRIER / J
+            k_vol = k_lambda * ratio * ratio * ratio
+        K_vol = wp.outer(dJ_a, dJ_b) * k_vol
         Kab = Kab + (K_dev + K_vol) * det_J0_g
 
     scale = dt * dt

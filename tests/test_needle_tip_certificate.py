@@ -142,7 +142,7 @@ class NeedleTipCertificateTests(unittest.TestCase):
                 )
                 wp.launch(
                     tip_boundary_certificate,
-                    1,
+                    3,
                     [
                         self.mesh.id,
                         self.mesh.id,

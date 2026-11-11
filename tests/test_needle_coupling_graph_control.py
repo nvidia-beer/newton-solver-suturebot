@@ -21,11 +21,18 @@ class DeviceControlTests(unittest.TestCase):
         self.running = wp.zeros(1, dtype=int, device=self.device)
         self.correct = wp.zeros(1, dtype=int, device=self.device)
         self.dual = wp.zeros(1, dtype=int, device=self.device)
+        self.fresh = wp.zeros(1, dtype=int, device=self.device)
+        self.stale = wp.zeros(1, dtype=int, device=self.device)
         self.levels = wp.zeros(5, dtype=int, device=self.device)
         self.initial = 0.3
 
     def initialize(self):
-        wp.launch(control._initialize, 1, [self.state, self.values, self.running, self.initial], device=self.device)
+        wp.launch(
+            control._initialize,
+            1,
+            [self.state, self.values, self.running, self.fresh, self.stale, self.initial],
+            device=self.device,
+        )
 
     def assess(self, *, limit=40, has_alm=1):
         wp.launch(
@@ -40,6 +47,8 @@ class DeviceControlTests(unittest.TestCase):
                 self.running,
                 self.correct,
                 self.dual,
+                self.fresh,
+                self.stale,
                 2e-6,
                 1e-3,
                 self.initial,
@@ -88,6 +97,10 @@ class DeviceControlTests(unittest.TestCase):
             self.assertEqual(int(self.correct.numpy()[0]), int(not primal_converged))
             self.assertEqual(int(self.dual.numpy()[0]), int(primal_converged and iteration != 40))
             self.assertEqual(int(self.running.numpy()[0]), int(iteration != 40))
+            # A dual-only update repeats the unchanged candidate: the next
+            # trial must skip its primal/geometry stage, and only then.
+            self.assertEqual(int(self.fresh.numpy()[0]), int(not (primal_converged and iteration != 40)))
+            self.assertEqual(int(self.stale.numpy()[0]), int(primal_converged and iteration != 40))
             np.testing.assert_array_equal(self.levels.numpy(), np.arange(5) == level)
 
     def test_failure_and_geometry_fallback_cannot_commit(self):
@@ -110,6 +123,8 @@ class DeviceControlTests(unittest.TestCase):
                 self.assertEqual(int(self.running.numpy()[0]), 0)
                 self.assertEqual(int(self.correct.numpy()[0]), 0)
                 self.assertEqual(int(self.dual.numpy()[0]), 0)
+                self.assertEqual(int(self.fresh.numpy()[0]), 1)
+                self.assertEqual(int(self.stale.numpy()[0]), 0)
 
     def test_alm_threshold_preserves_double_host_comparison(self):
         self.initialize()

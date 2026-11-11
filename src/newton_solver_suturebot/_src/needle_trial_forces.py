@@ -280,17 +280,24 @@ def tip_boundary_certificate(
     radius: wp.float64,
     fallback: wp.array[int],
 ):
+    # The three queries are independent disjunctions into the fallback flag;
+    # one lane each overlaps their sequential bounding-volume walks.
+    lane = wp.tid()
     old_tip, tip = old_tips[0], samples[0]
-    padding = wp.vec3d(motion[0], motion[1], motion[2]) + wp.vec3d(wp.float64(1e-9))
-    low, high = _conservative_box(wp.min(old_tip, tip) - padding, wp.max(old_tip, tip) + padding)
-    query = wp.mesh_query_aabb(full_mesh, low, high)
     item = int(0)
-    while wp.mesh_query_aabb_next(query, item):
-        wp.atomic_max(fallback, 0, 1)
-    query2 = wp.mesh_query_aabb(active_mesh, low, high)
-    while wp.mesh_query_aabb_next(query2, item):
-        wp.atomic_max(fallback, 0, 1)
-    if not step_flags[0]:
+    if lane == 0:
+        padding = wp.vec3d(motion[0], motion[1], motion[2]) + wp.vec3d(wp.float64(1e-9))
+        low, high = _conservative_box(wp.min(old_tip, tip) - padding, wp.max(old_tip, tip) + padding)
+        query = wp.mesh_query_aabb(full_mesh, low, high)
+        while wp.mesh_query_aabb_next(query, item):
+            wp.atomic_max(fallback, 0, 1)
+    elif lane == 1:
+        padding = wp.vec3d(motion[0], motion[1], motion[2]) + wp.vec3d(wp.float64(1e-9))
+        low, high = _conservative_box(wp.min(old_tip, tip) - padding, wp.max(old_tip, tip) + padding)
+        query2 = wp.mesh_query_aabb(active_mesh, low, high)
+        while wp.mesh_query_aabb_next(query2, item):
+            wp.atomic_max(fallback, 0, 1)
+    elif not step_flags[0]:
         lo, hi = _conservative_box(tip - wp.vec3d(radius), tip + wp.vec3d(radius))
         close = wp.mesh_query_aabb(full_mesh, lo, hi)
         while wp.mesh_query_aabb_next(close, item):
@@ -350,8 +357,19 @@ class _NeedleTrialForces:
         if self.device.is_cuda:
             from .geometry.mesh_refit import GraphMeshRefit
 
-            self._surface_refit = GraphMeshRefit(interaction.mesh)
-            self._active_refit = GraphMeshRefit(interaction._active_mesh)
+            # Vertices that trials can move: mapped exterior vertices sourced
+            # from free nodes, and free nodes of the active-boundary copy.
+            # Fixed nodes are restored to their references before every solve,
+            # so faces without any movable vertex keep identical bounds.
+            fixed = np.asarray(interaction.fixed).astype(bool)
+            mapping = np.asarray(interaction.mapping)
+            surface_moving = np.zeros(len(interaction.mesh.points), dtype=bool)
+            mapped = mapping >= 0
+            surface_moving[mapped] = ~fixed[mapping[mapped]]
+            active_moving = np.zeros(len(interaction._active_mesh.points), dtype=bool)
+            active_moving[: len(fixed)] = ~fixed
+            self._surface_refit = GraphMeshRefit(interaction.mesh, moving_vertex_mask=surface_moving)
+            self._active_refit = GraphMeshRefit(interaction._active_mesh, moving_vertex_mask=active_moving)
         else:
             self._surface_refit = interaction.mesh
             self._active_refit = interaction._active_mesh
@@ -567,7 +585,7 @@ class _NeedleTrialForces:
             )
             wp.launch(
                 tip_boundary_certificate,
-                1,
+                3,
                 [
                     x.mesh.id,
                     x._active_mesh.id,
@@ -590,6 +608,16 @@ class _NeedleTrialForces:
         geometry without downloading coordinates or publishing host query caches.
         After a zero fallback result and convergence, run the existing CPU final
         metadata/CCD/accept transaction before publishing the physical state.
+        """
+        self.add_surface_forces(state, body, body_com_local, external_forces, dt)
+        self.add_history_forces(state, body, body_com_local, external_forces, dt)
+
+    def add_surface_forces(self, state, body, body_com_local, external_forces, dt):
+        """Candidate-state geometry, permissions and surface forces only.
+
+        This stage depends solely on the candidate positions/velocities and
+        accepted metadata — not on trial-local tunnel multipliers. A dual-only
+        repetition of an unchanged candidate may reuse its outputs verbatim.
         """
         x = self.interaction
         capture = 2 * float(x.radii.max())
@@ -658,6 +686,15 @@ class _NeedleTrialForces:
             device=self.device,
             block_dim=self.surface_block_dim,
         )
+
+    def add_history_forces(self, state, body, body_com_local, external_forces, dt):
+        """Tunnel/shaft track forces and the trial flag check.
+
+        The ALM branch reads the trial-local dual multipliers, so this stage is
+        re-evaluated after every dual update even for an unchanged candidate.
+        """
+        x = self.interaction
+        capture = 2 * float(x.radii.max())
         if x.tunnel_alm is not None:
             x.tunnel_alm.add_forces(state, body, body_com_local, external_forces, dt)
         elif x.track_count:

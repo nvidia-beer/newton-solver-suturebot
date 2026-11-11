@@ -27,7 +27,6 @@ class TestCPUCGReduction(unittest.TestCase):
                         model,
                         dt=dt,
                         fixed_particle_indices=(0, 1),
-                        self_contact_ke=0,
                         solver_type="cg",
                         preconditioner_type=preconditioner,
                         linear_solver_maxiter=80,

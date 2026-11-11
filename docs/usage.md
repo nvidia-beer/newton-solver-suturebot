@@ -1,6 +1,6 @@
 # Example guide
 
-This self-contained repository has four runnable examples, discovered
+This self-contained repository has five runnable examples, discovered
 from their modules. FEM, cutting, needle coupling, the optional joint MuJoCo/FEM
 solver and their geometry helpers are included in this package. Launch commands and available recorded previews are in the
 [main page's example gallery](../README.md#examples).
@@ -13,6 +13,7 @@ example modules and bundled assets.
 | `fem_phantom_regions` | Simulate one selected Tet4 region with fixed interfaces to inactive material; use mouse spring forces to deform it. | [Controls, region mapping and geometry](phantom-regions.md) |
 | `fem_needle_insertion` | Select entry and exit material points, then drive one free MuJoCo needle automatically or use sliders to insert, retract and lift it in regional FEM tissue. | [Controls, assumptions and numerical checks](needle-insertion.md) |
 | `fem_dvrk` | Replay measured da Vinci Research Kit (dVRK) tool poses and inspect four camera overlays against source videos. This static-scene kinematic replay does not advance FEM or rigid-body dynamics. | [Recording setup and calibration scope](suturebot-recording.md) |
+| `fem_versius` | Inspect two supplied Versius distal needle holders over the full pad with generated motion and explicitly labeled dVRK stereo placeholder video. | [Preview scope and preparation](versius-recording.md) |
 
 ## Setup and bundled assets
 
@@ -73,7 +74,12 @@ For manual needle handling, preview the selected entry/exit path, then adjust
 **Insert / retract** and **Lift / lower**. Each setting directly specifies the
 drive target; finite forces and torques move the simulated needle. Releasing
 the mouse holds that target while the body settles. The lift control is limited
-to ±2 mm in this demo; this is not a guarantee for every region or selected path.
+to ±5 mm in this demo; validated handling sequences cover ±2 mm, and this is
+not a guarantee for every region or selected path. In the default region a
++5 mm lift completes. Lowering compresses tissue against a volumetric
+compression barrier (elements stiffen instead of inverting), and the run stops
+with a guarded failure near a −3.6 mm target when the needle reaches the
+region's fixed cut boundary; deeper targets need a deeper active region.
 **Pause** freezes time;
 **Resume sliders** continues and **Reset** restores automatic mode. **Space**
 retains the viewer's separate global pause. The interactive preset uses one
@@ -88,6 +94,11 @@ Use `--substeps 12 --coupling-absolute-tolerance 2e-7 --coupling-relative-tolera
 reference. Successful insertion does not establish timestep-independent
 force histories: the [needle guide](needle-insertion.md#current-interactive-preset-and-finer-reference)
 records the observed differences and qualification scope.
+`--fem-chebyshev-degree` (default 4; 0 disables) accelerates the FEM
+block-Jacobi preconditioner without changing the matrix, right-hand side or
+stopping rule; the
+[latency round](needle-insertion.md#november-11-single-scene-latency-round)
+records its measured effects and limits.
 All imported timing/test counts are historical originating-project evidence,
 not measurements of this standalone extraction. Recorded 10-substep FPS
 results describe the earlier automatic workload. Loaded handling has not met

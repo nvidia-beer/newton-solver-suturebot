@@ -21,6 +21,8 @@ def _initialize(
     state: wp.array[int],
     values: wp.array[wp.float64],
     running: wp.array[int],
+    fresh: wp.array[int],
+    stale: wp.array[int],
     initial_relaxation: wp.float64,
 ):
     for i in range(6):
@@ -31,6 +33,8 @@ def _initialize(
     values[2] = wp.float64(0.0)
     values[3] = wp.float64(0.0)
     running[0] = 1
+    fresh[0] = 1
+    stale[0] = 0
 
 
 @wp.kernel(enable_backward=False)
@@ -61,6 +65,8 @@ def _assess_trial(
     running: wp.array[int],
     correct: wp.array[int],
     update_duals: wp.array[int],
+    fresh: wp.array[int],
+    stale: wp.array[int],
     absolute_tolerance: wp.float64,
     relative_tolerance: wp.float64,
     initial_relaxation: wp.float64,
@@ -71,6 +77,11 @@ def _assess_trial(
     correct[0] = 0
     update_duals[0] = 0
     running[0] = 0
+    # A dual-only update keeps the applied load, so the next trial's candidate
+    # state, geometry and surface forces are those already evaluated; only the
+    # tunnel's constitutive stage must be recomputed.
+    fresh[0] = 1
+    stale[0] = 0
     values[1] = statistics[0]
     if statistics[5] != wp.float64(0.0):
         state[4] = 1
@@ -97,6 +108,8 @@ def _assess_trial(
             state[3] = 1
             return
         update_duals[0] = 1
+        fresh[0] = 0
+        stale[0] = 1
         state[5] += 1
         state[1] = state[0] + 1
         values[0] = initial_relaxation
@@ -187,6 +200,15 @@ class _CapturedNeedleTrials:
         self.empty_alm = wp.zeros(5, dtype=float, device=self.device)
         self.finite = wp.ones(1, dtype=int, device=self.device)
         self.result = wp.zeros(11, dtype=wp.float64, device=self.device)
+        # Dual-only repetitions reuse the previous trial's unchanged candidate:
+        # `fresh` gates the primal solve/geometry/surface stage, `stale` its
+        # restoration from these snapshots taken after each fresh evaluation.
+        self.fresh = wp.ones(1, dtype=int, device=self.device)
+        self.stale = wp.zeros(1, dtype=int, device=self.device)
+        self.forces_base = wp.empty_like(coupler._forces)
+        self.body_f_base = wp.empty_like(coupler._candidate.body_f)
+        self.diagnostics_base = wp.empty_like(coupler.interaction._diagnostics)
+        self.contact_flags_base = wp.empty_like(coupler.interaction._contact_flags)
         self.graph = None
         self.graphs = {}
         self.signature = None
@@ -208,6 +230,9 @@ class _CapturedNeedleTrials:
         c, solver = self.c, self.c.fem_solver
         changed = self.permissions.prepare(c.interaction)
         self.rigid.prepare(dt)
+        # Captured trials omit the projection of invariant assembled values;
+        # refresh it eagerly whenever the tangent changed since the last launch.
+        c._refresh_projection()
         tolerance = solver.linear_solver_tolerance
         tolerances = [tolerance]
         while True:
@@ -267,7 +292,16 @@ class _CapturedNeedleTrials:
                 solver._lin_solver = solver._lin_solver_key = None
             operator = solver._fixed_particles.operator
         settings = tuple(solver._linear_solver_settings(value) for value in tolerances)
-        linear_signature = (id(operator), id(solver.M_bsr), solver._normalized_rhs.ptr, solver.dv.ptr, settings)
+        fixed = solver._fixed_particles
+        compact = None if fixed is None or fixed.compact_matrix is None else fixed.compact_matrix
+        linear_signature = (
+            id(operator),
+            id(solver.M_bsr),
+            solver._normalized_rhs.ptr,
+            solver.dv.ptr,
+            None if compact is None else (compact.values.ptr, fixed.compact_rhs.ptr, fixed.compact_increment.ptr),
+            settings,
+        )
         if linear_signature != self._linear_signature:
             # Public Warp run=False factories allocate all Krylov scratch;
             # neither extra tolerance branches nor the PC need a warm solve.
@@ -317,10 +351,28 @@ class _CapturedNeedleTrials:
                 device=self.device,
             )
 
-        def evaluate():
+        def fresh_surface():
             c._forces.zero_()
             c._candidate.body_f.zero_()
-            self.permissions.add_forces(c._candidate, c.needle_body, c.needle_com, c._forces, dt)
+            self.permissions.add_surface_forces(c._candidate, c.needle_body, c.needle_com, c._forces, dt)
+            # Snapshot the dual-independent stage for dual-only repetitions.
+            wp.copy(self.forces_base, c._forces)
+            wp.copy(self.body_f_base, c._candidate.body_f)
+            wp.copy(self.diagnostics_base, c.interaction._diagnostics)
+            wp.copy(self.contact_flags_base, c.interaction._contact_flags)
+
+        def repeat_surface():
+            # The candidate, geometry, permissions and surface forces of a
+            # dual-only repetition are those of the previous trial, verbatim.
+            wp.copy(c._forces, self.forces_base)
+            wp.copy(c._candidate.body_f, self.body_f_base)
+            wp.copy(c.interaction._diagnostics, self.diagnostics_base)
+            wp.copy(c.interaction._contact_flags, self.contact_flags_base)
+
+        def evaluate():
+            wp.capture_if(self.fresh, fresh_surface)
+            wp.capture_if(self.stale, repeat_surface)
+            self.permissions.add_history_forces(c._candidate, c.needle_body, c.needle_com, c._forces, dt)
             c._statistics.zero_()
             wp.launch(
                 _interface_residual,
@@ -351,6 +403,8 @@ class _CapturedNeedleTrials:
                     self.running,
                     self.correct,
                     self.dual,
+                    self.fresh,
+                    self.stale,
                     c.absolute_tolerance,
                     c.relative_tolerance,
                     c.relaxation,
@@ -364,13 +418,7 @@ class _CapturedNeedleTrials:
                 wp.capture_if(self.dual, update_duals)
             wp.capture_if(self.correct, correct)
 
-        def trial():
-            wp.launch(
-                _begin_trial,
-                1,
-                [self.state, self.values, self.levels, len(self.tolerances), c.relaxation],
-                device=self.device,
-            )
+        def primal():
             wp.launch(
                 _apply_interface_load,
                 max(c.model.particle_count, c.model.body_count),
@@ -405,6 +453,18 @@ class _CapturedNeedleTrials:
                 device=self.device,
             )
             wp.launch(reject_nonfinite, 1, [self.finite, self.state, self.running], device=self.device)
+
+        def trial():
+            wp.launch(
+                _begin_trial,
+                1,
+                [self.state, self.values, self.levels, len(self.tolerances), c.relaxation],
+                device=self.device,
+            )
+            # A dual-only repetition applies the identical load to the identical
+            # start, so its primal solve, rigid motion, finiteness and geometry
+            # are those already computed and checked in the previous trial.
+            wp.capture_if(self.fresh, primal)
             wp.capture_if(self.finite, evaluate)
 
         inputs = (
@@ -432,7 +492,7 @@ class _CapturedNeedleTrials:
                     wp.launch(
                         _initialize,
                         1,
-                        [self.state, self.values, self.running, c.relaxation],
+                        [self.state, self.values, self.running, self.fresh, self.stale, c.relaxation],
                         device=self.device,
                     )
                     wp.capture_while(self.running, trial)

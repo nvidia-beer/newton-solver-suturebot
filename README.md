@@ -42,16 +42,19 @@ Examples are discovered from their modules. Click a preview to open the recorded
 | --- | --- |
 | **[fem_dvrk](src/newton_solver_suturebot/examples/example_fem_dvrk.py)**<br>Replay da Vinci Research Kit (dVRK) recordings with four source-video camera overlays.<br><a href="docs/media/fem_dvrk.mp4"><img src="docs/media/fem_dvrk.jpg" width="300" alt="Replay da Vinci Research Kit (dVRK) recordings with four source-video camera overlays."></a><br>`./docker/run.sh fem_dvrk` | **[fem_needle_insertion](src/newton_solver_suturebot/examples/example_fem_needle_insertion.py)**<br>Select entry and exit material points, then drive one MuJoCo needle into FEM tissue.<br><a href="docs/media/fem_needle_insertion.mp4"><img src="docs/media/fem_needle_insertion.jpg" width="300" alt="Select entry and exit material points, then drive one MuJoCo needle into FEM tissue."></a><br>`./docker/run.sh fem_needle_insertion` |
 | **[fem_phantom_cut](src/newton_solver_suturebot/examples/example_fem_phantom_cut.py)**<br>Slice the entire SutureBot pad; right-drag to lift and separate cut material.<br><a href="docs/media/fem_phantom_cut.mp4"><img src="docs/media/fem_phantom_cut.jpg" width="300" alt="Slice the entire SutureBot pad; right-drag to lift and separate cut material."></a><br>`./docker/run.sh fem_phantom_cut` | **[fem_phantom_regions](src/newton_solver_suturebot/examples/example_fem_phantom_regions.py)**<br>Select one SutureBot wound on a clickable map and right-drag the suture pad.<br><a href="docs/media/fem_phantom_regions.mp4"><img src="docs/media/fem_phantom_regions.jpg" width="300" alt="Select one SutureBot wound on a clickable map and right-drag the suture pad."></a><br>`./docker/run.sh fem_phantom_regions` |
+| **[fem_versius](src/newton_solver_suturebot/examples/example_fem_versius.py)**<br>Preview CMR Surgical Versius instruments over the full pad with placeholder stereo video.<br><a href="docs/media/fem_versius.mp4"><img src="docs/media/fem_versius.jpg" width="300" alt="Preview CMR Surgical Versius instruments over the full pad with placeholder stereo video."></a><br>`./docker/run.sh fem_versius` |  |
 
-The pad and needle examples advance physical simulation. `fem_dvrk` replays
-da Vinci Research Kit (dVRK) recordings over a static scene. Movie playback rate is not live FPS;
+The pad and needle examples advance physical simulation. `fem_dvrk` replays measured
+da Vinci Research Kit motion; `fem_versius` previews generated motion with labeled dVRK
+placeholder videos. Both viewing scenes have static tissue. Movie playback rate is not live FPS;
 loaded needle handling has not demonstrated sustained 60 FPS.
 
 ## Documentation
 
 | Guide | Contents |
 | --- | --- |
-| [Usage](docs/usage.md) | Setup, controls and all four example workflows |
+| [Usage](docs/usage.md) | Setup, controls and example workflows |
+| [Versius preview](docs/versius-recording.md) | Generated instrument motion and placeholder-video scope |
 | [Repository layout](docs/layout.md) | Local solvers, examples and bundled assets |
 | [Method](docs/method.md) | Implemented equations, numerical assumptions and gradient limits |
 | [Papers](docs/papers.md) | Primary sources and implementation mappings |

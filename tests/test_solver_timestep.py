@@ -44,7 +44,6 @@ class TestSolverTimestep(unittest.TestCase):
             preconditioner_type="block_diag",
             linear_solver_maxiter=80,
             linear_solver_tolerance=1e-5,
-            self_contact_ke=0,
             differentiable=differentiable,
             fixed_particle_indices=(0, 1) if fixed else None,
         )
