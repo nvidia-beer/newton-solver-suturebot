@@ -22,11 +22,23 @@ README records no upstream LICENSE file for this mesh. This asset is not
 represented as Apache-2.0 licensed. Its provenance and content hashes are in
 src/newton_solver_suturebot/examples/assets/phantom_pad/provenance.json.
 
-SutureBot rig and recording assets have separate source attributions in
-src/newton_solver_suturebot/examples/assets/suturebot/THIRD_PARTY.md and each
+dVRK rig and SutureBot recording assets have separate source attributions in
+src/newton_solver_suturebot/examples/assets/dvrk/THIRD_PARTY.md and each
 recording's THIRD_PARTY.md. The dVRK MIT notice is retained in
-src/newton_solver_suturebot/examples/assets/suturebot/recordings/tissue3_215300/DVRK_MODEL_LICENSE.txt
+src/newton_solver_suturebot/examples/assets/dvrk/recordings/tissue3_215300/DVRK_MODEL_LICENSE.txt
 and the corresponding files in the other bundled recording directories.
 The source inventory identifies the SutureBot dataset as CC-BY-4.0. No
 standalone license was supplied for the needle and trocar-cage CAD; these
 assets are not represented as covered by this package's Apache-2.0 license.
+
+The Versius preview uses two instances of supplied CMR NeedleHolderPlatform
+CAD, converted from the URDF/GLB sources identified at commit
+9b75abc922f9e8b0e029caf3d70299b3141ed679. Original CMR rights are retained.
+No independent redistribution license was found in the supplied source;
+the CAD is not represented as covered by Apache-2.0 or the dVRK MIT license.
+Source hashes and the bundle notice are recorded in
+src/newton_solver_suturebot/examples/assets/versius/recordings/versius_stereo_preview/instrument-provenance.json
+and the adjacent THIRD_PARTY.txt. The adjacent recording.json identifies
+generated motion and unrelated dVRK placeholder images; their source notice
+is retained in placeholder-source-notice.txt. The existing pad attribution
+above also applies to the full-pad geometry displayed in this preview.

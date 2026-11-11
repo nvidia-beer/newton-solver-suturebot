@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 CAMERAS = ("left", "right", "psm1", "psm2")
-RECORDINGS = Path(__file__).parent / "assets/suturebot/recordings"
+RECORDINGS = Path(__file__).parent / "assets/dvrk/recordings"
 DEFAULT_RECORDING = RECORDINGS / "tissue3_215300/recording.json"
 
 
@@ -31,26 +31,64 @@ def bundled_recordings(*, include_aliases=True):
 
 
 class Recording:
-    def __init__(self, path):
+    def __init__(self, path, *, catalog=None):
+        """Load a direct package path or a name from an optional recording catalog.
+
+        Omitting ``catalog`` retains dVRK sample-name lookup. Passing an empty
+        mapping disables it; direct paths never consult a catalog.
+        """
         path = Path(path).expanduser()
         if not path.exists() and len(path.parts) == 1:
-            path = bundled_recordings().get(str(path), path)
+            catalog = bundled_recordings() if catalog is None else catalog
+            path = Path(catalog.get(str(path), path)).expanduser()
         self.path = path.resolve()
         if not self.path.is_file():
             raise FileNotFoundError(
-                f"Missing prepared recording: {self.path}. See docs/suturebot-recording.md for preparation."
+                f"Missing prepared recording: {self.path}. See docs/usage.md for recording and preparation guides."
             )
         self.root = self.path.parent
         self.manifest = json.loads(self.path.read_text())
-        if self.manifest.get("schema_version") != 1:
+        relative_root = self.manifest.get("asset_root", ".")
+        if not isinstance(relative_root, str) or not relative_root.strip() or Path(relative_root).is_absolute():
+            raise ValueError("Recording asset_root must be a relative ancestor directory")
+        self.asset_root = (self.root / relative_root).resolve()
+        if not self.asset_root.is_dir() or not self.root.is_relative_to(self.asset_root):
+            raise ValueError("Recording asset_root must be an existing ancestor directory")
+        schema = self.manifest.get("schema_version")
+        if type(schema) is not int or schema not in (1, 2):
             raise ValueError("Unsupported SutureBot recording schema")
         self.scene_path = self.asset(self.manifest["scene_usd"])
         self.body_paths = tuple(self.manifest["body_paths"])
         if not self.body_paths or len(set(self.body_paths)) != len(self.body_paths):
             raise ValueError("Recording body paths must be nonempty and unique")
         self.cameras = self.manifest["cameras"]
-        if set(self.cameras) != set(CAMERAS) or tuple(self.manifest["camera_order"]) != CAMERAS:
+        order = self.manifest["camera_order"]
+        if (
+            not isinstance(order, list)
+            or not order
+            or any(not isinstance(name, str) or not name.strip() for name in order)
+            or len(set(order)) != len(order)
+            or not isinstance(self.cameras, dict)
+            or set(self.cameras) != set(order)
+        ):
+            raise ValueError("Camera order must contain unique names matching the camera mapping exactly")
+        self.camera_order = tuple(order)
+        self.camera_count = len(order)
+        if schema == 1 and self.camera_order != CAMERAS:
             raise ValueError("Recording must identify left, right, psm1 and psm2 cameras in that order")
+        if "camera_count" in self.manifest and (
+            type(self.manifest["camera_count"]) is not int or self.manifest["camera_count"] != self.camera_count
+        ):
+            raise ValueError("Camera count differs from the explicit camera order")
+        for name, camera in self.cameras.items():
+            if "label" in camera and (not isinstance(camera["label"], str) or not camera["label"].strip()):
+                raise ValueError(f"Camera display label must be a nonempty string: {name}")
+            if type(camera.get("placeholder", False)) is not bool:
+                raise ValueError(f"Camera placeholder flag must be boolean: {name}")
+            if camera.get("placeholder", False) and (
+                not isinstance(camera.get("placeholder_reason"), str) or not camera["placeholder_reason"].strip()
+            ):
+                raise ValueError(f"Placeholder camera requires an explicit reason: {name}")
         with np.load(self.asset(self.manifest["motion_npz"]), allow_pickle=False) as data:
             self.timestamps_ns = data["timestamps_ns"].copy()
             self.time_s = data["time_s"].copy()
@@ -85,8 +123,11 @@ class Recording:
                 raise ValueError("Camera and body trajectories have different source timestamps")
             self.camera_poses = data["camera_poses_cv"].copy()
             self.camera_valid = data["camera_valid"].copy()
-        if self.camera_poses.shape != (self.frame_count, 4, 4, 4) or self.camera_valid.shape != (self.frame_count, 4):
-            raise ValueError("Camera pose/availability arrays do not match the four-view recording")
+        if self.camera_poses.shape != (self.frame_count, self.camera_count, 4, 4) or self.camera_valid.shape != (
+            self.frame_count,
+            self.camera_count,
+        ):
+            raise ValueError("Camera pose/availability arrays do not match the recording camera count")
         if self.camera_valid.dtype != np.dtype(bool):
             raise ValueError("Camera availability must be a boolean mask")
         valid = self.camera_poses[self.camera_valid]
@@ -106,7 +147,7 @@ class Recording:
         for key in ("first_valid_frame", "last_valid_frame"):
             if key in self.manifest["timing"] and self.manifest["timing"][key] != getattr(self, key):
                 raise ValueError("Manifest supported interval differs from its trajectory")
-        for view in CAMERAS:
+        for view in self.camera_order:
             if int(self.cameras[view]["frame_count"]) != self.frame_count:
                 raise ValueError(f"{view} frame count differs from its trajectory")
         playback = self.manifest.get("playback", {})
@@ -127,7 +168,7 @@ class Recording:
 
     def asset(self, relative):
         path = (self.root / relative).resolve()
-        if not path.is_relative_to(self.root) or not path.is_file():
+        if Path(relative).is_absolute() or not path.is_relative_to(self.asset_root) or not path.is_file():
             raise ValueError(f"Prepared asset must exist inside the recording package: {relative}")
         return path
 
@@ -145,9 +186,9 @@ class Recording:
 
     def camera_frame(self, frame):
         return (
-            {view: self.camera_poses[frame, index] for index, view in enumerate(CAMERAS)},
+            {view: self.camera_poses[frame, index] for index, view in enumerate(self.camera_order)},
             {
                 view: bool(self.body_valid[frame] and self.camera_valid[frame, index])
-                for index, view in enumerate(CAMERAS)
+                for index, view in enumerate(self.camera_order)
             },
         )

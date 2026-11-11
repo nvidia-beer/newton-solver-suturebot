@@ -1,0 +1,11 @@
+#usda 1.0
+(
+    defaultPrim = "SutureBotReplay"
+    metersPerUnit = 1
+    subLayers = [
+        @../../models/replay_appearance.usda@,
+        @scene_tools.usda@
+    ]
+    upAxis = "Z"
+)
+

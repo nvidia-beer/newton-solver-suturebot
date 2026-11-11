@@ -8,8 +8,9 @@ metadata and reports retain that name.
 The four prepared recordings and their referenced payloads are bundled. No
 source dataset or preparation environment is required for playback. Preparation
 workbench paths below identify the historical, optional data-creation pipeline,
-not runtime dependencies. The imported movie and validation numbers retain
-their original capture provenance; see [provenance](provenance.md).
+not runtime dependencies. The [current gallery movie](media/fem_dvrk.mp4) shows
+the standalone material preset. The original movie is archived, and historical
+validation numbers retain their original provenance; see [provenance](provenance.md).
 
 `fem_dvrk` opens a second terminal menu with four distinct bundled
 recordings. Compatibility aliases are omitted from both recording menus; the
@@ -53,10 +54,24 @@ The `tissue3_215300_mesh_preview` compatibility name remains available through
 ./docker/run.sh fem_dvrk --sample tissue3_215300_mesh_preview
 ```
 
-Each recording contains its own portable copy of the two tool assets. The mesh
-update preserves its recorded motion, opening angles, cameras and phantom. The DeBakey shape is an estimate refined against the reference
+The recordings reference one platform library under `assets/dvrk/models/`.
+Tool meshes and phantom geometry are shared; recording-specific placement,
+phantom UV labels and textures remain with each recording. Fitted fixture and
+legacy-tool geometry variants are retained explicitly. This preserves recorded
+motion, opening angles, cameras and phantom. The DeBakey shape is an estimate refined against the reference
 photo; four-view calibration remains unfinished. The four recording choices and
 default selection remain available.
+
+The current scene adds a metal-appearance preset through `scene_pbr.usda` and
+the shared `models/replay_appearance.usda`, preserving source geometry. Both tools use the
+supplied Versius ShaftMetal on pitch CAD, TrimMetal on yaw CAD and BulkMetal on
+the jaws; the black roll CAD remains unchanged. This changes visualization,
+not geometry, recorded motion or physics, and does not establish measured dVRK
+surface reflectance. The separate preparation workflow is
+`/home/beer/Dev/MSc/suturebot_sim/preparation/newton_dvrk_materials/`, followed by
+`preparation/newton_shared_assets/` to factor the shared library. Geometry and
+materials are authored once; recordings supply configuration and source data.
+Runtime only reads the bundled USD layers.
 
 Redirected-input, headless, test, demo and benchmark runs keep the default sample
 without prompting; `--sample` always selects directly. Use `--choose-sample` to
@@ -116,8 +131,8 @@ convention, diameter and table dimensions are illustrative. The recorded ECM
 length does not establish the physical endoscope's optical angle. These are
 scene constraints, not measured hand-eye calibration.
 
-The published [alignment report](../src/newton_solver_suturebot/examples/assets/suturebot/recordings/tissue3_215300/alignment.json)
-and [constrained fit report](../src/newton_solver_suturebot/examples/assets/suturebot/recordings/tissue3_215300/constrained_fit_metrics.json)
+The published [alignment report](../src/newton_solver_suturebot/examples/assets/dvrk/recordings/tissue3_215300/alignment.json)
+and [constrained fit report](../src/newton_solver_suturebot/examples/assets/dvrk/recordings/tissue3_215300/constrained_fit_metrics.json)
 report image residuals, fitted optics and mechanical constraints. See
 [validation](validation.md#suturebot-recorded-placement-replay-2026-11-03) for
 the numerical results and their limitations. Current fitting excludes frames
@@ -139,9 +154,10 @@ tool or table cannot fix that image mismatch. Repeated views do not supply
 independent metric calibration.
 
 The example's data is included in
-[`examples/assets/suturebot/recordings/tissue3_215300/`](../src/newton_solver_suturebot/examples/assets/suturebot/recordings/tissue3_215300/README.md).
-This directory is self-contained: its assets use relative paths, and it can be
-copied to another checkout or loaded from an installed wheel. Source dataset
+[`examples/assets/dvrk/recordings/tissue3_215300/`](../src/newton_solver_suturebot/examples/assets/dvrk/recordings/tissue3_215300/README.md).
+The recording's `asset_root: "../../../"` permits relative references within
+the common examples assets tree. Copy that complete tree, including `dvrk/models/`,
+or install the wheel; the recording folder alone is not a standalone export. Source dataset
 identifiers and hashes are portable provenance records. Preparation code and
 intermediate outputs remain separately in `MSc/SutureBot-workbench`; the
 original recording is unchanged.
@@ -185,8 +201,9 @@ is static; this does not add FEM stepping.
 
 - `recording.json`: sample identity, relative asset paths, camera conventions,
   timing, alignment status and provenance.
-- `scene.usda` and referenced USDs: tools, cameras, fixture, table, endoscope
-  housing and unchanged phantom surface geometry in a common world frame.
+- Scene USD layers and shared model references: tools, cameras, fixture, table,
+  endoscope housing and unchanged phantom surface geometry in a common world
+  frame; per-recording placement and UV-label opinions remain separate.
 - `motion.npz`: exact source timestamps and body transforms in declared order.
 - `calibration.json`: fitted transforms, camera intrinsics/distortion, source
   evidence, held-out image residuals and explicit accuracy limitations.

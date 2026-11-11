@@ -279,7 +279,7 @@ class Example(PhantomExample):
         parser = PhantomExample.create_parser()
         parser.description = __doc__
         parser.set_defaults(regions=[1], substeps=16)
-        parser.add_argument("--rig-asset", default=str(Path(__file__).parent / "assets/suturebot/suturebot_rig.usda"))
+        parser.add_argument("--rig-asset", default=str(Path(__file__).parent / "assets/dvrk/suturebot_rig_pbr.usda"))
         parser.add_argument("--mujoco-backend", choices=("auto", "cpu", "warp"), default="auto")
         parser.add_argument(
             "--demo", action="store_true", help="Press and release the selected active FEM tissue with PSM1"

@@ -1,0 +1,4 @@
+Two instances of supplied CMR NeedleHolderPlatform CAD. Original CMR rights retained. No independent redistribution license was found in the supplied source; no new permission is inferred.
+The dVRK JPEGs are unrelated video placeholders copied unchanged from the identified prepared recording.
+Pad volume USD and payloads are copied unchanged from the user-selected pad asset.
+This package is a local engineering preview, not measured Versius replay, calibrated alignment or physical simulation.

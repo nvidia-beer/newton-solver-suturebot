@@ -1,17 +1,17 @@
 {
-  "example": "fem_suturebot",
-  "module": "newton_solver_fem.examples.example_fem_suturebot",
-  "caption": "Replay measured tissue3 tool motion with prepared USD tools, cameras, fixture and the original static phantom. Four synchronized views compare the model with source video; green point labels stay on the mesh. Camera and pad placement remain fitted estimates.",
+  "example": "fem_dvrk",
+  "module": "newton_solver_suturebot.examples.example_fem_dvrk",
+  "caption": "Replay measured da Vinci Research Kit (dVRK) tissue3 tool motion with prepared USD tools, cameras, fixture and the original static phantom. Four synchronized views compare the model with source video; green point labels stay on the mesh. Camera and pad placement remain fitted estimates.",
   "arguments": [
     "--test"
   ],
   "device": "cuda:0",
   "frames": 1202,
   "fps": 60,
-  "width": 1280,
-  "height": 720,
+  "width": 1920,
+  "height": 1080,
   "show_ui": true,
-  "recording_wall_seconds": 37.43792159700024,
+  "recording_wall_seconds": 39.16105767899717,
   "playback_is_performance_benchmark": false,
   "simulation_time": [
     {
@@ -20,7 +20,7 @@
     }
   ],
   "dependencies": {
-    "newton_solver_fem": "0.1.0",
+    "newton_solver_suturebot": "0.1.0",
     "newton": "1.7.0",
     "warp-lang": "1.17.0+cu13"
   },
@@ -49,6 +49,13 @@
       "psm2": 43200
     },
     "motion": "measured Cartesian/joint kinematic replay",
+    "camera_order": [
+      "left",
+      "right",
+      "psm1",
+      "psm2"
+    ],
+    "placeholder_views": [],
     "region_id": 1,
     "point_labels": {
       "report": "point_labels.json",

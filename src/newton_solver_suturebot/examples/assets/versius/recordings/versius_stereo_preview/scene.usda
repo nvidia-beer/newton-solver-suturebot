@@ -1,0 +1,170 @@
+#usda 1.0
+(
+    defaultPrim = "VersiusPreview"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "VersiusPreview"
+{
+    def "Left"
+    {
+        def Xform "shaft" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+        )
+        {
+            bool physics:kinematicEnabled = 1
+            matrix4d xformOp:transform = ( (-0.06715508828180669, -0.9919024839646131, -0.10779451016955019, 0), (-0.893971659345328, 0.10779451016955013, -0.4349655341112302, 0), (0.44306305014661707, 0.06715508828180675, -0.893971659345328, 0), (-0.2785854273338828, -0.04686957149115706, 0.5463344392958875, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Xform "CAD" (
+                prepend references = @../../models/needle_holder.usdc@</Tool/shaft>
+            )
+            {
+            }
+        }
+
+        def Xform "wrist" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+        )
+        {
+            bool physics:kinematicEnabled = 1
+            matrix4d xformOp:transform = ( (-0.06715508828180669, -0.9919024839646131, -0.10779451016955019, 0), (-0.893971659345328, 0.10779451016955013, -0.4349655341112302, 0), (0.44306305014661707, 0.06715508828180675, -0.893971659345328, 0), (-0.02590656983526693, -0.008571024644042639, 0.03650240197124689, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Xform "CAD" (
+                prepend references = @../../models/needle_holder.usdc@</Tool/wrist>
+            )
+            {
+            }
+        }
+
+        def Xform "jaw_1" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+        )
+        {
+            bool physics:kinematicEnabled = 1
+            matrix4d xformOp:transform = ( (-0.04269735796583346, -0.986710941625643, -0.1567751679921744, 0), (-0.893971659345328, 0.10779451016954994, -0.4349655341112303, 0), (0.44608475417805804, 0.12158067796135955, -0.8866941585667281, 0), (-0.021919002383947374, -0.007966628849506378, 0.028456657037138938, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Xform "CAD" (
+                prepend references = @../../models/needle_holder.usdc@</Tool/jaw_1>
+            )
+            {
+            }
+        }
+
+        def Xform "jaw_2" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+        )
+        {
+            bool physics:kinematicEnabled = 1
+            matrix4d xformOp:transform = ( (-0.1930702171307409, -0.9685790819329697, 0.1567751679921749, 0), (-0.8939716593453281, 0.1077945101695501, -0.43496553411123035, 0), (0.40439901526147376, -0.22413144718935102, -0.8866941585667282, 0), (-0.021919002383947374, -0.007966628849506378, 0.028456657037138938, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Xform "CAD" (
+                prepend references = @../../models/needle_holder.usdc@</Tool/jaw_2>
+            )
+            {
+            }
+        }
+    }
+
+    def "Right"
+    {
+        def Xform "shaft" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+        )
+        {
+            bool physics:kinematicEnabled = 1
+            matrix4d xformOp:transform = ( (0.11971220728891961, -0.9928086358538663, 5.551115123125783e-17, 0), (-0.9568400688966777, -0.11537514132478133, 0.2667314366888312, 0), (-0.2648132737983804, -0.03193100903936473, -0.9637708963658905, 0), (0.18599054551034874, 0.008712261763290848, 0.5881992231557805, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Xform "CAD" (
+                prepend references = @../../models/needle_holder.usdc@</Tool/shaft>
+            )
+            {
+            }
+        }
+
+        def Xform "wrist" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+        )
+        {
+            bool physics:kinematicEnabled = 1
+            matrix4d xformOp:transform = ( (0.11971220728891928, -0.9928086358538664, 8.326672684688674e-17, 0), (-0.893971659345328, -0.10779451016955034, 0.43496553411123023, 0), (-0.43183753856441887, -0.05207068418305916, -0.9004471023526771, 0), (0.034967535463132395, -0.009497992691858845, 0.038560680958313026, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Xform "CAD" (
+                prepend references = @../../models/needle_holder.usdc@</Tool/wrist>
+            )
+            {
+            }
+        }
+
+        def Xform "jaw_1" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+        )
+        {
+            bool physics:kinematicEnabled = 1
+            matrix4d xformOp:transform = ( (-0.013251278823808076, -0.9638542559009899, -0.2661003137748675, 0), (-0.893971659345328, -0.10779451016955058, 0.4349655341112302, 0), (-0.447927534202682, 0.24364998862888518, -0.8602299734049319, 0), (0.031080997616052628, -0.009966628849506378, 0.030456657037138936, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Xform "CAD" (
+                prepend references = @../../models/needle_holder.usdc@</Tool/jaw_1>
+            )
+            {
+            }
+        }
+
+        def Xform "jaw_2" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI"]
+        )
+        {
+            bool physics:kinematicEnabled = 1
+            matrix4d xformOp:transform = ( (0.24198215845755427, -0.9330783771994399, 0.26610031377486754, 0), (-0.8939716593453279, -0.1077945101695505, 0.4349655341112302, 0), (-0.37717278172686874, -0.34314003785650915, -0.8602299734049316, 0), (0.031080997616052628, -0.009966628849506378, 0.030456657037138936, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            def Xform "CAD" (
+                prepend references = @../../models/needle_holder.usdc@</Tool/jaw_2>
+            )
+            {
+            }
+        }
+    }
+
+    def Xform "Phantom" (
+        prepend references = @../../models/pad_surface.usdc@</PadSurface>
+    )
+    {
+    }
+
+    def Xform "StereoCameras"
+    {
+        custom bool preview:calibrated = 0
+        custom string preview:description = "Illustrative 6 mm stereo baseline; no measured Versius calibration or hardware geometry"
+
+        def Camera "left"
+        {
+            float2 clippingRange = (0.001, 2)
+            float focalLength = 20
+            float horizontalAperture = 21.052631
+            custom bool preview:placeholder = 1
+            float verticalAperture = 11.842105
+            matrix4d xformOp:transform = ( (0.9998611400396, -0.016664352333993333, 0, 0), (0.010230037442361499, 0.6138022465416899, 0.7893935320702231, 0), (-0.013154731948593665, -0.7892839169156198, 0.6138874909343711, 0), (0.0000809976160526275, -0.17996662884950637, 0.14522832851856948, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+
+        def Camera "right"
+        {
+            float2 clippingRange = (0.001, 2)
+            float focalLength = 20
+            float horizontalAperture = 21.052631
+            custom bool preview:placeholder = 1
+            float verticalAperture = 11.842105
+            matrix4d xformOp:transform = ( (0.9998611400396, 0.016664352333993333, 0, 0), (-0.010230037442361499, 0.6138022465416899, 0.7893935320702231, 0), (0.013154731948593665, -0.7892839169156198, 0.6138874909343711, 0), (0.006080997616052628, -0.17996662884950637, 0.14522832851856948, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+    }
+}
+

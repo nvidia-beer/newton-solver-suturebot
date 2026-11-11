@@ -12,11 +12,11 @@ def configure(name, example):
     if name == "fem_phantom_regions":
         example.recording_events = []
         example.recording_drag = None
-    elif name == "fem_dvrk":
+    elif name in ("fem_dvrk", "fem_versius"):
         example.recording_seen_frames = set()
         example.recording_view_changes = []
-    if name in ("fem_phantom_regions", "fem_dvrk", "fem_needle_insertion", "fem_phantom_cut"):
-        if name == "fem_dvrk" or getattr(example.screen_pick, "window", None) is not None:
+    if name in ("fem_phantom_regions", "fem_dvrk", "fem_versius", "fem_needle_insertion", "fem_phantom_cut"):
+        if name in ("fem_dvrk", "fem_versius") or getattr(example.screen_pick, "window", None) is not None:
             # Use the ordinary example panel, with unrelated viewer sections
             # collapsed so its clickable pad map remains visible in the clip.
             def collapse_viewer_sections(ui):
@@ -257,7 +257,7 @@ def before_frame(name, example, frame):
             example.running = False
             example.outcome = "Paused"
         return
-    if name == "fem_dvrk":
+    if name in ("fem_dvrk", "fem_versius"):
         example.recording_seen_frames.add(example.frame_index)
         if frame == 120:
             example.frame_phantom()
@@ -289,8 +289,8 @@ def frame_label(name, example):
         return f"Whole pad ({len(example.reference_elements):,} source tets) | Cuts: {example.cut_revision} | Simulation-time playback"
     if name == "fem_needle_insertion":
         return f"{example.outcome} | Simulation-time playback | coupled MuJoCo/FEM, illustrative interaction"
-    if name == "fem_dvrk":
-        return f"{example.recording.manifest['sample_id']} | frame {example.frame_index} | {example.recording.time_s[example.frame_index]:.2f} s | four camera overlays"
+    if name in ("fem_dvrk", "fem_versius"):
+        return f"{example.recording.manifest['sample_id']} | frame {example.frame_index} | {example.recording.time_s[example.frame_index]:.2f} s | {example.recording.camera_count} camera overlays"
     if name == "fem_phantom_regions":
         regions = ", ".join(str(value) for value in example.selected_region_ids) or "none"
         action = "Right-drag: physical spring grab" if example.recording_drag else "Click pad map | fixed inactive pad"
@@ -317,11 +317,11 @@ def recording_metadata(name, example):
             "interaction": "public material-selection, preview, start and pause controls",
             "needle_motion": "finite PD wrench in MuJoCo, with equal-and-opposite FEM interaction",
         }
-    if name == "fem_dvrk":
+    if name in ("fem_dvrk", "fem_versius"):
         example.test_final()
         example.recording_seen_frames.add(example.frame_index)
         if example.overlay is None:
-            raise RuntimeError("The recording must include all four model/video overlays")
+            raise RuntimeError("The recording must include its configured model/video overlays")
         if not all(count > 0 for count in example.overlay.coverage.values()):
             raise RuntimeError("The recording must render geometry in every camera view")
         return {
@@ -332,8 +332,14 @@ def recording_metadata(name, example):
             "supported_source_frames": [example.recording.first_valid_frame, example.recording.last_valid_frame],
             "alignment": example.recording.manifest["alignment"],
             "final_overlay_coverage_pixels": example.overlay.coverage,
-            "motion": "measured Cartesian/joint kinematic replay",
-            "region_id": example.recording.manifest["region_id"],
+            "motion": example.recording.manifest.get("motion", {}).get(
+                "description", "measured Cartesian/joint kinematic replay"
+            ),
+            "camera_order": list(example.recording.camera_order),
+            "placeholder_views": [
+                key for key, camera in example.recording.cameras.items() if camera.get("placeholder")
+            ],
+            "region_id": example.recording.manifest.get("region_id"),
             "point_labels": example.recording.manifest.get("point_labels"),
             "view_changes": example.recording_view_changes,
         }

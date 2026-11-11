@@ -1,0 +1,32 @@
+{
+  "source_repository": "/media/m3/repos/nvidia-cmr",
+  "source_commit": "9b75abc922f9e8b0e029caf3d70299b3141ed679",
+  "license": "No redistributable asset license found in supplied checkout. Source CMR files retain their existing rights; no new redistribution permission inferred.",
+  "files": {
+    "Instruments/needle_holder_platform.urdf": {
+      "sha256": "91d6aba47fcf56ab9d4fb17f89cda1ebbba52d5686ffabc338609b11fa46aab0",
+      "bytes": 2391
+    },
+    "Instruments/meshes/needle_holder_platform_yoke.glb": {
+      "sha256": "614d948b2aac987af70a1c25b00ef6599f7d92fb6a4ef1224657b82f07395d31",
+      "bytes": 2416124
+    },
+    "Instruments/meshes/needle_holder_platform_shaft.glb": {
+      "sha256": "c9eb68dc6580b57aff3b6ed78942b65372080ab773a24ca97b59c0df83dc0458",
+      "bytes": 8475228
+    },
+    "Instruments/meshes/needle_holder_platform_jaw_left.glb": {
+      "sha256": "8f04ce905064290d80cf31097a8e94be00f03467c392e479892665a7798695b2",
+      "bytes": 950084
+    },
+    "Instruments/meshes/needle_holder_platform_jaw_right.glb": {
+      "sha256": "4390ad7db0e0f361c9f87828f8066b2b56c64e187a78e430a33f1781a0f484c8",
+      "bytes": 950104
+    },
+    "IBSU/BSU.urdf": {
+      "sha256": "5943f72061457ca5fe16bccf5b23804e9d143bc915cedac8d1ef1345c6fc6105",
+      "bytes": 14018
+    }
+  },
+  "IBSU_scope": "BSU.urdf kinematic chain bundled; proximal arm meshes intentionally not rendered or copied."
+}

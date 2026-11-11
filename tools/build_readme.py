@@ -64,12 +64,14 @@ def make_readme(root=ROOT, *, require_videos=False):
     text.extend(f"| {cells[i]} | {cells[i + 1] if i + 1 < len(cells) else ''} |" for i in range(0, len(cells), 2))
     text.extend(
         [
-            "\nThe pad and needle examples advance physical simulation. `fem_dvrk` replays\n"
-            "da Vinci Research Kit (dVRK) recordings over a static scene. Movie playback rate is not live FPS;\n"
+            "\nThe pad and needle examples advance physical simulation. `fem_dvrk` replays measured\n"
+            "da Vinci Research Kit motion; `fem_versius` previews generated motion with labeled dVRK\n"
+            "placeholder videos. Both viewing scenes have static tissue. Movie playback rate is not live FPS;\n"
             "loaded needle handling has not demonstrated sustained 60 FPS.\n",
             "## Documentation\n",
             "| Guide | Contents |\n| --- | --- |\n"
-            "| [Usage](docs/usage.md) | Setup, controls and all four example workflows |\n"
+            "| [Usage](docs/usage.md) | Setup, controls and example workflows |\n"
+            "| [Versius preview](docs/versius-recording.md) | Generated instrument motion and placeholder-video scope |\n"
             "| [Repository layout](docs/layout.md) | Local solvers, examples and bundled assets |\n"
             "| [Method](docs/method.md) | Implemented equations, numerical assumptions and gradient limits |\n"
             "| [Papers](docs/papers.md) | Primary sources and implementation mappings |\n"

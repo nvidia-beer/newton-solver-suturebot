@@ -1,0 +1,11 @@
+#usda 1.0
+(
+    defaultPrim = "SutureBot"
+    metersPerUnit = 1
+    subLayers = [
+        @models/static_appearance.usda@,
+        @suturebot_rig.usda@
+    ]
+    upAxis = "Z"
+)
+

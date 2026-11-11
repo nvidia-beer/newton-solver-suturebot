@@ -26,9 +26,11 @@ _SOLVER_NAMES = re.compile(r"\bnewton(?:_solver_[A-Za-z0-9_]+|-solver-[A-Za-z0-9
 
 
 class StandalonePackageTests(unittest.TestCase):
-    def test_only_the_four_requested_examples_are_discovered_from_the_package(self):
+    def test_requested_examples_are_discovered_from_the_package(self):
         examples = discover()
-        self.assertEqual(set(examples), {"fem_needle_insertion", "fem_phantom_regions", "fem_dvrk", "fem_phantom_cut"})
+        self.assertEqual(
+            set(examples), {"fem_needle_insertion", "fem_phantom_regions", "fem_dvrk", "fem_phantom_cut", "fem_versius"}
+        )
         for description, _headless, module in examples.values():
             with self.subTest(module=module):
                 self.assertTrue(description.strip())
@@ -103,12 +105,16 @@ class BlockForeignSolver(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
         if foreign_solver(fullname):
             raise AssertionError("Runtime tried to import another solver package: " + fullname)
+        if fullname.split(".", 1)[0] == "suturebot_sim":
+            raise AssertionError("Runtime tried to import the external asset preparation project: " + fullname)
 
 sys.meta_path.insert(0, BlockForeignSolver())
 import newton_solver_suturebot as package
 import newton_solver_suturebot._src as runtime
 from newton_solver_suturebot.examples._suturebot_recording import DEFAULT_RECORDING, Recording, bundled_recordings
 from newton_solver_suturebot.examples.example_fem_phantom_regions import Example as Phantom
+from newton_solver_suturebot.examples.example_fem_versius import Example as Versius
+from pxr import UsdUtils
 
 for module in pkgutil.walk_packages(runtime.__path__, runtime.__name__ + "."):
     importlib.import_module(module.name)
@@ -123,12 +129,33 @@ assert len(selection.vertices) and len(selection.indices), "Bundled phantom payl
 recording = Recording(DEFAULT_RECORDING)
 assert recording.frame_count > 1
 assert DEFAULT_RECORDING in bundled_recordings().values()
+assert recording.path.is_relative_to(assets / "dvrk" / "recordings")
+assert not (assets / "suturebot").exists(), "The obsolete asset folder must not be needed by the package"
 paths = [needle.asset_path, phantom_path, recording.path, recording.scene_path]
 paths += [recording.asset(recording.manifest[key]) for key in ("motion_npz", "camera_poses_npz")]
+versius = Recording(Versius.default_recording, catalog=Versius.recording_catalog())
+assert versius.camera_order == ("left", "right")
+assert not versius.manifest["motion"]["measured"]
+paths += [versius.path, versius.scene_path]
+paths += [versius.asset(versius.manifest[key]) for key in ("motion_npz", "camera_poses_npz")]
+paths.append(versius.asset(versius.manifest["phantom"]["asset"]))
+for platform, sample in (("dvrk", recording), ("versius", versius)):
+    assert sample.asset_root == assets
+    layers, dependencies, unresolved = UsdUtils.ComputeAllDependencies(str(sample.scene_path))
+    assert not unresolved, unresolved
+    resolved = [Path(layer.realPath).resolve() for layer in layers if layer.realPath]
+    resolved += [Path(path).resolve() for path in dependencies]
+    assert any(path.is_relative_to(assets / platform / "models") for path in resolved), platform
+    paths += resolved
+for camera in versius.cameras.values():
+    assert camera["placeholder"] and camera["placeholder_reason"]
+    paths += [versius.asset(camera[key]) for key in ("ray_directions_cv_path", "ray_valid_path")]
+    paths.append(versius.asset(camera["frame_path_pattern"].format(frame=versius.first_frame)))
 for path in paths:
     assert path.is_file() and path.resolve().is_relative_to(assets), str(path)
 assert not any(foreign_solver(name) for name in sys.modules)
-print(json.dumps({"resources": ["needle", "phantom", "recording"], "regions": len(regions), "frames": recording.frame_count}))
+assert not any(name.split(".", 1)[0] == "suturebot_sim" for name in sys.modules)
+print(json.dumps({"resources": ["needle", "phantom", "recording", "versius"], "regions": len(regions), "frames": recording.frame_count}))
 """
         environment = dict(os.environ, CUDA_VISIBLE_DEVICES="", NEWTON_TEST_DEVICE="cpu", OPENBLAS_NUM_THREADS="1")
         environment.pop("PYTHONPATH", None)
@@ -144,7 +171,7 @@ print(json.dumps({"resources": ["needle", "phantom", "recording"], "regions": le
             )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         report = json.loads(result.stdout.strip().splitlines()[-1])
-        self.assertEqual(report["resources"], ["needle", "phantom", "recording"])
+        self.assertEqual(report["resources"], ["needle", "phantom", "recording", "versius"])
         self.assertGreater(report["regions"], 0)
         self.assertGreater(report["frames"], 1)
 

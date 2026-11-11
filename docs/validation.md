@@ -347,7 +347,7 @@ pose correction is allowed. Wrist optical axes are parallel to their shafts.
 The pad normal is parallel to the fixture support, with a free displacement
 relative to its feet. Camera focal lengths and principal points are fitted;
 distortion retains its earlier estimated prior. The packaged
-[constrained report](../src/newton_solver_suturebot/examples/assets/suturebot/recordings/tissue3_215300/constrained_fit_metrics.json)
+[constrained report](../src/newton_solver_suturebot/examples/assets/dvrk/recordings/tissue3_215300/constrained_fit_metrics.json)
 records each feature's fitting and reserved residuals in original video pixels,
 plus the optical parameters and mechanical checks.
 
@@ -534,9 +534,9 @@ Ruff checks and formatting also pass. Earlier runs with CUDA-context memory
 errors and the interrupted full CPU run remain recorded as historical checks;
 they are not substituted for this completed run.
 
-The [full viewer recording](media/fem_dvrk.mp4) contains 1,202 frames at
+The [historical full viewer recording](media/history/fem_dvrk/fem_dvrk.mp4) contains 1,202 frames at
 1280 × 720 and 60 fps, with four simultaneous overlays. Its
-[capture metadata](media/fem_dvrk.json) confirms all 597 supported source
+[capture metadata](media/history/fem_dvrk/fem_dvrk.json) confirms all 597 supported source
 frames were displayed; the regenerated capture took 50.880 seconds with CUDA rendering and the
 MuJoCo CPU needle backend. The close-up from 3 to 14.17 seconds makes both green
 surface marks and the frame-127 approach visible in the main OpenGL viewport.
@@ -545,7 +545,7 @@ the camera overlays. Source frames 444/448/464/494 additionally show the free-to
 transition and later tool following. Hashes of the final MP4, GIF, poster and metadata are
 recorded in the validation JSON. Playback rate is not a dynamics or live-performance
 measurement. The self-contained sample is documented in its
-[README](../src/newton_solver_suturebot/examples/assets/suturebot/recordings/tissue3_215300/README.md).
+[README](../src/newton_solver_suturebot/examples/assets/dvrk/recordings/tissue3_215300/README.md).
 Preparation commands and full audit arrays remain separately under the MSc
 workbench in `docs/recording-replay.md`; the example does not require it.
 

@@ -184,7 +184,7 @@ class TestNsightRunner(unittest.TestCase):
 
     def test_metadata_is_not_required_during_warmup_or_for_other_examples(self):
         example = types.SimpleNamespace(running=False, sim_time=0.0, step=lambda: None, render=lambda: None)
-        for name, final_test in (("fem_needle_insertion", False), ("fem_dvrk", True)):
+        for name, final_test in (("fem_needle_insertion", False), ("fem_dvrk", True), ("fem_versius", True)):
             with self.subTest(name=name):
                 result = RUNNER.run_frames(
                     example,

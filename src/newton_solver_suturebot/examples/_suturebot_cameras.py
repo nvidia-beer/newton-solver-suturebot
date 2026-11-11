@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
 # SPDX-License-Identifier: Apache-2.0
 
-"""Calibrated model overlays on four prepared, exactly indexed recording views.
+"""Model overlays on prepared, exactly indexed recording views.
 
 Preparation owns lens inversion, image resizing and camera trajectories. This
 module reads those assets, renders the actual Newton model through the supplied
@@ -100,27 +100,53 @@ def composite_overlay(recorded, rendered, depth, normals, valid, *, opacity=0.18
     return image
 
 
-class FourCameraOverlay:
-    """Render one model through four prepared camera views, with optional ImGui UI.
+class CameraOverlay:
+    """Render one model through ordered prepared views, with optional ImGui UI.
 
-    ``cameras`` maps ``left``, ``right``, ``psm1`` and ``psm2`` to records with
+    ``cameras`` maps explicit view names to records with
     ``overlay_size`` [width,height], ``ray_directions_cv_path`` (.npy), optional
     ``ray_valid_path`` (.npy), ``frame_path_pattern`` (e.g.
     ``images/left/{frame:06d}.jpg``) and ``frame_count``. Paths are relative to
     ``assets_root`` unless absolute. K, D and native video paths can remain in
     the records for provenance; only the prepared exact inverse rays are used.
 
+    ``camera_order`` selects their display/iteration order; by default the
+    mapping order is used. Optional ``label``, ``placeholder`` and
+    ``placeholder_reason`` metadata identify preview imagery without claiming
+    calibration. Placeholder reasons remain visible even for unavailable frames.
+
     ``render`` accepts the current model state and camera poses for the same
-    video frame. It returns four RGB arrays and publishes ``coverage``,
+    video frame. It returns RGB arrays and publishes ``coverage``,
     ``depth`` and ``shape_indices`` for rendering validation. A false camera
     validity flag or out-of-range frame is visibly unavailable, never clamped.
     """
 
-    def __init__(self, model, cameras, assets_root):
-        if set(cameras) != set(CAMERA_NAMES):
-            raise ValueError(f"Exactly these four camera views are required: {CAMERA_NAMES}")
+    def __init__(self, model, cameras, assets_root, *, camera_order=None):
+        order = tuple(cameras) if camera_order is None else camera_order
+        if (
+            isinstance(order, str)
+            or not order
+            or any(not isinstance(name, str) or not name.strip() for name in order)
+            or len(set(order)) != len(order)
+            or set(cameras) != set(order)
+        ):
+            raise ValueError("Camera order must contain unique names matching the camera mapping exactly")
+        self.camera_order = tuple(order)
         self.model, self.cameras = model, cameras
         self.assets_root = Path(assets_root)
+        self.labels, self.notes = {}, {}
+        for name in self.camera_order:
+            camera = cameras[name]
+            label = camera.get("label", name.upper())
+            if not isinstance(label, str) or not label.strip():
+                raise ValueError(f"Camera display label must be a nonempty string: {name}")
+            if type(camera.get("placeholder", False)) is not bool:
+                raise ValueError(f"Camera placeholder flag must be boolean: {name}")
+            reason = camera.get("placeholder_reason", "")
+            if camera.get("placeholder", False) and (not isinstance(reason, str) or not reason.strip()):
+                raise ValueError(f"Placeholder camera requires an explicit reason: {name}")
+            self.labels[name] = label
+            self.notes[name] = f"Placeholder: {reason}" if camera.get("placeholder", False) else ""
         self.sensor = SensorCamera(
             model,
             default_render_config=SensorCamera.RenderConfig(
@@ -137,7 +163,7 @@ class FourCameraOverlay:
         self._ui_viewport_size = None
         self._pose = wp.empty(1, dtype=wp.transform, device=model.device)
         self._world = wp.zeros(1, dtype=int, device=model.device)
-        for name in CAMERA_NAMES:
+        for name in self.camera_order:
             camera = cameras[name]
             width, height = map(int, camera["overlay_size"])
             if min(width, height, int(camera["frame_count"])) < 1:
@@ -180,11 +206,11 @@ class FourCameraOverlay:
         if isinstance(frame_index, bool) or int(frame_index) != frame_index:
             raise ValueError("The recording frame index must be an integer")
         self.frame_index = int(frame_index)
-        camera_valid = dict.fromkeys(CAMERA_NAMES, True) if camera_valid is None else camera_valid
+        camera_valid = dict.fromkeys(self.camera_order, True) if camera_valid is None else camera_valid
         self.model.bvh_refit_shapes(state)
         self.model.bvh_refit_particles(state)
         self.sensor.sync_deformable_meshes(state)
-        for name in CAMERA_NAMES:
+        for name in self.camera_order:
             camera = self.cameras[name]
             available = 0 <= self.frame_index < int(camera["frame_count"])
             available &= bool(camera_valid.get(name, False))
@@ -245,7 +271,7 @@ class FourCameraOverlay:
         alignment = GL.glGetIntegerv(GL.GL_UNPACK_ALIGNMENT)
         GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
         try:
-            for name in CAMERA_NAMES:
+            for name in self.camera_order:
                 if name not in self._textures:
                     self._textures[name] = int(GL.glGenTextures(1))
                 GL.glBindTexture(GL.GL_TEXTURE_2D, self._textures[name])
@@ -271,16 +297,38 @@ class FourCameraOverlay:
         self._uploaded_generation = self._generation
 
     def draw(self, ui):
-        """Public viewer free-UI callback: four small movable calibrated views."""
+        """Public viewer free-UI callback with explicit per-view provenance labels."""
         viewport = ui.get_main_viewport()
-        width = 2 * max(image.shape[1] for image in self.images.values()) + 34
+        style = ui.get_style()
+        spacing = style.item_spacing.y
+        columns = min(2, len(self.camera_order))
+        rows = [self.camera_order[index : index + columns] for index in range(0, len(self.camera_order), columns)]
+        width = columns * max(image.shape[1] for image in self.images.values()) + 34
+        header = f"Image frame {self.frame_index} | cyan: visible model edges"
+        labels = {name: f"{self.labels[name]} | {self.status.get(name, 'Not rendered')}" for name in self.camera_order}
+        # Measure text with the current font and each image's wrapping width.
+        # Placeholder provenance can take several lines; fixed row padding
+        # previously clipped most of the stereo images below those notes.
         height = (
-            sum(max(self.images[name].shape[0] for name in row) for row in (CAMERA_NAMES[:2], CAMERA_NAMES[2:])) + 165
+            2 * ui.get_frame_height_with_spacing()
+            + ui.calc_text_size(header, wrap_width=width - 2 * style.window_padding.x).y
+            + 2 * style.window_padding.y
+            + spacing
         )
-        viewport_size = (int(viewport.work_size.x), int(viewport.work_size.y))
+        for row in rows:
+            cells = []
+            for name in row:
+                image = self.images[name]
+                cell = image.shape[0] + ui.calc_text_size(labels[name], wrap_width=image.shape[1]).y + spacing
+                if self.notes[name]:
+                    cell += ui.calc_text_size(self.notes[name], wrap_width=image.shape[1]).y + spacing
+                cells.append(cell)
+            height += max(cells) + 2 * style.cell_padding.y + spacing
+        height = min(height + ui.get_text_line_height_with_spacing(), viewport.work_size.y - 24)
+        viewport_size = (int(viewport.work_size.x), int(viewport.work_size.y), width, height)
         if self._ui_viewport_size != viewport_size:
             # Saved ImGui positions can belong to a larger monitor. Place all
-            # four views inside this viewport on opening or resizing; users
+            # views inside this viewport on opening or resizing; users
             # can still move the window during an ordinary viewing session.
             ui.set_next_window_pos(
                 ui.ImVec2(
@@ -291,18 +339,20 @@ class FourCameraOverlay:
             )
             ui.set_next_window_size(ui.ImVec2(width, height), ui.Cond_.always)
             self._ui_viewport_size = viewport_size
-        expanded, _ = ui.begin("Recorded camera alignment")
+        expanded, _ = ui.begin("Recorded camera views")
         if expanded:
             _, self.show_overlay = ui.checkbox("Model overlay", self.show_overlay)
             ui.same_line()
             ui.set_next_item_width(140)
             _, self.opacity = ui.slider_float("Fill opacity", self.opacity, 0.0, 0.7)
-            ui.text(f"Original frame {self.frame_index} | cyan: visible model edges")
+            ui.text_wrapped(header)
             self._upload_images()
-            if ui.begin_table("##suturebot_camera_views", 2):
-                for name in CAMERA_NAMES:
+            if ui.begin_table("##suturebot_camera_views", columns):
+                for name in self.camera_order:
                     ui.table_next_column()
-                    ui.text(f"{name.upper()} | {self.status.get(name, 'Not rendered')}")
+                    ui.text_wrapped(labels[name])
+                    if self.notes[name]:
+                        ui.text_wrapped(self.notes[name])
                     image = self.images[name]
                     ui.image(ui.ImTextureRef(self._textures[name]), ui.ImVec2(image.shape[1], image.shape[0]))
                 ui.end_table()
@@ -319,3 +369,12 @@ class FourCameraOverlay:
             if GL.glGetString(GL.GL_VERSION) is not None:
                 GL.glDeleteTextures(list(self._textures.values()))
             self._textures.clear()
+
+
+class FourCameraOverlay(CameraOverlay):
+    """Compatibility wrapper preserving the strict four-view dVRK contract."""
+
+    def __init__(self, model, cameras, assets_root):
+        if set(cameras) != set(CAMERA_NAMES):
+            raise ValueError(f"Exactly these four camera views are required: {CAMERA_NAMES}")
+        super().__init__(model, cameras, assets_root, camera_order=CAMERA_NAMES)

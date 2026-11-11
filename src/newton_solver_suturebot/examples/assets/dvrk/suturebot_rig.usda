@@ -1,0 +1,2811 @@
+#usda 1.0
+(
+    defaultPrim = "SutureBot"
+    doc = "SutureBot simulation surrogate; see manifest for CAD provenance and uncalibrated parameters."
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "SutureBot"
+{
+    def PhysicsScene "PhysicsScene"
+    {
+        vector3f physics:gravityDirection = (0, 0, -1)
+        float physics:gravityMagnitude = 9.81
+    }
+
+    def Xform "RCMFixture" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        point3f physics:centerOfMass = (0, 0, 0)
+        float3 physics:diagonalInertia = (0.02, 0.02, 0.02)
+        float physics:mass = 2
+        quatf xformOp:orient = (1, 0, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+
+        def Mesh "OriginalCAD" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+            prepend references = @models/geometry.usdc@</Geometry/g_62e805389b4d2a17697354059e364feaad74304d304853a5e0e3bd24d1babb5b>
+        )
+        {
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.14075147, -0.061954275, -0.009535113), (0.14075147, 0.061954275, 0.16177484)]
+            rel material:binding = </SutureBot/Materials/m26_31_36>
+            color3f[] primvars:displayColor = [(0.1, 0.12, 0.14)]
+            uniform token subdivisionScheme = "none"
+        }
+
+        def Capsule "CADSupport_000" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.006646009261759763
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.505886, 0.4940439, 0.505886, -0.4940439)
+            double3 xformOp:translate = (-0.1397011423110962, 0.03863466322422027, -0.009535113349556923)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_001" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.006457051891964928
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.9269375, 0.37396654, 0.028369972, -0.011445669)
+            double3 xformOp:translate = (-0.13948028087615966, 0.03307219803333282, -0.007214809432625771)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_002" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.005538600268743166
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.97910964, 0.20245337, 0.018501064, -0.003825519)
+            double3 xformOp:translate = (-0.1392420768737793, 0.029733529686927794, -0.0023541138321161274)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_003" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.03571678647441262
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.9980931, -0.009537124, 0.060981993, 0.000582704)
+            double3 xformOp:translate = (-0.1369723081588745, 0.02897650897502899, 0.017908598706126214)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_004" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.00437263616950218
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.99607116, -0.0113832895, 0.08781584, 0.0010035761)
+            double3 xformOp:translate = (-0.13441615104675292, 0.02936772882938385, 0.037782950922846795)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_005" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.040967306305471324
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.9914334, -0.01663484, 0.12953132, 0.0021733511)
+            double3 xformOp:translate = (-0.12877411365509034, 0.030104873180389402, 0.059719934687018396)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_006" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0013051442104436302
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.70561546, -0.045899715, 0.70561546, 0.045899715)
+            double3 xformOp:translate = (-0.122867431640625, 0.03087659358978271, 0.07950488708913327)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_007" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0010747167537550222
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.9406126, -0.03894996, 0.33695132, 0.013952864)
+            double3 xformOp:translate = (-0.12188032150268555, 0.031005561351776123, 0.07991859577596189)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_008" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.001079838871526032
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.9394321, -0.03922516, 0.34018674, 0.0142041985)
+            double3 xformOp:translate = (-0.12119578838348388, 0.03109499752521515, 0.08074559591710567)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_009" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0015334713420686002
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.9567176, 0.05821981, 0.28460827, -0.017319467)
+            double3 xformOp:translate = (-0.12043529033660888, 0.03104703366756439, 0.08179621122777461)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_010" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0010920892667734784
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.93813205, 0.33957535, 0.06375227, -0.023076389)
+            double3 xformOp:translate = (-0.1199625301361084, 0.030604550838470457, 0.08284921072423458)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_011" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.008577268557078918
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.95541984, 0.20764536, 0.20510776, -0.04457692)
+            double3 xformOp:translate = (-0.11830432891845703, 0.028474987149238587, 0.0868228592723608)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_012" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.008647149359019212
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.94741446, 0.20677838, 0.23861341, -0.05207868)
+            double3 xformOp:translate = (-0.11484117984771729, 0.024893459677696225, 0.09384234093129634)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_013" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0024959381006679714
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.91210955, -0.044246607, 0.40707308, 0.019747192)
+            double3 xformOp:translate = (-0.1120549249649048, 0.023212780356407163, 0.09813333414494992)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_014" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0014774989829732996
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.7050027, 0.34928724, 0.55306983, -0.27401346)
+            double3 xformOp:translate = (-0.11227682113647461, -0.04147676348686219, -0.00692856766283512)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_015" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0010717188572710202
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.83105636, 0.35198522, 0.3965405, -0.16795057)
+            double3 xformOp:translate = (-0.11155230522155762, -0.04244938254356385, -0.006587463393807412)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_016" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0013804615503830555
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.96297526, 0.20616129, 0.16986379, -0.036365774)
+            double3 xformOp:translate = (-0.1110470199584961, -0.04311684489250184, -0.005761178508400917)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_017" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.002522673517371745
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.9092473, -0.04464809, 0.41335693, 0.020297663)
+            double3 xformOp:translate = (-0.11018453121185304, 0.023457151055335995, 0.09978809259831906)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_018" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.053136488921980196
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.9981229, 0.019202882, 0.05814366, -0.0011186257)
+            double3 xformOp:translate = (-0.10774895191192627, -0.04442134737968446, 0.021199560388922692)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_019" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.013137606592276333
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.9124161, -0.0442025, 0.40639308, 0.019687936)
+            double3 xformOp:translate = (-0.10437870025634766, 0.024215695858001707, 0.10498675487935544)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_020" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.05295988634013142
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.9800799, 0, 0.19860351, 0)
+            double3 xformOp:translate = (-0.09435784339904785, -0.04544326186180116, 0.07195960067212581)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_021" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.018875412468910103
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.9335693, -0.040510837, 0.35576525, 0.015437898)
+            double3 xformOp:translate = (-0.09326139926910401, 0.025668194890022276, 0.11637783192098142)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_022" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.018875601629707302
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.896052, -0.04625568, 0.44094574, 0.022762347)
+            double3 xformOp:translate = (-0.07956601381301881, 0.027457525730133055, 0.12912289284169673)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_023" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.052373857249540454
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.9621575, 0, 0.272494, 0)
+            double3 xformOp:translate = (-0.07031785488128663, -0.04544326186180116, 0.11864864252507687)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_024" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.01887569357964165
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.850671, -0.049398582, 0.5224922, 0.030341193)
+            double3 xformOp:translate = (-0.06376657485961915, 0.029521756172180173, 0.13908902309834956)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_025" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0020929792239819185
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.8280601, 0, 0.5606393, 0)
+            double3 xformOp:translate = (-0.05561471462249756, -0.04544326186180116, 0.14133528850972654)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_026" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0188756851133444
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.79782104, -0.049868286, 0.5996581, 0.03748199)
+            double3 xformOp:translate = (-0.04640998601913452, 0.031789430975913996, 0.14593117855489254)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_027" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.010546956148442001
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.625416, 0.28642973, 0.6599039, -0.3022246)
+            double3 xformOp:translate = (-0.05120319128036499, -0.049436095952987674, 0.14153918884694577)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_028" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.011738775232545493
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.7884113, 0.11708237, 0.59735245, -0.088709325)
+            double3 xformOp:translate = (-0.0423567545413971, -0.05513457179069519, 0.1428741803020239)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_029" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.018875571435104647
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.73798275, -0.0477956, 0.6717175, 0.043503925)
+            double3 xformOp:translate = (-0.028097091317176817, 0.034182049334049225, 0.14941249988973143)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_030" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.01221197255044749
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.8064539, -0.106224574, 0.5766961, 0.075961314)
+            double3 xformOp:translate = (-0.031369198560714726, -0.055259107351303106, 0.14630065582692625)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_031" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.011994782655058576
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.771748, -0.33333847, 0.49716896, 0.21474048)
+            double3 xformOp:translate = (-0.022044540643692018, -0.04931171298027039, 0.14990717075765134)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_032" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0011020315651785648
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.9824236, -0.023347106, 0.18514699, 0.0043999823)
+            double3 xformOp:translate = (-0.018579078912734987, 0.035425598025321955, 0.15080306194722654)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_033" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0056976090970390575
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.7430768, 0.42926663, 0.44454178, -0.2568065)
+            double3 xformOp:translate = (-0.017124752402305606, 0.032983914315700524, 0.15198866032063962)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_034" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0113725630954123
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (-0.51536864, 0.48414373, 0.41223198, 0.57451266)
+            double3 xformOp:translate = (-0.017553750872612003, -0.0394144356250763, 0.15269494198262692)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_035" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.022893176562200905
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.7288402, -0.14744216, 0.65534484, 0.13257428)
+            double3 xformOp:translate = (-0.006319386661052705, -0.029434303045272836, 0.15489977024495602)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_036" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.007151074151115588
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.42626125, -0.29893312, 0.6990197, 0.49021614)
+            double3 xformOp:translate = (-0.014787926077842711, 0.03387773513793945, 0.1521039118617773)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_037" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.004884854844440194
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.74006844, 0.42491105, 0.45208037, -0.2595624)
+            double3 xformOp:translate = (-0.012609515190124512, 0.03513010323047638, 0.15210832260549068)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_038" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.009345110981743322
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.7370424, 0.23241973, 0.6052457, -0.19085881)
+            double3 xformOp:translate = (-0.0077597081661224376, 0.030340430140495298, 0.15341486118733882)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_039" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.009078614711761475
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
+            double3 xformOp:translate = (0.000533833503723144, 0.027660068273544308, 0.15415928028523923)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_040" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.022786549214147238
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.66551155, -0.13495453, 0.71944255, 0.14589082)
+            double3 xformOp:translate = (0.014629356563091278, -0.020546935796737678, 0.1552005972713232)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_041" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.005215071315016227
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.68236357, 0.34803134, 0.57266337, -0.2920801)
+            double3 xformOp:translate = (0.0065808784961700435, 0.02554928123950958, 0.15442488811910154)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_042" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.005810218547024651
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.6225316, -0.16735746, 0.73827773, 0.19847392)
+            double3 xformOp:translate = (0.010566006898880004, 0.024895198345184326, 0.15426598690450194)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_043" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.005940943524749637
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.5483153, -0.23167655, 0.7401806, 0.31274432)
+            double3 xformOp:translate = (0.015024089217185975, 0.028481844067573543, 0.15323822639882567)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_044" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.02403649020268699
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.638183, 0.11161613, 0.7503609, -0.13123567)
+            double3 xformOp:translate = (0.028162989616394043, 0.026532657742500305, 0.15082022808492185)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_045" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.022703118664845402
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.5974992, -0.117691405, 0.7782322, 0.15329099)
+            double3 xformOp:translate = (0.035238064527511596, -0.011803826093673711, 0.1516716589778662)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_046" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.010388087651747303
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.3655613, -0.23024534, 0.76311123, 0.48063838)
+            double3 xformOp:translate = (0.04106950521469116, 0.027138031125068664, 0.1475994362682104)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_047" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.023922169025330002
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.55551285, 0.09191112, 0.81532836, -0.13489832)
+            double3 xformOp:translate = (0.05335616588592529, 0.027970005273818967, 0.14204988144338132)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_048" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.006384987582916501
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.55192626, -0.1048944, 0.81272197, 0.15445901)
+            double3 xformOp:translate = (0.048145887851715086, -0.006327766180038455, 0.1478635611385107)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_049" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.016272672895219734
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.5155127, -0.094346225, 0.83775765, 0.15332168)
+            double3 xformOp:translate = (0.05769887208938598, -0.0022749769687652605, 0.14333912037312985)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_050" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.014483641725495482
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.42094755, -0.11729721, 0.86645925, 0.24143924)
+            double3 xformOp:translate = (0.06876701593399048, 0.027862560153007504, 0.13407529972493648)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_051" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.010053003447689097
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.4689479, 0.14828093, 0.83017695, -0.26250127)
+            double3 xformOp:translate = (0.06801366806030273, -0.002283183336257936, 0.13778682850301266)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_052" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.02249138849675909
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.43414167, 0.0003131265, 0.90084434, -0.0006497378)
+            double3 xformOp:translate = (0.08033234119415283, -0.005189226865768434, 0.12865729473531246)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_053" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.008538067589648013
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.43276966, -0.029652638, 0.8989091, 0.06159172)
+            double3 xformOp:translate = (0.07694540262222291, 0.032189922332763674, 0.12760667465627196)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_054" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.008738862426013747
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.42389888, 0.026873957, 0.9034969, -0.05727908)
+            double3 xformOp:translate = (0.08358474969863891, 0.03222040176391601, 0.1221986498683691)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_055" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.01407935156340043
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.40124807, 0.102112934, 0.8821423, -0.22449487)
+            double3 xformOp:translate = (0.091578950881958, 0.02830350875854492, 0.11536484859883786)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_056" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.004368612378194129
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.37845942, -0.07695148, 0.90391785, 0.18379201)
+            double3 xformOp:translate = (0.0905612850189209, -0.004352451562881474, 0.12023975037038326)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_057" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.011587141561484795
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.33621535, -0.113739, 0.88559, 0.29958808)
+            double3 xformOp:translate = (0.09504921436309814, 0.000017857551574702174, 0.11538496635854245)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_058" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.01371542229658237
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.31007564, -0.03906233, 0.94246, 0.11872808)
+            double3 xformOp:translate = (0.10018419742584228, 0.026639248728752132, 0.10595584057271482)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_059" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.00432188404170247
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.24873228, 0.028525641, 0.9618475, -0.110308625)
+            double3 xformOp:translate = (0.09912482261657715, 0.003045952320098872, 0.11010022781789303)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_060" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.043202074238399314
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.24811435, 0, 0.96873075, 0)
+            double3 xformOp:translate = (0.11052907943725586, 0.0025567352771758978, 0.08931777380406856)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_061" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.013054361191384813
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.26563436, -0.029140022, 0.957887, 0.10507996)
+            double3 xformOp:translate = (0.10741037845611573, 0.02975511252880096, 0.09514826200902463)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_062" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.007340542196140679
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.2319918, -0.022460632, 0.9679325, 0.09371183)
+            double3 xformOp:translate = (0.11232494354248047, 0.0318742299079895, 0.0864756240695715)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_063" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.012833981184992663
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.17846392, -0.03759759, 0.9621089, 0.20269069)
+            double3 xformOp:translate = (0.11606364250183106, 0.035167190581560134, 0.07778391502797605)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_064" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.008310561990879723
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.08607481, -0.03993868, 0.903015, 0.4189987)
+            double3 xformOp:translate = (0.11867633819580078, 0.04092903651297092, 0.06966823600232602)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_065" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.031474233176597026
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.6521364, -0.4056773, 0.5437931, 0.3382797)
+            double3 xformOp:translate = (0.12600565433502198, -0.018859807252883914, -0.008285113349556922)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_066" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.008781782910810283
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.14046402, -0.020769786, 0.97922087, 0.144793)
+            double3 xformOp:translate = (0.12036470413208009, 0.04537274681031704, 0.06300001285970211)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_067" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.04320207668015846
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.112351894, 0, 0.9936685, 0)
+            double3 xformOp:translate = (0.1257360601425171, 0.0025567352771758978, 0.04932058714330193)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_068" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.003659067780232928
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.15464072, 0.008300831, 0.9865157, -0.052954353)
+            double3 xformOp:translate = (0.12210278987884522, 0.04644763827323914, 0.057234726175665857)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_069" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0121936701328736
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.13208549, 0.013557188, 0.9859657, -0.10119902)
+            double3 xformOp:translate = (0.12423066616058351, 0.045013285875320434, 0.04974373601377011)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_070" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0030776061017588094
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.49916607, 0.16319643, 0.80886745, -0.26444963)
+            double3 xformOp:translate = (0.1269117307662964, 0.04286575853824615, 0.043427779302001)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_071" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0012471066562398686
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.9983447, 0, 0.057513412, 0)
+            double3 xformOp:translate = (0.12752794265747072, 0.04195673584938049, 0.041078378185629844)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_072" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.025290094074745806
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.10286542, 0, 0.9946953, 0)
+            double3 xformOp:translate = (0.13004401206970218, 0.04195673584938049, 0.028081504926085472)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_073" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0012468124893364274
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.98513645, 0, 0.17177358, 0)
+            double3 xformOp:translate = (0.1278105354309082, 0.04195673584938049, 0.04228442393243313)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_074" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.014020152516004969
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.034076203, 0, 0.9994192, 0)
+            double3 xformOp:translate = (0.131036639213562, 0.0025567352771758978, 0.021271090134978264)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_075" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.014018896096163165
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.015213111, 0, 0.99988425, 0)
+            double3 xformOp:translate = (0.13172736167907714, 0.0025567352771758978, 0.0072710903733968725)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_076" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.00558064100854769
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.0022646287, 0.00044988276, 0.98083067, -0.19484821)
+            double3 xformOp:translate = (0.1319525146484375, 0.0014901959896087592, -0.002313531413674356)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_077" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.005593778154894729
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.83160365, -0.5553635, 0.0021647816, 0.0014456894)
+            double3 xformOp:translate = (0.13195884227752686, -0.0021598041057586705, -0.0059635315090417855)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_078" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0008947277069091819
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
+            double3 xformOp:translate = (0.1324006271362305, -0.004743264913558962, -0.007035113349556921)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "CADSupport_079" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.02544321816353518
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.0012
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.063323066, 0, 0.99799305, 0)
+            double3 xformOp:translate = (0.13423959732055665, 0.04195673584938049, 0.0030844732373952865)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+    }
+
+    def PhysicsFixedJoint "FixtureFixed"
+    {
+        rel physics:body1 = </SutureBot/RCMFixture>
+        bool physics:collisionEnabled = 0
+        point3f physics:localPos0 = (0, 0, 0)
+        point3f physics:localPos1 = (0, 0, 0)
+        quatf physics:localRot0 = (1, 0, 0, 0)
+        quatf physics:localRot1 = (1, 0, 0, 0)
+    }
+
+    def "Materials"
+    {
+        def Material "m26_31_36"
+        {
+            token outputs:surface.connect = </SutureBot/Materials/m26_31_36/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.1, 0.12, 0.14)
+                float inputs:roughness = 0.35
+                token outputs:surface
+            }
+        }
+
+        def Material "m89_92_97"
+        {
+            token outputs:surface.connect = </SutureBot/Materials/m89_92_97/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.35, 0.36, 0.38)
+                float inputs:roughness = 0.35
+                token outputs:surface
+            }
+        }
+
+        def Material "m64_48_31"
+        {
+            token outputs:surface.connect = </SutureBot/Materials/m64_48_31/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.25, 0.19, 0.12)
+                float inputs:roughness = 0.35
+                token outputs:surface
+            }
+        }
+
+        def Material "m31_33_38_opacity_64"
+        {
+            token outputs:surface.connect = </SutureBot/Materials/m31_33_38_opacity_64/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.12, 0.13, 0.15)
+                float inputs:opacity = 0.25
+                float inputs:roughness = 0.35
+                token outputs:surface
+            }
+        }
+
+        def Material "m6_8_9"
+        {
+            token outputs:surface.connect = </SutureBot/Materials/m6_8_9/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.025, 0.03, 0.035)
+                float inputs:roughness = 0.35
+                token outputs:surface
+            }
+        }
+
+        def Material "m89_97_107"
+        {
+            token outputs:surface.connect = </SutureBot/Materials/m89_97_107/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.35, 0.38, 0.42)
+                float inputs:roughness = 0.35
+                token outputs:surface
+            }
+        }
+
+        def Material "m5_6_7_opacity_64"
+        {
+            token outputs:surface.connect = </SutureBot/Materials/m5_6_7_opacity_64/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.02, 0.023, 0.027)
+                float inputs:opacity = 0.25
+                float inputs:roughness = 0.35
+                token outputs:surface
+            }
+        }
+
+        def Material "m10_11_13_opacity_64"
+        {
+            token outputs:surface.connect = </SutureBot/Materials/m10_11_13_opacity_64/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.04, 0.045, 0.05)
+                float inputs:opacity = 0.25
+                float inputs:roughness = 0.35
+                token outputs:surface
+            }
+        }
+
+        def Material "m173_176_184"
+        {
+            token outputs:surface.connect = </SutureBot/Materials/m173_176_184/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.68, 0.69, 0.72)
+                float inputs:roughness = 0.35
+                token outputs:surface
+            }
+        }
+    }
+
+    def Cube "Table" (
+        prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+    )
+    {
+        rel material:binding = </SutureBot/Materials/m64_48_31>
+        color3f[] primvars:displayColor = [(0.25, 0.19, 0.12)]
+        double size = 1
+        float3 xformOp:scale = (0.45, 0.35, 0.02)
+        double3 xformOp:translate = (0, 0, -0.019535113349556925)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+
+    def Cylinder "Endoscope" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        uniform token axis = "Z"
+        double height = 0.11688779163215975
+        rel material:binding = </SutureBot/Materials/m31_33_38_opacity_64>
+        color3f[] primvars:displayColor = [(0.12, 0.13, 0.15)]
+        float[] primvars:displayOpacity = [0.25]
+        double radius = 0.005
+        quatf xformOp:orient = (6.123234e-17, 0, 0.99557483, -0.09397189)
+        double3 xformOp:translate = (0, 0.035, 0.1075)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+    }
+
+    def Camera "EndoscopeLeft"
+    {
+        float focalLength = 18
+        quatf xformOp:orient = (0.99557483, -0.09397189, 0, 0)
+        double3 xformOp:translate = (-0.0025, 0.025, 0.055)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+    }
+
+    def Camera "EndoscopeRight"
+    {
+        float focalLength = 18
+        quatf xformOp:orient = (0.99557483, -0.09397189, 0, 0)
+        double3 xformOp:translate = (0.0025, 0.025, 0.055)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+    }
+
+    def Xform "PSM1" (
+        prepend apiSchemas = ["PhysicsArticulationRootAPI"]
+    )
+    {
+        def Xform "yaw" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.000002, 0.000002, 0.000002)
+            float physics:mass = 0.08
+            quatf xformOp:orient = (0.20928362, 0.007573384, 0.977186, -0.035361607)
+            double3 xformOp:translate = (-0.0365863657, -0.0368435232, 0.1535343)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Xform "pitch" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.000002, 0.000002, 0.000002)
+            float physics:mass = 0.08
+            quatf xformOp:orient = (0.20928362, 0.007573384, 0.977186, -0.035361607)
+            double3 xformOp:translate = (-0.0365863657, -0.0368435232, 0.1535343)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Xform "insertion" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.000002, 0.000002, 0.000002)
+            float physics:mass = 0.08
+            quatf xformOp:orient = (0.20928362, 0.007573384, 0.977186, -0.035361607)
+            double3 xformOp:translate = (0.014256986934606286, -0.04584009679127903, 0.0402800885802194)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Xform "roll" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysicsFilteredPairsAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.0025, 0.0025, 0.000002)
+            rel physics:filteredPairs = [
+                </SutureBot/PSM1/wrist_pitch>,
+                </SutureBot/PSM1/jaw_left>,
+                </SutureBot/PSM1/jaw_right>,
+            ]
+            float physics:mass = 0.1
+            quatf xformOp:orient = (0.20928362, 0.007573384, 0.977186, -0.035361607)
+            double3 xformOp:translate = (0.014256986934606286, -0.04584009679127903, 0.0402800885802194)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+
+            def Mesh "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+                prepend references = @models/geometry.usdc@</Geometry/g_781699f85b249ba6279e24debb47df404a08ac7a53b613de9f93f9c5803ab60f>
+            )
+            {
+                uniform bool doubleSided = 1
+                float3[] extent = [(-0.0043725, -0.0043726, -0.5565921), (0.0043724, 0.0043724, 0.0030326)]
+                rel material:binding = </SutureBot/Materials/m6_8_9>
+                color3f[] primvars:displayColor = [(0.025, 0.03, 0.035)]
+                uniform token subdivisionScheme = "none"
+            }
+
+            def Capsule "ShaftCollision" (
+                prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+            )
+            {
+                uniform token axis = "Z"
+                double height = 0.547
+                rel material:binding = </SutureBot/Materials/m89_92_97>
+                color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+                double radius = 0.0043
+                token visibility = "invisible"
+                quatf xformOp:orient = (1, 0, 0, 0)
+                double3 xformOp:translate = (0, 0, -0.2765)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            }
+
+            def Cube "WristCameraHolder" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </SutureBot/Materials/m5_6_7_opacity_64>
+                color3f[] primvars:displayColor = [(0.02, 0.023, 0.027)]
+                float[] primvars:displayOpacity = [0.25]
+                double size = 1
+                float3 xformOp:scale = (0.02, 0.018, 0.012)
+                double3 xformOp:translate = (0.0041, 0, -0.041)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cylinder "WristBorescope" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token axis = "Z"
+                double height = 0.0355
+                rel material:binding = </SutureBot/Materials/m10_11_13_opacity_64>
+                color3f[] primvars:displayColor = [(0.04, 0.045, 0.05)]
+                float[] primvars:displayOpacity = [0.25]
+                double radius = 0.00275
+                quatf xformOp:orient = (1, 0, 0, 0)
+                double3 xformOp:translate = (0.00815, 0, -0.05)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            }
+
+            def Camera "WristCamera"
+            {
+                float focalLength = 18
+                quatf xformOp:orient = (6.123234e-17, 1, 0, 0)
+                double3 xformOp:translate = (0.00815, 0, -0.035)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            }
+        }
+
+        def Xform "wrist_pitch" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysicsFilteredPairsAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.000002, 0.000002, 0.000002)
+            rel physics:filteredPairs = [
+                </SutureBot/PSM1/jaw_left>,
+                </SutureBot/PSM1/jaw_right>,
+            ]
+            float physics:mass = 0.006
+            quatf xformOp:orient = (-0.5793407, 0.6071289, -0.4054187, -0.3624837)
+            double3 xformOp:translate = (0.014256986934606286, -0.04584009679127903, 0.0402800885802194)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+
+            def Mesh "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+                prepend references = @models/geometry.usdc@</Geometry/g_0cff47f6fff3f54ae5540c56d762eda48ad1f90e4e82f1497fdcab5268e5e65b>
+            )
+            {
+                uniform bool doubleSided = 1
+                float3[] extent = [(-0.0030424, -0.0032054, -0.0031793), (0.011485, 0.0031803, 0.0031162)]
+                rel material:binding = </SutureBot/Materials/m89_97_107>
+                color3f[] primvars:displayColor = [(0.35, 0.38, 0.42)]
+                uniform token subdivisionScheme = "none"
+            }
+
+            def Capsule "WristCollision" (
+                prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+            )
+            {
+                uniform token axis = "Z"
+                double height = 0.008
+                rel material:binding = </SutureBot/Materials/m89_92_97>
+                color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+                double radius = 0.0022
+                token visibility = "invisible"
+                quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
+                double3 xformOp:translate = (0.004, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            }
+        }
+
+        def Xform "wrist_yaw" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.000002, 0.000002, 0.000002)
+            float physics:mass = 0.006
+            quatf xformOp:orient = (-0.3700571, 0.61470234, 0.57176733, -0.39784533)
+            double3 xformOp:translate = (0.0179741773, -0.0464978421, 0.032)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+
+            def Mesh "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+                prepend references = @models/geometry.usdc@</Geometry/g_40af7b5f806c007e75344d39b5351a59e31344f128321386d2584bfc2fa89fe8>
+            )
+            {
+                uniform bool doubleSided = 1
+                float3[] extent = [(-0.000614, -0.000615, -0.002845), (0.000615, 0.000615, 0.002616)]
+                rel material:binding = </SutureBot/Materials/m89_97_107>
+                color3f[] primvars:displayColor = [(0.35, 0.38, 0.42)]
+                uniform token subdivisionScheme = "none"
+            }
+        }
+
+        def Xform "jaw_left" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysicsFilteredPairsAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.000002, 0.000002, 0.000002)
+            rel physics:filteredPairs = </SutureBot/PSM1/jaw_right>
+            float physics:mass = 0.006
+            quatf xformOp:orient = (-0.3700571, 0.61470234, 0.57176733, -0.39784533)
+            double3 xformOp:translate = (0.0179741773, -0.0464978421, 0.032)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+
+            def Mesh "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+                prepend references = @models/geometry.usdc@</Geometry/g_5667fbef136c67452b523b25698417d801babdf6873e45633229df1c5d42eb2d>
+            )
+            {
+                uniform bool doubleSided = 1
+                float3[] extent = [(-0.002412, -0.002413, -0.001031), (0.002413, 0.009652, 0.001969)]
+                rel material:binding = </SutureBot/Materials/m89_97_107>
+                color3f[] primvars:displayColor = [(0.35, 0.38, 0.42)]
+                uniform token subdivisionScheme = "none"
+            }
+
+            def Capsule "JawCollision" (
+                prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+            )
+            {
+                uniform token axis = "Z"
+                double height = 0.0075
+                rel material:binding = </SutureBot/Materials/m89_92_97>
+                color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+                double radius = 0.00065
+                token visibility = "invisible"
+                quatf xformOp:orient = (-0.5, 0.5, 0.5, 0.5)
+                double3 xformOp:translate = (-0.00075, 0.0052499999999999995, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            }
+        }
+
+        def Xform "jaw_right" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.000002, 0.000002, 0.000002)
+            float physics:mass = 0.006
+            quatf xformOp:orient = (-0.3700571, 0.61470234, 0.57176733, -0.39784533)
+            double3 xformOp:translate = (0.0179741773, -0.0464978421, 0.032)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+
+            def Mesh "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+                prepend references = @models/geometry.usdc@</Geometry/g_2394798071a60f9882b75884a815dd1d6f5c7d6a88f93cc85f767dbe4f969131>
+            )
+            {
+                uniform bool doubleSided = 1
+                float3[] extent = [(-0.002413, -0.002413, -0.001994), (0.002412, 0.009652, 0.001005)]
+                rel material:binding = </SutureBot/Materials/m89_97_107>
+                color3f[] primvars:displayColor = [(0.35, 0.38, 0.42)]
+                uniform token subdivisionScheme = "none"
+            }
+
+            def Capsule "JawCollision" (
+                prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+            )
+            {
+                uniform token axis = "Z"
+                double height = 0.0075
+                rel material:binding = </SutureBot/Materials/m89_92_97>
+                color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+                double radius = 0.00065
+                token visibility = "invisible"
+                quatf xformOp:orient = (-0.5, 0.5, 0.5, 0.5)
+                double3 xformOp:translate = (0.00075, 0.0052499999999999995, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            }
+        }
+
+        def "Joints"
+        {
+            def PhysicsRevoluteJoint "rcm_yaw" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.017453292
+                float drive:angular:physics:maxForce = 2
+                float drive:angular:physics:stiffness = 0.20943952
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "Y"
+                rel physics:body1 = </SutureBot/PSM1/yaw>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (-0.036586367, -0.036843523, 0.1535343)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (0.20928362, 0.007573384, 0.977186, -0.035361607)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -34.37747
+                float physics:upperLimit = 34.37747
+            }
+
+            def PhysicsRevoluteJoint "rcm_pitch" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.017453292
+                float drive:angular:physics:maxForce = 2
+                float drive:angular:physics:stiffness = 0.20943952
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </SutureBot/PSM1/yaw>
+                rel physics:body1 = </SutureBot/PSM1/pitch>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -34.37747
+                float physics:upperLimit = 34.37747
+            }
+
+            def PhysicsPrismaticJoint "insertion" (
+                prepend apiSchemas = ["PhysicsDriveAPI:linear"]
+            )
+            {
+                float drive:linear:physics:damping = 20
+                float drive:linear:physics:maxForce = 30
+                float drive:linear:physics:stiffness = 800
+                float drive:linear:physics:targetPosition = 0
+                float drive:linear:physics:targetVelocity = 0
+                uniform token drive:linear:physics:type = "force"
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </SutureBot/PSM1/pitch>
+                rel physics:body1 = </SutureBot/PSM1/insertion>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (0, 0, 0.12446888)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -0.04
+                float physics:upperLimit = 0.045
+            }
+
+            def PhysicsRevoluteJoint "roll" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.0017453292
+                float drive:angular:physics:maxForce = 2
+                float drive:angular:physics:stiffness = 0.034906585
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </SutureBot/PSM1/insertion>
+                rel physics:body1 = </SutureBot/PSM1/roll>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -180
+                float physics:upperLimit = 180
+            }
+
+            def PhysicsRevoluteJoint "wrist_pitch" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.00034906584
+                float drive:angular:physics:maxForce = 2
+                float drive:angular:physics:stiffness = 0.006981317
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </SutureBot/PSM1/roll>
+                rel physics:body1 = </SutureBot/PSM1/wrist_pitch>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (0.5, -0.5, -0.5, -0.5)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -63.025356
+                float physics:upperLimit = 63.025356
+            }
+
+            def PhysicsRevoluteJoint "wrist_yaw" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.00034906584
+                float drive:angular:physics:maxForce = 2
+                float drive:angular:physics:stiffness = 0.006981317
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </SutureBot/PSM1/wrist_pitch>
+                rel physics:body1 = </SutureBot/PSM1/wrist_yaw>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (0.0091, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (0.5, -0.5, -0.5, -0.5)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -63.025356
+                float physics:upperLimit = 63.025356
+            }
+
+            def PhysicsRevoluteJoint "jaw_left" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.00006981317
+                float drive:angular:physics:maxForce = 2
+                float drive:angular:physics:stiffness = 0.0013962634
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </SutureBot/PSM1/wrist_yaw>
+                rel physics:body1 = </SutureBot/PSM1/jaw_left>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 37.242256
+            }
+
+            def PhysicsRevoluteJoint "jaw_right" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.00006981317
+                float drive:angular:physics:maxForce = 2
+                float drive:angular:physics:stiffness = 0.0013962634
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </SutureBot/PSM1/wrist_yaw>
+                rel physics:body1 = </SutureBot/PSM1/jaw_right>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -37.242256
+                float physics:upperLimit = 0
+            }
+        }
+    }
+
+    def Xform "PSM2" (
+        prepend apiSchemas = ["PhysicsArticulationRootAPI"]
+    )
+    {
+        def Xform "yaw" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.000002, 0.000002, 0.000002)
+            float physics:mass = 0.08
+            quatf xformOp:orient = (-0.17480837, -0.044759095, 0.95284617, -0.24397306)
+            double3 xformOp:translate = (0.0803654754, 0.0127725115, 0.1331101)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Xform "pitch" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.000002, 0.000002, 0.000002)
+            float physics:mass = 0.08
+            quatf xformOp:orient = (-0.17480837, -0.044759095, 0.95284617, -0.24397306)
+            double3 xformOp:translate = (0.0803654754, 0.0127725115, 0.1331101)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Xform "insertion" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.000002, 0.000002, 0.000002)
+            float physics:mass = 0.08
+            quatf xformOp:orient = (-0.17480837, -0.044759095, 0.95284617, -0.24397306)
+            double3 xformOp:translate = (0.04480692492814431, -0.042124508509082045, 0.03946052908162628)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Xform "roll" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysicsFilteredPairsAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.0025, 0.0025, 0.000002)
+            rel physics:filteredPairs = [
+                </SutureBot/PSM2/wrist_pitch>,
+                </SutureBot/PSM2/jaw_left>,
+                </SutureBot/PSM2/jaw_right>,
+            ]
+            float physics:mass = 0.1
+            quatf xformOp:orient = (-0.17480837, -0.044759095, 0.95284617, -0.24397306)
+            double3 xformOp:translate = (0.04480692492814431, -0.042124508509082045, 0.03946052908162628)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+
+            def Mesh "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+                prepend references = @models/geometry.usdc@</Geometry/g_781699f85b249ba6279e24debb47df404a08ac7a53b613de9f93f9c5803ab60f>
+            )
+            {
+                uniform bool doubleSided = 1
+                float3[] extent = [(-0.0043725, -0.0043726, -0.5565921), (0.0043724, 0.0043724, 0.0030326)]
+                rel material:binding = </SutureBot/Materials/m6_8_9>
+                color3f[] primvars:displayColor = [(0.025, 0.03, 0.035)]
+                uniform token subdivisionScheme = "none"
+            }
+
+            def Capsule "ShaftCollision" (
+                prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+            )
+            {
+                uniform token axis = "Z"
+                double height = 0.547
+                rel material:binding = </SutureBot/Materials/m89_92_97>
+                color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+                double radius = 0.0043
+                token visibility = "invisible"
+                quatf xformOp:orient = (1, 0, 0, 0)
+                double3 xformOp:translate = (0, 0, -0.2765)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            }
+
+            def Cube "WristCameraHolder" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </SutureBot/Materials/m5_6_7_opacity_64>
+                color3f[] primvars:displayColor = [(0.02, 0.023, 0.027)]
+                float[] primvars:displayOpacity = [0.25]
+                double size = 1
+                float3 xformOp:scale = (0.02, 0.018, 0.012)
+                double3 xformOp:translate = (0.0041, 0, -0.041)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cylinder "WristBorescope" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token axis = "Z"
+                double height = 0.0355
+                rel material:binding = </SutureBot/Materials/m10_11_13_opacity_64>
+                color3f[] primvars:displayColor = [(0.04, 0.045, 0.05)]
+                float[] primvars:displayOpacity = [0.25]
+                double radius = 0.00275
+                quatf xformOp:orient = (1, 0, 0, 0)
+                double3 xformOp:translate = (0.00815, 0, -0.05)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            }
+
+            def Camera "WristCamera"
+            {
+                float focalLength = 18
+                quatf xformOp:orient = (6.123234e-17, 1, 0, 0)
+                double3 xformOp:translate = (0.00815, 0, -0.035)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            }
+        }
+
+        def Xform "wrist_pitch" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysicsFilteredPairsAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.000002, 0.000002, 0.000002)
+            rel physics:filteredPairs = [
+                </SutureBot/PSM2/jaw_left>,
+                </SutureBot/PSM2/jaw_right>,
+            ]
+            float physics:mass = 0.006
+            quatf xformOp:orient = (0.24465282, -0.533385, 0.66343427, 0.4642203)
+            double3 xformOp:translate = (0.04480692492814431, -0.042124508509082045, 0.03946052908162628)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+
+            def Mesh "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+                prepend references = @models/geometry.usdc@</Geometry/g_0cff47f6fff3f54ae5540c56d762eda48ad1f90e4e82f1497fdcab5268e5e65b>
+            )
+            {
+                uniform bool doubleSided = 1
+                float3[] extent = [(-0.0030424, -0.0032054, -0.0031793), (0.011485, 0.0031803, 0.0031162)]
+                rel material:binding = </SutureBot/Materials/m89_97_107>
+                color3f[] primvars:displayColor = [(0.35, 0.38, 0.42)]
+                uniform token subdivisionScheme = "none"
+            }
+
+            def Capsule "WristCollision" (
+                prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+            )
+            {
+                uniform token axis = "Z"
+                double height = 0.008
+                rel material:binding = </SutureBot/Materials/m89_92_97>
+                color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+                double radius = 0.0022
+                token visibility = "invisible"
+                quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
+                double3 xformOp:translate = (0.004, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            }
+        }
+
+        def Xform "wrist_yaw" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.000002, 0.000002, 0.000002)
+            float physics:mass = 0.006
+            quatf xformOp:orient = (0.4194612, -0.48862588, -0.2894119, 0.70819336)
+            double3 xformOp:translate = (0.0419741773, -0.04649784209999999, 0.032)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+
+            def Mesh "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+                prepend references = @models/geometry.usdc@</Geometry/g_40af7b5f806c007e75344d39b5351a59e31344f128321386d2584bfc2fa89fe8>
+            )
+            {
+                uniform bool doubleSided = 1
+                float3[] extent = [(-0.000614, -0.000615, -0.002845), (0.000615, 0.000615, 0.002616)]
+                rel material:binding = </SutureBot/Materials/m89_97_107>
+                color3f[] primvars:displayColor = [(0.35, 0.38, 0.42)]
+                uniform token subdivisionScheme = "none"
+            }
+        }
+
+        def Xform "jaw_left" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysicsFilteredPairsAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.000002, 0.000002, 0.000002)
+            rel physics:filteredPairs = </SutureBot/PSM2/jaw_right>
+            float physics:mass = 0.006
+            quatf xformOp:orient = (0.4194612, -0.48862588, -0.2894119, 0.70819336)
+            double3 xformOp:translate = (0.0419741773, -0.04649784209999999, 0.032)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+
+            def Mesh "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+                prepend references = @models/geometry.usdc@</Geometry/g_f7b03ef43ea5c48e154669b674fbfa3da5a7ae130b8caa0130b88e1d22d62877>
+            )
+            {
+                uniform bool doubleSided = 1
+                float3[] extent = [(-0.0019296, -0.002413, -0.001031), (0.0019304, 0.014478, 0.001969)]
+                rel material:binding = </SutureBot/Materials/m89_97_107>
+                color3f[] primvars:displayColor = [(0.35, 0.38, 0.42)]
+                uniform token subdivisionScheme = "none"
+            }
+
+            def Capsule "JawCollision" (
+                prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+            )
+            {
+                uniform token axis = "Z"
+                double height = 0.0125
+                rel material:binding = </SutureBot/Materials/m89_92_97>
+                color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+                double radius = 0.00065
+                token visibility = "invisible"
+                quatf xformOp:orient = (-0.5, 0.5, 0.5, 0.5)
+                double3 xformOp:translate = (-0.00075, 0.00775, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            }
+        }
+
+        def Xform "jaw_right" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            point3f physics:centerOfMass = (0, 0, 0)
+            float3 physics:diagonalInertia = (0.000002, 0.000002, 0.000002)
+            float physics:mass = 0.006
+            quatf xformOp:orient = (0.4194612, -0.48862588, -0.2894119, 0.70819336)
+            double3 xformOp:translate = (0.0419741773, -0.04649784209999999, 0.032)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+
+            def Mesh "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+                prepend references = @models/geometry.usdc@</Geometry/g_de480e5e2a9f9697a493c4a2f17b35cd65e46b0ff61eb044229ac4946a3d2fb5>
+            )
+            {
+                uniform bool doubleSided = 1
+                float3[] extent = [(-0.0019304, -0.002413, -0.001994), (0.0019296, 0.014478, 0.001005)]
+                rel material:binding = </SutureBot/Materials/m89_97_107>
+                color3f[] primvars:displayColor = [(0.35, 0.38, 0.42)]
+                uniform token subdivisionScheme = "none"
+            }
+
+            def Capsule "JawCollision" (
+                prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+            )
+            {
+                uniform token axis = "Z"
+                double height = 0.0125
+                rel material:binding = </SutureBot/Materials/m89_92_97>
+                color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+                double radius = 0.00065
+                token visibility = "invisible"
+                quatf xformOp:orient = (-0.5, 0.5, 0.5, 0.5)
+                double3 xformOp:translate = (0.00075, 0.00775, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            }
+        }
+
+        def "Joints"
+        {
+            def PhysicsRevoluteJoint "rcm_yaw" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.017453292
+                float drive:angular:physics:maxForce = 2
+                float drive:angular:physics:stiffness = 0.20943952
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "Y"
+                rel physics:body1 = </SutureBot/PSM2/yaw>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (0.08036548, 0.012772512, 0.1331101)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (-0.17480837, -0.044759095, 0.95284617, -0.24397306)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -34.37747
+                float physics:upperLimit = 34.37747
+            }
+
+            def PhysicsRevoluteJoint "rcm_pitch" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.017453292
+                float drive:angular:physics:maxForce = 2
+                float drive:angular:physics:stiffness = 0.20943952
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "X"
+                rel physics:body0 = </SutureBot/PSM2/yaw>
+                rel physics:body1 = </SutureBot/PSM2/pitch>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -34.37747
+                float physics:upperLimit = 34.37747
+            }
+
+            def PhysicsPrismaticJoint "insertion" (
+                prepend apiSchemas = ["PhysicsDriveAPI:linear"]
+            )
+            {
+                float drive:linear:physics:damping = 20
+                float drive:linear:physics:maxForce = 30
+                float drive:linear:physics:stiffness = 800
+                float drive:linear:physics:targetPosition = 0
+                float drive:linear:physics:targetVelocity = 0
+                uniform token drive:linear:physics:type = "force"
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </SutureBot/PSM2/pitch>
+                rel physics:body1 = </SutureBot/PSM2/insertion>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (0, 0, 0.114229314)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -0.04
+                float physics:upperLimit = 0.045
+            }
+
+            def PhysicsRevoluteJoint "roll" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.0017453292
+                float drive:angular:physics:maxForce = 2
+                float drive:angular:physics:stiffness = 0.034906585
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </SutureBot/PSM2/insertion>
+                rel physics:body1 = </SutureBot/PSM2/roll>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -180
+                float physics:upperLimit = 180
+            }
+
+            def PhysicsRevoluteJoint "wrist_pitch" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.00034906584
+                float drive:angular:physics:maxForce = 2
+                float drive:angular:physics:stiffness = 0.006981317
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </SutureBot/PSM2/roll>
+                rel physics:body1 = </SutureBot/PSM2/wrist_pitch>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (0.5, -0.5, -0.5, -0.5)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -63.025356
+                float physics:upperLimit = 63.025356
+            }
+
+            def PhysicsRevoluteJoint "wrist_yaw" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.00034906584
+                float drive:angular:physics:maxForce = 2
+                float drive:angular:physics:stiffness = 0.006981317
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </SutureBot/PSM2/wrist_pitch>
+                rel physics:body1 = </SutureBot/PSM2/wrist_yaw>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (0.0091, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (0.5, -0.5, -0.5, -0.5)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -63.025356
+                float physics:upperLimit = 63.025356
+            }
+
+            def PhysicsRevoluteJoint "jaw_left" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.00006981317
+                float drive:angular:physics:maxForce = 2
+                float drive:angular:physics:stiffness = 0.0013962634
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </SutureBot/PSM2/wrist_yaw>
+                rel physics:body1 = </SutureBot/PSM2/jaw_left>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = 0
+                float physics:upperLimit = 37.242256
+            }
+
+            def PhysicsRevoluteJoint "jaw_right" (
+                prepend apiSchemas = ["PhysicsDriveAPI:angular"]
+            )
+            {
+                float drive:angular:physics:damping = 0.00006981317
+                float drive:angular:physics:maxForce = 2
+                float drive:angular:physics:stiffness = 0.0013962634
+                float drive:angular:physics:targetPosition = 0
+                float drive:angular:physics:targetVelocity = 0
+                uniform token drive:angular:physics:type = "force"
+                uniform token physics:axis = "Z"
+                rel physics:body0 = </SutureBot/PSM2/wrist_yaw>
+                rel physics:body1 = </SutureBot/PSM2/jaw_right>
+                bool physics:collisionEnabled = 0
+                point3f physics:localPos0 = (0, 0, 0)
+                point3f physics:localPos1 = (0, 0, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -37.242256
+                float physics:upperLimit = 0
+            }
+        }
+    }
+
+    def Xform "Needle" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+    )
+    {
+        point3f physics:centerOfMass = (0, 0, 0)
+        float3 physics:diagonalInertia = (1e-8, 1e-8, 2e-8)
+        float physics:mass = 0.0003
+        quatf xformOp:orient = (1, 0, 0, 0)
+        double3 xformOp:translate = (0.0299741773, -0.0464978421, 0.016)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+
+        def Mesh "OriginalCAD" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+            prepend references = @models/geometry.usdc@</Geometry/g_9bc96e52c7c4659120ba5f99c7dd679aac132ce45ed132ab92a49603a8e2bd36>
+        )
+        {
+            uniform bool doubleSided = 1
+            float3[] extent = [(-0.0036859587, -0.0031263388, -0.0004897544), (0.012900041, 0.0068666614, 0.0004902456)]
+            rel material:binding = </SutureBot/Materials/m173_176_184>
+            color3f[] primvars:displayColor = [(0.68, 0.69, 0.72)]
+            uniform token subdivisionScheme = "none"
+        }
+
+        def Capsule "ContactArc_00" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508414
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (-0.65494114, 0.26648778, 0.65498877, 0.26650715)
+            double3 xformOp:translate = (0.012746989024560416, 0.0035794181191745583, -9.200356494530232e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_01" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508382
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (-0.6643816, 0.24200937, 0.66441953, 0.24202318)
+            double3 xformOp:translate = (0.01222762084857694, 0.004049619803306155, -9.536027836371298e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_02" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.000701077288950839
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (-0.67290694, 0.21719718, 0.6729361, 0.21720658)
+            double3 xformOp:translate = (0.011674819353566753, 0.00448001895927831, -9.812488750933718e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_03" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508408
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (-0.68050545, 0.19208549, 0.68052655, 0.19209144)
+            double3 xformOp:translate = (0.011091627703696302, 0.004868246246015527, -0.0000010028217324915497)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_04" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508387
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (-0.68716687, 0.16670896, 0.6871804, 0.16671224)
+            double3 xformOp:translate = (0.01048125636049125, 0.0052121644779672995, -0.0000010182025975663646)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_05" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508376
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (-0.692882, 0.14110257, 0.6928884, 0.14110386)
+            double3 xformOp:translate = (0.009847065409292591, 0.005509880390283387, -0.0000010273067988799372)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_06" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508421
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.69764304, -0.11530161, -0.6976426, -0.11530154)
+            double3 xformOp:translate = (0.00919254606203588, 0.005759755061209199, -0.0000010300842179368364)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_07" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508397
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.70144355, -0.08934164, -0.7014366, -0.089340754)
+            double3 xformOp:translate = (0.008521301438180447, 0.005960412934326155, -0.0000010265195650856678)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_08" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508371
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.70427823, -0.06325842, -0.70426494, -0.06325722)
+            double3 xformOp:translate = (0.007837026729589332, 0.006110749390969693, -0.0000010166324636883808)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_09" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508406
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.70614326, -0.037087865, -0.70612377, -0.03708684)
+            double3 xformOp:translate = (0.007143488858551971, 0.006209936831138915, -0.000001000477342093946)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_10" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508405
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.7070361, -0.010866024, -0.7070105, -0.010865631)
+            double3 xformOp:translate = (0.00644450574093195, 0.006257429229422512, -9.781431340110902e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_11" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508381
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.70695555, 0.015371001, -0.70692384, 0.015370313)
+            double3 xformOp:translate = (0.005743925268595868, 0.006252965140860694, -9.497527889295254e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_12" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.00070107728895084
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.7059017, 0.041587092, -0.705864, 0.041584868)
+            double3 xformOp:translate = (0.005045604126824733, 0.006196569140195875, -9.154625952848026e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_13" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508397
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.7038761, 0.067746155, -0.7038323, 0.067741945)
+            double3 xformOp:translate = (0.004353386563317746, 0.006088551686589082, -8.754613200927528e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_14" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508386
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.7008815, 0.0938122, -0.7008316, 0.093805514)
+            double3 xformOp:translate = (0.0036710832256648005, 0.005929507414546795, -8.299691697898191e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_15" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508397
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.6969221, 0.119749345, -0.6968659, 0.11973969)
+            double3 xformOp:translate = (0.003002450183787077, 0.005720311860466664, -7.79236577999836e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_16" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.00070107728895084
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.69200337, 0.14552191, -0.6919407, 0.14550874)
+            double3 xformOp:translate = (0.002351168252826919, 0.005462116642822415, -7.235428269005826e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_17" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508378
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.6861321, 0.17109443, -0.6860627, 0.17107713)
+            double3 xformOp:translate = (0.0017208227303141669, 0.005156343122520947, -6.631945097794693e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_18" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508406
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.67931646, 0.19643177, -0.67924, 0.19640966)
+            double3 xformOp:translate = (0.001114883659155551, 0.004804674578331272, -5.985238432419605e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_19" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508404
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.6715659, 0.2214991, -0.67148185, 0.22147137)
+            double3 xformOp:translate = (0.0005366867250991084, 0.004409046940459448, -5.298868383640097e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_20" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508379
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.66289115, 0.24626197, -0.6627989, 0.24622768)
+            double3 xformOp:translate = (-0.000010585106167201462, 0.003971638133281033, -4.576613408562782e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_21" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508404
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.6533043, 0.27068642, -0.6532029, 0.2706444)
+            double3 xformOp:translate = (-0.0005239191111951836, 0.0034948560858991656, -3.8224495102900963e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_22" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508404
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.6428186, 0.29473895, -0.642707, 0.29468775)
+            double3 xformOp:translate = (-0.0010004893937750423, 0.0029813254765299725, -3.0405283500812187e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_23" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508371
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.6314489, 0.31838673, -0.63132536, 0.31832442)
+            double3 xformOp:translate = (-0.001437672441452792, 0.002433873283687284, -2.235154392517402e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_24" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508426
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.6192112, 0.34159753, -0.6190733, 0.34152147)
+            double3 xformOp:translate = (-0.0018330615679280544, 0.0018555132237071407, -1.4107612094872317e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_25" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508377
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.6061228, 0.36433998, -0.6059671, 0.3642464)
+            double3 xformOp:translate = (-0.002184480161827031, 0.0012494291602833318, -5.7188707343806034e-8)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_26" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508383
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.5922027, 0.38658375, -0.5920238, 0.38646695)
+            double3 xformOp:translate = (-0.0024899936689163674, 0.000618957577344202, 2.768500257476179e-8)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_27" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508428
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (0.5774721, 0.40830007, -0.5772608, 0.4081507)
+            double3 xformOp:translate = (-0.002747920241795993, -0.000032430788242713356, 1.1307778027191197e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_28" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508383
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (-0.42939886, -0.5617977, -0.42932796, 0.56185186)
+            double3 xformOp:translate = (-0.0029568399984445165, -0.0007011500530265055, 1.9851953975202576e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_29" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508369
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (-0.44994387, -0.5454819, -0.44987676, 0.5455373)
+            double3 xformOp:translate = (-0.0031156028386490524, -0.001383518927208987, 2.835399253754836e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_30" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508426
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (-0.46986952, -0.5284152, -0.4698061, 0.5284716)
+            double3 xformOp:translate = (-0.003223334775290112, -0.002075780980091342, 3.676709011596014e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+
+        def Capsule "ContactArc_31" (
+            prepend apiSchemas = ["MaterialBindingAPI", "PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            double height = 0.0007010772889508392
+            rel material:binding = </SutureBot/Materials/m89_92_97>
+            color3f[] primvars:displayColor = [(0.35, 0.36, 0.38)]
+            double radius = 0.00028
+            token visibility = "invisible"
+            quatf xformOp:orient = (-0.48914838, -0.5106211, -0.4890886, 0.5106783)
+            double3 xformOp:translate = (-0.0032794427456279453, -0.0027741253191703166, 4.504493273098861e-7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+        }
+    }
+}
+

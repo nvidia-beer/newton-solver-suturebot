@@ -1,0 +1,145 @@
+#usda 1.0
+(
+    customLayerData = {
+        string description = "Illustrative Versius CAD metal look; not calibrated dVRK optics"
+        string scope = "Material definitions and eight explicit distal instrument bindings only"
+    }
+)
+
+def "SutureBotReplay"
+{
+    def "IllustrativeVersiusMetal"
+    {
+        def Material "ShaftMetal"
+        {
+            token outputs:surface.connect = </SutureBotReplay/IllustrativeVersiusMetal/ShaftMetal/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.7960124, 0.7960124, 0.7960124)
+                float inputs:metallic = 1
+                float inputs:opacity = 1
+                float inputs:roughness = 0.38022757
+                token outputs:surface
+            }
+        }
+
+        def Material "TrimMetal"
+        {
+            token outputs:surface.connect = </SutureBotReplay/IllustrativeVersiusMetal/TrimMetal/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.5721878, 0.629969, 0.6622435)
+                float inputs:metallic = 1
+                float inputs:opacity = 1
+                float inputs:roughness = 0.28181818
+                token outputs:surface
+            }
+        }
+
+        def Material "BulkMetal"
+        {
+            token outputs:surface.connect = </SutureBotReplay/IllustrativeVersiusMetal/BulkMetal/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.79645425, 0.79645425, 0.79645425)
+                float inputs:metallic = 1
+                float inputs:opacity = 1
+                float inputs:roughness = 0.42727274
+                token outputs:surface
+            }
+        }
+    }
+
+    over "PSM1"
+    {
+        over "pitch"
+        {
+            over "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </SutureBotReplay/IllustrativeVersiusMetal/ShaftMetal>
+            }
+        }
+
+        over "yaw"
+        {
+            over "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </SutureBotReplay/IllustrativeVersiusMetal/TrimMetal>
+            }
+        }
+
+        over "jaw1"
+        {
+            over "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </SutureBotReplay/IllustrativeVersiusMetal/BulkMetal>
+            }
+        }
+
+        over "jaw2"
+        {
+            over "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </SutureBotReplay/IllustrativeVersiusMetal/BulkMetal>
+            }
+        }
+    }
+
+    over "PSM2"
+    {
+        over "pitch"
+        {
+            over "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </SutureBotReplay/IllustrativeVersiusMetal/ShaftMetal>
+            }
+        }
+
+        over "yaw"
+        {
+            over "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </SutureBotReplay/IllustrativeVersiusMetal/TrimMetal>
+            }
+        }
+
+        over "jaw1"
+        {
+            over "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </SutureBotReplay/IllustrativeVersiusMetal/BulkMetal>
+            }
+        }
+
+        over "jaw2"
+        {
+            over "CAD" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </SutureBotReplay/IllustrativeVersiusMetal/BulkMetal>
+            }
+        }
+    }
+}
+

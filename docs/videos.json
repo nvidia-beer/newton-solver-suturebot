@@ -42,5 +42,15 @@
       "--test"
     ],
     "caption": "The complete 413,405-tetrahedron pad rests on the floor. A finite slice separates an edge strip, which a physical spring grip lifts and releases. All material is active; no region selection. Simulation-time playback is not measured live FPS."
+  },
+  "fem_versius": {
+    "frames": 240,
+    "fps": 60,
+    "poster_frame": 120,
+    "show_ui": true,
+    "args": [
+      "--test"
+    ],
+    "caption": "Generated kinematic preview of two supplied CMR Versius distal needle holders above a static phantom, with two illustrative stereo views. The video panels contain unrelated dVRK placeholder footage, not measured Versius recordings or calibrated image alignment. Playback rate is not live FPS."
   }
 }

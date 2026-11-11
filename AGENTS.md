@@ -11,8 +11,18 @@ checks during refactoring. Recorded-motion replay is not physical insertion.
 
 Examples use the public package API; shared viewer helpers belong in `examples`.
 Discover runnable `example_*.py` files automatically. Each needs a module
-docstring and a `__main__` guard. Keep the four SutureBot examples and their
+docstring and a `__main__` guard. Keep the five SutureBot examples and their
 required data bundled; external dataset preparation is optional.
+
+Keep shared platform models under `assets/dvrk/models` and `assets/versius/models`;
+recordings hold motion, images, calibration and small placement/UV-label layers.
+Their `asset_root: "../../../"` permits references within the common examples
+assets tree. Portable exports must include that tree, not just a recording folder.
+External preparation lives in the source project's `preparation/newton_shared_assets/`,
+after the `newton_versius` and `newton_dvrk_materials` authoring stages.
+Runtime must not import that source project or require its preparation environment.
+Keep generated motion distinct from measured recordings and label dVRK placeholder
+videos explicitly. Camera order comes from metadata, not a fixed view count.
 
 Use uv, Warp kernels and unittest. Keep ordinary modules and direct calls.
 Document equations/gradient assumptions in docs/method.md, paper mappings in

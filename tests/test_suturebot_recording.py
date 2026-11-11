@@ -11,6 +11,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import warp as wp
@@ -143,6 +144,133 @@ class RecordingClockTests(unittest.TestCase):
         self.assertTrue(np.isnan(poses["psm1"]).all())
         self.assertTrue(validity["left"])
 
+    def test_schema_two_camera_order_preserves_pose_identity_and_availability(self):
+        for count in (1, 2, 3, 5):
+            with self.subTest(camera_count=count):
+                order = [f"view_{index}" for index in reversed(range(count))]
+                self.manifest.update(
+                    schema_version=2,
+                    camera_order=order,
+                    camera_count=count,
+                    cameras={name: {"frame_count": 3} for name in reversed(order)},
+                )
+                self.camera_poses = np.broadcast_to(np.eye(4), (3, count, 4, 4)).copy()
+                self.camera_poses[:, :, 0, 3] = np.arange(count) * 0.01
+                self.valid = np.ones((3, count), dtype=bool)
+                self.valid[0, -1] = False
+                self.camera_poses[0, -1] = np.nan
+                self.save()
+                recording = self.load()
+                poses, valid = recording.camera_frame(0)
+                self.assertEqual(recording.camera_order, tuple(order))
+                self.assertEqual(list(poses), order)
+                self.assertEqual(recording.camera_count, count)
+                self.assertFalse(valid[order[-1]])
+                self.assertTrue(np.isnan(poses[order[-1]]).all())
+                for index, name in enumerate(order[:-1]):
+                    self.assertTrue(valid[name])
+                    self.assertEqual(poses[name][0, 3], index * 0.01)
+                np.testing.assert_array_equal(recording.timestamps_ns, self.timestamps)
+
+    def test_schema_one_does_not_silently_accept_a_different_camera_contract(self):
+        for order in (list(reversed(CAMERAS)), ["left", "right"]):
+            with self.subTest(order=order):
+                self.manifest["camera_order"] = order
+                self.manifest["cameras"] = {name: {"frame_count": 3} for name in order}
+                self.save()
+                with self.assertRaisesRegex(ValueError, "left, right, psm1 and psm2"):
+                    self.load()
+
+    def test_schema_two_rejects_ambiguous_camera_order_and_mismatched_arrays(self):
+        self.manifest["schema_version"] = 2
+        for order in ([], ["left", "left"], [""], "left", [1], ["left", "right"]):
+            with self.subTest(order=order):
+                self.manifest["camera_order"] = order
+                self.save()
+                with self.assertRaisesRegex(ValueError, "Camera order"):
+                    self.load()
+        self.manifest["camera_order"] = list(CAMERAS)
+        self.manifest["camera_count"] = 2
+        self.save()
+        with self.assertRaisesRegex(ValueError, "Camera count"):
+            self.load()
+        self.manifest["camera_count"] = 4
+        self.camera_poses = self.camera_poses[:, :2]
+        self.valid = self.valid[:, :2]
+        self.save()
+        with self.assertRaisesRegex(ValueError, "recording camera count"):
+            self.load()
+
+    def test_placeholder_provenance_is_explicit_and_does_not_assert_alignment(self):
+        self.manifest["schema_version"] = 2
+        camera = self.manifest["cameras"]["left"]
+        camera.update(label="Versius left preview", placeholder=True)
+        self.save()
+        with self.assertRaisesRegex(ValueError, "explicit reason"):
+            self.load()
+        camera["placeholder_reason"] = "dVRK image placeholder, not a Versius observation or calibration"
+        self.save()
+        recording = self.load()
+        self.assertEqual(recording.cameras["left"], camera)
+        self.assertNotIn("alignment", recording.manifest)
+        self.assertTrue(recording.camera_frame(0)[1]["left"])
+
+    def test_explicit_catalog_and_direct_path_do_not_use_dvrk_lookup(self):
+        self.save()
+        path = self.root / "recording.json"
+        with patch(
+            "newton_solver_suturebot.examples._suturebot_recording.bundled_recordings",
+            side_effect=AssertionError("must not use the dVRK catalog"),
+        ):
+            for recording in (Recording(path), Recording("other_robot", catalog={"other_robot": path})):
+                self.assertEqual(recording.path, path)
+            with self.assertRaises(FileNotFoundError):
+                Recording("missing_other_robot", catalog={})
+
+    def test_shared_models_resolve_within_declared_asset_root_and_reject_external_paths(self):
+        assets = self.root / "assets"
+        platform = assets / "dvrk"
+        shared = platform / "models" / "tool.bin"
+        shared.parent.mkdir(parents=True)
+        shared.write_bytes(b"shared model fixture")
+        sample = platform / "recordings" / "trial"
+        sample.mkdir(parents=True)
+        for source in self.root.iterdir():
+            if source.is_file():
+                shutil.copy2(source, sample / source.name)
+        manifest = dict(self.manifest, asset_root="../../..")
+        (sample / "recording.json").write_text(json.dumps(manifest))
+        recording = Recording(sample / "recording.json", catalog={})
+        self.assertEqual(recording.asset_root, assets)
+        self.assertEqual(recording.asset("../../models/tool.bin"), shared)
+        self.assertEqual(recording.asset("scene.usda"), sample / "scene.usda")
+        pad = assets / "phantom_pad" / "pad.bin"
+        pad.parent.mkdir()
+        pad.write_bytes(b"shared phantom fixture")
+        self.assertEqual(recording.asset("../../../phantom_pad/pad.bin"), pad)
+        outside = self.root / "external.bin"
+        outside.write_bytes(b"must not be a runtime dependency")
+        (sample / "escape.bin").symlink_to(outside)
+        for reference in ("../../../../external.bin", "escape.bin", str(shared), "../../models/missing.bin"):
+            with self.subTest(reference=reference), self.assertRaisesRegex(ValueError, "inside"):
+                recording.asset(reference)
+        # A direct flat recording remains confined to its own directory.
+        flat_root = self.root / "flat"
+        flat_root.mkdir()
+        for source in self.root.iterdir():
+            if source.is_file():
+                shutil.copy2(source, flat_root / source.name)
+        flat = Recording(flat_root / "recording.json", catalog={})
+        with self.assertRaisesRegex(ValueError, "inside"):
+            flat.asset("../external.bin")
+
+        for invalid in (str(assets), "../missing", "../../models", "", None):
+            with self.subTest(asset_root=invalid):
+                manifest["asset_root"] = invalid
+                (sample / "recording.json").write_text(json.dumps(manifest))
+                with self.assertRaisesRegex(ValueError, "asset_root"):
+                    Recording(sample / "recording.json", catalog={})
+
 
 @unittest.skipUnless(importlib.util.find_spec("pxr"), "The examples extra provides the USD importer")
 class PreparedReplayTests(unittest.TestCase):
@@ -160,7 +288,7 @@ class PreparedReplayTests(unittest.TestCase):
         self.assertEqual((original.first_frame, original.last_frame), (preview.first_frame, preview.last_frame))
 
     def test_every_recording_uses_distinct_instrument_assets_with_unchanged_scene_poses(self):
-        from pxr import Usd, UsdGeom
+        from pxr import Usd, UsdGeom, UsdUtils
 
         shared_hashes = None
         for name, source in bundled_recordings().items():
@@ -175,7 +303,9 @@ class PreparedReplayTests(unittest.TestCase):
                     shared_hashes = hashes
                 self.assertEqual(hashes, shared_hashes)
                 before = Usd.Stage.Open(str(recording.root / "scene.usda"))
-                after = Usd.Stage.Open(str(recording.scene_path))
+                # Test the original tool-geometry substitution independently
+                # of the additional appearance-only layer used for display.
+                after = Usd.Stage.Open(str(recording.root / "scene_tools.usda"))
                 self.assertEqual(
                     [str(p.GetPath()) for p in before.Traverse()], [str(p.GetPath()) for p in after.Traverse()]
                 )
@@ -204,14 +334,28 @@ class PreparedReplayTests(unittest.TestCase):
                 for arm, file in files.items():
                     asset = Usd.Stage.Open(str(file))
                     self.assertEqual(len([p for p in asset.Traverse() if p.IsA(UsdGeom.Mesh)]), 5)
-                    self.assertEqual(len([layer for layer in asset.GetUsedLayers() if layer.realPath]), 1)
+                    models = recording.asset_root / "dvrk" / "models"
+                    library = models / "geometry.usdc"
+                    layers, dependencies, unresolved = UsdUtils.ComputeAllDependencies(str(file))
+                    self.assertFalse(unresolved)
+                    layer_paths = {Path(layer.realPath).resolve() for layer in layers if layer.realPath}
+                    self.assertEqual(layer_paths, {file, library})
+                    for dependency in (*layer_paths, *(Path(path).resolve() for path in dependencies)):
+                        self.assertTrue(dependency.is_relative_to(models), str(dependency))
                     for link in ("roll", "pitch", "yaw", "jaw1", "jaw2"):
                         mesh = UsdGeom.Mesh(after.GetPrimAtPath(f"/SutureBotReplay/{arm.upper()}/{link}/CAD"))
                         reference = UsdGeom.Mesh(asset.GetPrimAtPath(f"/Tool/{link}/CAD"))
                         for attr in ("points", "faceVertexCounts", "faceVertexIndices"):
                             actual = mesh.GetPrim().GetAttribute(attr)
-                            np.testing.assert_array_equal(actual.Get(), reference.GetPrim().GetAttribute(attr).Get())
-                            self.assertEqual(Path(actual.GetPropertyStack()[0].layer.realPath).resolve(), file)
+                            expected = reference.GetPrim().GetAttribute(attr)
+                            np.testing.assert_array_equal(actual.Get(), expected.Get())
+                            actual_source, expected_source = (
+                                actual.GetPropertyStack()[0],
+                                expected.GetPropertyStack()[0],
+                            )
+                            self.assertEqual(Path(actual_source.layer.realPath).resolve(), library)
+                            self.assertEqual(Path(expected_source.layer.realPath).resolve(), library)
+                            self.assertEqual(actual_source.path, expected_source.path)
                         if link == "roll":
                             points = np.asarray(mesh.GetPointsAttr().Get())
                             original = np.asarray(before.GetPrimAtPath(mesh.GetPath()).GetAttribute("points").Get())
@@ -239,8 +383,12 @@ class PreparedReplayTests(unittest.TestCase):
         # review rejects additional real recordings. It is deliberately a test
         # copy, never published or presented as another validated dataset clip.
         with tempfile.TemporaryDirectory() as directory, wp.ScopedDevice(os.environ.get("NEWTON_TEST_DEVICE", "cpu")):
-            copy = Path(directory) / "different_clock"
-            shutil.copytree(DEFAULT_RECORDING.parent, copy)
+            platform = DEFAULT_RECORDING.parents[2]
+            copied_assets = Path(directory) / "assets"
+            copied_platform = copied_assets / "dvrk"
+            shutil.copytree(platform, copied_platform)
+            shutil.copytree(platform.parent / "phantom_pad", copied_assets / "phantom_pad")
+            copy = copied_platform / DEFAULT_RECORDING.parent.relative_to(platform)
             for filename in ("motion.npz", "camera_poses.npz"):
                 with np.load(copy / filename, allow_pickle=False) as archive:
                     values = dict(archive)
@@ -283,22 +431,31 @@ class PreparedReplayTests(unittest.TestCase):
                 viewer.close()
 
     def test_copied_package_has_no_dependency_on_preparation_checkout(self):
-        from pxr import Usd
+        from pxr import Usd, UsdUtils
 
         with tempfile.TemporaryDirectory() as directory:
+            platform = DEFAULT_RECORDING.parents[2]
+            root = Path(directory) / "assets"
+            copied_platform = root / "dvrk"
+            shutil.copytree(platform, copied_platform)
+            shutil.copytree(platform.parent / "phantom_pad", root / "phantom_pad")
             for name, source in bundled_recordings().items():
                 with self.subTest(recording=name):
-                    root = Path(directory) / name
-                    shutil.copytree(source.parent, root)
-                    recording = Recording(root / source.name)
-                    for path in root.rglob("*.json"):
+                    recording = Recording(copied_platform / source.relative_to(platform))
+                    for path in recording.root.rglob("*.json"):
                         text = path.read_text()
                         self.assertNotIn("/home/", text, str(path.relative_to(root)))
                         self.assertNotIn("file:///", text, str(path.relative_to(root)))
                     stage = Usd.Stage.Open(str(recording.scene_path))
-                    for layer in stage.GetUsedLayers():
+                    layers, assets, unresolved = UsdUtils.ComputeAllDependencies(str(recording.scene_path))
+                    self.assertFalse(unresolved)
+                    self.assertTrue(stage)
+                    for layer in layers:
                         if layer.realPath:
                             self.assertTrue(Path(layer.realPath).resolve().is_relative_to(root), layer.realPath)
+                        self.assertFalse(any(Path(ref).is_absolute() for ref in layer.GetExternalReferences()))
+                    for asset in assets:
+                        self.assertTrue(Path(asset).resolve().is_relative_to(root), asset)
                     for camera in recording.cameras.values():
                         recording.asset(camera["ray_directions_cv_path"])
                         recording.asset(camera["ray_valid_path"])

@@ -52,30 +52,6 @@
       "copied_sha256": "c8fa99c4fc5729010652880f0375a235f5bfe9772d0f62382aa33d4f5d92d709",
       "handling": "byte-identical historical artifact"
     },
-    "docs/media/fem_dvrk.mp4": {
-      "original_path": "docs/media/fem_suturebot.mp4",
-      "original_sha256": "61c02546ec340a537395600d18eec94cda7d5086feed9c0a9fce7d1518f289a6",
-      "copied_sha256": "61c02546ec340a537395600d18eec94cda7d5086feed9c0a9fce7d1518f289a6",
-      "handling": "byte-identical historical artifact"
-    },
-    "docs/media/fem_dvrk.gif": {
-      "original_path": "docs/media/fem_suturebot.gif",
-      "original_sha256": "759ecb5c8340e99dc2440011fc7f6dade976ff0d261a2382701217cb3d5d3d1c",
-      "copied_sha256": "759ecb5c8340e99dc2440011fc7f6dade976ff0d261a2382701217cb3d5d3d1c",
-      "handling": "byte-identical historical artifact"
-    },
-    "docs/media/fem_dvrk.jpg": {
-      "original_path": "docs/media/fem_suturebot.jpg",
-      "original_sha256": "b7e7b87f3ea78d539438fc418a62d54b6540839fd53cc8c08e75dde6d702bf9a",
-      "copied_sha256": "b7e7b87f3ea78d539438fc418a62d54b6540839fd53cc8c08e75dde6d702bf9a",
-      "handling": "byte-identical historical artifact"
-    },
-    "docs/media/fem_dvrk.json": {
-      "original_path": "docs/media/fem_suturebot.json",
-      "original_sha256": "5e1c2a041b6f74e1f50457bad7586ad0bca8abec3cef69ee2daf57901afa5f65",
-      "copied_sha256": "5e1c2a041b6f74e1f50457bad7586ad0bca8abec3cef69ee2daf57901afa5f65",
-      "handling": "byte-identical historical artifact"
-    },
     "docs/media/fem_suturebot_alignment.jpg": {
       "original_path": "docs/media/fem_suturebot_alignment.jpg",
       "original_sha256": "a26284d331e942bd55c8e4c5d5019879093f853dfb17312db4e79b9640cf5d96",
@@ -205,7 +181,7 @@
     "docs/videos.json": {
       "original_path": "docs/videos.json",
       "original_sha256": "c9d0ee412c25a1cbbe95e2e18c811d0fbbfb4981fc95ada53b9e7e7866a818a4",
-      "copied_sha256": "a88faeae27d4caba11c9e5fc2ab2a3b5fc3297bf52e7032c0a1493c966cb0d39",
+      "copied_sha256": "979b0d203b50e67c61b1af652a3b17aa98254d4b8d132f41794f15aaa2ca17f5",
       "handling": "adapted standalone documentation; original source hash retained"
     },
     "docs/method.md": {
@@ -235,19 +211,19 @@
     "docs/suturebot-recording.md": {
       "original_path": "docs/suturebot-recording.md",
       "original_sha256": "94b5da3cc984007a305615662816af16c954159ddbeb49b32a21b4f477b1a757",
-      "copied_sha256": "eaab8be7262dfe612b9494f5dd5212ff871190fa6d2ecec4f8854b14753e930a",
+      "copied_sha256": "15c0a380ecad8694f858e6729ab297d9cc84d8b1bd1993660d209e074a361dca",
       "handling": "adapted standalone documentation; original source hash retained"
     },
     "docs/usage.md": {
       "original_path": "docs/usage.md",
       "original_sha256": "30d9d8ee2dc5456a523b32dc053dbdc1fb31e03d1371d5e86e63185f1b75997d",
-      "copied_sha256": "e83bfff27a427b8f8a27e461393330e57a9b91330b413e82ff51d57cc6f19459",
+      "copied_sha256": "229c1830b2ae6161c265bb9c08d02537e6ce9968856f85854d462fd957f08c2a",
       "handling": "adapted standalone documentation; original source hash retained"
     },
     "docs/validation.md": {
       "original_path": "docs/validation.md",
       "original_sha256": "9ec031612ec2e1897b84cebe8bb3a12224f733cfadd90eb9d651381110b4fbcc",
-      "copied_sha256": "27fac7b316cf5f699b05a0caa1529b42b7ebc0ea87387ee3e0a5894e43ad6a1a",
+      "copied_sha256": "2d82102b10db3dd49434b6710c544c9743a615d1075476676e7dacbe8a018dd5",
       "handling": "adapted standalone documentation; original source hash retained"
     },
     "docs/validation/frame-budget/decision.json": {
@@ -301,8 +277,32 @@
     "tools/build_readme.py": {
       "original_path": "tools/build_readme.py",
       "original_sha256": "bc862d96119eafb4d71dbbcdcbc7a4505876cb9c0e5d0675eff91ceea968c8ec",
-      "copied_sha256": "96af78cc44fea9a9d1add125c235c814fa360f60eafabbeeaefa62544936bbc6",
+      "copied_sha256": "978d386984fbf9351c9a327d40da5263ddefc647a329eee990d0c2f6a5bd5b41",
       "handling": "adapted standalone documentation; original source hash retained"
+    },
+    "docs/media/history/fem_dvrk/fem_dvrk.mp4": {
+      "original_path": "docs/media/fem_suturebot.mp4",
+      "original_sha256": "61c02546ec340a537395600d18eec94cda7d5086feed9c0a9fce7d1518f289a6",
+      "copied_sha256": "61c02546ec340a537395600d18eec94cda7d5086feed9c0a9fce7d1518f289a6",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/history/fem_dvrk/fem_dvrk.jpg": {
+      "original_path": "docs/media/fem_suturebot.jpg",
+      "original_sha256": "b7e7b87f3ea78d539438fc418a62d54b6540839fd53cc8c08e75dde6d702bf9a",
+      "copied_sha256": "b7e7b87f3ea78d539438fc418a62d54b6540839fd53cc8c08e75dde6d702bf9a",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/history/fem_dvrk/fem_dvrk.gif": {
+      "original_path": "docs/media/fem_suturebot.gif",
+      "original_sha256": "759ecb5c8340e99dc2440011fc7f6dade976ff0d261a2382701217cb3d5d3d1c",
+      "copied_sha256": "759ecb5c8340e99dc2440011fc7f6dade976ff0d261a2382701217cb3d5d3d1c",
+      "handling": "byte-identical historical artifact"
+    },
+    "docs/media/history/fem_dvrk/fem_dvrk.json": {
+      "original_path": "docs/media/fem_suturebot.json",
+      "original_sha256": "5e1c2a041b6f74e1f50457bad7586ad0bca8abec3cef69ee2daf57901afa5f65",
+      "copied_sha256": "5e1c2a041b6f74e1f50457bad7586ad0bca8abec3cef69ee2daf57901afa5f65",
+      "handling": "byte-identical historical artifact"
     }
   }
 }

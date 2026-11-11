@@ -1,0 +1,432 @@
+{
+  "schema_version": 2,
+  "sample_id": "versius_stereo_preview",
+  "source_episode": "generated preview",
+  "region_id": "all",
+  "region_label": "Full pad",
+  "time_label": "Preview time",
+  "scene_usd": "scene.usda",
+  "motion_npz": "motion.npz",
+  "camera_poses_npz": "camera_poses.npz",
+  "body_paths": [
+    "/VersiusPreview/Left/shaft",
+    "/VersiusPreview/Left/wrist",
+    "/VersiusPreview/Left/jaw_1",
+    "/VersiusPreview/Left/jaw_2",
+    "/VersiusPreview/Right/shaft",
+    "/VersiusPreview/Right/wrist",
+    "/VersiusPreview/Right/jaw_1",
+    "/VersiusPreview/Right/jaw_2"
+  ],
+  "camera_order": [
+    "left",
+    "right"
+  ],
+  "camera_count": 2,
+  "cameras": {
+    "left": {
+      "name": "left",
+      "label": "Left - dVRK placeholder",
+      "placeholder": true,
+      "placeholder_reason": "Unrelated dVRK video; not a Versius observation or calibrated alignment",
+      "overlay_size": [
+        240,
+        135
+      ],
+      "image_size": [
+        240,
+        135
+      ],
+      "frame_count": 282,
+      "fps": 30.0,
+      "frame_path_pattern": "images/left/{frame:06d}.jpg",
+      "ray_directions_cv_path": "cameras/left/ray_directions_cv.npy",
+      "ray_valid_path": "cameras/left/ray_valid.npy",
+      "K": [
+        [
+          228.0,
+          0,
+          119.5
+        ],
+        [
+          0,
+          228.0,
+          67.0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "D": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "lens_model": "pinhole_radial",
+      "status": "synthetic_stereo_preview_camera_not_registered_to_placeholder",
+      "T_world_from_camera_cv": [
+        [
+          0.9998611400396,
+          -0.010230037442361499,
+          0.013154731948593665,
+          8.09976160526275e-05
+        ],
+        [
+          -0.016664352333993333,
+          -0.6138022465416899,
+          0.7892839169156198,
+          -0.17996662884950637
+        ],
+        [
+          0.0,
+          -0.7893935320702231,
+          -0.6138874909343711,
+          0.14522832851856948
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "source_video": {
+        "dataset_file": "tissue_3/1_needle_pickup/20250428-215248-974340/left.mp4",
+        "sha256": "fa7d9ad384dd45142fea3da05ce808b8c9f5535dc49b897f9ee32ea951c6ff19",
+        "included": false
+      },
+      "source_recording_id": "tissue3_215248_pickup",
+      "frame_clock": "Copy original image index; play at generated 30 Hz. Original image timestamps are retained separately in motion.npz."
+    },
+    "right": {
+      "name": "right",
+      "label": "Right - dVRK placeholder",
+      "placeholder": true,
+      "placeholder_reason": "Unrelated dVRK video; not a Versius observation or calibrated alignment",
+      "overlay_size": [
+        240,
+        135
+      ],
+      "image_size": [
+        240,
+        135
+      ],
+      "frame_count": 282,
+      "fps": 30.0,
+      "frame_path_pattern": "images/right/{frame:06d}.jpg",
+      "ray_directions_cv_path": "cameras/right/ray_directions_cv.npy",
+      "ray_valid_path": "cameras/right/ray_valid.npy",
+      "K": [
+        [
+          228.0,
+          0,
+          119.5
+        ],
+        [
+          0,
+          228.0,
+          67.0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "D": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "lens_model": "pinhole_radial",
+      "status": "synthetic_stereo_preview_camera_not_registered_to_placeholder",
+      "T_world_from_camera_cv": [
+        [
+          0.9998611400396,
+          0.010230037442361499,
+          -0.013154731948593665,
+          0.006080997616052628
+        ],
+        [
+          0.016664352333993333,
+          -0.6138022465416899,
+          0.7892839169156198,
+          -0.17996662884950637
+        ],
+        [
+          -0.0,
+          -0.7893935320702231,
+          -0.6138874909343711,
+          0.14522832851856948
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "source_video": {
+        "dataset_file": "tissue_3/1_needle_pickup/20250428-215248-974340/right.mp4",
+        "sha256": "fabbe31ea94c3bdcfb9e4e1867bfe0f65a7b85d4b1d34f717b7c3ce230b13064",
+        "included": false
+      },
+      "source_recording_id": "tissue3_215248_pickup",
+      "frame_clock": "Copy original image index; play at generated 30 Hz. Original image timestamps are retained separately in motion.npz."
+    }
+  },
+  "timing": {
+    "frame_count": 282,
+    "nominal_fps": 30.0,
+    "duration_s": 9.366666667,
+    "first_valid_frame": 0,
+    "last_valid_frame": 281,
+    "timestamps": "Generated nanosecond preview clock, not measured robot time"
+  },
+  "motion": {
+    "kind": "scripted_preview",
+    "mode": "kinematic preview without dynamics or contact",
+    "description": "Synthetic Versius articulation on the user's pad; dVRK images are unrelated placeholders.",
+    "measured": false,
+    "instrument_frame": "CMR T-frame at jaw hinge; metres, xyzw"
+  },
+  "alignment": {
+    "status": "unregistered_placeholder_preview",
+    "accepted": false,
+    "absolute_metric_accuracy_validated": false
+  },
+  "conventions": {
+    "world": "Unchanged native pad coordinates, metres, Z up",
+    "body_poses": "xyz, quaternion xyzw",
+    "transforms": "column vectors; world_from_local",
+    "camera": "CV +X right, +Y down, +Z forward"
+  },
+  "viewer": {
+    "scene": {
+      "position": [
+        0.0030809976160526276,
+        -0.1999666288495064,
+        0.16522832851856947
+      ],
+      "pitch": -38.0,
+      "yaw": 90.0,
+      "pivot": [
+        0.0030809976160526276,
+        3.3371150493621826e-05,
+        0.0052283285185694695
+      ]
+    },
+    "pad": {
+      "position": [
+        0.0030809976160526276,
+        -0.1999666288495064,
+        0.16522832851856947
+      ],
+      "pitch": -38.0,
+      "yaw": 90.0,
+      "pivot": [
+        0.0030809976160526276,
+        3.3371150493621826e-05,
+        0.0052283285185694695
+      ]
+    }
+  },
+  "phantom": {
+    "asset": "../../../phantom_pad/phantom_regions.usd",
+    "surface_asset": "../../models/pad_surface.usdc",
+    "regions": [
+      {
+        "name": "region_000_base_and_lettering",
+        "vertices": 35306,
+        "exterior_triangles": 42163,
+        "tetrahedra": 133907
+      },
+      {
+        "name": "region_001_feature_01",
+        "vertices": 14756,
+        "exterior_triangles": 14311,
+        "tetrahedra": 60323
+      },
+      {
+        "name": "region_002_feature_02",
+        "vertices": 10236,
+        "exterior_triangles": 10267,
+        "tetrahedra": 42607
+      },
+      {
+        "name": "region_003_feature_03",
+        "vertices": 7984,
+        "exterior_triangles": 8106,
+        "tetrahedra": 32459
+      },
+      {
+        "name": "region_004_feature_04",
+        "vertices": 6394,
+        "exterior_triangles": 6262,
+        "tetrahedra": 24972
+      },
+      {
+        "name": "region_005_feature_05",
+        "vertices": 5742,
+        "exterior_triangles": 5763,
+        "tetrahedra": 22844
+      },
+      {
+        "name": "region_006_feature_06",
+        "vertices": 7205,
+        "exterior_triangles": 7284,
+        "tetrahedra": 29160
+      },
+      {
+        "name": "region_007_feature_07",
+        "vertices": 2982,
+        "exterior_triangles": 2994,
+        "tetrahedra": 11795
+      },
+      {
+        "name": "region_008_feature_08",
+        "vertices": 3251,
+        "exterior_triangles": 3293,
+        "tetrahedra": 12838
+      },
+      {
+        "name": "region_009_upper_paired_strips",
+        "vertices": 3534,
+        "exterior_triangles": 3503,
+        "tetrahedra": 13909
+      },
+      {
+        "name": "region_010_wound_5_slit_patch",
+        "vertices": 4689,
+        "exterior_triangles": 4512,
+        "tetrahedra": 18790
+      },
+      {
+        "name": "region_011_upper_narrow_slit",
+        "vertices": 2652,
+        "exterior_triangles": 2498,
+        "tetrahedra": 9801
+      }
+    ],
+    "region_count": 12,
+    "unique_volume_vertices": 97489,
+    "tetrahedra": 413405,
+    "bounds_m": [
+      [
+        -0.06444491446018219,
+        -0.06715957075357437,
+        -0.009535113349556923
+      ],
+      [
+        0.07060690969228745,
+        0.06722631305456161,
+        0.010456657037138939
+      ]
+    ],
+    "placement": "Unchanged native pad world coordinates",
+    "source_files": {
+      "phantom_regions.usd": "45218965fe8b3eef6d0492f79317a5a42c154b29b2b96bf7e937fc197d415324",
+      "phantom_regions_payloads/region_000_base_and_lettering.usdc": "e1d67af37a3cb6d2c0dff2bb1b39d773f1197f7bc2db9fdd883d78267b5a48c7",
+      "phantom_regions_payloads/region_001_feature_01.usdc": "9a8460b85b0af05a05fb0f556231361649261f06e73a508f9daa3580ac03e7cc",
+      "phantom_regions_payloads/region_002_feature_02.usdc": "ffd338ba156b14d2391d8f48c8c903bd8084dde8ce675fa9b34a79fcecc3b013",
+      "phantom_regions_payloads/region_003_feature_03.usdc": "76c7cb1fbfeb72e61bb4402a27b5d1f10eaecb15b115efa100d1d7f0d3026ed4",
+      "phantom_regions_payloads/region_004_feature_04.usdc": "638a2728bb203b7f7ccc2c10e5d2fc17ca662d3763bc16cf65f2f6de73b5fd7a",
+      "phantom_regions_payloads/region_005_feature_05.usdc": "38824c34a68a6788146982b08192ccaf556eef5ecd6f9791ed3632d7aedc19d3",
+      "phantom_regions_payloads/region_006_feature_06.usdc": "b8ac9e3d67ca515e74a2e7495683716637911b650a7ba2c1c39918bb1de1cae3",
+      "phantom_regions_payloads/region_007_feature_07.usdc": "28763d6c606ac323169c395bfb7059e5d9d6f1f7c9c0da69dff35409bf888567",
+      "phantom_regions_payloads/region_008_feature_08.usdc": "3f11004229357330d068099eefd0e457f3bd60c0b7cd543b555348a0fc1d5fe1",
+      "phantom_regions_payloads/region_009_upper_paired_strips.usdc": "2356925ad8eed756a7a2181bc3891e8175149e8fcae05d99da97ed6013cb0040",
+      "phantom_regions_payloads/region_010_wound_5_slit_patch.usdc": "9a25df1b3f2de927f520f4f8e11c72ed348a0cb723f0d395e0149c27f12390ba",
+      "phantom_regions_payloads/region_011_upper_narrow_slit.usdc": "e0dc91b6bf07edb5e60ce765d6f78015b6727c9533390e68d549642644cac249"
+    }
+  },
+  "instrument_geometry": {
+    "kind": "supplied_CMR_NeedleHolderPlatform",
+    "instances": 2,
+    "parts": [
+      {
+        "name": "shaft_casework",
+        "link": "shaft",
+        "vertices": 80792,
+        "triangles": 119945,
+        "material": "Casework"
+      },
+      {
+        "name": "shaft_shaft_metal",
+        "link": "shaft",
+        "vertices": 2042,
+        "triangles": 1720,
+        "material": "Shaft Metal"
+      },
+      {
+        "name": "shaft",
+        "link": "shaft",
+        "vertices": 1423,
+        "triangles": 1252,
+        "material": "Shaft"
+      },
+      {
+        "name": "shaft_trim_metal",
+        "link": "shaft",
+        "vertices": 132407,
+        "triangles": 235740,
+        "material": "Trim Metal"
+      },
+      {
+        "name": "shaft_bulk_metal",
+        "link": "shaft",
+        "vertices": 47820,
+        "triangles": 75616,
+        "material": "Bulk Metal"
+      },
+      {
+        "name": "wrist_trim_metal",
+        "link": "wrist",
+        "vertices": 36083,
+        "triangles": 62256,
+        "material": "Trim Metal"
+      },
+      {
+        "name": "wrist_bulk_metal",
+        "link": "wrist",
+        "vertices": 39747,
+        "triangles": 63063,
+        "material": "Bulk Metal"
+      },
+      {
+        "name": "jaw_1",
+        "link": "jaw_1",
+        "vertices": 29997,
+        "triangles": 37876,
+        "material": "Bulk Metal"
+      },
+      {
+        "name": "jaw_2",
+        "link": "jaw_2",
+        "vertices": 29997,
+        "triangles": 37876,
+        "material": "Bulk Metal"
+      }
+    ],
+    "triangles_per_instrument": 635344,
+    "scope": "Distal instruments only; no complete proximal BSU, no dynamics or contact inference.",
+    "asset": "../../models/needle_holder.usdc"
+  },
+  "placeholder_source": {
+    "sample_id": "tissue3_215248_pickup",
+    "manifest_sha256": "48cfed469ad49b930f0a132215285b4b6c5c59ab32894d0624df2c9534c2af65",
+    "image_mapping": "Unmodified image bytes and sequential frame indices; no geometric registration"
+  },
+  "preparation": {
+    "report": "preparation-report.json",
+    "source_report": "../../provenance/versius_stereo_preview/source-preparation-report.json",
+    "source_report_scope": "Historical unfactored export; source hashes and original paths retained as evidence"
+  },
+  "asset_root": "../../.."
+}

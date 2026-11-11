@@ -1,7 +1,7 @@
 # Needle insertion asset
 
 `needle.usda` is the authored `/SutureBot/Needle` subtree extracted from
-[`../suturebot/suturebot_rig.usda`](../suturebot/suturebot_rig.usda). It preserves
+[`../dvrk/suturebot_rig.usda`](../dvrk/suturebot_rig.usda). It preserves
 the original CAD display mesh, all 32 collision capsules, body-local coordinates,
 mass and diagonal inertia. Only the source scene placement is removed. The two
 bound original materials are copied under `/Needle/Looks`; their bindings and
@@ -20,6 +20,6 @@ measurements or a calibrated needle specification. `provenance.json` records
 the source hash and extraction changes.
 
 The original needle mesh's upstream license is unspecified. See the retained
-[SutureBot third-party notices](../suturebot/THIRD_PARTY.md) and repository
+[SutureBot third-party notices](../dvrk/THIRD_PARTY.md) and repository
 [`THIRD_PARTY_NOTICES`](../../../../../THIRD_PARTY_NOTICES). The package license
 does not establish a license for this third-party geometry.

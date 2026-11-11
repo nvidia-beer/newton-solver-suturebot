@@ -6,8 +6,11 @@
 import importlib.util
 import os
 import tempfile
+import textwrap
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 import newton
 import numpy as np
@@ -15,6 +18,7 @@ import warp as wp
 
 from newton_solver_suturebot.examples._suturebot_cameras import (
     CAMERA_NAMES,
+    CameraOverlay,
     FourCameraOverlay,
     camera_rays_cv,
     camera_transform_cv,
@@ -24,6 +28,14 @@ from newton_solver_suturebot.examples._suturebot_cameras import (
 
 
 class CalibratedCameraTests(unittest.TestCase):
+    def test_generic_overlay_rejects_ambiguous_order_and_four_view_wrapper_stays_strict(self):
+        cameras = {"left": {}, "right": {}}
+        for order in ((), ("left", "left"), ("left",), ("", "right"), "left"):
+            with self.subTest(order=order), self.assertRaisesRegex(ValueError, "Camera order"):
+                CameraOverlay(None, cameras, ".", camera_order=order)
+        with self.assertRaisesRegex(ValueError, "four camera views"):
+            FourCameraOverlay(None, cameras, ".")
+
     def test_cv_rays_and_pose_preserve_world_projection(self):
         direction = np.array([0.2, -0.3, 1.0])
         direction /= np.linalg.norm(direction)
@@ -81,6 +93,98 @@ class CalibratedCameraTests(unittest.TestCase):
         normals[..., 0], normals[..., 2] = 0.0, -1.0
         depth[:, 6:] = 0.12
         self.assertTrue(visible_surface_edges(depth, normals, valid)[:, 5:7].all())
+
+    @unittest.skipUnless(importlib.util.find_spec("PIL"), "Install the examples extra for prepared image decoding")
+    def test_variable_views_render_in_declared_order_and_show_placeholder_labels(self):
+        from PIL import Image
+
+        with wp.ScopedDevice(os.environ.get("NEWTON_TEST_DEVICE", "cpu")), tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            width, height = 16, 12
+            y, x = np.indices((height, width))
+            rays = np.stack(((x - width / 2) / 32, (y - height / 2) / 32, np.ones_like(x)), axis=-1)
+            rays /= np.linalg.norm(rays, axis=-1, keepdims=True)
+            np.save(root / "rays.npy", rays.astype(np.float32))
+            builder = newton.ModelBuilder()
+            body = builder.add_body(xform=wp.transform((0, 0, 0.1), wp.quat_identity()))
+            builder.add_shape_box(body, hx=0.01, hy=0.01, hz=0.005)
+            model = builder.finalize()
+            state = model.state()
+            for order in (("left",), ("right", "left"), ("auxiliary", "left", "right")):
+                with self.subTest(order=order):
+                    cameras = {}
+                    for index, name in enumerate(reversed(order)):
+                        Image.fromarray(np.full((height, width, 3), index + 30, np.uint8)).save(root / f"{name}.png")
+                        cameras[name] = dict(
+                            overlay_size=[width, height],
+                            ray_directions_cv_path="rays.npy",
+                            frame_path_pattern=f"{name}.png",
+                            frame_count=1,
+                        )
+                    reason = "dVRK placeholder image, not a synchronized or calibrated Versius observation"
+                    cameras[order[0]].update(label="Versius preview", placeholder=True, placeholder_reason=reason)
+                    overlay = CameraOverlay(model, cameras, root, camera_order=order)
+                    poses = {name: np.eye(4) for name in order}
+                    try:
+                        images = overlay.render(state, 0, poses)
+                        self.assertEqual(tuple(images), order)
+                        self.assertTrue(all(overlay.coverage[name] > 0 for name in order))
+                        overlay.show_overlay = False
+                        overlay.render(state, 0, poses)
+                        for index, name in enumerate(reversed(order)):
+                            np.testing.assert_array_equal(overlay.images[name], index + 30)
+                        overlay.render(state, 0, poses, {name: name != order[-1] for name in order})
+                        np.testing.assert_array_equal(overlay.images[order[-1]], 0)
+                        self.assertIn("Unavailable", overlay.status[order[-1]])
+                        # Exercise the public UI callback without an OpenGL
+                        # context: rendered/unavailable state must never hide
+                        # the source-placeholder provenance or reorder views.
+                        ui = Mock()
+                        ui.get_main_viewport.return_value = SimpleNamespace(
+                            work_size=SimpleNamespace(x=1280, y=720), work_pos=SimpleNamespace(x=0, y=0)
+                        )
+                        ui.ImVec2.side_effect = lambda x, y: (x, y)
+                        ui.get_style.return_value = SimpleNamespace(
+                            item_spacing=SimpleNamespace(y=8),
+                            window_padding=SimpleNamespace(x=8, y=8),
+                            cell_padding=SimpleNamespace(y=2),
+                        )
+                        ui.get_frame_height_with_spacing.return_value = 28
+                        ui.get_text_line_height_with_spacing.return_value = 22
+                        ui.calc_text_size.side_effect = lambda text, wrap_width: SimpleNamespace(
+                            y=14 * len(textwrap.wrap(text, width=max(1, int(wrap_width / 7))))
+                        )
+                        ui.begin.return_value = (True, True)
+                        ui.checkbox.return_value = (False, False)
+                        ui.slider_float.return_value = (False, 0.18)
+                        ui.begin_table.return_value = True
+                        overlay._textures = dict.fromkeys(order, 0)
+                        with patch.object(overlay, "_upload_images"):
+                            overlay.draw(ui)
+                        ui.begin_table.assert_called_once_with("##suturebot_camera_views", min(2, len(order)))
+                        wrapped = [call.args[0] for call in ui.text_wrapped.call_args_list]
+                        self.assertEqual(wrapped[1], f"{overlay.labels[order[0]]} | {overlay.status[order[0]]}")
+                        self.assertIn(f"Placeholder: {reason}", wrapped)
+                        for name in order:
+                            self.assertIn(f"{overlay.labels[name]} | {overlay.status[name]}", wrapped)
+                        self.assertEqual(ui.image.call_count, len(order))
+                        # The real stereo preview uses 240x135 images. Its
+                        # labels and three-line source disclaimer need room
+                        # above the full images, not the former 235px panel.
+                        if len(order) == 2:
+                            overlay.images = {name: np.zeros((135, 240, 3), np.uint8) for name in order}
+                            overlay.labels = {name: f"{name.title()} - dVRK placeholder" for name in order}
+                            overlay.notes = {name: f"Placeholder: {reason}" for name in order}
+                            with patch.object(overlay, "_upload_images"):
+                                overlay.draw(ui)
+                            panel_width, panel_height = ui.set_next_window_size.call_args.args[0]
+                            panel_x, panel_y = ui.set_next_window_pos.call_args.args[0]
+                            self.assertGreaterEqual(panel_height, 330)
+                            self.assertLessEqual(panel_x + panel_width, 1280)
+                            self.assertLessEqual(panel_y + panel_height, 720)
+                    finally:
+                        overlay._textures.clear()
+                        overlay.close()
 
     @unittest.skipUnless(importlib.util.find_spec("PIL"), "Install the examples extra for prepared image decoding")
     def test_sensor_projection_occlusion_motion_and_unavailable_frames(self):

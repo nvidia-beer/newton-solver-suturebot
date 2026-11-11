@@ -8,14 +8,14 @@ import sys
 from newton_solver_suturebot.examples._suturebot_recording import DEFAULT_RECORDING, Recording, bundled_recordings
 
 
-def _catalog(parser):
-    paths = bundled_recordings(include_aliases=False)
+def _catalog(parser, *, catalog=None, default_recording=DEFAULT_RECORDING):
+    paths = (bundled_recordings if catalog is None else catalog)(include_aliases=False)
     if not paths:
-        parser.error("No bundled dVRK recordings found. Supply --sample /path/to/recording.json.")
+        parser.error("No bundled recordings found. Supply --sample /path/to/recording.json.")
     names = sorted(
         paths,
         key=lambda name: (
-            paths[name].resolve() != DEFAULT_RECORDING.resolve(),
+            paths[name].resolve() != default_recording.resolve(),
             paths[name].name != "recording.json",
             name,
         ),
@@ -23,8 +23,8 @@ def _catalog(parser):
     return [(name, Recording(paths[name])) for name in names]
 
 
-def _show(recordings, *, file):
-    print("da Vinci Research Kit (dVRK) recordings:", file=file)
+def _show(recordings, *, file, title="da Vinci Research Kit (dVRK) recordings"):
+    print(f"{title}:", file=file)
     for index, (name, recording) in enumerate(recordings, 1):
         manifest = recording.manifest
         features = []
@@ -36,8 +36,9 @@ def _show(recordings, *, file):
             )
         details = f" | {', '.join(features)}" if features else ""
         default = " [default]" if index == 1 else ""
+        region = manifest.get("region_label", f"region {manifest.get('region_id', '—')}")
         print(
-            f"{index:2}) {name}{default} | region {manifest['region_id']} | "
+            f"{index:2}) {name}{default} | {region} | "
             f"frames {recording.first_frame}-{recording.last_frame} | {recording.duration:.3f} s{details}",
             file=file,
         )
@@ -51,10 +52,13 @@ def _show(recordings, *, file):
             print(f"    {phase}", file=file)
         if manifest.get("source_episode"):
             print(f"    Source: {manifest['source_episode']}", file=file)
+        for camera in manifest.get("cameras", {}).values():
+            if camera.get("placeholder"):
+                print(f"    {camera.get('label', 'Video')}: {camera['placeholder_reason']}", file=file)
 
 
-def _choose(recordings):
-    _show(recordings, file=sys.stderr)
+def _choose(recordings, *, title="da Vinci Research Kit (dVRK) recordings"):
+    _show(recordings, file=sys.stderr, title=title)
     names = [name for name, _ in recordings]
     while True:
         print(
@@ -74,7 +78,9 @@ def _choose(recordings):
         print("Invalid recording selection.", file=sys.stderr)
 
 
-def configure_sample(parser):
+def configure_sample(
+    parser, *, catalog=None, default_recording=DEFAULT_RECORDING, title="da Vinci Research Kit (dVRK) recordings"
+):
     """Resolve the CLI sample default without initializing a viewer or simulation.
 
     Explicit samples and noninteractive runs retain their existing behavior.
@@ -82,7 +88,7 @@ def configure_sample(parser):
     """
     args = parser.parse_args()
     if args.list_samples:
-        _show(_catalog(parser), file=sys.stdout)
+        _show(_catalog(parser, catalog=catalog, default_recording=default_recording), file=sys.stdout, title=title)
         raise SystemExit(0)
     if args.sample is not None:
         return
@@ -94,5 +100,9 @@ def configure_sample(parser):
         and not args.demo
         and args.benchmark is False
     )
-    sample = _choose(_catalog(parser)) if args.choose_sample or interactive else str(DEFAULT_RECORDING)
+    sample = (
+        _choose(_catalog(parser, catalog=catalog, default_recording=default_recording), title=title)
+        if args.choose_sample or interactive
+        else str(default_recording)
+    )
     parser.set_defaults(sample=sample)
