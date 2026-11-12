@@ -4,9 +4,10 @@
 Each process owns its MuJoCo model, Warp arrays, nonlinear solver workspaces,
 and puncture history. Commands for every scene are sent before any result is
 received, so CPU native integration and CUDA submissions can overlap. This is
-process parallelism, not a fused GPU multi-world solver. Physics uses the
-bundled insertion example's finite-force drive and accepted-step transaction.
-There is no thread or articulated robot in this initial insertion backend.
+process parallelism, not a fused GPU multi-world solver. Both control modes
+use the insertion example's accepted-step transaction. ``free_needle`` drives
+the needle directly; ``physical_grasp`` drives articulated distal jaws/palms
+and advances a worker-owned thread. Neither mode includes full robot arms.
 """
 
 from __future__ import annotations
@@ -26,16 +27,18 @@ class SutureSceneConfig:
     """Physical workload shared by workers; distances are metres, angles radians.
 
     Actions are bounded normalized Cartesian target increments in world axes,
-    ``[dx, dy, dz, rx, ry, rz]``. They change a finite-gain servo target, never
-    the simulated state. A zero action holds the previous target. The task
-    layer decides success and episode length from accepted puncture events.
+    ``[dx, dy, dz, rx, ry, rz]``. They change the needle target in
+    ``free_needle`` or the active palm target in ``physical_grasp``; the latter
+    appends a seventh jaw-opening increment. These finite-gain commands never
+    overwrite simulated poses. A zero action holds all previous actuator
+    targets. The task layer interprets accepted states and puncture events.
     """
 
     device: str = "cuda:0"
     asset: str | None = None
     region: int = 1
-    entry_xy: tuple[float, float] = (0.030, -0.040)
-    exit_xy: tuple[float, float] = (0.030, -0.048)
+    entry_xy: tuple[float, float] | None = None
+    exit_xy: tuple[float, float] | None = None
     substeps: int = 4
     frame_dt: float = 1.0 / 60.0
     translation_step: float = 0.0001
@@ -43,22 +46,55 @@ class SutureSceneConfig:
     reset_position_noise_m: float = 0.0
     seed: int = 0
     needle_solver: str = "partitioned"
+    control_mode: str = "free_needle"
+    jaw_step_rad: float = 0.02
+    thread_elements: int = 90
+    thread_length_m: float = 0.18
+    thread_radius_m: float = 0.00015
+    thread_modulus_pa: float = 2.0e6
     # Keep source material, contact, convergence and sampling defaults unless
     # explicitly configured. Every override is included in geometry metadata.
     example_arguments: tuple[str, ...] = ()
 
     def __post_init__(self):
+        # The physical tools use the recorded trocar layout. Its annotated
+        # stitch belongs on the same side of the parked forceps; the older
+        # free-needle demo at x=0 would drive PSM1 across that tool's workspace.
+        defaults = ((0.0, -0.046), (0.0, -0.054))
+        if (
+            self.control_mode == "physical_grasp"
+            and self.asset is None
+            and self.region == 1
+            and (self.entry_xy is None or self.exit_xy is None)
+        ):
+            from ._src.suturebot_layout import load_source_stitch
+
+            stitch = load_source_stitch()
+            defaults = (tuple(stitch["entry"][:2]), tuple(stitch["exit"][:2]))
+        for name, default in zip(("entry_xy", "exit_xy"), defaults, strict=True):
+            if getattr(self, name) is None:
+                object.__setattr__(self, name, default)
         if self.substeps < 1 or self.region < 1:
             raise ValueError("substeps and region must be positive")
         values = (self.frame_dt, self.translation_step, self.rotation_step)
         if not np.isfinite(values).all() or min(values) <= 0:
             raise ValueError("Frame timestep and action scales must be finite and positive")
-        if not np.isfinite((*self.entry_xy, *self.exit_xy)).all():
-            raise ValueError("Entry and exit coordinates must be finite")
+        for point in (self.entry_xy, self.exit_xy):
+            if np.asarray(point).shape != (2,) or not np.isfinite(point).all():
+                raise ValueError("Entry and exit coordinates must each contain two finite values")
         if not np.isfinite(self.reset_position_noise_m) or self.reset_position_noise_m < 0:
             raise ValueError("Reset position noise must be finite and nonnegative")
         if not isinstance(self.seed, int) or self.seed < 0:
             raise ValueError("seed must be a nonnegative integer")
+        if self.control_mode not in ("free_needle", "physical_grasp"):
+            raise ValueError("control_mode must be free_needle or physical_grasp")
+        values = (self.jaw_step_rad, self.thread_length_m, self.thread_radius_m, self.thread_modulus_pa)
+        if not np.isfinite(values).all() or min(values) <= 0 or self.thread_elements < 2:
+            raise ValueError("Physical grasp jaw/thread dimensions and material must be positive")
+
+    @property
+    def action_dimension(self):
+        return 7 if self.control_mode == "physical_grasp" else 6
 
 
 def _make_scene(config, env_id):
@@ -68,6 +104,11 @@ def _make_scene(config, env_id):
     from newton.viewer import ViewerNull
 
     from newton_solver_suturebot.examples.example_fem_needle_insertion import Example
+
+    if config.control_mode == "physical_grasp":
+        from newton_solver_suturebot.grasp_scene import GraspScene
+
+        Example = GraspScene
 
     class CartesianScene(Example):
         def _manual_target_pose(self):
@@ -103,6 +144,7 @@ def _make_scene(config, env_id):
     arguments.extend(config.example_arguments)
     args = CartesianScene.create_parser().parse_args(arguments)
     scene = CartesianScene(ViewerNull(), args)
+    scene.worker_config = config
     scene.frame_dt = config.frame_dt
     scene.sim_dt = config.frame_dt / args.substeps
     scene.reset_rng = np.random.default_rng(np.random.SeedSequence([config.seed, env_id]))
@@ -128,8 +170,14 @@ def _reset_scene(scene, config, *, rebuild=False):
         pose[:3] += offset
         scene._initialize_pose(pose)
         scene.desired_pose = pose
-    scene.cartesian_target = scene.desired_pose.copy()
+    scene.cartesian_target = (
+        scene.state_0.body_q.numpy()[scene.graspers[0].palm_body].astype(float)
+        if config.control_mode == "physical_grasp"
+        else scene.desired_pose.copy()
+    )
     scene.use_manual_control()
+    if config.control_mode == "physical_grasp":
+        scene.initialize_worker_thread(config)
     scene.actual_tip_history.clear()
     scene.reset_count += 1
     scene.observation_nodes = wp.array(
@@ -143,17 +191,25 @@ def _apply_action(scene, config, action):
     import warp as wp
 
     action = np.asarray(action, dtype=float)
-    if action.shape != (6,) or not np.isfinite(action).all() or np.any(np.abs(action) > 1):
-        raise ValueError("Each action must be six finite normalized values in [-1, 1]")
+    if action.shape != (config.action_dimension,) or not np.isfinite(action).all() or np.any(np.abs(action) > 1):
+        raise ValueError(f"Each action must be {config.action_dimension} finite normalized values in [-1, 1]")
     target = scene.cartesian_target.copy()
     target[:3] += config.translation_step * action[:3]
-    rotation = config.rotation_step * action[3:]
+    rotation = config.rotation_step * action[3:6]
     angle = float(np.linalg.norm(rotation))
     if angle:
         delta = wp.quat_from_axis_angle(wp.vec3(*(rotation / angle)), angle)
         quat = np.asarray(delta * wp.quat(*target[3:]), dtype=float)
         target[3:] = quat / np.linalg.norm(quat)
     scene.cartesian_target = target
+    if config.control_mode == "physical_grasp":
+        scene.jaw_opening_target = float(
+            np.clip(
+                scene.jaw_opening_target + config.jaw_step_rad * action[6],
+                0,
+                scene.graspers[0].config.maximum_opening_rad,
+            )
+        )
 
 
 def _observe(scene, env_id, *, include_tissue=True):
@@ -173,13 +229,19 @@ def _observe(scene, env_id, *, include_tissue=True):
             device=scene.device,
         )
         entry, exit_point = scene.observation_landmarks.numpy()
+    # Each accepted rigid array crosses to the host once. All observation
+    # fields below describe this same snapshot; none requests another readback.
+    host_state = {name: getattr(state, name).numpy() for name in ("body_q", "body_qd")}
+    needle_pose = host_state["body_q"][scene.needle_body]
     result = {
         "env_id": env_id,
         "pid": os.getpid(),
         "reset_count": scene.reset_count,
-        "needle_pose": state.body_q.numpy()[scene.needle_body].copy(),
-        "needle_velocity": state.body_qd.numpy()[scene.needle_body].copy(),
-        "tip_position": scene.actual_tip(),
+        "needle_pose": needle_pose.copy(),
+        "needle_velocity": host_state["body_qd"][scene.needle_body].copy(),
+        "tip_position": np.asarray(
+            wp.transform_point(wp.transform(*needle_pose), wp.vec3(*scene.geometry.tip)), dtype=float
+        ),
         "target_pose": scene.cartesian_target.copy(),
         "entry_position": entry.copy(),
         "exit_position": exit_point.copy(),
@@ -188,11 +250,14 @@ def _observe(scene, env_id, *, include_tissue=True):
     if include_tissue:
         result["tissue_positions"] = positions
         result["tissue_velocities"] = state.particle_qd.numpy().copy()
+    if hasattr(scene, "graspers"):
+        host_state.update({name: getattr(state, name).numpy() for name in ("joint_q", "joint_qd")})
+        result.update(scene.observe_grasp(host_state=host_state))
     return result
 
 
 def _geometry(scene, config):
-    return {
+    result = {
         "tissue_rest_positions": scene.selection.vertices.copy(),
         "tissue_tetrahedra": scene.selection.indices.copy(),
         "tissue_triangles": scene.selection.exterior_surface_triangles.copy(),
@@ -221,10 +286,19 @@ def _geometry(scene, config):
         },
         "reference_positions": scene.reference.vertices.copy(),
         "reference_triangles": scene.reference.exterior_surface_triangles.copy(),
+        # Preserve node identity across coincident region boundaries. Renderers
+        # must deform the full reference surface without guessing by position.
+        "active_reference_indices": np.searchsorted(
+            scene.reference.global_vertex_indices, scene.selection.global_vertex_indices
+        ),
         "config": config,
         "diagnostics": scene.report(),
         "scope": "FEM tissue + freely simulated MuJoCo needle; no thread or articulated robot",
+        "control_mode": config.control_mode,
     }
+    if config.control_mode == "physical_grasp":
+        result.update(scene.grasp_geometry())
+    return result
 
 
 def _worker(connection, config, env_id, log_path):
@@ -355,8 +429,9 @@ class ParallelSutureScenes:
     def step(self, actions, *, include_tissue=True):
         """Advance every scene; omit full tissue arrays for compact teacher observations."""
         actions = np.asarray(actions, dtype=float)
-        if actions.shape != (self.num_envs, 6) or not np.isfinite(actions).all() or np.any(np.abs(actions) > 1):
-            raise ValueError(f"actions must have shape ({self.num_envs}, 6) and finite values in [-1, 1]")
+        shape = (self.num_envs, self.config.action_dimension)
+        if actions.shape != shape or not np.isfinite(actions).all() or np.any(np.abs(actions) > 1):
+            raise ValueError(f"actions must have shape {shape} and finite values in [-1, 1]")
         payloads = [(action, include_tissue) for action in actions]
         return self._request("step", payloads, list(range(self.num_envs)))
 

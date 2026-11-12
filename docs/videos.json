@@ -72,5 +72,15 @@
       "--test"
     ],
     "caption": "Simulation-time playback: the MuJoCo needle makes three planned stitches across the region 1 wound and its thread follows through every track and lies on the pad with friction. The thread is then tied at the first entry and pulled until the tissue limit, which narrows the wound from 2.4 mm to about 1.2 mm, tied at the last exit, and the needle is let go. Blue and orange spheres mark where the thread enters and leaves the tissue. Illustrative forces; no calibration. Playback rate does not measure live FPS."
+  },
+  "fem_needle_grasp": {
+    "frames": 360,
+    "fps": 60,
+    "poster_frame": 240,
+    "show_ui": false,
+    "args": [
+      "--test"
+    ],
+    "caption": "Simulation-time playback of procedural joint-actuated dVRK needle insertion. Fixed trocar pivots, shaft insertion, wrist articulation and jaw friction move an independent rigid needle through the entire selected wound region; a physical thread follows. No trained policy or recorded-motion playback. Playback at 60 frames/s does not measure live simulation throughput."
   }
 }

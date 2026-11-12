@@ -54,7 +54,9 @@ import numpy as np
 import warp as wp
 from newton.solvers import SolverBase
 
+from ..fem.differentiation import active_tape
 from . import kernels
+from .gauss import ParallelGaussElements
 from .kernels import Mat66d, Vec6d
 from .model import ThreadModel
 
@@ -281,6 +283,14 @@ class SolverThread(SolverBase):
         self._predicted_q = zeros(total_dofs)
         self._gradient = zeros((total_elements, 4), wp.vec3d)
         self._hessian = zeros((total_elements, 4, 4), wp.mat33d)
+        # Small chains leave most GPU multiprocessors idle when one thread
+        # performs all five quadrature points. Keep bounded persistent scratch
+        # for independent points, followed by the original fixed-order sum.
+        self._gauss_elements = (
+            ParallelGaussElements(thread, total_elements)
+            if device.is_cuda and total_elements <= 1024 and not getattr(model, "requires_grad", False)
+            else None
+        )
         self._diagonal, self._coupling = zeros(total_nodes, Mat66d), zeros(total_nodes, Mat66d)
         self._inverse, self._reduced = zeros(total_nodes, Mat66d), zeros(total_nodes, Vec6d)
         self._update = zeros(total_nodes, Vec6d)
@@ -301,6 +311,9 @@ class SolverThread(SolverBase):
         self._unit = multiples.index(1.0)
         self._trial_q = zeros(len(multiples) * total_dofs)
         self._trial_energy = zeros((n_envs, len(multiples)))
+        # Optional element contacts participate in the same Newton solve and
+        # line search. The empty list preserves the existing obstacle API.
+        self.element_contacts = []
 
     def _newton_pass(self, dt: float) -> None:
         """Test every unfinished chain at its current coordinates and update the ones that have not converged."""
@@ -335,13 +348,20 @@ class SolverThread(SolverBase):
         pose = [self.head_center, self.head_arm, self.head_slope]
 
         def linearize(tangent_blocks: bool) -> None:
-            wp.launch(
-                kernels.evaluate_elements,
-                dim=elements,
-                inputs=[self.q, *material, tangent_blocks, self._status],
-                outputs=[self._gradient, self._hessian],
-                device=device,
-            )
+            if (
+                self._gauss_elements is not None
+                and active_tape() is None
+                and not any(array.requires_grad for array in (self.q, *material, self._gradient, self._hessian))
+            ):
+                self._gauss_elements.evaluate(self.q, tangent_blocks, self._status, self._gradient, self._hessian)
+            else:
+                wp.launch(
+                    kernels.evaluate_elements,
+                    dim=elements,
+                    inputs=[self.q, *material, tangent_blocks, self._status],
+                    outputs=[self._gradient, self._hessian],
+                    device=device,
+                )
             if self.max_eyelets:
                 wp.launch(
                     kernels.add_eyelets,
@@ -358,6 +378,8 @@ class SolverThread(SolverBase):
                     outputs=[self._gradient, self._hessian],
                     device=device,
                 )
+            for contact_model in self.element_contacts:
+                contact_model.add_gradient(tangent_blocks)
             wp.launch(
                 kernels.assemble,
                 dim=nodes,
@@ -500,6 +522,8 @@ class SolverThread(SolverBase):
                 outputs=[self._trial_energy],
                 device=device,
             )
+        for contact_model in self.element_contacts:
+            contact_model.add_trial_energy()
         wp.launch(
             kernels.trial_node_energy,
             dim=(candidates, nodes),
@@ -601,6 +625,7 @@ class SolverThread(SolverBase):
                 ],
                 outputs=[self._self_xi, self._self_point, self._self_normal],
                 device=device,
+                block_dim=1 if device.is_cuda and elements <= 128 else 256,
             )
         wp.launch(
             kernels.predict,
@@ -670,6 +695,8 @@ class SolverThread(SolverBase):
                 outputs=[self._eyelet_limit, self.eyelet_force, self.eyelet_point],
                 device=device,
             )
+        for contact_model in self.element_contacts:
+            contact_model.finish_step()
 
     @property
     def state(self) -> tuple:
@@ -691,7 +718,7 @@ class SolverThread(SolverBase):
             self._eyelet_limit,
             self._eyelet_anchor_element,
             self._eyelet_anchor_xi,
-        )
+        ) + tuple(array for contact in self.element_contacts for array in contact.state)
 
     def set_prescribed(self, dofs: Sequence[int], prescribed: bool = True) -> None:
         """Prescribe or free coordinates of one chain, in every chain, from the next step on.

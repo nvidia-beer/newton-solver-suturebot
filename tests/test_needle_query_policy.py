@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""The joint solver's launch policy does not change the default driver."""
+"""Needle queries retain explicit launch overrides and graph invalidation."""
 
 import unittest
 from unittest.mock import patch
@@ -16,12 +16,12 @@ from newton_solver_suturebot._src.solvers.mujoco_fem import trials
 
 
 class NeedleQueryPolicyTests(unittest.TestCase):
-    def test_actual_force_launches_keep_default_sizes_and_override_only_queries(self):
+    def test_actual_force_launches_use_small_defaults_and_preserve_explicit_overrides(self):
         with _example(needle_solver="partitioned") as example:
             setup(example, 0.0005, 1500)
             interaction = example.interaction
             outputs = []
-            for override, expected in ((None, (64, 32)), (1, (1, 1))):
+            for override, expected in ((None, (1, 1)), (64, (64, 64))):
                 with self.subTest(query_block_dim=override):
                     helper = _NeedleTrialForces(interaction, query_block_dim=override)
                     example.state_0.body_f.zero_()
@@ -50,26 +50,34 @@ class NeedleQueryPolicyTests(unittest.TestCase):
                 # saved actual-pad GPU audit supplies exact stationary parity.
                 np.testing.assert_allclose(changed, original, rtol=1e-6, atol=1e-12)
 
-    def test_both_joint_graph_paths_inherit_policy_but_default_driver_does_not(self):
-        for name, cls, expected in (
-            ("partitioned", NeedleTissueCoupler, (64, 32)),
-            ("mujoco-fem", SolverMuJoCoFEM, (1, 1)),
+    def test_both_joint_graph_paths_inherit_defaults_and_explicit_overrides(self):
+        for name, cls in (
+            ("partitioned", NeedleTissueCoupler),
+            ("mujoco-fem", SolverMuJoCoFEM),
         ):
             with self.subTest(solver=name), _example(needle_solver=name) as example:
                 setup(example, 0.0005, 1500)
                 self.assertIsInstance(example.coupler, cls)
-                # Only the CUDA-specific rigid backend is replaced. Construct
-                # real permission buffers through each production constructor.
-                with patch.object(coupling_graph, "MuJoCoFreeBodyGPU"):
-                    fallback = coupling_graph._CapturedNeedleTrials(example.coupler)
-                self.assertEqual(
-                    (fallback.permissions.shaft_block_dim, fallback.permissions.surface_block_dim), expected
-                )
-                if name == "mujoco-fem":
-                    with patch.object(trials, "MuJoCoFreeBodyGPU"):
-                        joint = trials._SimultaneousTrials(example.coupler)
-                    self.assertEqual((joint.permissions.shaft_block_dim, joint.permissions.surface_block_dim), expected)
-                else:
+
+                def check_graph_policy(expected, solver_name=name):
+                    # Only the CUDA-specific rigid backend is replaced. Construct
+                    # real permission buffers through each production constructor.
+                    with patch.object(coupling_graph, "MuJoCoFreeBodyGPU"):
+                        fallback = coupling_graph._CapturedNeedleTrials(example.coupler)
+                    self.assertEqual(
+                        (fallback.permissions.shaft_block_dim, fallback.permissions.surface_block_dim), expected
+                    )
+                    if solver_name == "mujoco-fem":
+                        with patch.object(trials, "MuJoCoFreeBodyGPU"):
+                            joint = trials._SimultaneousTrials(example.coupler)
+                        self.assertEqual(
+                            (joint.permissions.shaft_block_dim, joint.permissions.surface_block_dim), expected
+                        )
+
+                check_graph_policy((1, 1))
+                with patch.object(example.coupler, "_needle_query_block_dim", 64, create=True):
+                    check_graph_policy((64, 64))
+                if name == "partitioned":
                     self.assertFalse(hasattr(example.coupler, "_needle_query_block_dim"))
 
     def test_each_actual_launch_size_invalidates_the_capture_signature(self):
@@ -77,14 +85,13 @@ class NeedleQueryPolicyTests(unittest.TestCase):
             setup(example, 0.0005, 1500)
             helper = _NeedleTrialForces(example.interaction)
             original = helper.signature()
-            helper.shaft_block_dim = 1
-            self.assertNotEqual(helper.signature(), original)
-            helper.shaft_block_dim = 64
-            self.assertEqual(helper.signature(), original)
-            helper.surface_block_dim = 1
-            self.assertNotEqual(helper.signature(), original)
-            helper.surface_block_dim = 32
-            self.assertEqual(helper.signature(), original)
+            for attribute in ("shaft_block_dim", "surface_block_dim"):
+                with self.subTest(attribute=attribute):
+                    previous = getattr(helper, attribute)
+                    setattr(helper, attribute, 64)
+                    self.assertNotEqual(helper.signature(), original)
+                    setattr(helper, attribute, previous)
+                    self.assertEqual(helper.signature(), original)
 
 
 if __name__ == "__main__":

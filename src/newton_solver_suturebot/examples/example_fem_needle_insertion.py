@@ -29,10 +29,7 @@ from newton_solver_suturebot import (
     SolverMuJoCoFEM,
 )
 from newton_solver_suturebot.examples._needle_insertion_drive import NeedleDrive, pose_velocity, ramp_distance
-from newton_solver_suturebot.examples._needle_insertion_geometry import (
-    InsertionPlan,
-    pick_material_point,
-)
+from newton_solver_suturebot.examples._needle_insertion_geometry import InsertionPlan, pick_material_point
 from newton_solver_suturebot.examples.example_fem_phantom_regions import PAD_COLOR, _scatter_selected
 from newton_solver_suturebot.examples.example_fem_phantom_regions import Example as PhantomExample
 
@@ -45,10 +42,7 @@ def _gather_region_points(points: wp.array[wp.vec3], indices: wp.array[int], com
 
 @wp.kernel(enable_backward=False)
 def _marker_positions(
-    nodes: wp.array[wp.vec3i],
-    weights: wp.array[wp.vec3],
-    q: wp.array[wp.vec3],
-    points: wp.array[wp.vec3],
+    nodes: wp.array[wp.vec3i], weights: wp.array[wp.vec3], q: wp.array[wp.vec3], points: wp.array[wp.vec3]
 ):
     i = wp.tid()
     ids, weight = nodes[i], weights[i]
@@ -125,6 +119,8 @@ def _state_diagnostics(
 
 
 class Example(PhantomExample):
+    surface_preconditioner = False
+
     def __init__(self, viewer, args=None):
         args = newton.examples.default_args(self.create_parser()) if args is None else args
         values = (
@@ -181,7 +177,7 @@ class Example(PhantomExample):
 
     def begin_grab(self, origin, direction):
         """This task uses map material selections, without spring attachments."""
-        return None
+        return
 
     def select_regions(self, region_ids):
         super().select_regions(region_ids)
@@ -227,6 +223,11 @@ class Example(PhantomExample):
         self._integrity_fixed = wp.array(self.fixed_vertex_indices, dtype=int, device=self.device)
         self._integrity_result = wp.zeros(3, dtype=wp.float64, device=self.device)
         self.needle_body = list(self.model.body_label).index(self.geometry.body_path)
+        self._configure_rigid_dynamics()
+        self._reset_interaction_state()
+
+    def _configure_rigid_dynamics(self):
+        """Build the default free-needle drive; physical grippers override this."""
         if self.model.body_count != 1:
             raise ValueError("Needle insertion needs exactly one free rigid body")
         self.rigid_solver = SolverMuJoCo(
@@ -245,6 +246,9 @@ class Example(PhantomExample):
             angular_stiffness=self.args.angular_stiffness,
         )
         self.drive.configure_mujoco(self.rigid_solver, self.sim_dt)
+
+    def _reset_interaction_state(self):
+        """Reset task bookkeeping after rebuilding the physical model."""
         self.entry = self.exit = self.plan = self.interaction = None
         self.coupler = None
         self.running, self.elapsed, self.sim_time = False, 0.0, 0.0
@@ -360,11 +364,12 @@ class Example(PhantomExample):
                 self.rigid_solver,
                 self.interaction,
                 self.needle_body,
-                self.drive.com,
+                self.model.body_com.numpy()[self.needle_body],
                 moment_length=self.geometry.radius,
                 capture_fem=True,
                 capture_coupling=self.args.capture_coupling,
                 shaft_preconditioner=True,
+                surface_preconditioner=self.surface_preconditioner,
                 relaxation=1.0,
                 max_iterations=160,
                 absolute_tolerance=self.args.coupling_absolute_tolerance,
@@ -447,8 +452,7 @@ class Example(PhantomExample):
         if np.dot(axis, (0.0, 1.0, 0.2)) < 0:
             axis = -axis
         view_offset = axis + np.array((0.0, 0.0, 0.65))
-        if view_offset[2] < 0.1:
-            view_offset[2] = 0.1
+        view_offset[2] = max(view_offset[2], 0.1)
         points = np.asarray(points)
         center = (points.min(axis=0) + points.max(axis=0)) / 2
         radius = max(float(np.linalg.norm(points - center, axis=1).max()), self.geometry.radius)
@@ -497,6 +501,10 @@ class Example(PhantomExample):
                     self.task_status = "success"
                     self.outcome = f"Success: tip emerged, exit error {self.exit_error * 1000:.3f} mm"
 
+    def _commanded_body(self):
+        """Rigid body whose pose is commanded by this scene."""
+        return self.needle_body
+
     def _observe_state(self, desired):
         """Check every accepted state while transferring only compact diagnostics."""
         self._state_diagnostics.zero_()
@@ -509,7 +517,7 @@ class Example(PhantomExample):
                 self.state_0.body_q,
                 self.state_0.body_qd,
                 self._reference_positions,
-                self.needle_body,
+                self._commanded_body(),
                 wp.vec3d(*desired[:3]),
                 self._state_diagnostics,
             ],
@@ -524,6 +532,15 @@ class Example(PhantomExample):
             self.maximum_deformation = float(displacement)
             self.maximum_deformation_time = self.elapsed
         return float(pose_error)
+
+    def _prepare_step_loads(self, desired, velocity, dt):
+        """External loads held throughout a transactional needle/FEM trial."""
+        self._external_forces.zero_()
+        self.drive.prepare_timestep(dt)
+        self.drive.add_forces(self.state_0, desired, velocity)
+
+    def _accepted_step(self, dt):
+        """Advance optional physical subsystems only after needle/FEM acceptance."""
 
     def simulate(self):
         if not self.running:
@@ -541,7 +558,6 @@ class Example(PhantomExample):
             if not self.running:
                 break
             self.state_0.clear_forces()
-            self._external_forces.zero_()
             if self.manual_control:
                 desired, position = self._manual_target_pose()
                 # A dragged position is a held servo target. Differencing a
@@ -550,11 +566,14 @@ class Example(PhantomExample):
             else:
                 desired = self._desired_at(self.elapsed + step_dt)
                 previous_desired = self._desired_at(self.elapsed)
-                velocity = pose_velocity(previous_desired, desired, self.drive.com, step_dt)
-            self.drive.prepare_timestep(step_dt)
-            self.drive.add_forces(self.state_0, desired, velocity)
+                velocity = pose_velocity(
+                    previous_desired, desired, self.model.body_com.numpy()[self._commanded_body()], step_dt
+                )
+            self._prepare_step_loads(desired, velocity, step_dt)
             try:
-                self.coupler.step(self.state_0, self.state_1, self.control, step_dt)
+                self.coupler.step(
+                    self.state_0, self.state_1, self.control, step_dt, external_forces=self._external_forces
+                )
             except (NeedleStepTooLarge, NeedleCouplingNotConverged):
                 # The coupler restores the unaccepted trial. Resolve motion
                 # without weakening the guard or slowing the slider target.
@@ -578,6 +597,7 @@ class Example(PhantomExample):
             self.minimum_step_dt = min(self.minimum_step_dt, step_dt)
             self.sim_time = self.elapsed
             self.desired_pose = desired
+            self._accepted_step(step_dt)
             if self.manual_control:
                 self.manual_position = position
             pose_error = self._observe_state(desired)
@@ -660,10 +680,7 @@ class Example(PhantomExample):
             dynamic = region.id in self._dynamic_region_ids
             if refresh_all or dynamic:
                 wp.launch(
-                    _gather_region_points,
-                    len(points),
-                    [self.display_points, source_nodes, points],
-                    device=self.device,
+                    _gather_region_points, len(points), [self.display_points, source_nodes, points], device=self.device
                 )
             if not refresh_all and not dynamic and isinstance(self.viewer, ViewerGL):
                 continue
@@ -807,6 +824,10 @@ class Example(PhantomExample):
         ui.text(f"Needle: R={1000 * self.geometry.radius:.2f} mm, mass={1000 * self.geometry.mass:.2f} g")
 
     def report(self):
+        force_graph = getattr(self.coupler, "_host_trial_forces", None)
+        preparation_graph = getattr(self.coupler, "_host_trial_preparation", None)
+        phase_predictor = getattr(self.coupler, "_phase_load_predictor", None)
+        surface_pc = getattr(self.coupler, "_surface_preconditioner", None)
         return {
             "outcome": self.outcome,
             "success": self.task_status == "success",
@@ -845,9 +866,23 @@ class Example(PhantomExample):
             "maximum_coupling_residual_N": 0.0 if self.coupler is None else self.coupler.maximum_residual,
             "last_coupling_attempt_iterations": 0 if self.coupler is None else self.coupler.iterations,
             "last_coupling_attempt_residual_N": 0.0 if self.coupler is None else self.coupler.residual,
+            "surface_pc_applications": getattr(surface_pc, "applications", 0),
+            "surface_pc_selection_changes": getattr(surface_pc, "selection_changes", 0),
+            "surface_pc_graph_captures": getattr(surface_pc, "graph_captures", 0),
+            "surface_pc_graph_launches": getattr(surface_pc, "graph_launches", 0),
+            "surface_pc_native_mass_fallbacks": getattr(surface_pc, "native_mass_fallbacks", 0),
             "fem_graph_captures": 0 if self.coupler is None else self.coupler.fem_graph_captures,
             "fem_graph_launches": 0 if self.coupler is None else self.coupler.fem_graph_launches,
             "fem_graph_status": "not prepared" if self.coupler is None else self.coupler.fem_graph_status,
+            "host_force_graph_captures": getattr(force_graph, "captures", 0),
+            "host_force_graph_launches": getattr(force_graph, "launches", 0),
+            "host_force_graph_fallbacks": getattr(force_graph, "fallbacks", 0),
+            "host_force_primal_reuses": getattr(force_graph, "primal_reuses", 0),
+            "trial_prepare_graph_captures": getattr(preparation_graph, "captures", 0),
+            "trial_prepare_graph_launches": getattr(preparation_graph, "launches", 0),
+            "phase_predictor_attempts": getattr(phase_predictor, "attempts", 0),
+            "phase_predictor_commits": getattr(phase_predictor, "commits", 0),
+            "phase_predictor_invalidations": getattr(phase_predictor, "invalidations", 0),
             "coupling_graph_status": "not prepared" if self.coupler is None else self.coupler.coupling_graph_status,
             "coupling_graph_captures": 0 if self.coupler is None else self.coupler.coupling_graph_captures,
             "coupling_graph_launches": 0 if self.coupler is None else self.coupler.coupling_graph_launches,
@@ -980,10 +1015,7 @@ class Example(PhantomExample):
             help="ALM physical radial compliance [m^2/N], independent of numerical penalty; zero requests a hard wall",
         )
         parser.add_argument(
-            "--tunnel-penalty",
-            type=float,
-            default=None,
-            help="ALM numerical penalty [N/m^2]; default shaft stiffness",
+            "--tunnel-penalty", type=float, default=None, help="ALM numerical penalty [N/m^2]; default shaft stiffness"
         )
         parser.add_argument("--tunnel-tolerance", type=float, default=2e-6, help="ALM normal residual tolerance [m]")
         parser.add_argument(

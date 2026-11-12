@@ -11,6 +11,7 @@ import numpy as np
 import warp as wp
 
 from newton_solver_suturebot._src.geometry.needle_queries import NeedleQueryGeometry, _conservative_box
+from newton_solver_suturebot._src.geometry.swept_certificate import swept_triangle_clear, tip_roundoff_bound
 from newton_solver_suturebot._src.insertion import _shaft_forces, _surface_forces, _surface_positions, _track_positions
 
 
@@ -278,30 +279,93 @@ def tip_boundary_certificate(
     motion: wp.array[wp.float64],
     step_flags: wp.array[int],
     radius: wp.float64,
+    has_openings: int,
+    full_faces: wp.array[wp.vec3i],
+    active_faces: wp.array[wp.vec3i],
+    mapping: wp.array[int],
+    reference: wp.array[wp.vec3d],
+    previous: wp.array[wp.vec3],
+    current: wp.array[wp.vec3],
+    poses: wp.array[wp.transform],
+    body: int,
+    local_tip: wp.vec3d,
     fallback: wp.array[int],
 ):
-    # The three queries are independent disjunctions into the fallback flag;
-    # one lane each overlaps their sequential bounding-volume walks.
     lane = wp.tid()
     old_tip, tip = old_tips[0], samples[0]
+    error = tip_roundoff_bound(poses[body], local_tip)
     item = int(0)
-    if lane == 0:
-        padding = wp.vec3d(motion[0], motion[1], motion[2]) + wp.vec3d(wp.float64(1e-9))
+    finite_tips = (
+        wp.isfinite(old_tip[0])
+        and wp.isfinite(old_tip[1])
+        and wp.isfinite(old_tip[2])
+        and wp.isfinite(tip[0])
+        and wp.isfinite(tip[1])
+        and wp.isfinite(tip[2])
+    )
+    if not finite_tips or not wp.isfinite(error) or not wp.isfinite(motion[0] + motion[1] + motion[2]):
+        wp.atomic_max(fallback, 0, 1)
+        return
+    if lane < 2:
+        padding = wp.vec3d(motion[0], motion[1], motion[2]) + wp.vec3d(wp.float64(1e-9) + error)
         low, high = _conservative_box(wp.min(old_tip, tip) - padding, wp.max(old_tip, tip) + padding)
-        query = wp.mesh_query_aabb(full_mesh, low, high)
+        mesh = full_mesh if lane == 0 else active_mesh
+        query = wp.mesh_query_aabb(mesh, low, high)
         while wp.mesh_query_aabb_next(query, item):
-            wp.atomic_max(fallback, 0, 1)
-    elif lane == 1:
-        padding = wp.vec3d(motion[0], motion[1], motion[2]) + wp.vec3d(wp.float64(1e-9))
-        low, high = _conservative_box(wp.min(old_tip, tip) - padding, wp.max(old_tip, tip) + padding)
-        query2 = wp.mesh_query_aabb(active_mesh, low, high)
-        while wp.mesh_query_aabb_next(query2, item):
-            wp.atomic_max(fallback, 0, 1)
-    elif not step_flags[0]:
-        lo, hi = _conservative_box(tip - wp.vec3d(radius), tip + wp.vec3d(radius))
+            ids = active_faces[item] if lane == 1 else full_faces[item]
+            a, b, c = wp.vec3d(), wp.vec3d(), wp.vec3d()
+            aa, bb, cc = wp.vec3d(), wp.vec3d(), wp.vec3d()
+            if lane == 1:
+                a, b, c = wp.vec3d(previous[ids[0]]), wp.vec3d(previous[ids[1]]), wp.vec3d(previous[ids[2]])
+                aa, bb, cc = wp.vec3d(current[ids[0]]), wp.vec3d(current[ids[1]]), wp.vec3d(current[ids[2]])
+            else:
+                a, b, c = wp.vec3d(reference[ids[0]]), wp.vec3d(reference[ids[1]]), wp.vec3d(reference[ids[2]])
+                aa, bb, cc = a, b, c
+                if mapping[ids[0]] >= 0:
+                    a, aa = wp.vec3d(previous[mapping[ids[0]]]), wp.vec3d(current[mapping[ids[0]]])
+                if mapping[ids[1]] >= 0:
+                    b, bb = wp.vec3d(previous[mapping[ids[1]]]), wp.vec3d(current[mapping[ids[1]]])
+                if mapping[ids[2]] >= 0:
+                    c, cc = wp.vec3d(previous[mapping[ids[2]]]), wp.vec3d(current[mapping[ids[2]]])
+            if not swept_triangle_clear(old_tip, tip, a, b, c, aa, bb, cc, error):
+                wp.atomic_max(fallback, 0, 1)
+    elif not step_flags[0] and has_openings:
+        # Existing openings can authorize reuse below the puncture threshold.
+        # Keep this geometric decision in the original host oracle.
+        lo, hi = _conservative_box(tip - wp.vec3d(radius + error), tip + wp.vec3d(radius + error))
         close = wp.mesh_query_aabb(full_mesh, lo, hi)
         while wp.mesh_query_aabb_next(close, item):
             wp.atomic_max(fallback, 0, 1)
+
+
+@wp.kernel
+def opening_reuse_certificate(
+    nodes: wp.array[wp.vec3i],
+    bary: wp.array[wp.vec3d],
+    current: wp.array[wp.vec3],
+    samples: wp.array[wp.vec3d],
+    poses: wp.array[wp.transform],
+    body: int,
+    local_tip: wp.vec3d,
+    step_flags: wp.array[int],
+    capture: wp.float64,
+    fallback: wp.array[int],
+):
+    # Reuse requires proximity to a deformed opening, regardless of its face.
+    # Prove separation in double precision; leave all uncertain cases to CPU.
+    if step_flags[0] != 0:
+        return
+    i = wp.tid()
+    point, magnitude = wp.vec3d(), wp.vec3d()
+    for j in range(3):
+        term = bary[i][j] * wp.vec3d(current[nodes[i][j]])
+        point += term
+        magnitude += wp.abs(term)
+    error = tip_roundoff_bound(poses[body], local_tip)
+    error += wp.float64(1e-12) + wp.float64(64.0 * 2.220446049250313e-16) * wp.length(magnitude)
+    distance = wp.length(samples[0] - point)
+    if not wp.isfinite(distance + error) or distance <= capture + error:
+        wp.atomic_max(fallback, 0, 1)
 
 
 @wp.kernel
@@ -317,9 +381,17 @@ def opening_positions(
 
 @wp.kernel
 def force_flags(
-    contact: wp.array[int], diagnostics: wp.array[wp.vec3], step_flags: wp.array[int], fallback: wp.array[int]
+    contact: wp.array[int],
+    diagnostics: wp.array[wp.vec3],
+    step_flags: wp.array[int],
+    puncture_force: wp.float64,
+    fallback: wp.array[int],
 ):
-    if contact[1] != 0 or (step_flags[0] == 0 and diagnostics[6][0] > 0.0):
+    # Virgin elastic contact cannot authorize puncture below this threshold.
+    # A rounding margin leaves threshold events to the complete host oracle.
+    if contact[1] != 0 or (
+        step_flags[0] == 0 and wp.float64(diagnostics[6][0]) >= puncture_force * wp.float64(1.0 - 1e-6)
+    ):
         wp.atomic_max(fallback, 0, 1)
     for i in range(diagnostics.shape[0]):
         if not wp.isfinite(diagnostics[i][0] + diagnostics[i][1] + diagnostics[i][2]):
@@ -339,8 +411,12 @@ class _NeedleTrialForces:
     def __init__(self, interaction, *, query_block_dim=None):
         self.interaction = interaction
         self.device = interaction.device
-        self.shaft_block_dim = 64 if query_block_dim is None else query_block_dim
-        self.surface_block_dim = 32 if query_block_dim is None else query_block_dim
+        # A single needle has only about 200 samples with uneven BVH walks.
+        # One sample per block distributes those walks over the GPU instead
+        # of placing the entire query in a handful of divergent warps.
+        self.shaft_block_dim = 1 if query_block_dim is None else query_block_dim
+        self.surface_block_dim = 1 if query_block_dim is None else query_block_dim
+        self.reference = self._array(interaction.surface_vertices, wp.vec3d)
         self.local = self._array(interaction.samples, wp.vec3d)
         self.arc = self._array(interaction._sample_arc, wp.float64)
         self.tets = self._array(interaction.tetrahedra, wp.vec4i)
@@ -423,6 +499,7 @@ class _NeedleTrialForces:
         """
         x, query = self.interaction, self.interaction._device_queries
         arrays = [
+            self.reference,
             self.local,
             self.arc,
             self.tets,
@@ -471,6 +548,13 @@ class _NeedleTrialForces:
                 "_contact_flags",
             )
         )
+        recorder = getattr(x, "_surface_tangent_anchors", None)
+        recorder_length = None
+        self._surface_recorder_owners = ()
+        if recorder is not None:
+            recorder_length = x._surface_tangent_moment_length
+            self._surface_recorder_owners = tuple(recorder.arguments(recorder_length)[1:])
+            arrays.extend(self._surface_recorder_owners)
         alm = x.tunnel_alm
         alm_settings = None
         if alm is not None:
@@ -484,6 +568,7 @@ class _NeedleTrialForces:
             x._active_mesh.id,
             query.bvh.id,
             x.stiffness,
+            x.puncture_force,
             x.damping,
             x.friction,
             x.speed_scale,
@@ -494,6 +579,7 @@ class _NeedleTrialForces:
             x._rigid_inverse_mass,
             tuple(np.asarray(x._rigid_inverse_inertia).reshape(-1)),
             alm_settings,
+            recorder_length,
             tuple((array.ptr, array.shape, array.dtype) for array in arrays),
         )
 
@@ -583,6 +669,24 @@ class _NeedleTrialForces:
                 ],
                 device=self.device,
             )
+            if len(x._openings):
+                wp.launch(
+                    opening_reuse_certificate,
+                    len(x._openings),
+                    [
+                        self.opening_nodes,
+                        self.opening_bary,
+                        state.particle_q,
+                        self.world,
+                        state.body_q,
+                        body,
+                        wp.vec3d(*x.samples[0]),
+                        self.step_flags,
+                        capture,
+                        self.fallback,
+                    ],
+                    device=self.device,
+                )
             wp.launch(
                 tip_boundary_certificate,
                 3,
@@ -594,6 +698,16 @@ class _NeedleTrialForces:
                     query.motion,
                     self.step_flags,
                     float(x.radii[0]),
+                    0,  # Reuse proximity is checked against actual openings above.
+                    x._triangles,
+                    self.faces,
+                    x._mapping,
+                    self.reference,
+                    query.previous,
+                    state.particle_q,
+                    state.body_q,
+                    body,
+                    wp.vec3d(*x.samples[0]),
                     self.fallback,
                 ],
                 device=self.device,
@@ -643,8 +757,16 @@ class _NeedleTrialForces:
                 device=self.device,
             )
         self.evaluate(state, body)
+        recorder = getattr(x, "_surface_tangent_anchors", None)
+        surface_kernel, surface_extra = _surface_forces, []
+        if recorder is not None:
+            from .surface_contact_forces import surface_forces_with_tangent
+
+            recorder.clear()
+            surface_kernel = surface_forces_with_tangent
+            surface_extra = recorder.arguments(x._surface_tangent_moment_length)
         wp.launch(
-            _surface_forces,
+            surface_kernel,
             len(x.samples),
             [
                 x.mesh.id,
@@ -682,7 +804,8 @@ class _NeedleTrialForces:
                 state.body_f,
                 x._diagnostics,
                 x._contact_flags,
-            ],
+            ]
+            + surface_extra,
             device=self.device,
             block_dim=self.surface_block_dim,
         )
@@ -732,5 +855,8 @@ class _NeedleTrialForces:
                 device=self.device,
             )
         wp.launch(
-            force_flags, 1, [x._contact_flags, x._diagnostics, self.step_flags, self.fallback], device=self.device
+            force_flags,
+            1,
+            [x._contact_flags, x._diagnostics, self.step_flags, x.puncture_force, self.fallback],
+            device=self.device,
         )

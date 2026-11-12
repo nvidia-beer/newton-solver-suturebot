@@ -30,7 +30,7 @@ def make_readme(root=ROOT, *, require_videos=False):
         "No sibling solver checkout or source dataset is required to run the bundled examples.\n",
         "## Quickstart\n",
         "From this directory:\n",
-        "```bash\n./docker/build.sh\n./docker/run.sh --list\n./docker/run.sh                 # Choose an example interactively.\n./docker/run.sh fem_phantom_cut # Full-pad cutting and spring grips.\n```\n",
+        "```bash\n./docker/build.sh\n./docker/run.sh --list\n./docker/run.sh                 # Choose an example interactively.\n./docker/run.sh fem_phantom_cut # Full-pad cutting and spring grips.\n./docker/run.sh fem_needle_grasp # Articulated tools, physical grasp and procedural insertion.\n```\n",
         "Or use Python 3.12 locally:\n",
         f"```bash\nuv sync --locked --extra examples\nuv run --locked python -m {package}.examples\n```\n",
         "Run a specific example by appending its name; append `--help` for its options.\n"
@@ -64,7 +64,9 @@ def make_readme(root=ROOT, *, require_videos=False):
     text.extend(f"| {cells[i]} | {cells[i + 1] if i + 1 < len(cells) else ''} |" for i in range(0, len(cells), 2))
     text.extend(
         [
-            "\nThe pad and needle examples advance physical simulation. `fem_dvrk` replays measured\n"
+            "\nThe pad and needle examples advance physical simulation. `fem_needle_grasp` uses\n"
+            "procedural joint control with a physical jaw grasp; no Isaac Lab or trained policy is required.\n"
+            "`fem_dvrk` replays measured\n"
             "da Vinci Research Kit motion; `fem_versius` previews generated motion with labeled dVRK\n"
             "placeholder videos. Both viewing scenes have static tissue. Movie playback rate is not live FPS;\n"
             "loaded needle handling has not demonstrated sustained 60 FPS.\n",

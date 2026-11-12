@@ -32,10 +32,10 @@ class NeedleStepResolutionTests(unittest.TestCase):
             accepted = []
             initial_time = float(example.rigid_solver.mj_data.time)
 
-            def transient(state_in, state_out, control, dt):
+            def transient(state_in, state_out, control, dt, *, external_forces=None):
                 if not accepted and dt > fine_interval:
                     raise NeedleCouplingNotConverged("Initial transient requires a fine interval")
-                original(state_in, state_out, control, dt)
+                original(state_in, state_out, control, dt, external_forces=external_forces)
                 accepted.append(dt)
 
             with patch.object(example.coupler, "step", side_effect=transient):
@@ -62,13 +62,13 @@ class NeedleStepResolutionTests(unittest.TestCase):
             initial_time = float(example.rigid_solver.mj_data.time)
             initial_positions = example.state_0.particle_q.numpy().copy()
 
-            def transient(state_in, state_out, control, dt):
+            def transient(state_in, state_out, control, dt, *, external_forces=None):
                 attempts.append(dt)
                 if dt > accepted_interval:
                     self.assertEqual(float(example.rigid_solver.mj_data.time), initial_time)
                     np.testing.assert_array_equal(state_in.particle_q.numpy(), initial_positions)
                     raise NeedleCouplingNotConverged("Transient needs a shorter physical interval")
-                original(state_in, state_out, control, dt)
+                original(state_in, state_out, control, dt, external_forces=external_forces)
                 # End after the first accepted physical step; the test checks
                 # the retry floor, while full handling runs cover frame completion.
                 example.running = False

@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
 # SPDX-License-Identifier: Apache-2.0
-"""Exact serial-tip decomposition guards against the prior monolithic oracle."""
+"""Preserve material decisions while certifying conservative swept-boundary misses."""
 
 import os
 import unittest
@@ -10,6 +10,7 @@ import warp as wp
 
 from newton_solver_suturebot import boundary_faces
 from newton_solver_suturebot._src.geometry.needle_queries import NeedleQueryGeometry, _conservative_box
+from newton_solver_suturebot._src.insertion import _surface_crossings
 from newton_solver_suturebot._src.needle_trial_forces import (
     located,
     tip_boundary_certificate,
@@ -18,7 +19,8 @@ from newton_solver_suturebot._src.needle_trial_forces import (
 )
 
 
-# Preserve the pre-decomposition certificate as an independent scheduling oracle.
+# Preserve the former broadphase-only certificate as a conservative reference.
+# Material masks remain identical; proven boundary misses may now avoid fallback.
 @wp.kernel
 def legacy_tip_certificate(
     q: wp.array[wp.vec3],
@@ -93,6 +95,12 @@ class NeedleTipCertificateTests(unittest.TestCase):
         self.query = NeedleQueryGeometry(cells, 8, device=self.device)
         self.query.update(self.q)
         faces, _ = boundary_faces(base_cells)
+        self.faces_host = faces
+        self.faces = wp.array(faces, dtype=wp.vec3i, device=self.device)
+        self.mapping = wp.array(np.arange(8), dtype=int, device=self.device)
+        self.reference = wp.array(vertices, dtype=wp.vec3d, device=self.device)
+        self.previous_q = wp.clone(self.q)
+        self.poses = wp.array([wp.transform_identity()], dtype=wp.transform, device=self.device)
         self.mesh = wp.Mesh(points=self.q, indices=wp.array(faces.ravel(), dtype=int, device=self.device))
         self.fixed = wp.zeros(8, dtype=int, device=self.device)
         self.point = wp.empty(1, dtype=wp.vec3d, device=self.device)
@@ -105,11 +113,25 @@ class NeedleTipCertificateTests(unittest.TestCase):
         self.fallback = wp.zeros(1, dtype=int, device=self.device)
 
     def compare(
-        self, point, flags, expected, *, old_point=None, motion=0, fixed=False, initial_mask=0, spacing=0.00025
+        self,
+        point,
+        flags,
+        expected,
+        *,
+        old_point=None,
+        previous_q=None,
+        fixed=False,
+        initial_mask=0,
+        spacing=0.00025,
+        legacy_expected=None,
+        has_openings=True,
     ):
         self.point.assign(np.asarray([point], dtype=np.float64))
         self.previous.assign(np.asarray([point if old_point is None else old_point], dtype=np.float64))
-        self.motion.fill_(motion)
+        current = self.q.numpy()
+        old_q = current if previous_q is None else np.asarray(previous_q, dtype=np.float32)
+        self.previous_q.assign(old_q)
+        self.motion.assign(np.max(np.abs(current.astype(float) - old_q.astype(float)), axis=0))
         self.fixed.assign(np.asarray([int(fixed), 0, 0, 0, 0, 0, 0, 0], dtype=np.int32))
         self.flags.assign(np.asarray(flags, dtype=np.int32))
         outputs = []
@@ -151,6 +173,16 @@ class NeedleTipCertificateTests(unittest.TestCase):
                         self.motion,
                         self.flags,
                         0.00028,
+                        int(has_openings),
+                        self.faces,
+                        self.faces,
+                        self.mapping,
+                        self.reference,
+                        self.previous_q,
+                        self.q,
+                        self.poses,
+                        0,
+                        wp.vec3d(*point),
                         self.fallback,
                     ],
                     device=self.device,
@@ -181,7 +213,8 @@ class NeedleTipCertificateTests(unittest.TestCase):
                     device=self.device,
                 )
             outputs.append((int(self.mask.numpy()[0]), int(self.fallback.numpy()[0])))
-        self.assertEqual(outputs[0], outputs[1])
+        self.assertEqual(outputs[0][0], outputs[1][0])
+        self.assertEqual(outputs[0], expected if legacy_expected is None else legacy_expected)
         self.assertEqual(outputs[1], expected)
 
     def test_material_outside_authorization_and_moving_boundary_cases(self):
@@ -199,11 +232,36 @@ class NeedleTipCertificateTests(unittest.TestCase):
             ("missing_previous", inside, [1, 1, 0], (2, 1), {}),
             ("fixed_support", inside, [1, 1, 1], (2, 1), dict(fixed=True)),
             ("tip_sweep", inside, [1, 1, 1], (2, 1), dict(old_point=outside)),
-            ("surface_sweep", inside, [1, 1, 1], (2, 1), dict(motion=0.001)),
         )
         for name, point, flags, expected, options in cases:
             with self.subTest(name=name):
                 self.compare(point, flags, expected, **options)
+
+    def test_moving_surface_crossing_requires_fallback(self):
+        tip = np.array([0.0002, 0.0002, 0.0002])
+        current = self.q.numpy().astype(float)
+        previous = (current + [0.001, 0, 0]).astype(np.float32).astype(float)
+        self.assertTrue(_surface_crossings(tip, tip, previous, current, self.faces_host))
+        self.compare(tip, [1, 1, 1], (2, 1), previous_q=previous)
+
+    def test_virgin_contact_skips_opening_proximity_but_preserves_crossing_guards(self):
+        outside = [0.0002, 0.0002, -0.0001]
+        # A stationary external tip has no reuse decision when no openings
+        # exist. Force-threshold authorization is checked by force_flags.
+        self.compare(outside, [0, 0, 1], (0, 0), has_openings=False, legacy_expected=(0, 1))
+        inside = [0.0002, 0.0002, 0.0002]
+        self.compare(inside, [0, 0, 1], (0, 1), old_point=outside, has_openings=False)
+
+    def test_distant_vertex_motion_broadphase_hit_is_certified_clear(self):
+        tip = np.array([0.0002, 0.0002, 0.0002])
+        current = self.q.numpy().astype(float)
+        previous = current.copy()
+        previous[7, 0] += 0.001
+        previous = previous.astype(np.float32).astype(float)
+        # Motion elsewhere expands the global broadphase box across every face.
+        # The actual triangles never sweep across this interior stationary tip.
+        self.assertFalse(_surface_crossings(tip, tip, previous, current, self.faces_host))
+        self.compare(tip, [1, 1, 1], (2, 0), previous_q=previous, legacy_expected=(2, 1))
 
     def test_tie_order_and_degenerate_tetrahedra(self):
         # Strictly inside the byte-identical cells 0 and 6: shared faces can

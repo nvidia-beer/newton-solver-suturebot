@@ -190,9 +190,10 @@ motion checks; a failed certificate can resume the joint solve and require
 another correction within the same budget. This is not one FEM solve per
 Newton trial, nor a guarantee of only one correction per accepted step.
 
-The opt-in solver also uses GPU query launch sizes tuned for this single
-needle workload. The default partitioned solver keeps its original launch
-sizes; neither choice changes the force laws or acceptance tolerances.
+Both solvers default to one sample per GPU block for the small shaft and
+surface query batches. Explicit captured-query launch overrides remain
+available; these scheduling choices leave force laws and acceptance
+tolerances unchanged.
 
 Selecting this solver does not establish trajectory equivalence, 60 FPS or
 general articulated-body support. The loaded-checkpoint comparison passed
@@ -314,10 +315,10 @@ diameter of room that way, it pulls straight back across the wound or back
 along the row instead. The pull ends when the wound at the stitches is
 narrower than the thread is thick, when a tetrahedron of the tissue is
 squeezed below `--least-volume` of its volume (0.5), or at the edge of the
-pad. With the defaults the tissue limit ends it: the wound at the three
-stitches narrows from 2.36 mm to 1.28 mm. A single stitch (`--stitches 1`)
-closes its wound, from 2.30 mm to 0.30 mm. A row whose stitches all pass
-through unbroken tissue has no wound to close and is not pulled.
+pad. The archived demonstration narrowed the wound at the three stitches
+from 2.36 mm to 1.28 mm, and a single stitch (`--stitches 1`) from 2.30 mm
+to 0.30 mm. A row whose stitches all pass through unbroken tissue has no
+wound to close and is not pulled.
 
 Drop. The thread is then tied at the last exit as well, so the stitches stay
 tight, and the drive's spring lets go of the needle. The stretched end of the
@@ -327,10 +328,11 @@ and the FEM tissue. That contact shares one stiffness of 20 N/m over the
 length of the shaft: a needle that comes to lie along the surface is carried,
 while one that stands on its end on fixed or inactive material sinks in and
 the interaction reports that its centre penetrated the tissue. With one
-stitch the needle comes to rest; in the default run it was still creeping at
+stitch the needle came to rest in the archived demonstration; its default run was still creeping at
 2 mm/s after five seconds. Of four runs of two picked stitches on other
 regions, two ended at rest, one sank in, and in one a tetrahedron of the
-tissue inverted during the drop.
+tissue inverted during the drop. These are historical outcomes, before the
+pre-acceptance tetrahedral motion check.
 
 | Control | Effect |
 | --- | --- |
@@ -422,10 +424,12 @@ puncture history. Optional initial translation noise uses independent seeded
 streams per scene; its Z offset is upward. It changes actual and target pose
 only during reset before physical time advances. The default noise is zero.
 
-The scene currently includes tissue and a freely simulated needle. It has no
-articulated robot, gripper, thread, knot or camera renderer. Training projects
-can render the returned geometry from separate calibrated left/right cameras.
-The insertion/contact laws remain illustrative and uncalibrated. Benchmark
+The default `free_needle` scene includes tissue and a freely simulated needle.
+It has no gripper, thread, knot or camera renderer. The explicit
+[`physical_grasp` mode](#physical-distal-grasper-mode) adds distal tools and a
+worker-owned physical thread. Training projects can render the returned
+geometry from separate calibrated left/right cameras. The insertion/contact
+laws remain illustrative and uncalibrated. Benchmark
 loaded contact separately from motion above resting tissue; eight active
 processes alone do not imply an eightfold throughput increase.
 
@@ -434,3 +438,234 @@ The optional authored-mesh isolation and seeded-reset tests run with:
 ```bash
 NEWTON_TEST_PARALLEL=1 NEWTON_TEST_DEVICE=cuda:0 uv run --locked python -m unittest discover -s tests -p test_parallel_scenes.py -v
 ```
+
+### Physical distal-grasper mode
+
+The source API keeps `free_needle` as its default for compatibility with the
+existing examples and six-action policies. Select the physical tool task
+explicitly when constructing workers:
+
+```python
+import numpy as np
+from newton_solver_suturebot.parallel import ParallelSutureScenes, SutureSceneConfig
+
+if __name__ == "__main__":
+    config = SutureSceneConfig(device="cuda:0", control_mode="physical_grasp")
+    with ParallelSutureScenes(config, num_envs=1, log_dir="results/grasp") as scenes:
+        states = scenes.step(np.zeros((1, config.action_dimension)))
+```
+
+Save this as a file and run it normally: spawned workers cannot import a Python
+stdin entry point. The seventh action increments total jaw opening by up to
+0.02 rad per control step; the first six increment the first gripper's Cartesian
+wrist target. Bounded IK on a separate native-model scratch state converts that
+pose to six finite joint-position actuator targets. It never overwrites live
+body poses or needle coordinates. An unreachable target fails instead of moving
+the fixed trocar. Zero holds all current targets. The second tool
+stays at a separately held parked target. The independent needle moves under
+actual contact, gravity, thread and tissue loads. Reset places it in an initial
+bite; this is not a pickup controller or a complete dVRK hardware model.
+
+Reported jaw forces and contact counts come from the final native rigid
+microstep. Exported body poses are at that microstep's endpoint, so these
+samples can differ in time by one native microstep. A brief missing contact
+sample should be distinguished from a sustained dropped needle.
+
+Each tool's shaft passes through a fixed trocar (remote center of motion).
+Two hinges pivot the shaft, an axial slide provides insertion/retraction,
+and a roll joint and two wrist joints orient the jaws. `GraspScene` uses fixed
+port frames from the registered `tissue3_215300` recording: approximately 172 mm
+apart, with shafts converging toward the workspace in the reference pose.
+This registration is an estimate, not measured robot-to-phantom calibration.
+Reset solves the initial grasp's joint coordinates against these ports, and
+the ports remain fixed while physical time advances. The scene uses 180 mm
+nominal trocar-to-roll distance and ±50 mm insertion travel. Shaft yaw/pitch
+are limited to ±0.6 rad, roll to ±π, and wrist pitch/yaw to ±1.1 rad. Viewer
+markers only display the trocar; the actual joint chain enforces the constraint.
+
+The right tool, PSM1, is the Large Needle Driver holding the needle. PSM2/left
+uses a photo-estimated DeBakey forceps visual. Both currently use simplified
+capsule jaws with the same physical dimensions. The scene starts with an
+initialized grasp and the second tool parked; it does not perform the recorded
+pickup/handoff or release/regrasp sequence.
+
+For the bundled region 1, omitting `entry_xy` and `exit_xy` in a
+`physical_grasp` configuration selects the original insertion/exit material
+labels from `tissue3_215300/point_labels.json`. Their registered world positions
+are transformed into native phantom coordinates before surface selection. This
+keeps the stitch and fixed port layout in the same recorded workspace; the
+earlier generic `x=0` stitch made PSM1 reach across the parked PSM2. The labels
+inherit the recording's estimated camera/phantom alignment.
+
+The initial source-stitch grasp is at 80% of the needle arc from its tip, with
+a −75° rotation about the needle tangent followed by a −15° rotation about the
+resulting jaw-closing X axis. These demonstration angles leave wrist travel
+for the insertion; they do not reconstruct a measured recorded needle grasp.
+The needle subsequently moves through physical jaw contacts. Explicit
+`entry_xy`/`exit_xy` values are supported in native phantom metres. Other
+stitches retain the transverse reset grasp (−90° tangent rotation, zero oblique
+angle); custom asset/region and `free_needle` point defaults remain unchanged.
+
+`GraspScene` explicitly uses 240 mm shaft capsule centrelines, shortened from
+the source model's 547 mm at the proximal end. Standalone `add_rcm_grasper`
+assemblies retain 120 mm shafts, 80 mm nominal insertion and ±30 mm travel;
+these compact low-level defaults do not describe the registered scene layout.
+Shaft radius, distal endpoint, wrists and jaws keep their source dimensions.
+`GrasperConfig.shaft_length_m` supports custom assemblies, with shaft coverage
+checked against the configured insertion range. Exported gripper parameters
+and body-local capsules carry the dimensions and individual shaft/wrist/jaw
+body identities to renderers and thread contacts. Link mass, inertia, gains
+and effort limits are demonstration values. Tool-link weight is assumed
+gravity compensated; the independent needle retains its full weight. This is
+not a calibrated model of a shortened physical instrument.
+
+FEM forces couple to the needle and thread. The jaw/shaft capsules have native
+rigid-body and thread contacts, but no direct grasper–FEM contact response or
+full-arm collision model. A rendered tool/tissue overlap is therefore not a
+validated physical tool/tissue interaction.
+
+The current mode retains four outer FEM/thread intervals per 60 Hz control
+step and resolves four native rigid steps inside each interval. First inspect
+one scene with actual commanded motion, grasp contacts and fixed-trocar diagnostics;
+then repeat the scaling check for eight or more scenes. A quiet hold alone
+does not validate insertion, nor does a one-scene run establish parallel scale.
+
+The CUDA path batches native rigid-state transfers, reuses warmed FEM
+workspaces/graphs across the existing tolerance levels, and captures trial
+load/state preparation and accepted thread updates. Articulated native
+MuJoCo remains on the CPU: partial force
+graphs accelerate certified free-air, external subthreshold contact and
+established-track trials, with the exact host path as a fallback. A per-face swept-bound and cubic Bernstein
+certificate rules out clear tip trajectories; uncertain geometry keeps the
+original CPU crossing checks, including float32 tip-position uncertainty.
+The certificate does not authorize puncture or publish events.
+Puncture-threshold proximity and possible reuse of an existing opening retain
+the original host authorization. A conservative distance certificate permits
+external contact when the tip is separated from every actual deformed
+opening. In all material phases, the exact CUDA host path queries the tip
+first; it prepares full shaft containment queries only when the device shaft
+mask needs the exact CPU fallback. Custom query/mask methods retain the full
+query batch. Rank-filtered Anderson proposals with adaptive regularization
+can accelerate the unpunctured force solve once inner FEM accuracy is sufficient.
+The following actual residual checks each proposal; insufficient reduction
+recovers the saved Aitken guess. Every proposal still passes the unchanged
+physical residual, motion and material acceptance checks within the existing
+iteration budget. Gradient-enabled state/control arrays and Tape execution
+retain the original iteration.
+A dual-only ALM update reuses unchanged candidate
+mechanics and surface forces while rechecking tunnel forces and convergence.
+Supported unmodified solvers submit GPU FEM after native-state import so it
+can overlap CPU MuJoCo integration; final exports remain stream-ordered.
+A frozen articulated contact metric preconditions the numerical
+interface correction; it does not replace the physical residual or relax its
+tolerances. Before the first accepted track, `GraspScene` also enables the
+surface-contact preconditioner. Its positive friction approximation reduces
+repeated slip reversals during the numerical solve while retaining the actual
+surface-force law. Empty or unsupported contact recordings use the original
+Anderson/Aitken path. The public `NeedleTissueCoupler` and free-needle examples
+keep this option disabled by default; custom native scenes can request
+`surface_preconditioner=True`, with `surface_tangent_capacity=4096` facet pairs.
+Capacity overflow disables the approximation for that trial and never drops
+physical contact forces. The [method](method.md#needle-insertion-interaction)
+describes the frozen-load assumption and unchanged acceptance checks.
+Reports expose `surface_pc_applications`, `surface_pc_selection_changes`,
+`surface_pc_graph_captures`, `surface_pc_graph_launches` and
+`surface_pc_native_mass_fallbacks` as host counters; they do not add device
+readbacks. Reports also expose native bridge, FEM graph, trial-preparation graph,
+partial force-graph and thread-graph counts separately. The
+`trial_prepare_graph_captures` / `trial_prepare_graph_launches` counters
+identify load/state preparation; `host_force_primal_reuses` counts dual-only
+updates that reuse the unchanged mechanics. Within one coupling transaction,
+accepted rigid coordinates and controls are converted once; later trials
+restore that same input and transfer only the changed needle wrench. The
+`native_transfer_repeated_readbacks` counter is a subset of total native
+readbacks: each still waits for its required GPU-produced wrench. Failed or
+completed transactions invalidate cached input values. Throughput remains
+measured from completed physical steps and elapsed simulation time, separately
+from initialization, profiling overhead and drawing.
+The procedural worker also reuses accepted interface loads from matching phases of completed control frames as
+an initial guess. `phase_predictor_attempts`, `phase_predictor_commits` and
+`phase_predictor_invalidations` are host counters; they do not count unchecked
+physical steps. Device guards can retain the ordinary accepted-load guess,
+and all existing convergence and acceptance checks still run. Resets, abrupt
+commands, topology changes, retries and incomplete frames clear this history.
+`coupling_graph_status` can
+still report that
+the complete conditional coupling graph is unsupported for this articulated
+model. See the [method](method.md#physical-distal-grasp-and-worker-owned-thread)
+for the execution and fallback contracts. Measure loaded insertion after
+startup compilation, with the same mesh, substeps and solver budgets; viewer
+drawing FPS and headless simulation throughput are different measurements.
+
+During non-differentiable CUDA worker setup, the enabled shaft-preconditioner,
+tunnel-ALM and phase-predictor modules are explicitly compiled/loaded with
+`wp.load_module`. This moves their first-use cost into initialization without
+running a hidden physics step. Keep initialization and complete-run wall times
+when comparing benchmarks; relocating module loading is not a steady-state
+solver speedup. CPU and Tape paths retain ordinary lazy loading.
+
+Each worker owns its 90-element physical thread. `thread_positions` contains
+samples of its accepted cubic centreline; `thread_diagnostics` reports the
+attachment gap, actual loads, contact candidates and numerical budget. Actual
+rigid-body poses, jaw coordinates, contact forces and needle-relative pose are
+also reported. The renderer does not integrate these physical states. The
+thread has no prescribed eyelets or learned passage history, so this mode's
+initial approach/contact validation is separate from the completed scripted
+stitches in `fem_needle_suture`.
+
+Run the focused physical checks with:
+
+```bash
+PYTHONPATH=tests NEWTON_TEST_DEVICE=cuda:0 uv run --locked python -m unittest \
+  test_rcm_grasp test_pose_ik test_grasp_scene test_thread_rigid_contact test_worker_thread -v
+```
+
+The [method](method.md#physical-distal-grasp-and-worker-owned-thread) documents
+lagged force exchange, compliant contact and uncalibrated parameters. The
+focused tests above cover the physical tool and thread contracts; use the
+standalone example's complete procedure checks below to validate insertion.
+The separate IsaacLabSuturebot integration now chooses this physical mode by default; its
+seven-action policies must be trained and evaluated with the articulated
+configuration. Procedural or manual actuator commands require no training.
+Existing six-action free-needle results and free-palm scaling reports do not
+validate this model.
+
+
+## Standalone articulated needle grasp
+
+Run the physical tools, needle, tissue and thread directly in Newton:
+
+```bash
+./docker/run.sh fem_needle_grasp
+# Or, after uv sync --locked --extra examples:
+uv run --locked python -m newton_solver_suturebot.examples fem_needle_grasp
+```
+
+No Isaac Lab, Gym, RL policy, training checkpoint or external dataset is required.
+The two dVRK tools use the bundled source trocar layout. The active needle holder
+pivots and slides through its fixed trocar; bounded IK commands its finite joint
+actuators and articulated wrist. Friction between the jaws holds the independently
+free rigid needle. The other tool stays parked. The procedural controller settles
+the grasp, follows one entry/exit arc and holds its final target; it does not weld
+or directly reposition the needle. The physical thread collides with tissue and
+with the tool jaw/shaft capsules. The entire selected wound region remains active.
+
+Space pauses/resumes; period advances one step; Reset rebuilds the scene; Esc
+closes it. The initial camera focuses on the needle and jaws; `--overview` frames
+the complete shafts and trocar ports. Use `--controller hold` to inspect the settled setup without executing
+the insertion arc. `--speed` specifies arc speed in metres/second and
+`--settle-seconds` sets the initial grasp-settling interval.
+
+Validate one scene, then display more independent scenes:
+
+```bash
+./docker/run.sh --headless fem_needle_grasp --num-frames 360 --test
+./docker/run.sh fem_needle_grasp --num-envs 8
+```
+
+Each scene owns its physics and puncture history in a spawned worker. Display
+spacing does not alter physical coordinates. This example needs no scaling report
+from the RL project. The default has four coupled intervals per 60 Hz simulation
+frame and four native MuJoCo microsteps per interval; simulated time and video
+playback rate are distinct from measured live FPS. This remains a procedural
+insertion demonstration, not a complete suturing or knot-tying controller.

@@ -33,6 +33,7 @@ from ._src.solvers.thread import (
     ThreadModel,
     ThreadTissueCoupling,
 )
+from ._src.thread_rigid_contact import ThreadRigidCapsuleContact
 
 __all__ = [
     "CutConnectivityDebug",
@@ -59,6 +60,7 @@ __all__ = [
     "TetrahedralTunnelGuide",
     "ThreadAttachment",
     "ThreadCapsuleContact",
+    "ThreadRigidCapsuleContact",
     "ThreadModel",
     "ThreadTissueCoupling",
     "boundary_faces",

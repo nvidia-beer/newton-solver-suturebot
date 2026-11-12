@@ -1,0 +1,27 @@
+{
+  "example": "fem_needle_grasp",
+  "module": "newton_solver_suturebot.examples.example_fem_needle_grasp",
+  "caption": "Simulation-time playback of procedural joint-actuated dVRK needle insertion. Fixed trocar pivots, shaft insertion, wrist articulation and jaw friction move an independent rigid needle through the entire selected wound region; a physical thread follows. No trained policy or recorded-motion playback. Playback at 60 frames/s does not measure live simulation throughput.",
+  "arguments": [
+    "--test"
+  ],
+  "device": "cuda:0",
+  "frames": 360,
+  "fps": 60,
+  "width": 960,
+  "height": 720,
+  "show_ui": false,
+  "recording_wall_seconds": 49.0072133539943,
+  "playback_is_performance_benchmark": false,
+  "simulation_time": [
+    {
+      "attribute": "sim_time",
+      "end": 5.999999999999978
+    }
+  ],
+  "dependencies": {
+    "newton_solver_suturebot": "0.1.0",
+    "newton": "1.8.0",
+    "warp-lang": "1.17.0+cu13"
+  }
+}

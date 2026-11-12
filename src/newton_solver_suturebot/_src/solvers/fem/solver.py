@@ -61,6 +61,7 @@ where P, S, R, T, H = particle/spring/tri/tet/hex counts.
 """
 
 import math
+from collections import OrderedDict
 
 import numpy as np
 import warp as wp
@@ -370,6 +371,8 @@ class SolverFEM(SolverBase):
         self._gravity_arr: wp.array | None = None
         self._lin_solver = None
         self._lin_solver_key = None
+        self._linear_workspace_storage = None
+        self._linear_workspaces = OrderedDict()
         self._component_scaling = None
         self._tangent_triplet_slots = None
         self._topology_storage = self._topology_signature()
@@ -1301,6 +1304,83 @@ class SolverFEM(SolverBase):
             fixed.compact_preconditioner = operator
         return operator
 
+    def _linear_workspace_key(self, operator, inverse, settings):
+        """Cache only nondifferentiable CUDA CG scratch bound to stable storage.
+
+        Coupling tightens the inner tolerance during a difficult physical
+        interval and restores it afterward. Those levels need distinct Krylov
+        functors, but not a fresh allocation every time a level returns.
+        Tangent values may change in place; replacing their storage or the
+        fixed-particle operator must select a new workspace. During capture,
+        retain the workspace explicitly prepared by the graph's owner.
+        """
+        if (
+            not self.model.device.is_cuda
+            or self.model.device.is_capturing
+            or self.differentiable
+            or getattr(self.model, "requires_grad", False)
+            or differentiation.active_tape() is not None
+            or self.solver_type != "cg"
+            or self.linear_solver_check_every != 0
+            or self.preconditioner_type != "block_diag"
+            or self._streaming is not None
+            or self._component_scaling is not None
+        ):
+            return None
+
+        def storage(array):
+            return None if array is None else (array.ptr, array.shape, array.strides, array.dtype)
+
+        matrix, fixed = self.A_bsr, self._fixed_particles
+        arrays = [
+            matrix.offsets,
+            matrix.columns,
+            matrix.values,
+            self._pc_inv_diag,
+            self._normalized_rhs,
+            self.dv,
+        ]
+        if fixed is not None:
+            for name in ("compact_rhs", "compact_increment", "compact_diagonal"):
+                arrays.append(getattr(fixed, name, None))
+            compact = fixed.compact_matrix
+            if compact is not None:
+                arrays.extend((compact.offsets, compact.columns, compact.values))
+        return (
+            settings,
+            id(operator),
+            id(inverse),
+            None if fixed is None else id(fixed.compact_operator),
+            matrix.nrow,
+            matrix.ncol,
+            matrix.nnz,
+            float(self.linear_solver_chebyshev_ratio),
+            tuple(storage(array) for array in arrays),
+        )
+
+    def _reuse_linear_workspace(self):
+        """Select an already warmed standard workspace without running a solve.
+
+        Used before outer graph lookup so its workspace identity follows the
+        requested tolerance, rather than the preceding interval's tolerance.
+        A missing or replaced workspace still warms through a real eager step.
+        """
+        # Explicit workspace invalidation/replacement must not resurrect an
+        # older cached functor, even when numerical settings stayed equal.
+        if self._lin_solver is None or all(self._lin_solver is not value for value in self._linear_workspaces.values()):
+            self._linear_workspaces.clear()
+            return False
+        operator = self.A_bsr if self._fixed_particles is None else self._fixed_particles.operator
+        settings = self._linear_solver_settings()
+        key = self._linear_workspace_key(operator, self.M_bsr, settings)
+        workspace = None if key is None else self._linear_workspaces.get(key)
+        if workspace is None:
+            return False
+        self._linear_workspaces.move_to_end(key)
+        self._lin_solver, self._lin_solver_key = workspace, settings
+        self._linear_workspace_storage = key
+        return True
+
     def _make_linear_solver(self, operator, inverse, settings, *, rhs=None, increment=None):
         """Allocate persistent Krylov scratch without running a discarded solve."""
         kind, maxiter, check_every, tolerance, use_cuda_graph, chebyshev_degree, compact = settings
@@ -1438,9 +1518,29 @@ class SolverFEM(SolverBase):
         # Persistent functor: the one-shot solver functions allocate their scratch
         # buffers on every call, which is not safe inside a captured CUDA graph.
         key = self._linear_solver_settings()
-        if self._lin_solver is None or self._lin_solver_key != key:
-            self._lin_solver = self._make_linear_solver(operator, inverse, key)
-            self._lin_solver_key = key
+        workspace_key = self._linear_workspace_key(operator, inverse, key)
+        if self._lin_solver is None:
+            # Honor explicit invalidation in direct solver.step callers too,
+            # including a freshly rebuilt fixed-particle operator above.
+            self._linear_workspaces.clear()
+        if (
+            self._lin_solver is None
+            or self._lin_solver_key != key
+            or (workspace_key is not None and workspace_key != self._linear_workspace_storage)
+        ):
+            workspace = None if workspace_key is None else self._linear_workspaces.get(workspace_key)
+            if workspace is None:
+                workspace = self._make_linear_solver(operator, inverse, key)
+                if workspace_key is not None:
+                    self._linear_workspaces[workspace_key] = workspace
+                    # Eight tolerance/settings levels cover the adaptive inner
+                    # schedule while bounding scratch memory for arbitrary users.
+                    if len(self._linear_workspaces) > 8:
+                        self._linear_workspaces.popitem(last=False)
+            elif workspace_key is not None:
+                self._linear_workspaces.move_to_end(workspace_key)
+            self._lin_solver, self._lin_solver_key = workspace, key
+            self._linear_workspace_storage = workspace_key
         if getattr(self._lin_solver, "compact_solve", False):
             self._fixed_particles.gather_solve_operands(self._normalized_rhs, self.dv)
         result = self._lin_solver(

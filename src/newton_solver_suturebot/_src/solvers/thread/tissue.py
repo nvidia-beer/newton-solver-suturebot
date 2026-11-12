@@ -425,6 +425,7 @@ class ThreadTissueCoupling:
             outputs=[thread.contact_anchor],
             device=device,
         )
+        # Small chains spread their independent BVH walks across SMs with one query per block.
         wp.launch(
             _contact_planes,
             dim=thread.thread.node_count,
@@ -439,6 +440,7 @@ class ThreadTissueCoupling:
             ],
             outputs=[thread.contact_point, thread.contact_normal, self._face, self._weights],
             device=device,
+            block_dim=1 if device.is_cuda and thread.thread.node_count <= 128 else 256,
         )
 
     def add_forces(self, particle_f):
@@ -450,6 +452,7 @@ class ThreadTissueCoupling:
             inputs=[self._mesh.id, self.contact_margin, thread.contact_limit, thread.contact_anchor],
             outputs=[self._anchor_face, self._anchor_weights],
             device=device,
+            block_dim=1 if device.is_cuda and thread.thread.node_count <= 128 else 256,
         )
         wp.launch(
             _contact_reaction,

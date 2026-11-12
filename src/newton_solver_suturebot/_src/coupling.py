@@ -6,13 +6,18 @@ restarts both integrators from the same accepted state; only the converged
 trial advances material history. No controller or target geometry enters here.
 """
 
+from collections import OrderedDict
+
 import numpy as np
 import warp as wp
 
+from .insertion import NeedleStepTooLarge
 from .mujoco_free_body import MuJoCoFreeBody, synchronizes_every_step
 from .shaft_preconditioner import _ShaftPreconditioner
 from .solvers.fem import SolverFEM
 from .solvers.fem.differentiation import active_tape
+from .subcycled_mujoco import SubcycledMuJoCo
+from .tet_step import TetStepGuard
 
 
 @wp.kernel(enable_backward=False)
@@ -175,6 +180,61 @@ def _direction_statistics(
         wp.atomic_add(statistics, 4, previous[i] * difference)
 
 
+@wp.kernel(enable_backward=False)
+def _relax_preconditioned_interface(
+    direction: wp.array[wp.float64],
+    statistics: wp.array[wp.float64],
+    initial_relaxation: wp.float64,
+    has_previous: int,
+    read_slot: int,
+    relaxation_state: wp.array[wp.float64],
+    load: wp.array[wp.float64],
+    previous: wp.array[wp.float64],
+):
+    i = wp.tid()
+    relaxation = initial_relaxation
+    if has_previous != 0:
+        relaxation = relaxation_state[read_slot]
+        denominator = statistics[3]
+        if denominator > wp.float64(1e-30):
+            relaxation = -relaxation * statistics[4] / denominator
+            # Comparisons preserve np.clip's NaN propagation. In particular,
+            # an infinite numerator/denominator produces NaN, not a clamp.
+            if relaxation < wp.float64(0.001):
+                relaxation = wp.float64(0.001)
+            elif relaxation > wp.float64(2.0):
+                relaxation = wp.float64(2.0)
+    load[i] += relaxation * direction[i]
+    previous[i] = direction[i]
+    # A different write slot prevents thread zero racing the other readers.
+    # Reset branches never read old state, including after event fallback.
+    if i == 0:
+        relaxation_state[1 - read_slot] = relaxation
+
+
+def _device_aitken_supported(model, fem_solver, state_in, preconditioned):
+    return (
+        preconditioned
+        and model.device.is_cuda
+        and not getattr(model, "requires_grad", False)
+        and not getattr(fem_solver, "differentiable", False)
+        and active_tape() is None
+        and not any(
+            array.requires_grad
+            for array in (
+                state_in.particle_q,
+                state_in.particle_qd,
+                state_in.particle_f,
+                state_in.joint_q,
+                state_in.joint_qd,
+                state_in.body_q,
+                state_in.body_qd,
+                state_in.body_f,
+            )
+        )
+    )
+
+
 def _array_storage(array):
     return None if array is None else (array.ptr, array.shape, array.strides, array.dtype)
 
@@ -213,6 +273,11 @@ class NeedleTissueCoupler:
     rollback state; no rigid dynamics are replaced. Joint/body frames and
     topology must stay fixed for the lifetime of this coupler.
 
+    ``surface_preconditioner=True`` optionally accelerates native first contact
+    with a frozen facet/friction metric. It defaults off; physical residual
+    and event acceptance are unchanged. Invalid/overflow recordings fall back
+    to the original Anderson/Aitken search within the same iteration budget.
+
     ``shaft_preconditioner=True`` accounts for transverse shaft bearing and
     regularized friction in the interface correction for supported projected
     FEM/single-free-body models. It changes only the iteration: the physical
@@ -246,6 +311,8 @@ class NeedleTissueCoupler:
         capture_coupling=False,
         compact_rigid=True,
         shaft_preconditioner=False,
+        surface_preconditioner=False,
+        surface_tangent_capacity=4096,
     ):
         import mujoco
 
@@ -268,6 +335,8 @@ class NeedleTissueCoupler:
         self.capture_fem = bool(capture_fem)
         self.capture_coupling = bool(capture_coupling)
         self._captured_trials = None
+        self._host_trial_forces = None
+        self._host_trial_preparation = None
         self.coupling_graph_status = "not prepared" if capture_coupling else "disabled"
         self.coupling_graph_captures = self.coupling_graph_launches = self.coupling_graph_fallbacks = 0
         self.coupling_graph_verifications = 0
@@ -278,11 +347,14 @@ class NeedleTissueCoupler:
         )
         self.rigid_transfer_mode = "compact" if self._rigid_bridge is not None else "general"
         self._fem_graph_signature = None
-        self._fem_graphs = {}
+        self._fem_graphs = OrderedDict()
         self.fem_graph_captures = self.fem_graph_launches = 0
         self.fem_graph_status = "not prepared" if capture_fem else "disabled"
         self._forces = wp.zeros(model.particle_count, dtype=wp.vec3, device=model.device)
         self._candidate = model.state()
+        self._tet_step_guard = TetStepGuard(model) if model.tet_count else None
+        self.tet_step_rejections = 0
+        self.minimum_accepted_tet_j = np.inf
         self._endpoint_arrays = self._endpoint_snapshot = self._endpoint_equal = None
         self._input_particle_forces = wp.empty_like(self._candidate.particle_f)
         increment = getattr(fem_solver, "velocity_increment", None)
@@ -290,16 +362,19 @@ class NeedleTissueCoupler:
         # Keep nodal loads and float64 Aitken arithmetic on the model device.
         # Only six convergence scalars cross to the host in each trial.
         self._load = wp.zeros(model.particle_count * 3 + 6, dtype=wp.float64, device=model.device)
+        self._phase_load_predictor = None
         self._trial_load = wp.empty_like(self._load)
         self._value = wp.empty_like(self._load)
         self._residual = wp.empty_like(self._load)
         self._previous_residual = wp.empty_like(self._load)
         self._statistics = wp.zeros(6, dtype=wp.float64, device=model.device)
+        self._aitken_relaxation = wp.empty(2, dtype=wp.float64, device=model.device)
         self._external_wrench = wp.empty_like(self._candidate.body_f)
         self._external_nodes = wp.zeros_like(self._forces)
         self._state_spec = mujoco.mjtState.mjSTATE_INTEGRATION
         self._native = np.empty(mujoco.mj_stateSize(rigid_solver.mj_model, self._state_spec))
         self.iterations = self.evaluations = self.maximum_iterations = 0
+        self._surface_anderson_proposals = self._surface_anderson_rejections = 0
         self.residual = self.maximum_residual = 0.0
         self._shaft_preconditioner = (
             _ShaftPreconditioner(self) if shaft_preconditioner and _ShaftPreconditioner.supports(self) else None
@@ -318,7 +393,22 @@ class NeedleTissueCoupler:
             if self._shaft_preconditioner is not None
             else ("unsupported" if shaft_preconditioner else "disabled")
         )
-        self._direction = wp.empty_like(self._residual) if self._shaft_preconditioner is not None else None
+        self._surface_preconditioner = None
+        if surface_preconditioner:
+            from .surface_preconditioner import SurfaceContactPreconditioner
+
+            if SurfaceContactPreconditioner.supports(self):
+                self._surface_preconditioner = SurfaceContactPreconditioner(self, surface_tangent_capacity)
+        self.surface_preconditioner_status = (
+            "enabled"
+            if self._surface_preconditioner is not None
+            else ("unsupported" if surface_preconditioner else "disabled")
+        )
+        self._direction = (
+            wp.empty_like(self._residual)
+            if (self._shaft_preconditioner is not None or self._surface_preconditioner is not None)
+            else None
+        )
 
     def invalidate_fem_graph(self):
         """Discard captured FEM trials; the next eligible trial runs eagerly.
@@ -326,12 +416,16 @@ class NeedleTissueCoupler:
         Call between completed coupled steps after replacing internal solver
         resources, model array storage, force implementations, or model-change
         notifications that rebuild cached resources. Timestep and numerical
-        setting changes invalidate automatically. Supported in-place
+        setting changes select separate bounded cache entries. Supported in-place
         tangent/topology updates need no invalidation. Construct a new coupler
         if model capacities change. This does not change states or warm starts.
         """
         self._fem_graphs.clear()
+        if self._phase_load_predictor is not None:
+            self._phase_load_predictor.invalidate()
         self._fem_graph_signature = None
+        self._host_trial_forces = None
+        self._host_trial_preparation = None
         if self._captured_trials is not None:
             self._captured_trials.invalidate()
         self.fem_graph_status = "not prepared" if self.capture_fem else "disabled"
@@ -381,9 +475,18 @@ class NeedleTissueCoupler:
         )
 
     def _step_fem(self, state_in, control, dt):
+        # A difficult interval may visit several CG tolerances, then the next
+        # interval starts at the configured tolerance again. Select its warmed
+        # scratch before looking up a graph tied to that exact workspace.
         key = self._fem_capture_key(state_in, control, dt)
-        if key is None or key != self._fem_graph_signature:
-            self._fem_graphs.clear()
+        if key is not None:
+            # A rebuilt projection can replace its bound linear operator. Do
+            # this before choosing any workspace or graph that references it.
+            self._refresh_projection()
+        reusable = key is not None and self.fem_solver._reuse_linear_workspace()
+        if reusable:
+            key = self._fem_capture_key(state_in, control, dt)
+        if key is None or not reusable:
             # A real first trial initializes persistent Krylov/scratch storage;
             # no discarded warmup integration or extra interface iteration.
             self.fem_solver.step(state_in, self._candidate, control, None, dt, external_forces=self._forces)
@@ -394,12 +497,9 @@ class NeedleTissueCoupler:
         state_key = tuple(
             _array_storage(array) for array in (state_in.particle_q, state_in.particle_qd, state_in.particle_f)
         )
-        entry = self._fem_graphs.get(state_key)
+        graph_key = (key, state_key)
+        entry = self._fem_graphs.get(graph_key)
         if entry is None:
-            # Normal callers alternate two state buffers. Bound retained graph
-            # resources even if a caller supplies fresh state storage each step.
-            if len(self._fem_graphs) >= 2:
-                self._fem_graphs.clear()
             try:
                 with wp.ScopedCapture(device=self.model.device) as capture:
                     self.fem_solver.step(state_in, self._candidate, control, None, dt, external_forces=self._forces)
@@ -408,15 +508,22 @@ class NeedleTissueCoupler:
                 raise RuntimeError(
                     "FEM CUDA graph capture failed; disable capture_fem for this configuration"
                 ) from error
-            # Keep input storage alive for every retained graph.
+            # Keep input and Krylov storage alive for every retained graph.
             entry = (
                 capture.graph,
                 (state_in.particle_q, state_in.particle_qd, state_in.particle_f),
                 self.fem_solver._lin_solver,
             )
-            self._fem_graphs[state_key] = entry
+            self._fem_graphs[graph_key] = entry
+            # Retain both alternating states at recurring timestep/tolerance
+            # levels. LRU eviction bounds memory without discarding every graph
+            # whenever a retry or an inner convergence level changes.
+            if len(self._fem_graphs) > 32:
+                self._fem_graphs.popitem(last=False)
             self.fem_graph_captures += 1
-        self._refresh_projection()
+        else:
+            self._fem_graphs.move_to_end(graph_key)
+        self._fem_graph_signature = key
         wp.capture_launch(entry[0])
         self.fem_graph_launches += 1
         self.fem_graph_status = "replaying"
@@ -519,11 +626,15 @@ class NeedleTissueCoupler:
         self.interaction._device_locations = {}
 
     def _restart_trials(self, state_in, tunnel_alm):
+        if self._phase_load_predictor is not None:
+            self._phase_load_predictor.cancel()
         self._restore_native()
         wp.copy(state_in.body_f, self._external_wrench)
         wp.copy(state_in.particle_f, self._input_particle_forces)
         wp.copy(self.fem_solver.velocity_increment, self._increment)
         wp.copy(self._trial_load, self._load)
+        if self._shaft_preconditioner is not None:
+            self._shaft_preconditioner.begin_step()
         self.interaction.discard_trial_forces()
         if tunnel_alm is not None:
             tunnel_alm.discard()
@@ -605,10 +716,108 @@ class NeedleTissueCoupler:
         self._restart_trials(state_in, tunnel_alm)
         return None
 
-    def _solve_host(self, state_in, control, dt, configured_tolerance, tunnel_alm, preconditioned):
+    def _host_force_graph(self, state_in, control, dt):
+        """Use certified CUDA forces while retaining native articulated dynamics."""
+        if not self.capture_coupling or self._fem_capture_key(state_in, control, dt) is None:
+            return None
+        if not wp.is_conditional_graph_supported():
+            return None
+        from .insertion import NeedleTissueInteraction
+
+        if type(self.interaction) is not NeedleTissueInteraction or any(
+            getattr(getattr(self.interaction, name), "__func__", None) is not getattr(NeedleTissueInteraction, name)
+            for name in ("add_forces", "_add_forces", "_visited_sample_mask", "_tip_boundary_permission")
+        ):
+            return None
+        if any(
+            getattr(getattr(self, name), "__func__", None) is not getattr(NeedleTissueCoupler, name)
+            for name in ("_step_fem", "_evaluate")
+        ):
+            return None
+        if any(
+            array.requires_grad for array in (state_in.joint_q, state_in.joint_qd, state_in.body_q, state_in.body_qd)
+        ):
+            return None
+        if self.interaction._previous_tip is None:
+            return None
+        from .host_trial_forces import CapturedHostTrialForces
+
+        if self._host_trial_forces is None:
+            self._host_trial_forces = CapturedHostTrialForces(self)
+        self._host_trial_forces.prepare(dt)
+        return self._host_trial_forces
+
+    def _solve_host(
+        self, state_in, control, dt, configured_tolerance, tunnel_alm, preconditioned, *, capture_forces=True
+    ):
         """Original host-controlled trial loop; also the exact event fallback."""
+        surface_pc = self._surface_preconditioner
+        surface_available = surface_pc is not None and not preconditioned and surface_pc.begin_trials(state_in, control)
+        surface_selected = False
+        surface_device_aitken = surface_available and _device_aitken_supported(
+            self.model, self.fem_solver, state_in, True
+        )
+        force_graph = self._host_force_graph(state_in, control, dt) if capture_forces else None
+        from .host_trial_prepare import CapturedTrialPreparation
+
+        if self._host_trial_preparation is None:
+            self._host_trial_preparation = CapturedTrialPreparation(self)
+        prepare_trial = self._host_trial_preparation.bind(state_in)
+        overlap_fem = (
+            self._rigid_bridge is None
+            and type(self.rigid_solver) is SubcycledMuJoCo
+            and getattr(self.rigid_solver.step, "__func__", None) is SubcycledMuJoCo.step
+            and type(self.fem_solver) is SolverFEM
+            and getattr(self.fem_solver.step, "__func__", None) is SolverFEM.step
+            and getattr(self._step_fem, "__func__", None) is NeedleTissueCoupler._step_fem
+        )
+
+        def enqueue_fem():
+            self._step_fem(state_in, control, dt)
+
         relaxation, mixing_start = self.relaxation, 1
+        acceleration = None
+        if (
+            getattr(self, "_surface_anderson_enabled", True)
+            and not preconditioned
+            and type(self.rigid_solver) is SubcycledMuJoCo
+            and not getattr(self.interaction, "punctured", True)
+            and configured_tolerance is not None
+            and not getattr(self.model, "requires_grad", False)
+            and not getattr(self.fem_solver, "differentiable", False)
+            and active_tape() is None
+            and not any(
+                array is not None and array.requires_grad
+                for state in (state_in, self._candidate)
+                for array in (
+                    state.particle_q,
+                    state.particle_qd,
+                    state.particle_f,
+                    state.joint_q,
+                    state.joint_qd,
+                    state.body_q,
+                    state.body_qd,
+                    state.body_f,
+                )
+            )
+            and not any(
+                array is not None and array.requires_grad
+                for array in (
+                    getattr(control, "joint_f", None),
+                    getattr(control, "joint_target_q", None),
+                    getattr(control, "joint_target_qd", None),
+                    getattr(control, "tet_activations", None),
+                    getattr(getattr(control, "mujoco", None), "ctrl", None),
+                )
+            )
+        ):
+            from .surface_anderson import SurfaceAnderson
+
+            acceleration = SurfaceAnderson()
+        device_aitken = _device_aitken_supported(self.model, self.fem_solver, state_in, preconditioned)
+        relaxation_slot = 0
         converged = False
+        reuse_primal = False
         for iteration in range(1, self.max_iterations + 1):
             if configured_tolerance is not None and iteration > mixing_start and (iteration - mixing_start) % 8 == 0:
                 tolerance = max(min(configured_tolerance, 1e-6), self.fem_solver.linear_solver_tolerance * 0.1)
@@ -617,50 +826,51 @@ class NeedleTissueCoupler:
                     # Aitken differences must belong to the same approximate
                     # force map; tighter inner solves begin a fresh history.
                     relaxation, mixing_start = self.relaxation, iteration
-            self._restore_native()
-            wp.launch(
-                _apply_interface_load,
-                max(self.model.particle_count, self.model.body_count),
-                [
-                    self._trial_load,
-                    self._external_nodes,
-                    self._external_wrench,
-                    self.needle_body,
-                    self.moment_length,
-                    self._forces,
-                    state_in.body_f,
-                ],
-                device=self.model.device,
-            )
-            self._candidate.assign(state_in)
-            # Reuse the preceding trial's numerical CG guess. Physical
-            # integration still starts from state_in; rejection restores
-            # the incoming guess together with the native rigid state.
-            self._step_fem(state_in, control, dt)
-            if self._rigid_bridge is None:
-                self.rigid_solver.step(state_in, self._candidate, control, None, dt)
+                    if acceleration is not None:
+                        acceleration.reset()
+            if not reuse_primal:
+                self._restore_native()
+                prepare_trial()
+                # Reuse the preceding trial's numerical CG guess. Physical
+                # integration still starts from state_in; rejection restores
+                # the incoming guess together with the native rigid state.
+                if overlap_fem:
+                    # Import native coordinates before enqueueing FEM. CPU
+                    # contact integration can then overlap the structural GPU
+                    # solve; its endpoint export stays ordered on this stream.
+                    self.rigid_solver.step(state_in, self._candidate, control, None, dt, before_native_step=enqueue_fem)
+                else:
+                    self._step_fem(state_in, control, dt)
+                    if self._rigid_bridge is None:
+                        self.rigid_solver.step(state_in, self._candidate, control, None, dt)
+                    else:
+                        self._rigid_bridge.step(state_in, self._candidate, control, dt)
+            if force_graph is None:
+                self._evaluate(self._candidate, dt, trial=True)
+                self._statistics.zero_()
+                wp.launch(
+                    _interface_residual,
+                    self._load.size,
+                    [
+                        self._forces,
+                        self._candidate.body_f,
+                        self.needle_body,
+                        self.moment_length,
+                        self._trial_load,
+                        self._previous_residual,
+                        int(iteration > mixing_start and not preconditioned),
+                        self._value,
+                        self._residual,
+                        self._statistics,
+                    ],
+                    device=self.model.device,
+                )
+                packet = surface_pc.pack_statistics(self._statistics) if surface_available else self._statistics
+                statistics = packet.numpy()
             else:
-                self._rigid_bridge.step(state_in, self._candidate, control, dt)
-            self._evaluate(self._candidate, dt, trial=True)
-            self._statistics.zero_()
-            wp.launch(
-                _interface_residual,
-                self._load.size,
-                [
-                    self._forces,
-                    self._candidate.body_f,
-                    self.needle_body,
-                    self.moment_length,
-                    self._trial_load,
-                    self._previous_residual,
-                    int(iteration > mixing_start and not preconditioned),
-                    self._value,
-                    self._residual,
-                    self._statistics,
-                ],
-                device=self.model.device,
-            )
-            statistics = self._statistics.numpy()
+                statistics = force_graph.evaluate(
+                    dt, iteration > mixing_start and not preconditioned, fresh=not reuse_primal
+                )
             self.evaluations += 1
             self.iterations = iteration
             self.residual = float(statistics[0])
@@ -671,6 +881,8 @@ class NeedleTissueCoupler:
             )
             if self.residual <= tolerance:
                 if tunnel_alm is None or tunnel_alm.converged(self.absolute_tolerance, self.relative_tolerance):
+                    if force_graph is not None:
+                        force_graph.stage()
                     converged = True
                     break
                 # A dual update changes the proximal force map. Re-solve
@@ -678,14 +890,39 @@ class NeedleTissueCoupler:
                 # every primal evaluation still consumes the shared budget.
                 tunnel_alm.update_duals()
                 relaxation, mixing_start = self.relaxation, iteration + 1
+                if acceleration is not None:
+                    acceleration.reset()
+                reuse_primal = force_graph is not None
                 continue
             # Vector Aitken relaxation adapts to the combined structural,
             # rigid and regularized-friction response without changing any
             # physical force. Positive relaxation handles contact switches.
+            reuse_primal = False
             direction = self._residual
-            if preconditioned:
-                self._shaft_preconditioner.apply(self._candidate, dt, self._residual, self._direction)
+            selected_surface = bool(surface_available and statistics[7] == 1 and statistics[6] > 0)
+            if selected_surface:
+                surface_pc.active = True
+                selected_surface = surface_pc.apply(self._candidate, dt, self._residual, self._direction)
+                surface_pc.active = selected_surface
+            if selected_surface != surface_selected:
+                surface_pc.selection_changes += 1
+                # Preconditioned and raw histories are different maps. Never
+                # mix differences across empty/overflow/capped/contact switches.
+                relaxation, mixing_start, relaxation_slot = self.relaxation, iteration, 0
+                self._previous_residual.zero_()
+                if acceleration is not None:
+                    acceleration.reset()
+                surface_selected = selected_surface
+            trial_preconditioned = preconditioned or selected_surface
+            trial_device_aitken = device_aitken or (selected_surface and surface_device_aitken)
+            if trial_preconditioned:
+                if preconditioned:
+                    self._shaft_preconditioner.apply(self._candidate, dt, self._residual, self._direction)
                 direction = self._direction
+                if selected_surface:
+                    from .surface_preconditioner import clear_direction_statistics
+
+                    wp.launch(clear_direction_statistics, 1, [self._statistics], device=self.model.device)
                 if iteration > mixing_start:
                     wp.launch(
                         _direction_statistics,
@@ -693,13 +930,47 @@ class NeedleTissueCoupler:
                         [direction, self._previous_residual, self._statistics],
                         device=self.model.device,
                     )
-                    statistics = self._statistics.numpy()
+                    if not trial_device_aitken:
+                        statistics = self._statistics.numpy()
+            if trial_device_aitken:
+                wp.launch(
+                    _relax_preconditioned_interface,
+                    self._load.size,
+                    [
+                        direction,
+                        self._statistics,
+                        self.relaxation,
+                        int(iteration > mixing_start),
+                        relaxation_slot,
+                        self._aitken_relaxation,
+                        self._trial_load,
+                        self._previous_residual,
+                    ],
+                    device=self.model.device,
+                )
+                relaxation_slot = 1 - relaxation_slot
+                continue
             if iteration > mixing_start:
                 denominator = float(statistics[3])
                 if denominator > 1e-30:
                     relaxation = float(
-                        np.clip(-relaxation * statistics[4] / denominator, 0.001, 2.0 if preconditioned else 1.0)
+                        np.clip(-relaxation * statistics[4] / denominator, 0.001, 2.0 if trial_preconditioned else 1.0)
                     )
+            if (
+                not trial_preconditioned
+                and acceleration is not None
+                and self.fem_solver.linear_solver_tolerance <= min(configured_tolerance, 1e-6)
+            ):
+                residual = self._residual.numpy()
+                proposals, rejections = acceleration.proposals, acceleration.rejections
+                proposal = acceleration.propose(self._trial_load.numpy(), residual, relaxation)
+                self._surface_anderson_proposals += acceleration.proposals - proposals
+                self._surface_anderson_rejections += acceleration.rejections - rejections
+                if proposal is not None:
+                    self._trial_load.assign(proposal)
+                    self._previous_residual.assign(residual)
+                    relaxation, mixing_start = self.relaxation, iteration + 1
+                    continue
             wp.launch(
                 _relax_interface,
                 self._load.size,
@@ -728,17 +999,50 @@ class NeedleTissueCoupler:
         tunnel_alm = getattr(self.interaction, "tunnel_alm", None)
         converged = False
         committed = False
+        predictor = self._phase_load_predictor
+        native_input = None
         try:
+            if (
+                self._rigid_bridge is None
+                and type(self.rigid_solver) is SubcycledMuJoCo
+                and getattr(self.rigid_solver.step, "__func__", None) is SubcycledMuJoCo.step
+            ):
+                native_input = self.rigid_solver.begin_repeated_input(
+                    state_in, self._candidate, control, self.needle_body
+                )
+            if predictor is not None:
+                from .phase_predictor import coupler_signature
+
+                predictor.begin(
+                    self._load, self._trial_load, dt, coupler_signature(self), self.interaction._track_engaged
+                )
             if tunnel_alm is not None:
                 tunnel_alm.begin_step()
             preconditioned = False
+            if self._surface_preconditioner is not None:
+                self._surface_preconditioner.begin_step()
             if self._shaft_preconditioner is not None:
                 self._shaft_preconditioner.begin_step()
                 preconditioned = self._shaft_preconditioner.active
             graph = self._device_trials(state_in, control, dt)
             converged = None if graph is None else self._solve_device(graph, state_in, control, dt, tunnel_alm)
             if converged is None:
-                converged = self._solve_host(state_in, control, dt, configured_tolerance, tunnel_alm, preconditioned)
+                from .host_trial_forces import TrialForceFallback
+
+                try:
+                    converged = self._solve_host(
+                        state_in, control, dt, configured_tolerance, tunnel_alm, preconditioned
+                    )
+                except TrialForceFallback:
+                    # Device force evaluation never commits history. Restore
+                    # native integration, numerical guesses and ALM trial state
+                    # before the original swept-event/authorization oracle.
+                    self._restart_trials(state_in, tunnel_alm)
+                    self._invalidate_query_cache()
+                    self.fem_solver.linear_solver_tolerance = configured_tolerance
+                    converged = self._solve_host(
+                        state_in, control, dt, configured_tolerance, tunnel_alm, preconditioned, capture_forces=False
+                    )
             if not converged:
                 detail = f"force residual {self.residual:.3g} N"
                 if tunnel_alm is not None and tunnel_alm.dual_updates:
@@ -749,6 +1053,16 @@ class NeedleTissueCoupler:
                 raise NeedleCouplingNotConverged(
                     f"Needle/tissue coupling did not converge in {self.max_iterations} trials ({detail})"
                 )
+            # Interface convergence does not make a linearly implicit FEM step
+            # inversion-free. Reject unresolved material motion while native
+            # state, warm starts, events and output still belong to this trial.
+            minimum_tet_j = np.inf
+            if self._tet_step_guard is not None:
+                try:
+                    minimum_tet_j = self._tet_step_guard.check(state_in, self._candidate)
+                except NeedleStepTooLarge:
+                    self.tet_step_rejections += 1
+                    raise
             self.interaction.check_step_resolution(state_in, self._candidate, self.needle_body)
             self.interaction.retain_trial_forces(state_in, self.needle_body)
             self.interaction.accept(self._candidate, self.needle_body)
@@ -757,14 +1071,24 @@ class NeedleTissueCoupler:
             wp.copy(self._candidate.body_f, self._external_wrench)
             state_out.assign(self._candidate)
             committed = True
+            if predictor is not None:
+                predictor.commit(self._value)
+            self.minimum_accepted_tet_j = min(self.minimum_accepted_tet_j, minimum_tet_j)
             wp.copy(self._load, self._value)
             self.maximum_iterations = max(self.maximum_iterations, self.iterations)
             self.maximum_residual = max(self.maximum_residual, self.residual)
         finally:
+            if self._surface_preconditioner is not None:
+                self.interaction._surface_tangent_anchors = None
+                self._surface_preconditioner.available = False
+            if native_input is not None:
+                native_input.end_repeated_input()
             if configured_tolerance is not None:
                 self.fem_solver.linear_solver_tolerance = configured_tolerance
             wp.copy(state_in.body_f, self._external_wrench)
             if not committed:
+                if predictor is not None:
+                    predictor.discard()
                 if tunnel_alm is not None:
                     tunnel_alm.discard()
                 self.interaction.discard_trial_forces()

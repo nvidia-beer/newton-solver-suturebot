@@ -35,6 +35,7 @@ class StandalonePackageTests(unittest.TestCase):
                 "fem_needle_suture",
                 "fem_phantom_regions",
                 "fem_dvrk",
+                "fem_needle_grasp",
                 "fem_phantom_cut",
                 "fem_versius",
                 "needle_thread",

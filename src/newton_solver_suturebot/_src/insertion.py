@@ -962,6 +962,9 @@ class NeedleTissueInteraction:
         self.force_balance_error = self.torque_balance_error = 0.0
         self._query_positions = None
         self._device_queries = None
+        self._host_sample_permissions = None
+        self._host_sample_signature = None
+        self._host_sample_owners = None
         self._device_query_positions = None
         self._device_locations = {}
         self._device_query_points = None
@@ -1047,6 +1050,24 @@ class NeedleTissueInteraction:
             return None
         index = inside[np.argmax(np.min(bary[inside], axis=1))]
         return self.tetrahedra[candidates[index]], bary[index]
+
+    def _force_query_points(self, tip, samples):
+        # The device shaft mask needs geometry, not host sample embeddings.
+        # Locate only the tip initially; an exact CPU mask fallback prepares
+        # the full batch below before it requests any shaft embeddings.
+        # Customized mask/query methods keep the complete original batch.
+        if type(self) is NeedleTissueInteraction and all(
+            getattr(getattr(self, name), "__func__", None) is getattr(NeedleTissueInteraction, name)
+            for name in (
+                "_visited_sample_mask",
+                "_device_visited_sample_mask",
+                "_tip_boundary_permission",
+                "_prepare_device_queries",
+                "_locate",
+            )
+        ):
+            return np.asarray(tip).reshape(1, 3)
+        return np.vstack((tip, samples))
 
     def _prepare_device_queries(self, state, q, points):
         if self._device_queries is None:
@@ -1222,6 +1243,93 @@ class NeedleTissueInteraction:
                 return 2
         return 0
 
+    def _device_visited_sample_mask(self, state, body, q, samples):
+        """Use existing shaft geometry on CUDA; retain the exact host tip oracle."""
+        if not self.device.is_cuda or not self._visited_tets or not self.track_count:
+            return None
+        from .solvers.fem.differentiation import active_tape
+
+        if (
+            type(self) is not NeedleTissueInteraction
+            or active_tape() is not None
+            or any(
+                array.requires_grad
+                for array in (state.particle_q, state.particle_qd, state.body_q, state.body_qd, state.body_f)
+            )
+            or any(
+                getattr(getattr(self, name), "__func__", None) is not getattr(NeedleTissueInteraction, name)
+                for name in (
+                    "_visited_sample_mask",
+                    "_tip_boundary_permission",
+                    "_material_crossings",
+                    "_locate",
+                    "_body_samples",
+                    "_body_tip",
+                    "_device_geometry_matches",
+                    "_prepare_device_queries",
+                )
+            )
+            or self._device_queries is None
+            or not self._device_queries.has_previous
+            or not self._device_geometry_matches(q)
+        ):
+            return None
+        # The CPU oracle inverts every visited cell, including those away
+        # from current samples. Retain its fallback/error behavior there too.
+        visited = q[self.tetrahedra[np.asarray(sorted(self._visited_tets))]]
+        determinants = np.linalg.det(np.transpose(visited[:, 1:] - visited[:, :1], (0, 2, 1)))
+        if not np.isfinite(determinants).all() or np.any(np.abs(determinants) <= 1e-18):
+            return None
+        # Retain owners as well as IDs: the helper copies immutable geometry,
+        # so dropping an owner could otherwise let Python reuse its identity.
+        owners = (
+            self.samples,
+            self._sample_arc,
+            self.tetrahedra,
+            self._active_triangles,
+            self.fixed,
+            self.mapping,
+            self.vertices,
+        )
+        query = self._device_queries
+        signature = (
+            tuple(id(array) for array in owners),
+            tuple(
+                (array.ptr, array.shape)
+                for array in (
+                    self._fixed,
+                    self._surface,
+                    self._active_surface,
+                    query.low,
+                    query.high,
+                )
+            ),
+            self.mesh.id,
+            self._active_mesh.id,
+            query.bvh.id,
+            id(query),
+        )
+        if self._host_sample_permissions is None or signature != self._host_sample_signature:
+            from .needle_trial_forces import _NeedleTrialForces
+
+            self._host_sample_permissions = _NeedleTrialForces(self)
+            self._host_sample_signature = signature
+            self._host_sample_owners = owners
+        else:
+            self._host_sample_permissions.prepare(self)
+        helper = self._host_sample_permissions
+        helper.evaluate(state, body, certify_tip=False)
+        if helper.fallback.numpy()[0]:
+            return None
+        mask = helper.mask.numpy()
+        self._tip_exit_point = np.zeros(3)
+        capture = 2 * float(self.radii.max())
+        # Preserve the original tip permission and outgoing-face location;
+        # only lateral shaft association uses the already verified GPU path.
+        if mask[0] == 0 or self.track_spacing > capture or not self._in_material:
+            mask[0] = self._tip_boundary_permission(samples[0], q)
+        return mask
+
     def _visited_sample_mask(self, state, body, q, *, samples=None):
         mask = np.zeros(len(self.samples), dtype=np.int32)
         self._tip_exit_point = np.zeros(3)
@@ -1387,12 +1495,19 @@ class NeedleTissueInteraction:
         if flags[1] or np.any((flags < 0) | (flags > 1)) or not np.isfinite(diagnostic).all():
             return False
         if not self._in_material and diagnostic[6, 0] != 0:
-            return False
+            # Subthreshold elastic contact is certified only when the exact
+            # opening-distance audit below also excludes puncture reuse.
+            if not 0 < diagnostic[6, 0] < self.puncture_force * (1.0 - 1e-6):
+                return False
         q = state.particle_q.numpy().astype(float)
         pose = state.body_q.numpy()[body_index]
         if not np.isfinite(q).all() or not np.isfinite(pose).all():
             return False
         tip = self._body_tip(state, body_index, pose)
+        if not self._in_material and any(
+            np.linalg.norm(tip - bary @ q[ids]) <= 2 * float(self.radii.max()) + 1e-12 for ids, bary in self._openings
+        ):
+            return False
         # Publish the device geometry certificate, then query only the tip for
         # exact CPU embedding/CCD metadata. Shaft association is already proven
         # by the device trial and is not recomputed here.
@@ -1415,7 +1530,7 @@ class NeedleTissueInteraction:
             _step_start_samples=self._body_samples(state, body_index, pose),
         )
         if not self.punctured:
-            fields["status"] = "outside" if self._ever_inside else "approach"
+            fields["status"] = "contact" if diagnostic[6, 0] > 0 else ("outside" if self._ever_inside else "approach")
         self.tip_position = tip.copy()
         self._tip_exit_point = np.zeros(3)
         wp.copy(self._sample_in_visited_material, sample_mask)
@@ -1452,7 +1567,7 @@ class NeedleTissueInteraction:
         wp.copy(self._active_surface, state.particle_q, count=len(self.vertices))
         self._active_mesh.refit()
         if self.device.is_cuda:
-            self._prepare_device_queries(state, q, np.vstack((tip, self._step_start_samples)))
+            self._prepare_device_queries(state, q, self._force_query_points(tip, self._step_start_samples))
         else:
             self._refresh_surface(q)
         self._tip_embedding = self._locate(tip, q)
@@ -1468,11 +1583,27 @@ class NeedleTissueInteraction:
         if self._openings:
             self._opening_points.assign(np.asarray([bary @ q[ids] for ids, bary in self._openings]))
         capture = 2 * float(self.radii.max())
-        self._sample_in_visited_material.assign(
-            self._visited_sample_mask(state, body_index, q, samples=self._step_start_samples)
-        )
+        sample_mask = self._device_visited_sample_mask(state, body_index, q, self._step_start_samples)
+        if sample_mask is None:
+            if (
+                self.device.is_cuda
+                and self._visited_tets
+                and self._device_query_points is not None
+                and len(self._device_query_points) == 1
+            ):
+                self._prepare_device_queries(state, q, np.vstack((tip, self._step_start_samples)))
+            sample_mask = self._visited_sample_mask(state, body_index, q, samples=self._step_start_samples)
+        self._sample_in_visited_material.assign(sample_mask)
+        recorder = getattr(self, "_surface_tangent_anchors", None)
+        surface_kernel, surface_extra = _surface_forces, []
+        if recorder is not None:
+            from .surface_contact_forces import surface_forces_with_tangent
+
+            recorder.clear()
+            surface_kernel = surface_forces_with_tangent
+            surface_extra = recorder.arguments(self._surface_tangent_moment_length)
         wp.launch(
-            _surface_forces,
+            surface_kernel,
             len(self.samples),
             [
                 self.mesh.id,
@@ -1510,9 +1641,10 @@ class NeedleTissueInteraction:
                 state.body_f,
                 self._diagnostics,
                 self._contact_flags,
-            ],
+            ]
+            + surface_extra,
             device=self.device,
-            block_dim=32,
+            block_dim=1,
         )
         if self.tunnel_alm is not None:
             self.tunnel_alm.add_forces(state, body_index, body_com_local, external_forces, dt)

@@ -568,6 +568,19 @@ class NeedleTissueCouplerTests(unittest.TestCase):
             positions = example.state_0.particle_q.numpy()
             positions[:5] = vertices
             example.state_0.particle_q.assign(positions)
+            # Keep model feasibility metadata consistent with this analytic
+            # two-tet fixture; the example's original six tets use different
+            # geometry and some would already be inverted by the replacement.
+            indices = example.model.tet_indices.numpy()
+            indices[:2] = tetrahedra
+            example.model.tet_indices.assign(indices)
+            poses = example.model.tet_poses.numpy()
+            for element, nodes in enumerate(tetrahedra):
+                poses[element] = np.linalg.inv((vertices[nodes[1:]] - vertices[nodes[0]]).T)
+            example.model.tet_poses.assign(poses)
+            materials = example.model.tet_materials.numpy()
+            materials[2:] = 0
+            example.model.tet_materials.assign(materials)
             body, com = example.needle_body, example.drive.com
             samples = np.asarray([com, com + [0, 0, -0.01]])
             interaction = NeedleTissueInteraction(

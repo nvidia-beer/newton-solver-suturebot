@@ -8,14 +8,80 @@ the device. It does not substitute recorded motion or a small test mesh.
 
 import os
 import unittest
+from dataclasses import replace
 from tempfile import TemporaryDirectory
 
 import numpy as np
 
-from newton_solver_suturebot.parallel import ParallelSutureScenes, SutureSceneConfig
+from newton_solver_suturebot.parallel import ParallelSutureScenes, SutureSceneConfig, _geometry
 
 
 class ParallelSceneConfigurationTests(unittest.TestCase):
+    def test_physical_default_stitch_matches_recording_and_free_needle_keeps_demo(self):
+        from newton_solver_suturebot._src.suturebot_layout import load_source_stitch
+
+        stitch = load_source_stitch()
+        physical = SutureSceneConfig(control_mode="physical_grasp")
+        self.assertEqual(physical.region, stitch["region_id"])
+        np.testing.assert_array_equal(physical.entry_xy, stitch["entry"][:2])
+        np.testing.assert_array_equal(physical.exit_xy, stitch["exit"][:2])
+        legacy = SutureSceneConfig()
+        self.assertEqual(legacy.entry_xy, (0.0, -0.046))
+        self.assertEqual(legacy.exit_xy, (0.0, -0.054))
+
+    def test_explicit_and_custom_mesh_points_are_not_replaced_by_recording(self):
+        from newton_solver_suturebot._src.suturebot_layout import load_source_stitch
+
+        explicit = SutureSceneConfig(control_mode="physical_grasp", entry_xy=(0.01, 0.02), exit_xy=(0.03, 0.04))
+        self.assertEqual(explicit.entry_xy, (0.01, 0.02))
+        self.assertEqual(explicit.exit_xy, (0.03, 0.04))
+        partial = SutureSceneConfig(control_mode="physical_grasp", entry_xy=(0.01, 0.02))
+        self.assertEqual(partial.entry_xy, (0.01, 0.02))
+        np.testing.assert_array_equal(partial.exit_xy, load_source_stitch()["exit"][:2])
+        custom = SutureSceneConfig(control_mode="physical_grasp", asset="custom.usd")
+        self.assertEqual(custom.entry_xy, (0.0, -0.046))
+        self.assertEqual(custom.exit_xy, (0.0, -0.054))
+
+    def test_geometry_exports_full_pad_binding_by_vertex_identity_not_coordinates(self):
+        from test_needle_insertion_example import _example
+
+        for region, center in ((1, 0.0), (2, 0.1)):
+            with self.subTest(region=region), _example() as scene:
+                scene.select_regions([region])
+                entry, exit_point = (center - 0.005, 0), (center + 0.005, 0)
+                scene.select_point_xy("entry", *entry)
+                scene.select_point_xy("exit", *exit_point)
+                scene.preview()
+                reference = scene.reference
+                # A distinct full-pad vertex may share coordinates with an
+                # active node. Only global IDs can identify the right one.
+                duplicate = scene.selection.vertices[0]
+                scene.reference = replace(
+                    reference,
+                    vertices=np.vstack((reference.vertices, duplicate)),
+                    global_vertex_indices=np.r_[
+                        reference.global_vertex_indices, reference.global_vertex_indices[-1] + 17
+                    ],
+                )
+                lookup = {
+                    int(global_id): index for index, global_id in enumerate(scene.reference.global_vertex_indices)
+                }
+                expected = np.array([lookup[int(global_id)] for global_id in scene.selection.global_vertex_indices])
+                config = SutureSceneConfig(
+                    region=region, entry_xy=entry, exit_xy=exit_point, substeps=scene.args.substeps
+                )
+                exported = _geometry(scene, config)
+                mapping = exported["active_reference_indices"]
+                self.assertTrue(np.issubdtype(mapping.dtype, np.integer))
+                np.testing.assert_array_equal(mapping, expected)
+                np.testing.assert_array_equal(
+                    exported["reference_positions"][mapping], exported["tissue_rest_positions"]
+                )
+                self.assertNotEqual(mapping[0], len(scene.reference.vertices) - 1)
+                # Exported arrays must not expose mutable scene identities.
+                mapping[:] = -1
+                np.testing.assert_array_equal(_geometry(scene, config)["active_reference_indices"], expected)
+
     def test_invalid_time_scales_coordinates_and_counts_fail_before_starting_workers(self):
         for arguments in (
             {"substeps": 0},
@@ -24,6 +90,8 @@ class ParallelSceneConfigurationTests(unittest.TestCase):
             {"translation_step": np.inf},
             {"rotation_step": -1},
             {"entry_xy": (np.nan, 0)},
+            {"entry_xy": (0,)},
+            {"exit_xy": (0, 0, 0)},
             {"reset_position_noise_m": -1},
             {"reset_position_noise_m": np.inf},
             {"seed": -1},

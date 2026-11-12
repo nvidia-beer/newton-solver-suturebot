@@ -8,7 +8,9 @@ r-h J_full.T D J_free (M+h J_free.T D J_free)^-1 r.
 Free rows equal M (M+h J_free.T D J_free)^-1 r for an exact inner solve;
 the full transpose also returns fixed-support reactions and preserves internal
 load balance when the inner solve is approximate. M is projected FEM A plus
-native free-body effective inertia; rigid velocity coordinates are (v, L*omega). For each engaged anchor,
+native needle effective inertia; rigid velocity coordinates are (v, L*omega).
+For articulated tools, a frozen native contact Hessian is condensed to this
+needle twist, retaining translation/rotation cross blocks. For each engaged anchor,
 D=ell*(h*k+c)*(I-t*t.T) + mu*|normal_force|*v_eps/max(v_eps,|slip|)^2*(t*t.T).
 The positive tangential approximation decreases during saturated sliding.
 It is not a quadratic majorizer or a full-contact energy model. Surface and
@@ -176,9 +178,9 @@ def mass_action(
                 if fixed[column] == 0:
                     result += values[k] * x[column]
     elif i == count:
-        result = rigid_blocks[0] * x[i]
+        result = rigid_blocks[0] * x[i] + rigid_blocks[2] * x[count + 1]
     else:
-        result = rigid_blocks[1] * x[i]
+        result = rigid_blocks[1] * x[i] + rigid_blocks[3] * x[count]
     out[i] = result
 
 
@@ -186,7 +188,7 @@ def mass_action(
 def rigid_mass_action(rigid_blocks: wp.array[wp.mat33], x: wp.array[wp.vec3], out: wp.array[wp.vec3]):
     i = wp.tid()
     count = x.shape[0] - 2
-    out[count + i] = rigid_blocks[i] * x[count + i]
+    out[count + i] = rigid_blocks[i] * x[count + i] + rigid_blocks[2 + i] * x[count + 1 - i]
 
 
 @wp.kernel(enable_backward=False)
@@ -349,13 +351,118 @@ def prepare_rigid(
     blocks[1] = rotation * native * wp.transpose(rotation) / (length * length)
 
 
+def _native_needle_mass(model, data, body, moment_length, dt, scratch=None):
+    """Condense a frozen native contact Hessian to the needle COM twist.
+
+    H = M + h*diag(damping) + J.T*D*J is an SPD search-direction metric.
+    D is the native piecewise constraint Hessian (including elliptic cones),
+    evaluated on private data. B maps joint rates to (v_COM, L*omega), and
+    (B H^-1 B.T)^-1 is the corresponding six-dimensional effective mass.
+    Contacts, native integration and the outer physical residual are unchanged.
+    This freezes the acceleration-space tangent; it is not the exact derivative
+    of the complete subcycled transition or of changing contact geometry.
+    """
+    import mujoco
+
+    if not np.isfinite([moment_length, dt]).all() or moment_length <= 0 or dt <= 0:
+        raise ValueError("Positive finite moment length and timestep are required")
+    if not np.isfinite(model.dof_damping).all() or np.any(model.dof_damping < 0):
+        raise ValueError("All native joint damping must be finite and nonnegative")
+    scratch = mujoco.MjData(model) if scratch is None else scratch
+    mujoco.mj_copyData(scratch, model, data)
+    mass = np.empty((model.nv, model.nv), dtype=float)
+    mujoco.mj_fullM(model, scratch, mass)
+    mass.flat[:: model.nv + 1] += dt * model.dof_damping
+    count = scratch.nefc
+    if count:
+        jacobian = np.zeros((count, model.nv))
+        if mujoco.mj_isSparse(model):
+            for row in range(count):
+                begin = scratch.efc_J_rowadr[row]
+                end = begin + scratch.efc_J_rownnz[row]
+                jacobian[row, scratch.efc_J_colind[begin:end]] = scratch.efc_J[begin:end]
+        else:
+            jacobian[:] = scratch.efc_J.reshape(count, model.nv)
+        jar = jacobian @ scratch.qacc - scratch.efc_aref
+        mujoco.mj_constraintUpdate(model, scratch, jar, None, 1)
+        quadratic = scratch.efc_state == int(mujoco.mjtConstraintState.mjCNSTRSTATE_QUADRATIC)
+        mass += jacobian[quadratic].T @ (scratch.efc_D[quadratic, None] * jacobian[quadratic])
+        # Elliptic contact rows share one cone Hessian, not independent scalar
+        # efc_D entries. Reading it after constraintUpdate avoids stale storage.
+        for contact in scratch.contact:
+            row, dimension = contact.efc_address, contact.dim
+            if row < 0 or scratch.efc_state[row] != int(mujoco.mjtConstraintState.mjCNSTRSTATE_CONE):
+                continue
+            tangent = contact.H.reshape(6, 6)[:dimension, :dimension]
+            block = jacobian[row : row + dimension]
+            mass += block.T @ tangent @ block
+    body_jacobian = np.zeros((6, model.nv))
+    mujoco.mj_jacBodyCom(model, scratch, body_jacobian[:3], body_jacobian[3:], body)
+    body_jacobian[3:] *= moment_length
+    response = body_jacobian @ np.linalg.solve(mass, body_jacobian.T)
+    response = 0.5 * (response + response.T)
+    result = np.linalg.solve(response, np.eye(6))
+    result = 0.5 * (result + result.T)
+    if not np.isfinite(result).all() or np.linalg.eigvalsh(result).min() <= 0:
+        raise ValueError("Native needle metric must be finite and positive definite")
+    return result
+
+
+def _rigid_blocks_from_mass(matrix):
+    """Validate the matrix actually used by float32 CG, including cast rounding."""
+    with np.errstate(over="ignore", invalid="ignore"):
+        value = np.asarray(matrix, dtype=np.float32)
+    if value.shape != (6, 6) or not np.isfinite(value).all():
+        raise ValueError("The float32 native needle metric must be finite and 6 by 6")
+    # Positive double precision eigenvalues can round to zero or negative in
+    # an ill-conditioned constrained metric. Never feed that matrix to CG.
+    np.linalg.cholesky(value.astype(float))
+    return np.asarray([value[:3, :3], value[3:, 3:], value[:3, 3:], value[3:, :3]])
+
+
+def _supported_rigid_needle(coupler):
+    """Accept the legacy body or a known subcycled world-free needle at body 0."""
+    from .subcycled_mujoco import SubcycledMuJoCo
+
+    model, solver = coupler.model, coupler.rigid_solver
+    if MuJoCoFreeBody.supports(model, solver):
+        return True
+    if (
+        type(solver) is not SubcycledMuJoCo
+        or getattr(solver.step, "__func__", None) is not SubcycledMuJoCo.step
+        or solver.model is not model
+        or not solver.use_mujoco_cpu
+        or model.world_count != 1
+    ):
+        return False
+    import mujoco
+    import newton
+
+    native = solver.mj_model
+    identity = np.array([0, 0, 0, 0, 0, 0, 1], dtype=np.float32)
+    return bool(
+        model.joint_type.numpy()[0] == int(newton.JointType.FREE)
+        and model.joint_parent.numpy()[0] == -1
+        and model.joint_child.numpy()[0] == 0
+        and model.body_flags.numpy()[0] == int(newton.BodyFlags.DYNAMIC)
+        and np.array_equal(model.joint_X_p.numpy()[0], identity)
+        and np.array_equal(model.joint_X_c.numpy()[0], identity)
+        and not np.any(model.body_com.numpy()[0])
+        and native.jnt_type[0] == int(mujoco.mjtJoint.mjJNT_FREE)
+        and native.jnt_bodyid[0] == 1
+        and native.body_parentid[1] == 0
+        and native.jnt_dofadr[0] == 0
+        and native.jnt_qposadr[0] == 0
+    )
+
+
 class _ShaftPreconditioner:
     """Approximate the interface inverse without changing its physical residual.
 
     The model topology, particle constraints and rigid mass properties stay
     fixed for this object's lifetime. Current pose, native damping, timestep,
     material tangent and accepted track values are read on every application.
-    Only its own Krylov buffers and cached CUDA graph are mutated.
+    Only its own Krylov buffers, private native scratch and cached CUDA graph are mutated.
     """
 
     @staticmethod
@@ -373,7 +480,7 @@ class _ShaftPreconditioner:
             or solver.A_bsr.nrow != model.particle_count
             or solver.A_bsr.ncol != model.particle_count
             or len(coupler.interaction.fixed) != model.particle_count
-            or not MuJoCoFreeBody.supports(model, coupler.rigid_solver)
+            or not _supported_rigid_needle(coupler)
             or coupler.needle_body != 0
             or np.any(coupler.needle_com)
         ):
@@ -387,7 +494,7 @@ class _ShaftPreconditioner:
             return False
         mass = float(model.body_mass.numpy()[0])
         inertia = model.body_inertia.numpy()[0].astype(float)
-        damping = np.asarray(coupler.rigid_solver.mj_model.dof_damping)
+        damping = np.asarray(coupler.rigid_solver.mj_model.dof_damping[:6])
         return bool(
             np.isfinite(mass)
             and mass > 0
@@ -401,7 +508,7 @@ class _ShaftPreconditioner:
 
     def __init__(self, coupler):
         if not self.supports(coupler):
-            raise ValueError("Shaft preconditioning requires projected FEM and one zero-COM native free body")
+            raise ValueError("Shaft preconditioning requires projected FEM and a supported zero-COM world-free needle")
         self.coupler = coupler
         self.device = coupler.model.device
         self.n = coupler.model.particle_count + 2
@@ -411,7 +518,15 @@ class _ShaftPreconditioner:
         self.work = wp.zeros_like(self.rhs)
         self.diagonal = wp.zeros(self.n, dtype=wp.mat33, device=self.device)
         self.inverse_diagonal = wp.zeros_like(self.diagonal)
-        self.rigid_blocks = wp.zeros(2, dtype=wp.mat33, device=self.device)
+        self.rigid_blocks = wp.zeros(4, dtype=wp.mat33, device=self.device)
+        self._articulated = coupler.model.body_count > 1
+        self._native_mass_ready = False
+        self._native_scratch = None
+        self.native_mass_fallbacks = 0
+        if self._articulated:
+            import mujoco
+
+            self._native_scratch = mujoco.MjData(coupler.rigid_solver.mj_model)
         self.time_step = wp.zeros(1, dtype=float, device=self.device)
         self.native_damping = wp.zeros(6, dtype=float, device=self.device)
         self._last_dt = None
@@ -448,6 +563,7 @@ class _ShaftPreconditioner:
     def begin_step(self):
         """Cache accepted engagement once before an unchanged-history trial sequence."""
         interaction = self.coupler.interaction
+        self._native_mass_ready = False
         self.active = bool(
             interaction.engaged_track_length > 0
             and (
@@ -536,7 +652,7 @@ class _ShaftPreconditioner:
             return False
         if not np.isfinite(dt) or dt <= 0:
             raise ValueError("Preconditioner timestep must be finite and positive")
-        damping = np.asarray(c.rigid_solver.mj_model.dof_damping, dtype=np.float32)
+        damping = np.asarray(c.rigid_solver.mj_model.dof_damping[:6], dtype=np.float32)
         if not np.isfinite(damping).all() or np.any(damping < 0) or active_tape() is not None:
             return False
         if self._last_dt != dt:
@@ -557,20 +673,35 @@ class _ShaftPreconditioner:
             wp.copy(output, residual)
             return
         c, interaction = self.coupler, self.coupler.interaction
-        wp.launch(
-            prepare_rigid,
-            1,
-            [
-                state.body_q,
-                self.mass,
-                self.inertia,
-                self.native_damping,
-                self.time_step,
-                c.moment_length,
-                self.rigid_blocks,
-            ],
-            device=self.device,
-        )
+        if self._articulated and not self._native_mass_ready:
+            try:
+                matrix = _native_needle_mass(
+                    c.rigid_solver.mj_model, c.rigid_solver.mj_data, 1, c.moment_length, dt, self._native_scratch
+                )
+                blocks = _rigid_blocks_from_mass(matrix)
+                self.rigid_blocks.assign(blocks)
+                self._native_mass_ready = True
+            except (ValueError, np.linalg.LinAlgError):
+                # A singular/nonfinite approximate metric cannot modify or
+                # bypass the unchanged physical acceptance test.
+                self.native_mass_fallbacks += 1
+                wp.copy(output, residual)
+                return
+        if not self._articulated:
+            wp.launch(
+                prepare_rigid,
+                1,
+                [
+                    state.body_q,
+                    self.mass,
+                    self.inertia,
+                    self.native_damping,
+                    self.time_step,
+                    c.moment_length,
+                    self.rigid_blocks,
+                ],
+                device=self.device,
+            )
         alm = getattr(interaction, "tunnel_alm", None)
         if alm is None:
             wp.launch(

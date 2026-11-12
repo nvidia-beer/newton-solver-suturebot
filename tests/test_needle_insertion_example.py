@@ -153,7 +153,18 @@ class NeedleInsertionExampleTests(unittest.TestCase):
                 _prepare(example)
                 example.start()
 
-                def corrupted_step(state_in, state_out, _control, _dt, name=name, component=component, value=value):
+                def corrupted_step(
+                    state_in,
+                    state_out,
+                    _control,
+                    _dt,
+                    name=name,
+                    component=component,
+                    value=value,
+                    *,
+                    external_forces=None,
+                ):
+                    self.assertIs(external_forces, example._external_forces)
                     state_out.assign(state_in)
                     array = getattr(state_out, name)
                     values = array.numpy()

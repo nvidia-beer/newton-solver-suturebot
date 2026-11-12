@@ -164,7 +164,7 @@ original needle positions; the span does not depend on sampling spacing.
 | Automatic desired tip speed | 3 mm/s | `--insertion-speed`; illustrative speed with a 0.5 s smooth initial ramp |
 | Translational and rotational drive stiffness | 400 N/m; 0.05 N·m/rad | Finite stiffness PD drive with native implicit damping and spring linearization; damping estimated from mass/inertia |
 | Surface penalty stiffness and damping | 20 N/m; 0.025 N·s/m | Damping scales with penetration/radius and acts only during compression; 0.025 is its effective coefficient at one-radius penetration. Tip and length-weighted shaft contact are separate. |
-| Least surface stiffness of one shaft sample | None | `--contact-sample-stiffness`; off by default, so each of the 193 shaft samples holds its length share of the 20 N/m, about 0.1 N/m. When given, every shaft sample is at least this stiff with damping in the same ratio; the tip is unchanged. See [usage](usage.md#physical-needle-handling) |
+| Least surface stiffness of one shaft sample | None | `--contact-sample-stiffness`; off by default, so each of the 192 shaft samples behind the tip holds its length share of the 20 N/m, about 0.1 N/m. When given, every shaft sample is at least this stiff with damping in the same ratio; the tip is unchanged. See [usage](usage.md#physical-needle-handling) |
 | Surface facet blending width | Half the proxy radius, 0.14 mm | Compact area/orientation weighting of nearby blocking facets; independent of contact-sample spacing |
 | Puncture criterion | 3 mN | Illustrative threshold on the norm of the summed tip normal-force vectors, excluding friction |
 | Cutting resistance | Omitted | No resistance or fracture work for creating the passage after puncture |
@@ -315,9 +315,10 @@ blocking facets still enter normalization even when they do not penetrate.
 For a sample with a verified material passage, other-wall contact has support
 only inside its proxy radius $r$, so its facet query uses a $1.5r$ half-extent.
 Unauthorized interior recovery retains the wider nearest-surface query.
-The full material-visibility rays remain unchanged. A 32-thread surface-kernel
-block changes scheduling only; 276 paired GPU evaluations preserved all force,
-moment, diagnostic and flag outputs exactly.
+The full material-visibility rays remain unchanged. An earlier 32-thread
+surface-kernel launch audit preserved all force, moment, diagnostic and flag
+outputs exactly across 276 paired GPU evaluations. Current launch defaults
+are described in the [method](method.md#simultaneous-mujocofem-momentum-and-friction).
 
 On CUDA, this example enables `NeedleTissueCoupler(..., capture_fem=True)`.
 Eligible non-differentiable Tet4 CG steps use CUDA graph replay after an actual

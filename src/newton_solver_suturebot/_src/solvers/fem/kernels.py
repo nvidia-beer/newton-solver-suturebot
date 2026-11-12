@@ -427,9 +427,11 @@ def skew3(v: wp.vec3) -> wp.mat33:
 #   ψ_b'(J) = −(λ/2)·(J_BARRIER − J)²·(2J + J_BARRIER) / J²   (adds to f_volume)
 #   ψ_b''(J) = λ·((J_BARRIER/J)³ − 1)            (adds to the PSD rank-1 tangent)
 #
-# ψ_b, ψ_b' and ψ_b'' all vanish at J = J_BARRIER (C² engagement) and diverge
-# as J → 0⁺, so a converged solve cannot invert an element: the driving body
-# stalls against the stiffening tissue instead. J here is the RAW volume
+# ψ_b, ψ_b' and ψ_b'' all vanish at J = J_BARRIER (C² engagement). Their
+# analytic expressions diverge as J → 0⁺, but the evaluation floor J_MIN
+# bounds their implemented values. A linearly implicit step can still cross
+# zero volume; the coupled solver separately rejects such motion before
+# committing it. J here is the RAW volume
 # ratio det(F) of the unclamped deformation gradient: the principal-stretch
 # clamp freezes the clamped det(F) near min_stretch³·(lateral stretches),
 # which would otherwise saturate compression resistance exactly when the
@@ -559,8 +561,9 @@ def eval_tetrahedra(
 
     The volumetric term evaluates the RAW ``J = det(F_raw)`` (floored at
     ``J_MIN = 0.01``), not the clamped one, and below ``J_BARRIER`` it gains
-    the compression barrier ``ψ_b'(J)`` (module-level derivation), so
-    compression resistance diverges as J → 0⁺ instead of saturating.
+    the compression barrier ``ψ_b'(J)`` (module-level derivation). Compression
+    resistance grows down to ``J_MIN``; it is finite below that floor and
+    does not by itself prevent an integrated element from inverting.
     """
     tid = wp.tid()
 
@@ -1494,7 +1497,7 @@ def eval_hexahedra(
 
         # Volumetric PK1: P_vol = (λ·(J−α+act) + ψ_b'(J)) · cof(F); the
         # compression barrier ψ_b' (module-level derivation at J_BARRIER)
-        # diverges as J → 0⁺ so compression resistance cannot saturate. J is
+        # grows down to the evaluation floor J_MIN. J is
         # the RAW volume ratio: the stretch clamp must not freeze it.
         J = wp.max(wp.determinant(F_raw), J_MIN)
         cof_col0 = wp.cross(fc1, fc2)

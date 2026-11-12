@@ -10,9 +10,14 @@ positive definite in the ``A``-compatible inner product, so it is a valid CG
 preconditioner: the matrix, right-hand side and stopping rule are unchanged
 and only the preconditioner quality differs from plain block Jacobi.
 
-The interval is ``[λmax/ratio, λmax]`` where ``λmax`` is a block-Gershgorin
-upper bound of ``M⁻¹A`` recomputed from the current values on request (one
-kernel; in-place, graph-stable storage). Eigenvalues below the interval are
+The interval is ``[λmax/ratio, λmax]``. For ``B = M⁻¹A``, both
+``max_i Σ_j ||B_ij||_F`` and ``max_(i,a) Σ_(j,b) |B_ij[a,b]|`` bound its
+spectral radius: the former bounds the induced block infinity/Euclidean norm,
+and the latter is the scalar infinity norm. Their global minimum is still
+an upper bound and avoids an unnecessary square-root-of-three penalty for
+near-isotropic blocks. Both bounds are recomputed from the current free-free
+values together (one kernel; in-place, graph-stable storage). No approximate
+eigenvalue estimate is used as an upper bound. Eigenvalues below the interval are
 damped less but remain positive, which CG tolerates. Each application costs
 ``degree−1`` operator actions plus ``degree`` fused vector kernels, replacing
 full CG iterations whose dot products and updates dominate submission latency
@@ -39,6 +44,7 @@ def _block_gershgorin(
         return
     inverse = inverse_diagonal[row]
     total = float(0.0)
+    scalar_rows = wp.vec3(0.0)
     for block in range(offsets[row], offsets[row + 1]):
         if fixed.shape[0] > 0 and fixed[columns[block]] != 0:
             continue
@@ -47,8 +53,12 @@ def _block_gershgorin(
         for i in range(3):
             for j in range(3):
                 frobenius += product[i, j] * product[i, j]
+                scalar_rows[i] += wp.abs(product[i, j])
         total += wp.sqrt(frobenius)
     wp.atomic_max(bound, 0, total)
+    # Two independently valid spectral upper bounds. Their GLOBAL minima
+    # remain bounds; taking minima per block row would not be justified.
+    wp.atomic_max(bound, 1, wp.max(scalar_rows[0], wp.max(scalar_rows[1], scalar_rows[2])))
 
 
 @wp.kernel(enable_backward=False)
@@ -59,7 +69,8 @@ def _chebyshev_coefficients(
     coefficients: wp.array(dtype=float),
 ):
     # One thread: tiny fixed-degree recurrence. interval [b/ratio, b].
-    b = wp.max(bound[0], 1e-30)
+    b = wp.max(wp.min(bound[0], bound[1]), 1e-30)
+    bound[0] = b
     a = b / ratio
     theta = 0.5 * (b + a)
     delta = 0.5 * (b - a)
@@ -117,7 +128,9 @@ class ChebyshevJacobi:
         self.inverse_diagonal = inverse_diagonal
         self.degree, self.ratio = int(degree), float(ratio)
         self.device, self.count = device, count
-        self.bound = wp.zeros(1, dtype=float, device=device)
+        # Element 0 exposes the selected upper bound after refresh. Element 1
+        # is persistent reduction scratch for the independent scalar bound.
+        self.bound = wp.zeros(2, dtype=float, device=device)
         self.coefficients = wp.zeros(2 * self.degree, dtype=float, device=device)
         self.Az = wp.empty(count, dtype=wp.vec3, device=device)
         self.direction = wp.empty(count, dtype=wp.vec3, device=device)
