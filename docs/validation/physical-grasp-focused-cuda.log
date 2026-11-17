@@ -1,0 +1,25 @@
+test_contact_grips_under_gravity_from_first_step_and_transports (test_grasp.ContactGraspTests.test_contact_grips_under_gravity_from_first_step_and_transports) ... ok
+test_invalid_commands_and_parameters_do_not_mutate_controls (test_grasp.ContactGraspTests.test_invalid_commands_and_parameters_do_not_mutate_controls) ... ok
+test_opening_releases_needle_and_gravity_continues_independently (test_grasp.ContactGraspTests.test_opening_releases_needle_and_gravity_continues_independently) ... ok
+test_sufficient_external_load_slips_instead_of_enforcing_grasp (test_grasp.ContactGraspTests.test_sufficient_external_load_slips_instead_of_enforcing_grasp) ... ok
+test_topology_capsules_and_reset_keep_needle_independent (test_grasp.ContactGraspTests.test_topology_capsules_and_reset_keep_needle_independent) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.747s
+
+OK
+Warp 1.17.0 initialized:
+   CUDA Toolkit 13.0, Driver 13.0
+   Devices:
+     "cpu"      : "aarch64"
+     "cuda:0"   : "NVIDIA GB10" (120 GiB, sm_121, mempool enabled)
+   Kernel cache:
+     /home/beer/.cache/warp/1.17.0
+Module newton._src.geometry.inertia 060c986 load on device 'cuda:0' took 1.08 ms  (cached)
+Module validate_and_correct_inertia_kernel_5f6549e0 5f6549e load on device 'cuda:0' took 0.52 ms  (cached)
+Module compute_body_inverses_kernel_ec4671e6 ec4671e load on device 'cuda:0' took 0.26 ms  (cached)
+Module newton._src.geometry.bvh 531c5cd load on device 'cuda:0' took 0.85 ms  (cached)
+Module newton._src.sim.articulation 1bf11b4 load on device 'cuda:0' took 6.03 ms  (cached)
+Module warp._src.coloring 811e0ea load on device 'cpu' took 0.99 ms  (cached)
+Module newton._src.solvers.mujoco.kernels e0002a9 load on device 'cuda:0' took 8.96 ms  (cached)
+Module newton_solver_suturebot.examples._needle_insertion_drive f498ecc load on device 'cuda:0' took 0.38 ms  (cached)

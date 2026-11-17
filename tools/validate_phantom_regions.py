@@ -10,7 +10,7 @@ import newton.viewer
 import numpy as np
 import warp as wp
 
-from newton_solver_suturebot.examples.example_fem_phantom_regions import Example
+from newton_solver_suturebot.examples.phantom.example_fem_phantom_regions import Example
 
 ROOT = Path(__file__).resolve().parents[1]
 NAME = "fem_phantom_regions"

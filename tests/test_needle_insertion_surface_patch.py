@@ -202,6 +202,15 @@ class NeedleSurfacePatchTests(unittest.TestCase):
         self.evaluate(interaction, state, forces, (0, 0, 0.0001))
         interaction.accept(state, 0)
         self.assertEqual((interaction.puncture_count, interaction.entry_count, interaction.track_count), (1, 0, 0))
+        if candidate_x:
+            # A trial may move the tip by the step resolution only, so the tip first travels
+            # to the distant point above the surface in accepted steps of half that resolution.
+            count = int(np.ceil(abs(candidate_x) / (0.5 * interaction.step_resolution)))
+            for x in np.linspace(0.0, candidate_x, count + 1)[1:]:
+                state.body_q.assign(np.array([[x, 0, 0.0001, 0, 0, 0, 1]], np.float32))
+                interaction.accept(state, 0)
+            self.assertNotEqual(interaction.status, "failed")
+            self.assertEqual((interaction.puncture_count, interaction.entry_count, interaction.track_count), (1, 0, 0))
         events = interaction.events
         state.body_q.assign(np.array([[candidate_x, 0, -1e-7, 0, 0, 0, 1]], np.float32))
         state.body_f.zero_()

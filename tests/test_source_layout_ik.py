@@ -17,14 +17,14 @@ import warp as wp
 
 from newton_solver_suturebot import load_mesh_regions
 from newton_solver_suturebot._src.geometry.needle import NeedleGeometry
-from newton_solver_suturebot._src.grasp import GrasperConfig, needle_to_gripper_pose
-from newton_solver_suturebot._src.pose_ik import NativePoseIK
-from newton_solver_suturebot._src.rcm_grasp import add_rcm_grasper
-from newton_solver_suturebot._src.subcycled_mujoco import SubcycledMuJoCo
-from newton_solver_suturebot._src.suturebot_layout import load_source_layout, load_source_stitch
-from newton_solver_suturebot.examples._needle_insertion_geometry import InsertionPlan, MaterialPoint
-from newton_solver_suturebot.grasp_scene import _initial_grasp_parameters
-from newton_solver_suturebot.parallel import SutureSceneConfig
+from newton_solver_suturebot._src.sim.ik.pose_ik import NativePoseIK
+from newton_solver_suturebot._src.solvers.mujoco.subcycled_mujoco import SubcycledMuJoCo
+from newton_solver_suturebot.examples.grasp._dvrk_grasper import GrasperConfig, needle_to_gripper_pose
+from newton_solver_suturebot.examples.grasp._dvrk_layout import load_source_layout, load_source_stitch
+from newton_solver_suturebot.examples.grasp._dvrk_rcm_grasper import add_rcm_grasper
+from newton_solver_suturebot.examples.grasp._grasp_scene import _initial_grasp_parameters
+from newton_solver_suturebot.examples.grasp.parallel import SutureSceneConfig
+from newton_solver_suturebot.examples.needle._needle_insertion_geometry import InsertionPlan, MaterialPoint
 
 
 def source_material_points():

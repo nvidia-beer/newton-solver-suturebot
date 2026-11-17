@@ -11,7 +11,7 @@ import numpy as np
 import warp as wp
 from test_grasp import _Rig
 
-from newton_solver_suturebot._src.subcycled_mujoco import SubcycledMuJoCo
+from newton_solver_suturebot._src.solvers.mujoco.subcycled_mujoco import SubcycledMuJoCo
 
 
 class SubcycledOverlapTests(unittest.TestCase):

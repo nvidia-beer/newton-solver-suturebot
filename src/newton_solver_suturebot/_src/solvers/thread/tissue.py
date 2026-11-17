@@ -23,7 +23,11 @@ between the first and the last threaded eyelet of a group is inside the
 tissue and has no surface contact; while a group is only partly threaded, the
 thread from its first node up to the group's last threaded eyelet is inside.
 The force of the thread on an eyelet is spread over the four vertices of its
-tetrahedron.
+tetrahedron. A track can also grow one eyelet at a time while a needle cuts
+it (:meth:`ThreadTissueCoupling.add_track_point`), and the coupling can pass
+the thread through an eyelet by itself when the point of a rigid body that
+carries the thread's first node, the tail of the needle, has gone past it
+(:meth:`ThreadTissueCoupling.follow_tail`).
 
 The thread solver treats the tissue as given during its step, and the tissue
 receives the thread's forces as external loads in its next step. Passed on
@@ -165,6 +169,47 @@ def _eyelet_targets(
 
 
 @wp.kernel(enable_backward=False)
+def _thread_passed(
+    body_q: wp.array[wp.transform],
+    body: int,
+    point: wp.vec3,
+    outward: wp.vec3,
+    along: float,
+    lateral: float,
+    tetrahedron: wp.array[int],
+    target: wp.array[wp.vec3d],
+    element: wp.array[int],
+    xi: wp.array[wp.float64],
+):
+    """Pass the thread through every eyelet that a point of a rigid body has just gone past; launch over eyelets.
+
+    The point carries the thread's first node and ``outward`` is the direction in which the
+    thread leaves it, both in the frame of the body. With ``d`` from the point to an eyelet
+    and ``a = dot(d, outward)``, the point has gone past the eyelet when the eyelet lies
+    behind it within a tube around the thread's direction:
+
+        0 <= a <= along   and   |d - a outward| <= lateral
+
+    The eyelet is then threaded at the thread's first node (element 0, coordinate 0), from
+    where the thread solver lets it slide. A slot without a material point and an eyelet
+    that is threaded already are left alone.
+    """
+    eyelet = wp.tid()
+    if tetrahedron[eyelet] < 0 or element[eyelet] >= 0:
+        return
+    pose = body_q[body]
+    offset = wp.vec3(target[eyelet]) - wp.transform_point(pose, point)
+    direction = wp.transform_vector(pose, outward)
+    behind = wp.dot(offset, direction)
+    if behind < 0.0 or behind > along:
+        return
+    if wp.length(offset - behind * direction) > lateral:
+        return
+    element[eyelet] = 0
+    xi[eyelet] = wp.float64(0.0)
+
+
+@wp.kernel(enable_backward=False)
 def _carry_anchors(mesh: wp.uint64, face: wp.array[int], weights: wp.array[wp.vec3], anchor: wp.array[wp.vec3d]):
     """Move each node's friction anchor with the surface point it was stored on; launch over nodes."""
     node = wp.tid()
@@ -259,6 +304,9 @@ class ThreadTissueCoupling:
 
     Attributes:
         track_count: Number of tracks made so far.
+        point_count: Number of eyelets made so far, over all tracks.
+        refused_points: Number of eyelets that :meth:`add_track_point` did not
+            make because the eyelet slots or the tracks were used up.
         applied_force: The relaxed force of the thread on every tissue
             particle [N]; part of the state between steps.
     """
@@ -314,6 +362,9 @@ class ThreadTissueCoupling:
         self._count = wp.zeros(max_tracks, dtype=int, device=device)
         self.track_count = 0
         self._used = 0
+        self.refused_points = 0
+        # The body point that update() follows (follow_tail): body, point, direction, reach along and across.
+        self._tail = None
         spring = max(thread.contact_stiffness, thread.eyelet_stiffness)
         self._relaxation = float(tissue_stiffness) / (float(tissue_stiffness) + spring)
         self.applied_force = wp.zeros(len(particle_points), dtype=wp.vec3, device=device)
@@ -323,6 +374,32 @@ class ThreadTissueCoupling:
     def state(self) -> tuple:
         """The coupling's arrays that carry over from one step to the next; see :attr:`SolverThread.state`."""
         return (self.applied_force, self._anchor_face, self._anchor_weights)
+
+    @property
+    def surface(self) -> tuple:
+        """The surface that :meth:`update` moves and refits, for a contact evaluated at the same tissue state.
+
+        Returns:
+            The mesh, its triangles as flat vertex indices and the tissue particle of each vertex
+            (-1 for a vertex that is not one). To be read, not written.
+        """
+        return (self._mesh, self._triangles, self._point_particle)
+
+    @property
+    def point_count(self) -> int:
+        """Number of eyelets made so far, over all tracks (a host count)."""
+        return self._used
+
+    @property
+    def track_spans(self) -> tuple:
+        """What the last :meth:`update` found of every track, as device arrays; to be read, not written.
+
+        Returns:
+            The number of eyelets of each track, then of its threaded eyelets the lowest and
+            the highest coordinate along the thread [elements] and their number. Lowest and
+            highest mean nothing for a track without a threaded eyelet.
+        """
+        return (self._group_size_device, self._lowest, self._highest, self._count)
 
     def add_track(self, tetrahedra, weights):
         """Make an ordered group of eyelets from material points; returns their slots in the thread solver.
@@ -350,6 +427,76 @@ class ThreadTissueCoupling:
         self._group_device.assign(self._group)
         self._group_size_device.assign(self._group_size)
         return slots
+
+    def add_track_point(self, track, tetrahedron, weights):
+        """Append one eyelet to a track, written in place; returns its slot in the thread solver, or -1.
+
+        For a track that appears while the run goes on, such as the path a needle is cutting.
+        The eyelet starts unthreaded. Its row of the eyelets' material points and groups and the
+        size of its track are written from the host copies to the device in place, one row
+        each: no array is replaced and nothing is read back, so a captured step sees the eyelet
+        from its next launch on. A row once written is not written again.
+
+        The slots and tracks are a fixed reserve (``max_eyelets`` of the thread solver,
+        ``max_tracks``). When none is left the eyelet is not made: the call returns -1 and
+        ``refused_points`` counts it.
+
+        Args:
+            track: An existing track, or ``track_count`` for the first eyelet of a new one.
+            tetrahedron: Tetrahedron index of the material point.
+            weights: Its four barycentric weights, in the order of that tetrahedron's vertices.
+        """
+        track, tetrahedron = int(track), int(tetrahedron)
+        weights = np.asarray(weights, dtype=np.float32).reshape(-1)
+        if not 0 <= track <= self.track_count:
+            raise ValueError("A track point belongs to an existing track or opens the next one")
+        if weights.shape != (4,) or not np.isfinite(weights).all() or not 0 <= tetrahedron < self._tetrahedra.shape[0]:
+            raise ValueError("A track point needs a tetrahedron of the tissue and four finite weights")
+        slot = self._used
+        if slot >= len(self._tetrahedron) or track >= len(self._group_size):
+            self.refused_points += 1
+            return -1
+        self._tetrahedron[slot], self._barycentric[slot], self._group[slot] = tetrahedron, weights, track
+        self._group_size[track] += 1
+        self._used += 1
+        self.track_count = max(self.track_count, track + 1)
+        for storage, host, row in (
+            (self._tetrahedron_device, self._tetrahedron, slot),
+            (self._barycentric_device, self._barycentric, slot),
+            (self._group_device, self._group, slot),
+            (self._group_size_device, self._group_size, track),
+        ):
+            source = wp.array(host[row : row + 1], dtype=storage.dtype, device="cpu", copy=False)
+            wp.copy(storage, source, dest_offset=row, count=1)
+        return slot
+
+    def follow_tail(self, body, point, outward, along, lateral):
+        """Have :meth:`update` thread an eyelet when a point of a rigid body has gone past it.
+
+        The point is the one that carries the thread's first node, the tail of a needle, and
+        ``outward`` the direction in which the thread leaves it (the arguments of
+        ``ThreadAttachment``). From then on :meth:`update` needs the body poses, and launches
+        one more kernel over the eyelet slots: an unthreaded eyelet that lies behind the point,
+        at most ``along`` back along ``outward`` and at most ``lateral`` beside that line, is
+        threaded at the thread's first node. Call it before the step is captured in a graph.
+
+        Args:
+            body: Index of the rigid body.
+            point: The followed point in the frame of the body [m].
+            outward: Direction in which the thread leaves the point, in the frame of the body.
+            along: Furthest an eyelet may lie behind the point to be threaded [m]; the spacing
+                of the eyelets of a track, so that the eyelet behind the one being passed is
+                out of reach.
+            lateral: Furthest it may lie beside the line through the point along ``outward``
+                [m]; the radius within which the point counts as inside the track.
+        """
+        point, outward = np.asarray(point, dtype=float).reshape(-1), np.asarray(outward, dtype=float).reshape(-1)
+        if point.shape != (3,) or outward.shape != (3,) or not np.isfinite(np.r_[point, outward]).all():
+            raise ValueError("The followed point and its outward direction need three finite values each")
+        length = float(np.linalg.norm(outward))
+        if length <= 1e-12 or not np.isfinite([along, lateral]).all() or along <= 0 or lateral <= 0:
+            raise ValueError("The outward direction must be nonzero and the reach along and across it positive")
+        self._tail = (int(body), wp.vec3(*point), wp.vec3(*(outward / length)), float(along), float(lateral))
 
     def thread_eyelet(self, slot, element=0, xi=0.0):
         """Pass the thread through eyelet ``slot`` at a point of the chain, by default at its first node.
@@ -381,9 +528,15 @@ class ThreadTissueCoupling:
             device=thread.thread.device,
         )
 
-    def update(self, particle_q):
-        """Give the thread its contact planes and eyelet positions for the tissue at ``particle_q``."""
+    def update(self, particle_q, body_q=None):
+        """Give the thread its contact planes and eyelet positions for the tissue at ``particle_q``.
+
+        With a followed body point (:meth:`follow_tail`) the eyelets that the point has gone
+        past are threaded first, for the body poses ``body_q``, which are then required.
+        """
         thread, device = self.thread, self.thread.thread.device
+        if self._tail is not None and body_q is None:
+            raise ValueError("The coupling follows a body point: update() needs the body poses")
         wp.launch(
             _move_surface,
             dim=len(self._particle_point),
@@ -404,6 +557,14 @@ class ThreadTissueCoupling:
                 outputs=[thread.eyelet_target],
                 device=device,
             )
+            if self._tail is not None:
+                wp.launch(
+                    _thread_passed,
+                    dim=eyelets,
+                    inputs=[body_q, *self._tail, self._tetrahedron_device, thread.eyelet_target],
+                    outputs=[thread.eyelet_element, thread.eyelet_xi],
+                    device=device,
+                )
             wp.launch(
                 _clear_groups,
                 dim=len(self._group_size),

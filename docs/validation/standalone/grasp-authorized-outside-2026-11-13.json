@@ -1,0 +1,406 @@
+{
+  "schema": 1,
+  "date": "2026-11-13",
+  "scope": "Single-scene physical fem_needle_grasp; full selected region1,360frames,4rigid substeps,headless,unprofiled ABBA repeats",
+  "baseline_manifest_sha256": "729f5e93d93b66cc6eb2fe1062f33212274a7e25ad1fa6072a7d2e9bba33f28f",
+  "runtime_manifest_sha256": "73d6750c1421814a93c2c70e0e32e2b88b7efc3293cc4052c33a0a8121a1bffe",
+  "runtime_source_hashes": {
+    "src/newton_solver_suturebot/_src/insertion.py": "b0ec2401ef48c917c61998f2c0f7fcd53801026849c3cc0a48fa9a2106dcc30f",
+    "src/newton_solver_suturebot/_src/needle_trial_forces.py": "0f7de5ecb2212ae8c34d667893ef771e2e36250b9b525f3db0c49e0912089fef"
+  },
+  "cuda_tests": {
+    "focused": {
+      "count": 63,
+      "seconds": 23.933,
+      "result": "OK",
+      "log_sha256": "efdf91b5dee1bf8438ebed128d44f498535c19dd3e0b64f7aae135879f56b411"
+    },
+    "full_suite": {
+      "count": 1021,
+      "seconds": 206.077,
+      "result": "OK (skipped=3, expected failures=5)",
+      "log_sha256": "fd18c6c20e5d27ec6b270b0a5c1ba732e935d023dc9e31b6525333eea020fd10"
+    },
+    "installed_focused": {
+      "count": 62,
+      "seconds": 23.877,
+      "result": "OK",
+      "log_sha256": "940aa588c9f2fcc2e6198b6a5ec99bf1e085bddc71bc3e64f4b88e293c3c928b"
+    },
+    "installed_full_suite": {
+      "count": 1020,
+      "seconds": 201.815,
+      "result": "OK (skipped=3, expected failures=5)",
+      "log_sha256": "2d2a77ff8f829982c5baabf540b642edc412d11b3d5c50f0be582059cc03c4af",
+      "source_hashes_sha256": "4e2b1c375bbb0a82b54720624cabb5a2a68d0aecc55cc116dc41a87a72d7b17d",
+      "unchanged_source_and_asset_files": 8947
+    }
+  },
+  "runs": [
+    {
+      "label": "initial_outside",
+      "report_sha256": "22f9ec4d386ca9f5d8f98e87606a326054b5e17cbf3ef0da796166dfc8fc5f71",
+      "physical_passed": true,
+      "num_envs": 1,
+      "frames": 360,
+      "tissue_vertices": 7205,
+      "tissue_tetrahedra": 29160,
+      "effective_rigid_budget": {
+        "native_solver_tolerance": 1e-12,
+        "native_solver_iterations": 200,
+        "native_solver_line_search_iterations": 50,
+        "native_rigid_substeps": 4,
+        "native_reset_guard_enabled": true,
+        "certified_linear_residual_enabled": true,
+        "held_fem_start_enabled": true,
+        "response_basis_enabled": true,
+        "independent_free_needle": true,
+        "needle_pose_drive": false
+      },
+      "loaded_fps": 13.123006751483246,
+      "whole_fps": 18.554247157921125,
+      "final": [
+        {
+          "physical_time_s": 5.99999999999998,
+          "native_batches": 7200,
+          "native_clock_error_s": -2.291500322826323e-13,
+          "native_guard_rejections": 0,
+          "native_guard_microsteps": 28800,
+          "host_force_graph_launches": 7773,
+          "host_force_graph_fallbacks": 38,
+          "step_refinements": 1,
+          "entry_count": 5,
+          "exit_count": 5,
+          "certified_linear_rejections": 0,
+          "maximum_force_balance_error_N": 9.600473741544665e-10,
+          "maximum_torque_balance_error_Nm": 5.999908354159067e-11
+        }
+      ]
+    },
+    {
+      "label": "a1",
+      "report_sha256": "9ddc7ae6add24237f26ce52a66a92b333577dfb65d1ac7544c9ea5e450bae31c",
+      "physical_passed": true,
+      "num_envs": 1,
+      "frames": 360,
+      "tissue_vertices": 7205,
+      "tissue_tetrahedra": 29160,
+      "effective_rigid_budget": {
+        "native_solver_tolerance": 1e-12,
+        "native_solver_iterations": 200,
+        "native_solver_line_search_iterations": 50,
+        "native_rigid_substeps": 4,
+        "native_reset_guard_enabled": true,
+        "certified_linear_residual_enabled": true,
+        "held_fem_start_enabled": true,
+        "response_basis_enabled": true,
+        "independent_free_needle": true,
+        "needle_pose_drive": false
+      },
+      "loaded_fps": 11.42698950957351,
+      "whole_fps": 16.92286432369814,
+      "final": [
+        {
+          "physical_time_s": 5.999999999999978,
+          "native_batches": 7787,
+          "native_clock_error_s": -2.2737367544323206e-13,
+          "native_guard_rejections": 0,
+          "native_guard_microsteps": 31148,
+          "host_force_graph_launches": 7371,
+          "host_force_graph_fallbacks": 127,
+          "step_refinements": 3,
+          "entry_count": 3,
+          "exit_count": 3,
+          "certified_linear_rejections": 1,
+          "maximum_force_balance_error_N": 1.4018449904283926e-09,
+          "maximum_torque_balance_error_Nm": 5.832123694519905e-11
+        }
+      ]
+    },
+    {
+      "label": "b1",
+      "report_sha256": "e9df2b9dfef571485ccf4bdc78dc40b38fc8a446ee5b273319a460810137422c",
+      "physical_passed": true,
+      "num_envs": 1,
+      "frames": 360,
+      "tissue_vertices": 7205,
+      "tissue_tetrahedra": 29160,
+      "effective_rigid_budget": {
+        "native_solver_tolerance": 1e-12,
+        "native_solver_iterations": 200,
+        "native_solver_line_search_iterations": 50,
+        "native_rigid_substeps": 4,
+        "native_reset_guard_enabled": true,
+        "certified_linear_residual_enabled": true,
+        "held_fem_start_enabled": true,
+        "response_basis_enabled": true,
+        "independent_free_needle": true,
+        "needle_pose_drive": false
+      },
+      "loaded_fps": 12.074500904743314,
+      "whole_fps": 17.45436280280113,
+      "final": [
+        {
+          "physical_time_s": 5.999999999999978,
+          "native_batches": 7554,
+          "native_clock_error_s": -2.2737367544323206e-13,
+          "native_guard_rejections": 0,
+          "native_guard_microsteps": 30216,
+          "host_force_graph_launches": 8051,
+          "host_force_graph_fallbacks": 40,
+          "step_refinements": 3,
+          "entry_count": 3,
+          "exit_count": 3,
+          "certified_linear_rejections": 0,
+          "maximum_force_balance_error_N": 1.4021281933465395e-09,
+          "maximum_torque_balance_error_Nm": 9.319547430968304e-11
+        }
+      ]
+    },
+    {
+      "label": "b2",
+      "report_sha256": "686747019bd4027be309cf22d4fd7e17be3acb5e6e564b225c4528fa4482a35e",
+      "physical_passed": true,
+      "num_envs": 1,
+      "frames": 360,
+      "tissue_vertices": 7205,
+      "tissue_tetrahedra": 29160,
+      "effective_rigid_budget": {
+        "native_solver_tolerance": 1e-12,
+        "native_solver_iterations": 200,
+        "native_solver_line_search_iterations": 50,
+        "native_rigid_substeps": 4,
+        "native_reset_guard_enabled": true,
+        "certified_linear_residual_enabled": true,
+        "held_fem_start_enabled": true,
+        "response_basis_enabled": true,
+        "independent_free_needle": true,
+        "needle_pose_drive": false
+      },
+      "loaded_fps": 13.057103785962447,
+      "whole_fps": 18.372798008619696,
+      "final": [
+        {
+          "physical_time_s": 5.99999999999998,
+          "native_batches": 7142,
+          "native_clock_error_s": -2.291500322826323e-13,
+          "native_guard_rejections": 0,
+          "native_guard_microsteps": 28568,
+          "host_force_graph_launches": 7730,
+          "host_force_graph_fallbacks": 38,
+          "step_refinements": 1,
+          "entry_count": 5,
+          "exit_count": 5,
+          "certified_linear_rejections": 0,
+          "maximum_force_balance_error_N": 1.1656983338894808e-09,
+          "maximum_torque_balance_error_Nm": 7.870151476812293e-11
+        }
+      ]
+    },
+    {
+      "label": "a2",
+      "report_sha256": "c8282b76e94b96de4b8481008d8ab2a94524e8c13ad2a91236d9c0cbd651fe29",
+      "physical_passed": true,
+      "num_envs": 1,
+      "frames": 360,
+      "tissue_vertices": 7205,
+      "tissue_tetrahedra": 29160,
+      "effective_rigid_budget": {
+        "native_solver_tolerance": 1e-12,
+        "native_solver_iterations": 200,
+        "native_solver_line_search_iterations": 50,
+        "native_rigid_substeps": 4,
+        "native_reset_guard_enabled": true,
+        "certified_linear_residual_enabled": true,
+        "held_fem_start_enabled": true,
+        "response_basis_enabled": true,
+        "independent_free_needle": true,
+        "needle_pose_drive": false
+      },
+      "loaded_fps": 12.581161555095282,
+      "whole_fps": 18.068908816560228,
+      "final": [
+        {
+          "physical_time_s": 5.99999999999998,
+          "native_batches": 7328,
+          "native_clock_error_s": -2.291500322826323e-13,
+          "native_guard_rejections": 0,
+          "native_guard_microsteps": 29312,
+          "host_force_graph_launches": 7036,
+          "host_force_graph_fallbacks": 116,
+          "step_refinements": 1,
+          "entry_count": 5,
+          "exit_count": 5,
+          "certified_linear_rejections": 0,
+          "maximum_force_balance_error_N": 1.4908435375971833e-09,
+          "maximum_torque_balance_error_Nm": 6.184563972055912e-11
+        }
+      ]
+    }
+  ],
+  "comparison": {
+    "order": [
+      "baseline",
+      "outside",
+      "outside",
+      "baseline"
+    ],
+    "repeats_per_variant": 2,
+    "loaded_frame_interval": [
+      102,
+      270
+    ],
+    "pooled_baseline_fps": 11.976332598131014,
+    "pooled_outside_fps": 12.546593296944259,
+    "pooled_speed_change_percent": 4.761563643466604,
+    "interpretation": "Approximately4.8% pooled loaded-window improvement; two repeats per variant, not a confidence interval or sustained60FPS result."
+  },
+  "physical_invariants": "Original force kernels, fullregion/material, independent free needle, native budget, swept-volume/rollback and raw FP64 current-A residual certificate unchanged.",
+  "profile": {
+    "audit_sha256": "a0804a2023cb34f2b232c30ebfda449e1ef31294e8c12e472fb51acc667046c4",
+    "window": [
+      219,
+      260
+    ],
+    "physical_passed": true,
+    "coverage": {
+      "kernels_by_pid": [
+        {
+          "pid": 58,
+          "kernels": 721857,
+          "summed_kernel_s": 2.96826244,
+          "graph_nodes": 694858
+        }
+      ],
+      "all_requested_worker_commands_traced": true,
+      "potential_record_loss": []
+    },
+    "unions": {
+      "58": {
+        "worker_command": {
+          "ranges": 41,
+          "range_union_s": 6.170507996,
+          "kernel_union_within_s": 2.968051015,
+          "memcpy_union_within_s": 0.053524597,
+          "cuda_activity_union_within_s": 3.021575516
+        },
+        "worker_physics": {
+          "ranges": 41,
+          "range_union_s": 6.07239685,
+          "kernel_union_within_s": 2.967908519,
+          "memcpy_union_within_s": 0.05228088,
+          "cuda_activity_union_within_s": 3.020189303
+        },
+        "worker_observe": {
+          "ranges": 41,
+          "range_union_s": 0.08645585,
+          "kernel_union_within_s": 0.000142496,
+          "memcpy_union_within_s": 0.001243717,
+          "cuda_activity_union_within_s": 0.001386213
+        }
+      }
+    },
+    "counters": {
+      "native_batches": 1846,
+      "native_guard_microsteps": 7384,
+      "native_guard_rejections": 0,
+      "accepted_physics_steps": 167,
+      "step_refinements": 1,
+      "fem_graph_captures": 3,
+      "fem_graph_launches": 1846,
+      "host_force_graph_captures": 20,
+      "host_force_graph_launches": 1724,
+      "host_force_graph_fallbacks": 28,
+      "host_force_primal_reuses": 216,
+      "native_transfer_repeated_readbacks": 733,
+      "native_host_wrench_reuses": 945,
+      "tunnel_alm_dual_updates": 256,
+      "response_basis_builds": 3,
+      "certified_linear_attempts": 168,
+      "certified_linear_rejections": 0
+    },
+    "caution": "Instrumented timeline is diagnostic, not the unprofiled ABBA timing; API elapsed durations include dependency waits and must not be read as copy duration."
+  },
+  "eight_scene_validation": {
+    "report_sha256": "70cb3b4bf5293f49da8e2620c41d6b10193a49c20bbd53072dfe65bd62c9494d",
+    "physical_passed": true,
+    "scenes": 8,
+    "frames_per_scene": 360,
+    "completed_environment_frames": 2880,
+    "private_MPS": true,
+    "aggregate_loaded_environment_steps_per_second": 35.42599904608672,
+    "aggregate_whole_environment_steps_per_second": 51.9008241057234,
+    "loaded_physics_updates_per_scene_second": 4.42824988076084,
+    "baseline_report_sha256": "e48b508d30b65a9b9b9370f5b489374d715fa6ca374fc538ebf78bc18c7a5437",
+    "baseline_aggregate_loaded_environment_steps_per_second": 35.589592868808765,
+    "baseline_aggregate_whole_environment_steps_per_second": 52.60828522339613,
+    "final": [
+      {
+        "physical_time_s": 5.999999999999978,
+        "native_clock_error_s": -2.2737367544323206e-13,
+        "native_guard_rejections": 0,
+        "host_force_graph_fallbacks": 40,
+        "certified_linear_rejections": 0
+      },
+      {
+        "physical_time_s": 5.99999999999998,
+        "native_clock_error_s": -2.291500322826323e-13,
+        "native_guard_rejections": 0,
+        "host_force_graph_fallbacks": 38,
+        "certified_linear_rejections": 0
+      },
+      {
+        "physical_time_s": 5.99999999999998,
+        "native_clock_error_s": -2.291500322826323e-13,
+        "native_guard_rejections": 0,
+        "host_force_graph_fallbacks": 38,
+        "certified_linear_rejections": 0
+      },
+      {
+        "physical_time_s": 5.999999999999978,
+        "native_clock_error_s": -2.2737367544323206e-13,
+        "native_guard_rejections": 0,
+        "host_force_graph_fallbacks": 40,
+        "certified_linear_rejections": 0
+      },
+      {
+        "physical_time_s": 5.99999999999998,
+        "native_clock_error_s": -2.291500322826323e-13,
+        "native_guard_rejections": 0,
+        "host_force_graph_fallbacks": 38,
+        "certified_linear_rejections": 0
+      },
+      {
+        "physical_time_s": 5.99999999999998,
+        "native_clock_error_s": -2.291500322826323e-13,
+        "native_guard_rejections": 0,
+        "host_force_graph_fallbacks": 38,
+        "certified_linear_rejections": 0
+      },
+      {
+        "physical_time_s": 5.99999999999998,
+        "native_clock_error_s": -2.291500322826323e-13,
+        "native_guard_rejections": 0,
+        "host_force_graph_fallbacks": 38,
+        "certified_linear_rejections": 0
+      },
+      {
+        "physical_time_s": 5.99999999999998,
+        "native_clock_error_s": -2.291500322826323e-13,
+        "native_guard_rejections": 0,
+        "host_force_graph_fallbacks": 38,
+        "certified_linear_rejections": 0
+      }
+    ],
+    "interpretation": "All8 physical sequences/native-clock checks passed. This comparison does not establish improved aggregate8-scene throughput."
+  },
+  "promotion_test_cleanup": {
+    "removed_test": "test_original_force_and_acceptance_methods_are_unchanged",
+    "scope": "Remove only the source-mirroring AST comparison and its2000-line original-source fixture; retain all functional tests and exact validated runtime bytes. Frozen candidate73d6750c preserves the original proof/log.",
+    "historical_candidate_full_count": 1021,
+    "historical_candidate_focused_count": 63,
+    "proposed_production_full_count": 1020,
+    "proposed_production_focused_count": 62,
+    "production_rerun": "passed"
+  }
+}

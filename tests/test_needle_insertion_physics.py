@@ -10,7 +10,7 @@ import numpy as np
 import warp as wp
 
 from newton_solver_suturebot import NeedleTissueInteraction, boundary_faces
-from newton_solver_suturebot._src.insertion import _shaft_projection
+from newton_solver_suturebot._src.solvers.coupled.interface.insertion import _shaft_projection
 
 
 @wp.kernel(enable_backward=False)
@@ -331,6 +331,34 @@ class TestNeedleInsertionPhysics(unittest.TestCase):
         self.assertLess(interaction.force_balance_error, 1e-8)
         self.assertLess(interaction.torque_balance_error, 1e-10)
 
+    def test_trial_that_moves_the_tip_beyond_the_step_resolution_is_rejected_before_its_forces(self):
+        from newton_solver_suturebot._src.solvers.coupled.interface.insertion import NeedleStepTooLarge
+
+        interaction, state, forces = self.build()
+        resolution = interaction.step_resolution
+        self.assertEqual(resolution, min(float(interaction.radii.min()), interaction.track_spacing) * 1.01)
+        # Without an accepted tip there is nothing to measure a trial against.
+        self.pose(state, 0.003)
+        interaction.add_forces(state, 0, np.zeros(3), forces, 0.0005, trial=True)
+        self.pose(state, -0.0001)
+        interaction.accept(state, 0)
+        accepted = interaction._previous_tip.copy()
+        status = interaction.status
+        # A trial within the resolution is evaluated; one beyond it is rejected at once
+        # and leaves the committed state of the interaction as it was.
+        self.pose(state, -0.0001 + 0.99 * resolution)
+        state.body_f.zero_()
+        forces.zero_()
+        interaction.add_forces(state, 0, np.zeros(3), forces, 0.0005, trial=True)
+        self.pose(state, -0.0001 + 1.01 * resolution)
+        with self.assertRaisesRegex(NeedleStepTooLarge, "Unresolved tip displacement in a trial"):
+            interaction.add_forces(state, 0, np.zeros(3), forces, 0.0005, trial=True)
+        np.testing.assert_array_equal(interaction._previous_tip, accepted)
+        self.assertEqual(interaction.status, status)
+        self.assertIsNone(interaction._trial_fields)
+        # The rule is for trials: an explicit evaluation still reports through check_step_resolution.
+        interaction.add_forces(state, 0, np.zeros(3), forces, 0.0005)
+
     def test_trial_forces_do_not_authorize_or_commit_and_final_evaluation_uses_time_n(self):
         interaction, state, forces = self.build()
         start = SimpleNamespace(
@@ -370,14 +398,24 @@ class TestNeedleInsertionPhysics(unittest.TestCase):
         engaged = interaction._track_engaged.numpy().copy()
         self.assertGreater(engaged.sum(), 0)
         count, length = interaction.track_count, interaction.track_length
-        self.pose(state, -0.0015)
+
+        def nothing_committed():
+            self.assertEqual(interaction.status, "inserted")
+            np.testing.assert_array_equal(interaction._track_engaged.numpy(), engaged)
+            self.assertEqual(interaction.track_count, count)
+            self.assertAlmostEqual(interaction.track_length, length)
+
+        # A trial may withdraw the needle as far as one step can move it.
+        self.pose(state, 0.0015 - 0.9 * interaction.step_resolution)
         state.body_f.zero_()
         forces.zero_()
         interaction.add_forces(state, 0, np.zeros(3), forces, 0.0005, trial=True)
-        self.assertEqual(interaction.status, "inserted")
-        np.testing.assert_array_equal(interaction._track_engaged.numpy(), engaged)
-        self.assertEqual(interaction.track_count, count)
-        self.assertAlmostEqual(interaction.track_length, length)
+        nothing_committed()
+        # A trial that pulls it out altogether is beyond the step resolution: it is rejected.
+        self.pose(state, -0.0015)
+        with self.assertRaisesRegex(RuntimeError, "Unresolved tip displacement in a trial"):
+            interaction.add_forces(state, 0, np.zeros(3), forces, 0.0005, trial=True)
+        nothing_committed()
         blocked, candidate, candidate_forces = self.build(puncture_force=1.0)
         self.pose(candidate, 0.0001)
         blocked.add_forces(candidate, 0, np.zeros(3), candidate_forces, 0.0005, trial=True)

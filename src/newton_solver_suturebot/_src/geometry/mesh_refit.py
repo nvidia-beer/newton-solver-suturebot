@@ -4,7 +4,8 @@
 
 Triangle bounds and bottom-up BVH updates follow Warp's native algorithms.
 The edge-length mean uses deterministic double-precision chunk reductions of
-identical float32 edge sums. Only its reduction roundoff differs from CUB scan.
+identical float32 edge sums. CUDA cooperates within complete warps; CPU keeps
+the serial reduction. Only reduction roundoff differs from native CUB scan.
 No stale bounds, normals or average edge length are retained. Winding-number
 meshes are explicitly unsupported because they need extra solid-angle refits.
 The native structs and refit algorithm are version guarded to Warp 1.17.0.
@@ -119,6 +120,59 @@ def set_mean(id: wp.uint64, partial: wp.array[wp.float64]):
     for i in range(partial.shape[0]):
         total += partial[i]
     _set_mean(id, total)
+
+
+@wp.func_native("""
+#if defined(__CUDA_ARCH__)
+return __shfl_down_sync(0xffffffff, value, offset);
+#else
+return value;
+#endif
+""")
+def _shuffle_double(value: wp.float64, offset: int) -> wp.float64: ...
+
+
+@wp.kernel(enable_backward=False)
+def reduce_edges_cooperative(edges: wp.array[float], partial: wp.array[wp.float64]):
+    """One complete warp per 256-face chunk, including the short final chunk."""
+    tid = wp.tid()
+    chunk, lane = tid // 32, tid % 32
+    total = wp.float64(0)
+    start = chunk * 256
+    for index in range(start + lane, wp.min(start + 256, edges.shape[0]), 32):
+        total += wp.float64(edges[index])
+    for shift in range(5):
+        total += _shuffle_double(total, 16 >> shift)
+    if lane == 0:
+        partial[chunk] = total
+
+
+@wp.func
+def _cooperative_total(partial: wp.array[wp.float64], lane: int) -> wp.float64:
+    total = wp.float64(0)
+    for i in range(lane, partial.shape[0], 32):
+        total += partial[i]
+    for shift in range(5):
+        total += _shuffle_double(total, 16 >> shift)
+    return total
+
+
+@wp.kernel(enable_backward=False)
+def set_mean_cooperative(id: wp.uint64, partial: wp.array[wp.float64]):
+    lane = wp.tid()
+    total = _cooperative_total(partial, lane)
+    if lane == 0:
+        _set_mean(id, total)
+
+
+def update_edge_mean(mesh_id, edges, partial, device):
+    """Retain serial CPU semantics; CUDA launches every shuffle lane explicitly."""
+    if device.is_cuda:
+        wp.launch(reduce_edges_cooperative, partial.size * 32, [edges, partial], device=device, block_dim=32)
+        wp.launch(set_mean_cooperative, 32, [mesh_id, partial], device=device, block_dim=32)
+    else:
+        wp.launch(reduce_edges, partial.size, [edges, partial], device=device)
+        wp.launch(set_mean, 1, [mesh_id, partial], device=device)
 
 
 # The loop below is copied from Warp 1.17 native/bvh.cu bvh_refit_kernel.
@@ -411,8 +465,7 @@ class GraphMeshRefit:
 
     def _refit_full(self):
         wp.launch(triangle_data, max(self.count, self.nodes), [self.mesh.id, self.edges], device=self.device)
-        wp.launch(reduce_edges, self.partial.size, [self.edges, self.partial], device=self.device)
-        wp.launch(set_mean, 1, [self.mesh.id, self.partial], device=self.device)
+        update_edge_mean(self.mesh.id, self.edges, self.partial, self.device)
         wp.launch(refit_leaves, self.leaves, [self.mesh.id], device=self.device)
 
     def refit(self):
@@ -427,6 +480,5 @@ class GraphMeshRefit:
             [self.mesh.id, self.face_dynamic, self.edges],
             device=self.device,
         )
-        wp.launch(reduce_edges, self.partial.size, [self.edges, self.partial], device=self.device)
-        wp.launch(set_mean, 1, [self.mesh.id, self.partial], device=self.device)
+        update_edge_mean(self.mesh.id, self.edges, self.partial, self.device)
         wp.launch(refit_leaves_masked, self.leaves, [self.mesh.id, self.node_dynamic], device=self.device)

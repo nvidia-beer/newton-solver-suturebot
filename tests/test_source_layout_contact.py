@@ -10,13 +10,17 @@ import numpy as np
 import warp as wp
 
 from newton_solver_suturebot._src.geometry.needle import NeedleGeometry
-from newton_solver_suturebot._src.grasp import GrasperConfig, needle_to_gripper_pose
-from newton_solver_suturebot._src.pose_ik import NativePoseIK
-from newton_solver_suturebot._src.rcm_grasp import add_rcm_grasper
-from newton_solver_suturebot._src.subcycled_mujoco import SubcycledMuJoCo
-from newton_solver_suturebot._src.suturebot_layout import load_source_layout, load_source_stitch
-from newton_solver_suturebot.examples._needle_insertion_geometry import InsertionPlan, MaterialPoint
-from newton_solver_suturebot.grasp_scene import _initial_grasp_parameters
+from newton_solver_suturebot._src.sim.ik.pose_ik import NativePoseIK
+from newton_solver_suturebot._src.solvers.mujoco.subcycled_mujoco import SubcycledMuJoCo
+from newton_solver_suturebot.examples.grasp._dvrk_grasper import (
+    GrasperConfig,
+    jaw_opening_on_needle,
+    needle_to_gripper_pose,
+)
+from newton_solver_suturebot.examples.grasp._dvrk_layout import load_source_layout, load_source_stitch
+from newton_solver_suturebot.examples.grasp._dvrk_rcm_grasper import add_rcm_grasper
+from newton_solver_suturebot.examples.grasp._grasp_scene import _initial_grasp_parameters
+from newton_solver_suturebot.examples.needle._needle_insertion_geometry import InsertionPlan, MaterialPoint
 
 
 class SourceLayoutContactTests(unittest.TestCase):
@@ -73,12 +77,16 @@ class SourceLayoutContactTests(unittest.TestCase):
                 kinematic_switchable_roots=False,
             )
             solver.reset(state, flags=0)
-            palm_pose = np.asarray(
-                wp.transform_multiply(
-                    wp.transform(*needle_pose),
-                    wp.transform(*needle_to_gripper_pose(geometry, **_initial_grasp_parameters(plan))),
-                )
+            relative = needle_to_gripper_pose(geometry, **_initial_grasp_parameters(plan))
+            palm_pose = np.asarray(wp.transform_multiply(wp.transform(*needle_pose), wp.transform(*relative)))
+            # The jaws start about the needle at the opening at which their capsules touch it.
+            needle_in_palm = wp.transform_inverse(wp.transform(*relative))
+            grasp_opening = jaw_opening_on_needle(
+                tools[0],
+                [np.asarray(wp.transform_point(needle_in_palm, wp.vec3(*point))) for point in geometry.centerline],
+                geometry.thickness,
             )
+            self.assertTrue(all(angle > 0.0 for angle in grasp_opening))
             targets = []
             for index, tool in enumerate(tools):
                 native = solver.mj_model
@@ -93,10 +101,11 @@ class SourceLayoutContactTests(unittest.TestCase):
                 ik.reset(solver.mj_data.qpos)
                 target = ik.solve(palm_pose if index == 0 else layout["parked_pose"], solver.mj_data.qpos)
                 targets.append(target)
-                opening = 0 if index == 0 else 0.7
+                opening = grasp_opening if index == 0 else 0.7
                 tool.initialize(model, state, arm_positions=target, opening_rad=opening)
                 tool.set_arm_targets(control, target)
-                tool.set_aperture(control, opening / tool.config.maximum_opening_rad)
+                # The first tool is commanded closed on the needle; the parked one stays open.
+                tool.set_aperture(control, (0 if index == 0 else 0.7) / tool.config.maximum_opening_rad)
             solver.reset(state, flags=0)
             initial = tools[0].observe(model, state, solver, 0)["needle_relative_pose"]
             fixed_anchors = model.joint_X_p.numpy().copy()
@@ -124,7 +133,19 @@ class SourceLayoutContactTests(unittest.TestCase):
             np.testing.assert_array_equal(model.joint_X_p.numpy(), fixed_anchors)
             self.assertEqual(solver.mj_model.neq, 0)
             mapping = solver.mjc_geom_to_newton_shape.numpy()[0]
-            excluded = {frozenset((tool.capsule_shapes[1], jaw)) for tool in tools for jaw in tool.capsule_shapes[2:]}
+            # Excluded: the pairs among the wrist and the two jaws of one tool, which adjoin and overlap.
+            excluded = set()
+            for tool in tools:
+                distal = [
+                    pair for pair in zip(tool.capsule_shapes, tool.capsule_parts, strict=True) if pair[1] != "shaft"
+                ]
+                excluded |= {frozenset((a, b)) for a, first in distal for b, second in distal if first != second}
+            jaws = [
+                shape
+                for shape, part in zip(tools[0].capsule_shapes, tools[0].capsule_parts, strict=True)
+                if part.startswith("jaw")
+            ]
+            others = set(tools[0].capsule_shapes).difference(jaws).union(tools[1].capsule_shapes)
             negative_pairs = set()
             for contact in solver.mj_data.contact[: solver.mj_data.ncon]:
                 pair = frozenset(int(mapping[int(geom)]) for geom in contact.geom)
@@ -134,8 +155,8 @@ class SourceLayoutContactTests(unittest.TestCase):
             # The oblique reset bite must not use an accidental wrist/shaft
             # penetration to hold the otherwise freely jointed needle.
             for pair in negative_pairs:
-                self.assertTrue(pair.intersection(tools[0].capsule_shapes[2:]))
-                self.assertFalse(pair.intersection((*tools[0].capsule_shapes[:2], *tools[1].capsule_shapes)))
+                self.assertTrue(pair.intersection(jaws))
+                self.assertFalse(pair.intersection(others))
 
 
 if __name__ == "__main__":

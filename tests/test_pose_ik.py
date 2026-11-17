@@ -6,7 +6,7 @@ import unittest
 import mujoco
 import numpy as np
 
-from newton_solver_suturebot._src.pose_ik import NativePoseIK, UnreachablePoseError
+from newton_solver_suturebot._src.sim.ik.pose_ik import NativePoseIK, UnreachablePoseError
 
 
 def _model():

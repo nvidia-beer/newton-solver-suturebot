@@ -1,9 +1,97 @@
 # Numerical validation
 
+## Physical grasp: retained outside authorization (2026-11-13)
+
+The [compact validation report](validation/standalone/grasp-authorized-outside-2026-11-13.json)
+records the captured-force extension for an already authorized needle tip that
+remains outside tissue and strictly within the existing opening's clearance.
+Exact current geometry and swept checks certify the branch; exact host staging
+retains the same opening and events. Original force kernels, puncture criteria,
+full selected region, solver tolerances and rollback are unchanged.
+
+The full CUDA suite completed **1,021 tests in 206.077 seconds**, with three
+skips, five expected failures and no unexpected failures. All 63 focused CUDA
+tests passed. These counts describe the archived candidate before removing one
+source-mirroring AST test and its copied-source fixture for maintainability;
+the installed suite subsequently passed **1,020 tests in 201.815 seconds**,
+with the same three skips and five expected failures. All 62 installed focused
+cases passed in 23.877 seconds. Source and asset hashes stayed unchanged during
+the full rerun. Functional
+force, endpoint, threshold, ownership and rollback tests remain, and all runtime
+bytes match that validated candidate. Three unprofiled candidate runs completed the 360-frame physical
+procedure, including the native-clock and current-matrix residual checks.
+The selected region remains 7,205 nodes and 29,160 tetrahedra, with four native
+rigid substeps per FEM interval; no moving crop or prescribed needle pose is used.
+
+An ABBA comparison used two full runs per variant. Pooled loaded-window physics
+rate increased from **11.976 to 12.547 FPS**, approximately **4.8%**. Baseline
+runs ranged from 11.427 to 12.581 FPS; candidate runs ranged from 12.075 to
+13.057 FPS. This small sample is not a confidence interval or evidence of
+sustained 60 FPS. Whole-interval force-graph fallbacks fell from 127/116 in the
+baseline repeats to 40/38 in the candidate repeats. Numerical trajectories and
+iteration counts vary, so individual timings are not interchangeable.
+
+The eight-scene private-MPS validation also passed all 2,880 environment frames
+and every native-clock check. It measured 35.426 loaded environment steps/s in
+aggregate (4.428 physical updates/s per scene), versus 35.590 for the installed
+baseline. Whole-sequence rates were 51.901 versus 52.608 environment steps/s.
+This comparison does not establish an aggregate throughput improvement for
+eight scenes.
+
+A separate Nsight Systems capture of frames 219–260 covered every requested
+worker command with no reported record loss. It recorded 6.072 seconds in worker
+physics ranges and 3.020 seconds of GPU activity within those ranges; activity
+union and host wall time are different measures. Host CUDA API elapsed time
+includes waiting for dependencies and is not actual device-copy duration. The
+report retains source/log hashes and the unchanged workload/budget metadata.
+
+
+## Suturing inversion regression (2026-11-12)
+
+The [original failure](validation/suture-inversion-before.json) reproduces
+`fem_needle_suture` with its former one-substep default on CUDA: the second
+stitch inverted tetrahedron 6910 at frame 1372, 22.867 s, with
+$J=-0.00347857$. Reconstructing that interval shows that the linear volume
+prediction was positive while the actual cubic nodal motion crossed zero.
+Interface force convergence and the compression force alone did not certify
+the geometry of the accepted step.
+
+The coupled solver now rejects unresolved tetrahedral motion before committing
+the state, then the example retries a shorter physical interval. The suturing
+default is four substeps per frame to better resolve the lagged thread loads.
+The material, full 7,205-node / 29,160-tetrahedron mesh, fixed boundaries,
+90-element thread and commanded speed are preserved. A smaller timestep also
+shortens the delay of the existing per-step force relaxation.
+
+The [full-sequence report](validation/suture-inversion-after.json) records the
+final CUDA regression, including every-frame volume and boundary checks,
+accepted swept-volume minima, all 22 thread eyelets, and actual settled-drop
+criteria. It records the transition into the closing phase even when the
+tissue is already tight and that phase ends in the same display frame.
+A timeout or a drop failure relabeled as success cannot pass this test.
+
+The final run passed 2,008 frames / 8,032 physical steps (33.467 s simulated),
+with minimum frame $J=0.15628$ and minimum accepted swept $J=0.14002$.
+The wound narrowed from 2.363 mm to 1.570 mm; it was already at the tissue
+limit when the closing phase began, so almost no additional pull occurred.
+The needle then settled below 1 mm/s for more than 0.5 s. The complete CUDA
+suite ran 623 tests with no unexpected failures, three opt-in skips and five
+existing expected failures; the final full-sequence module separately passed
+all seven tests. Ruff and generated-README checks passed.
+
+`test_tet_step_guard.py` additionally checks positive endpoints with interior
+inversion, extreme scales, inactive material slots, and rollback/retry through
+both coupling backends. The full-row test is opt-in; its command is documented
+in [usage](usage.md#suturing-a-wound). These checks cover the default row and
+stated cases, not arbitrary picked stitches or calibrated tissue behavior.
+
 ## Full-pad cutting extension (2026-11-10)
 
 The [standalone cutting report](validation/standalone/phantom-cut.json) records
 checks for `fem_phantom_cut`, separately from the earlier extraction below.
+That example cut the whole pad. On 2026-11-17 it was renamed
+`fem_surgical_incision` and the Baymax body replaced the pad; the records of
+this section are of the pad example and are kept as history.
 The complete mesh has 97,489 vertices and 413,405 original tetrahedra; every
 region is welded into the active pad, with no fixed nodes.
 
@@ -874,3 +962,202 @@ manifest/provenance/validation metadata changed, plus the default bundle's
 README describing the corrected attachment and matching thread metadata in its
 choice-5 alias. Thread motion, forces and
 physical material twist remain unmeasured.
+
+## Physical grasp and worker thread (2026-11-12)
+
+The explicit `physical_grasp` worker has an independent native MuJoCo needle,
+two finite-drive distal tools and a worker-owned ANCF thread. This is a new
+control contract; earlier six-action free-needle policy results and scripted
+stitch demonstrations do not validate a learned physical grasp policy.
+
+The [focused thread report](validation/physical-thread-tests.json) records ten
+passing CUDA tests in 3.696 s: seven in
+[`test_thread_rigid_contact.py`](../tests/test_thread_rigid_contact.py) and three
+in [`test_worker_thread.py`](../tests/test_worker_thread.py). They check
+simultaneous opposing jaw contacts, finite-difference energy/gradient
+consistency, recovery of a specified penetrated contact fixture, moving and
+rotating friction anchors, the lagged Coulomb bound, fresh force/world-torque
+balance, body-specific attachment exclusions, complete contact-state rollback,
+worker load feedback and independent worker state. Position sampling and
+repeatedly reading stored loads do not advance physical time or friction state.
+A separate CPU subset ran 96 tests in 48.755 s with no unexpected failures,
+two existing skips and five existing expected failures. It included the
+unchanged legacy thread-contact API, solver/tissue tests and stitch geometry.
+These counts describe those specific runs, not a new full-project test total.
+
+The historical [five native grasp tests](validation/physical-grasp-focused-cuda.log)
+passed with CUDA Newton state and the native MuJoCo CPU backend in 1.747 s,
+before the elliptic-cone/tight-solve correction below. This earlier test
+version did not include the later angular-transport assertion. Its pass is
+not a validation of the final contact configuration.
+They cover independent needle topology, holding
+against gravity, contact-driven transport, release on opening, and slip under
+sufficient load. The test explicitly measures physical state; it does not
+infer retention from tool/needle proximity or impose a weld.
+The transport fixture commands 5 mm and 0.1 rad at 1/240 s intervals and checks
+the 0.02 N·m jaw-effort bound. The overload fixture applies a 1.5 N tangential
+load and requires more than 5 mm of slip; opening requires more than 0.5 m of
+free fall over 0.5 s. These are test conditions and assertions, not calibrated
+holding-force limits. Three additional CPU lifecycle tests in
+[`test_grasp_scene.py`](../tests/test_grasp_scene.py) passed: actions preserve
+independent state, rejected multi-body trials restore native/output state, and
+adaptive retries advance thread history only over accepted intervals.
+
+A historical [full-worker initial hold](validation/physical-grasp-initial-hold.json),
+also before that contact correction and using pyramidal contacts,
+advanced 30 control frames, 120 accepted physical steps and 0.5 s of simulated
+time without a solver failure or timestep refinement. At the final snapshot,
+the two jaw normal forces were 0.39931 and 0.39945 N, the thread head/tail
+discrepancy was 3.82 nm, and its coordinates and velocities were finite. The
+report records zero needle entry/exit events and zero active thread/capsule
+candidates at that final snapshot. Thus it checks coupled initialization and
+a short physical hold; thread/tool contact under load is exercised by the
+separate focused fixtures, not established by this quiet final state. The
+6.57 s measured run time is not a sustained training-throughput benchmark.
+Inherited `drive_*` fields in this early report came from the free-needle
+example and should not be read as identified physical gripper gains.
+
+The [method](method.md#physical-distal-grasp-and-worker-owned-thread) specifies
+compliant discrete chord contacts, simultaneous body/radius groups, lagged
+friction and relaxed reactions. Fresh opposing forces and torques balance;
+loads applied one step later need not balance instantaneously. The two-update
+thread budget is not a full-convergence guarantee. There are no worker eyelets
+or puncture-track constraints, and the free end is not tied. No completed
+suture, wound closure, knot, autonomous pickup, calibrated dVRK dynamics or
+learned physical-grasp policy is certified by these results.
+
+### Physical grasp contact correction
+
+The [preserved initial eight-world gate](validation/physical-grasp-failed-gate.json)
+failed in every world after 0.342–1.004 simulated seconds. Each reported
+`Needle center penetrated fixed or inactive tissue; reduce timestep`.
+The [single-world action replay](validation/physical-grasp-failed-actions.json)
+reproduced world zero at 0.341667 s. At the first commanded frame, native jaw
+normals fell from about 0.399 N to 0.00134 N and zero, and needle speed rose
+to 39.6 mm/s while the stored thread attachment force remained about 22 µN.
+This locates the observed transient in the rigid grasp response; it does not
+establish a unique initiating numerical cause. The quiet hold above did not
+exercise this motion.
+
+The corrected native settings are elliptic cones, `impratio=10`, tolerance
+`1e-12`, 200 Newton iterations and 50 line-search iterations. The model retains
+impedance 0.9999, rolling friction length 20 µm, torsional length 0.28 mm,
+geometry, masses, gains and friction coefficients. Cone selection changes
+the friction model; convergence settings do not calibrate the instrument.
+The [comparison and hash manifest](validation/physical-grasp-contact-comparison.json)
+preserve the measured configurations and distinguish successful fixtures from
+failed stronger commands.
+
+| Measured workload | Result |
+| --- | --- |
+| Smooth 5 mm / 0.1 rad native transport, 1/240 s | 18.13 µm relative translation drift, 5.605 mrad rotation drift; no lost jaw contact, minimum normal 0.37490 N |
+| Five focused native tests under corrected settings, CPU, including angular transport | All five passed in 1.378 s; [raw log](validation/physical-grasp-elliptic-tests-cpu.log) |
+| Full-worker 100 µm incremental X stress, 4 intervals/frame | Failed at 0.525 s |
+| Same X commands plus 0.01 rad incremental X rotations, 4 intervals/frame | Failed at 0.304167 s |
+| Full-worker X stress, 16 intervals/frame | 128 frames / 2.13333 s / 2,048 accepted intervals, no failure or refinement; relative drift 21.95 µm / 8.644 mrad |
+| Full-worker X plus rotation, 16 intervals/frame | Same duration/count, no failure or refinement; relative drift 21.33 µm / 7.953 mrad, minimum normal 0.31817 N |
+
+The 128-frame stresses begin with eight zero-command frames, then reverse
+command signs every ten frames; jaw opening increments are ±0.001 rad per
+control frame. Relative drifts in the last two rows are measured from the end
+of the eight-frame warmup. The [archived stress trace](validation/physical-grasp-elliptic-stress-16.json)
+contains actual needle/palm poses, relative poses, native forces and final
+diagnostics. These trials used CUDA FEM/thread state and native MuJoCo CPU
+integration, and 16 complete coupled intervals, not four outer intervals
+with rigid-only subcycling. No completed suture, action-space-wide stability
+guarantee or eight-world gate is established by these single-world runs; the
+separate final gate is reported below.
+
+The final [native-subcycling probe](validation/physical-grasp-subcycling-stress.json)
+repeats both stress commands with four outer FEM/thread intervals and four
+native rigid steps inside each. Each completed 128 frames, 512 accepted outer
+intervals and 2,048 native microsteps without refinement, failure or needle
+entry/exit events. The pure-X and combined probes respectively measured
+21.56/21.18 µm relative translation drift, 8.659/7.975 mrad rotation drift and
+minimum jaw normals 0.31873/0.31823 N. Their measured loops took 4.38/4.60 s,
+versus 12.71/12.86 s for 16 complete intervals. This roughly 2.8–2.9× single-world
+probe difference excludes initialization and is not an eight-world training
+throughput result.
+
+Ten focused tests passed on [CPU in 2.505 s](validation/physical-grasp-subcycling-cpu.log)
+and [CUDA Newton state in 3.173 s](validation/physical-grasp-subcycling-cuda.log),
+both with native CPU MuJoCo. The set includes native grasp, multi-body
+transaction lifecycle, exact comparison with four explicit native steps, and
+an output-particle sentinel proving that rigid subcycling leaves FEM output
+untouched. These are distinct from the earlier ten thread/contact tests and
+are not a new full-suite count.
+
+### Final eight-world gate and native integration
+
+The [final eight-world report](validation/physical-grasp-eight-scenes.json)
+passed all 17 checks at solver fingerprint
+`1ae8d9eee6c5bbb9d2668c17398acb8965f277754cc4748c552f5f0468fa64cb`.
+Each scene retained 7,205 active FEM nodes, 29,160 tetrahedra, seven independent
+rigid bodies and a 90-element thread. After eight warmup and 120 measured
+control frames, all eight worlds reached 2.13333 simulated seconds with
+512 accepted outer intervals, no refinements or solver failures, and no entry
+or exit events. Minimum tetrahedral volume ratios exceeded 0.9999851; fixed
+boundaries, distinct action response and selective reset checks passed.
+Final jaw normal forces were approximately 0.381 N per jaw.
+
+The measured 960 environment transitions took 7.5143 s: **127.757 environment
+steps/s**, or 0.266× real time per scene at a 60 Hz control rate. Worker startup
+took another 13.405 s. The workload is oscillatory gripper/jaw motion above
+tissue, not insertion or a sustained loaded-grasp test. Positive contact
+diagnostics refer to the last solved native interval, not an independently
+reconstructed endpoint contact certificate.
+
+The separate [Isaac Lab native check](validation/physical-grasp-native-isaaclab.json)
+completed eight steps in eight environments with time-limit resets. It
+verified 72-value teacher state, 20-value command observations, stereo RGB
+history shaped `[8,12,144,192]`, and 56 separately mirrored/rendered rigid
+bodies under surgical appearance version 2. The
+[artifact manifest](validation/physical-grasp-native-artifacts.json) binds
+runtime, source, commands and files; wrapper wall time was 34.201 s. This is
+an environment lifecycle/render integration check, not policy training or a
+completed physical-grasp suture.
+
+The final [full source CUDA-configured suite](validation/physical-grasp-full-cuda.log)
+ran **646 tests in 147.523 s**, with three skips, five expected failures and
+no unexpected failures or errors. Individual CPU-only fixtures still run on
+CPU. An [earlier attempt](validation/physical-grasp-full-cuda-initial.log)
+reported six test-wrapper argument errors; updating those test-only wrappers
+for the external-force keyword did not change the frozen physics sources.
+The full-suite count is separate from downstream Isaac Lab project tests.
+
+### Short scripted needle/FEM entry with physical grasp
+
+The [entry probe](validation/physical-grasp-fem-entry.json) commands the finite
+gripper servo along a reference path while the independent needle moves
+through contact. It does not assign simulated needle poses. The
+[exact probe](validation/physical-grasp-fem-entry-probe.py.txt) and
+[console](validation/physical-grasp-fem-entry.log) preserve this diagnostic's
+scope and sampling. One scene completed 91 frames / 1.51667 simulated seconds
+with 364 accepted outer intervals and no refinement or solver failure.
+Puncture and entry occurred by frame 71; accepted entry error was 0.46212 mm.
+The probe continued for another 20 frames and stopped deliberately, with one
+entry and zero exits.
+
+An independent control-frame volume audit found minimum ratio 0.894073
+relative to the initial state. Fixed nodes remained bitwise unchanged and
+sampled FEM, rigid-body and thread states remained finite. The separate
+solver integrity checks still operate at accepted outer intervals. Peak
+needle/tissue interface force was 3.130 mN and peak nodal deformation
+183.4 µm. Final track engagement was 1.024 mm, jaw normals were about
+0.381 N each and thread head-to-needle-tail discrepancy was 5.25 nm.
+The 9.889 s wall measurement includes scene creation. This establishes a
+short scripted needle/FEM entry under contact grasp; it is not a trained
+policy, full entry/exit, complete suture or direct grasper–FEM collision test.
+
+
+### Embedded-needle inspection lift (13 November 2026)
+
+The 600-frame single-scene procedure passed with a 0.5 mm commanded tool lift,
+0.489 mm actual needle lift and 0.187 mm upward tissue displacement from the
+pre-lift state. All observed tetrahedra stayed positive, fixed boundaries stayed
+within 1e-8 m, and native accepted clocks stayed within 1e-8 s. The original
+frictional grasp and joint controls remained active. The arc paused for the
+inspection motion, returned and completed entry/exit. The complete CUDA suite
+ran 1,096 cases in 302.400 seconds (five skips, five expected failures).
+[Machine-readable evidence](validation/standalone/grasp-inspection-lift-2026-11-13.json).
+Use `--lift-height 0` to retain the historical insertion-only benchmark.

@@ -12,9 +12,12 @@ import numpy as np
 import warp as wp
 
 from newton_solver_suturebot import NeedleTissueInteraction, boundary_faces
-from newton_solver_suturebot._src import insertion
-from newton_solver_suturebot._src.surface_contact_forces import surface_forces_with_tangent
-from newton_solver_suturebot._src.surface_contact_tangent import SurfaceTangentAnchors, surface_contact_tangent
+from newton_solver_suturebot._src.solvers.coupled.acceleration.surface_contact_tangent import (
+    SurfaceTangentAnchors,
+    surface_contact_tangent,
+)
+from newton_solver_suturebot._src.solvers.coupled.interface import insertion
+from newton_solver_suturebot._src.solvers.coupled.interface.surface_contact_forces import surface_forces_with_tangent
 
 DEVICE = os.environ.get("NEWTON_TEST_DEVICE", "cpu")
 
@@ -42,10 +45,10 @@ def block(subdivisions=1, slope=0.12, thickness=0.004):
     return vertices, np.asarray(tetrahedra, dtype=np.int32)
 
 
-def fixture(vertices=None, tets=None, fixed=(), unmapped=()):
+def fixture(vertices=None, tets=None, fixed=(), unmapped=(), *, single_active_sample=False):
     if vertices is None:
         vertices, tets = block()
-    samples = np.array([[0.0, 0.0, 0.0], [0.00005, 0.00005, 0.0]])
+    samples = np.array([[0.0, 0.0, 0.0], [0.00005, 0.00005, 0.01 if single_active_sample else 0.0]])
     interaction = NeedleTissueInteraction(
         vertices,
         tets,
@@ -97,6 +100,97 @@ def evaluate(data, anchors=None, *, implicit=True):
     )
 
 
+def atomic_roundoff_bounds(data):
+    """Two FP32 accumulation orders: 2*gamma_n*sum(abs(contributions)).
+
+    This oracle supports only the initial, identity-oriented, stationary-tissue
+    surface fixtures here. Other force paths, nonfinite/capped recordings, or
+    one contributing sample retain the original strict comparison. It does not
+    compare against a fitted relative tolerance or a measured ULP allowance.
+    """
+    interaction, state, forces, _ = data
+    pose = state.body_q.numpy()
+    if (
+        type(interaction) is not NeedleTissueInteraction
+        or interaction.track_count != 0
+        or pose.shape != (1, 7)
+        or not np.array_equal(pose[0, 3:], [0, 0, 0, 1])
+        or np.any(state.particle_qd.numpy() != 0)
+    ):
+        return None
+    capacity = len(interaction.samples) * len(interaction.surface_triangles)
+    anchors = SurfaceTangentAnchors(capacity, device=DEVICE)
+    evaluate(data, anchors)
+    count = int(anchors.count.numpy()[0])
+    if count < 1 or count > capacity or np.any(anchors.flags.numpy() != 0):
+        return None
+    sources = anchors.sources.numpy()[:count]
+    if len(np.unique(sources[:, 0])) < 2 or len(np.unique(sources, axis=0)) != count:
+        return None
+    ids = anchors.nodes.numpy()[:count]
+    bary = anchors.bary.numpy()[:count].astype(np.float64)
+    points = anchors.points.numpy()[:count]
+    normals = anchors.normals.numpy()[:count].astype(np.float64)
+    fn = anchors.scalars.numpy()[:count, 3].astype(np.float64)
+    if not all(np.isfinite(x).all() for x in (bary, points, normals, fn)) or np.any(bary < 0) or np.any(fn < 0):
+        return None
+    # Every recorded fn is the actual nonnegative normal coefficient. The
+    # uncapped Coulomb magnitude is at most mu*fn and its normalized direction
+    # has component magnitude <=1, up to its FP32 arithmetic. Impulse limiting
+    # can only reduce that magnitude. gamma_12 encloses those local operations;
+    # no subtraction of nearly cancelling final resultants enters the bound.
+    unit = float(np.finfo(np.float32).eps) / 2
+
+    def gamma(n):
+        return n * unit / (1 - n * unit)
+
+    envelope = fn[:, None] * (np.abs(normals) + abs(interaction.friction)) * (1 + gamma(12))
+
+    def cross_bound(position, force):
+        position = np.abs(position.astype(np.float64))
+        return np.stack(
+            (
+                position[:, 1] * force[:, 2] + position[:, 2] * force[:, 1],
+                position[:, 2] * force[:, 0] + position[:, 0] * force[:, 2],
+                position[:, 0] * force[:, 1] + position[:, 1] * force[:, 0],
+            ),
+            axis=1,
+        ) * (1 + gamma(3))
+
+    com = (pose[0, :3] + np.array([0.0007, 0.0003, 0], dtype=np.float32)).astype(np.float32)
+    lever = (points - com).astype(np.float32)
+    body_absolute = np.concatenate((envelope.sum(0), cross_bound(lever, envelope).sum(0)))[None]
+    nodal_absolute = np.zeros(forces.shape + (3,), dtype=np.float64)
+    nodal_count = np.zeros(forces.shape, dtype=np.int64)
+    diagnostic_absolute = np.zeros((7, 3))
+    diagnostic_count = np.zeros(7, dtype=np.int64)
+    diagnostic_absolute[0], diagnostic_absolute[1] = envelope.sum(0), cross_bound(points, envelope).sum(0)
+    diagnostic_count[:2] = count
+    surface = interaction._surface.numpy()
+    for slot in range(count):
+        vertices = interaction.surface_triangles[sources[slot, 1]]
+        for node, vertex, weight in zip(ids[slot], vertices, bary[slot], strict=True):
+            reaction = weight * envelope[slot] * (1 + unit)
+            torque = cross_bound(surface[vertex : vertex + 1], reaction[None])[0]
+            if node >= 0:
+                nodal_absolute[node] += reaction
+                nodal_count[node] += 1
+            if node < 0 or interaction.fixed[max(node, 0)] != 0:
+                diagnostic_absolute[4] += reaction
+                diagnostic_absolute[5] += torque
+                diagnostic_count[4:6] += 1
+            else:
+                diagnostic_absolute[2] += reaction
+                diagnostic_count[2] += 1
+            diagnostic_absolute[3] += torque
+            diagnostic_count[3] += 1
+    return (
+        2 * gamma(count) * body_absolute,
+        2 * gamma(nodal_count)[:, None] * nodal_absolute,
+        2 * gamma(diagnostic_count)[:, None] * diagnostic_absolute,
+    )
+
+
 @wp.kernel(enable_backward=False)
 def coefficient_probe(velocity: wp.array[wp.vec3], matrices: wp.array[wp.mat33]):
     i = wp.tid()
@@ -109,6 +203,28 @@ def coefficient_probe(velocity: wp.array[wp.vec3], matrices: wp.array[wp.mat33])
 
 
 class SurfaceTangentTests(unittest.TestCase):
+    def test_one_contributing_sample_keeps_strict_force_parity(self):
+        data = fixture(single_active_sample=True)
+        expected = evaluate(data)
+        anchors = SurfaceTangentAnchors(64, device=DEVICE)
+        observed = evaluate(data, anchors)
+        count = int(anchors.count.numpy()[0])
+        self.assertGreater(count, 0)
+        self.assertEqual(set(anchors.sources.numpy()[:count, 0]), {0})
+        self.assertIsNone(atomic_roundoff_bounds(data))
+        self.assert_physical_equal(expected, observed)
+
+    def test_atomic_bound_is_scoped_and_preserves_exact_nonsummed_fields(self):
+        data = fixture(fixed=[1], unmapped=[3])
+        bounds = atomic_roundoff_bounds(data)
+        self.assertIsNotNone(bounds)
+        self.assertGreater(float(bounds[0].max()), 0.0)
+        np.testing.assert_array_equal(bounds[2][6], 0.0)
+        pose = data[1].body_q.numpy()
+        pose[0, 3:] = [0, 0, 1, 0]
+        data[1].body_q.assign(pose)
+        self.assertIsNone(atomic_roundoff_bounds(data))
+
     def test_recording_preserves_original_physical_kernel_statements(self):
         original = ast.parse(inspect.getsource(insertion._surface_forces.func)).body[0]
         recorded = ast.parse(inspect.getsource(surface_forces_with_tangent.func)).body[0]
@@ -133,23 +249,29 @@ class SurfaceTangentTests(unittest.TestCase):
         self.assertEqual(remove.count, 1)
         self.assertEqual(ast.dump(original, include_attributes=False), ast.dump(recorded, include_attributes=False))
 
-    def assert_physical_equal(self, first, second, *, diagnostic_ulps=0):
+    def assert_physical_equal(self, first, second, *, data=None):
+        bounds = atomic_roundoff_bounds(data) if data is not None and wp.get_device(DEVICE).is_cuda else None
         for index, (a, b) in enumerate(zip(first, second, strict=True)):
-            if index == 2 and diagnostic_ulps:
-                # Recording can reorder CUDA atomics in summed diagnostics.
-                # Physical body/nodal forces and contact flags stay bitwise.
-                # The overflow GPU fixture's repeated controls bound the
-                # observed summation difference to four float32 ULPs.
-                np.testing.assert_array_max_ulp(a, b, maxulp=diagnostic_ulps)
-            else:
+            if bounds is None or index == 3:
                 np.testing.assert_array_equal(a, b)
+            else:
+                self.assertTrue(np.isfinite(a).all() and np.isfinite(b).all())
+                difference = np.abs(a.astype(np.float64) - b.astype(np.float64))
+                self.assertTrue(
+                    np.all(difference <= bounds[index]),
+                    msg=f"Atomic output {index}: difference {difference} exceeds {bounds[index]}",
+                )
+                if index == 2:
+                    # Tip resultant/penetration is written by sample zero,
+                    # never atomically combined across samples.
+                    np.testing.assert_array_equal(a[6], b[6])
 
     def test_multifacet_original_force_torque_flags_and_sample_weights_preserved(self):
         data = fixture()
         expected = evaluate(data)
         anchors = SurfaceTangentAnchors(64, device=DEVICE)
         observed = evaluate(data, anchors)
-        self.assert_physical_equal(expected, observed)
+        self.assert_physical_equal(expected, observed, data=data)
         count = int(anchors.count.numpy()[0])
         self.assertGreaterEqual(count, 4)
         np.testing.assert_array_equal(anchors.flags.numpy(), 0)
@@ -182,7 +304,7 @@ class SurfaceTangentTests(unittest.TestCase):
         data = fixture(np.vstack((first, second)), np.vstack((tets, other + len(first))))
         expected = evaluate(data)
         anchors = SurfaceTangentAnchors(64, device=DEVICE)
-        self.assert_physical_equal(expected, evaluate(data, anchors))
+        self.assert_physical_equal(expected, evaluate(data, anchors), data=data)
         count = int(anchors.count.numpy()[0])
         scalars = anchors.scalars.numpy()[:count]
         sources = anchors.sources.numpy()[:count]
@@ -198,20 +320,14 @@ class SurfaceTangentTests(unittest.TestCase):
         full = SurfaceTangentAnchors(64, device=DEVICE)
         evaluate(data, full)
         for anchors in (SurfaceTangentAnchors(0, device=DEVICE), SurfaceTangentAnchors(1, device=DEVICE)):
-            self.assert_physical_equal(
-                expected, evaluate(data, anchors), diagnostic_ulps=4 if wp.get_device(DEVICE).is_cuda else 0
-            )
+            self.assert_physical_equal(expected, evaluate(data, anchors), data=data)
             self.assertEqual(int(anchors.flags.numpy()[0]), 1)
             self.assertEqual(int(anchors.count.numpy()[0]), int(full.count.numpy()[0]))
         disabled = SurfaceTangentAnchors(0, device=DEVICE, enabled=False)
-        self.assert_physical_equal(
-            expected, evaluate(data, disabled), diagnostic_ulps=4 if wp.get_device(DEVICE).is_cuda else 0
-        )
+        self.assert_physical_equal(expected, evaluate(data, disabled), data=data)
         np.testing.assert_array_equal(disabled.flags.numpy(), 0)
         limited = evaluate(data, implicit=False)
-        self.assert_physical_equal(
-            limited, evaluate(data, full, implicit=False), diagnostic_ulps=4 if wp.get_device(DEVICE).is_cuda else 0
-        )
+        self.assert_physical_equal(limited, evaluate(data, full, implicit=False), data=data)
         self.assertEqual(int(full.flags.numpy()[1]), 1)
 
     def test_balanced_transpose_and_positive_operator_include_fixed_and_unmapped_supports(self):
@@ -219,7 +335,7 @@ class SurfaceTangentTests(unittest.TestCase):
         expected = evaluate(data)
         anchors = SurfaceTangentAnchors(64, device=DEVICE)
         observed = evaluate(data, anchors)
-        self.assert_physical_equal(expected, observed)
+        self.assert_physical_equal(expected, observed, data=data)
         np.testing.assert_allclose(observed[2][0] + observed[2][2] + observed[2][4], 0, atol=1e-9)
         np.testing.assert_allclose(observed[2][1] + observed[2][3], 0, atol=1e-11)
         count = int(anchors.count.numpy()[0])

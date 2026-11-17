@@ -1,0 +1,311 @@
+{
+  "schema_version": 1,
+  "title": "Default needle-suture inversion before candidate-volume guard and four-substep default",
+  "status": "reproduced_failure_before_fix",
+  "audit_created_utc": "2026-11-12T06:27:51.213102+00:00",
+  "source": {
+    "git_commit": "79fb7e3c642d4aefc1ae11b68994c2bd99d12e0f",
+    "package": "newton-solver-suturebot",
+    "working_tree_note": "Preexisting user edits in docs/needle-insertion.md were not part of the runtime; no solver, material, trajectory, or asset changes were applied for this reproduction.",
+    "material_changes_in_this_reproduction": false,
+    "runtime_versions": {
+      "newton": "1.8.0",
+      "warp": "1.17.0"
+    },
+    "device": "cuda:0",
+    "device_name_from_log": "NVIDIA GB10",
+    "architecture_from_log": "aarch64 / sm_121",
+    "cuda_toolkit_from_log": "13.0",
+    "cuda_driver_from_log": "13.0"
+  },
+  "execution": {
+    "exact_shell_command": ".venv/bin/python -u /tmp/reproduce_suture_inversion.py > /tmp/suture_inversion_default.log 2>&1",
+    "working_directory": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot",
+    "custom_environment": null,
+    "tool_timeout_ms": 600000,
+    "exit_code": 1,
+    "exit_reason": "AssertionError from test_final after the example stopped with a reported inverted element.",
+    "harness_sets_device": "cuda:0",
+    "harness_uses_viewer": "ViewerNull (overrides the unused parsed viewer=gl setting)",
+    "harness_frame_limit": 3600,
+    "parsed_arguments": {
+      "device": null,
+      "viewer": "gl",
+      "rerun_address": null,
+      "output_path": "output.usd",
+      "num_frames": 100,
+      "render_fps": null,
+      "headless": false,
+      "test": false,
+      "quiet": false,
+      "paused": false,
+      "benchmark": false,
+      "warp_config": [],
+      "realtime": false,
+      "asset": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/src/newton_solver_suturebot/examples/assets/phantom_pad/phantom_regions.usd",
+      "regions": [
+        1
+      ],
+      "substeps": 1,
+      "solver_iterations": 160,
+      "young_modulus": 25000.0,
+      "poisson_ratio": 0.35,
+      "density": 1000.0,
+      "material_damping": 0.01,
+      "linear_damping": 1.0,
+      "grip_stiffness": 20.0,
+      "grip_damping": 0.03,
+      "grip_radius": 0.002,
+      "grip_speed": 0.015,
+      "needle_solver": "partitioned",
+      "needle_asset": null,
+      "entry_xy": null,
+      "exit_xy": null,
+      "start": false,
+      "insertion_speed": 0.004,
+      "exit_tolerance": 0.001,
+      "puncture_force": 0.003,
+      "contact_stiffness": 20.0,
+      "contact_sample_stiffness": null,
+      "shaft_friction": 0.2,
+      "shaft_stiffness": 60000.0,
+      "track_spacing": 0.00025,
+      "tunnel_model": "alm",
+      "tunnel_clearance": 2e-05,
+      "tunnel_compliance": 3.3333333333333333e-06,
+      "tunnel_penalty": null,
+      "tunnel_tolerance": 2e-06,
+      "shaft_spacing": 0.00014,
+      "drive_stiffness": 400.0,
+      "angular_stiffness": 0.05,
+      "coupling_absolute_tolerance": 2e-06,
+      "coupling_relative_tolerance": 0.001,
+      "fem_tolerance": 0.003,
+      "fem_chebyshev_degree": 4,
+      "capture_coupling": true,
+      "transparent_pad": false,
+      "report": null,
+      "stitches": 3,
+      "first_entry_xy": [
+        0.03,
+        -0.04
+      ],
+      "first_exit_xy": [
+        0.03,
+        -0.048
+      ],
+      "stitch_pitch": 0.006,
+      "eyelet_spacing": 0.0015,
+      "air_speed": 0.012,
+      "thread_length": 0.18,
+      "thread_elements": 90,
+      "thread_modulus": 2000000.0,
+      "updates": 2,
+      "row_length": 0.06,
+      "contact_margin": 0.005,
+      "least_volume": 0.5,
+      "autostart": true
+    },
+    "frame_dt_s": 0.016666666666666666,
+    "physics_dt_s": 0.016666666666666666,
+    "harness_source": "import json\nimport sys\nimport time\nfrom pathlib import Path\n\nimport newton_solver_suturebot\nimport numpy as np\nimport warp as wp\nfrom newton.viewer import ViewerNull\nfrom newton_solver_suturebot.examples.example_fem_needle_suture import Example\n\nwp.set_device('cuda:0')\nargs = Example.create_parser().parse_args(sys.argv[1:])\nviewer = ViewerNull()\nstart = time.monotonic()\nexample = Example(viewer, args)\nprint('SOURCE', newton_solver_suturebot.__file__, flush=True)\nprint('ARGS', vars(args), flush=True)\nreport = {}\ntry:\n    for frame in range(3600):\n        example.step()\n        minimum_j = float(example._integrity_result.numpy()[2])\n        if frame % 60 == 0 or not example.running or minimum_j < 0.2:\n            report = dict(frame=frame + 1, elapsed=example.elapsed, phase=example.phase,\n                          stitch=example.stitch_index + 1, minimum_j=minimum_j,\n                          outcome=example.outcome, accepted=example.accepted_physics_steps,\n                          refinements=example.step_refinements, wall_s=time.monotonic()-start)\n            print(json.dumps(report), flush=True)\n        if not example.running:\n            break\n    Path('/tmp/suture_inversion_result.json').write_text(json.dumps(report, indent=2))\n    np.savez('/tmp/suture_inversion_state.npz', particle_q=example.state_0.particle_q.numpy(),\n             particle_qd=example.state_0.particle_qd.numpy(), thread_q=example.thread.q.numpy(),\n             external_forces=example._external_forces.numpy())\n    example.test_final()\nfinally:\n    viewer.close()\n",
+    "portable_reproduction_note": "At the recorded pre-fix commit, save harness_source as a local .py file, run .venv/bin/python -u <that-file>, and retain its report/NPZ before another run overwrites the fixed /tmp outputs. This is historical failure reproduction, not a command that verifies the patched implementation."
+  },
+  "observed_failure": {
+    "frame": 1372,
+    "elapsed": 22.86666666666665,
+    "phase": "stitch",
+    "stitch": 2,
+    "minimum_j": -0.003478573759300689,
+    "outcome": "Failed: Regional FEM inverted an element: minimum J=-0.00347857",
+    "accepted": 1372,
+    "refinements": 0,
+    "wall_s": 25.86813463999715
+  },
+  "preceding_logged_step": {
+    "frame": 1371,
+    "elapsed": 22.849999999999984,
+    "phase": "stitch",
+    "stitch": 2,
+    "minimum_j": 0.013590081971032491,
+    "outcome": "Stitch 2 of 3: outside",
+    "accepted": 1371,
+    "refinements": 0,
+    "wall_s": 25.860357458004728
+  },
+  "mesh": {
+    "asset_relative_path": "src/newton_solver_suturebot/examples/assets/phantom_pad/phantom_regions.usd",
+    "asset_root_file_sha256": "45218965fe8b3eef6d0492f79317a5a42c154b29b2b96bf7e937fc197d415324",
+    "display_region_id": 1,
+    "source_region_id": 6,
+    "active_vertices": 7205,
+    "active_tetrahedra": 29160,
+    "full_pad_tetrahedra_from_log": 413405,
+    "fixed_active_vertices_from_log": 1841,
+    "mean_of_three_tet_edges_from_corner_zero_m": 0.0013122813740118343,
+    "rest_vertices_float64_C_bytes_sha256": "9906219a8645d93db4fdb652489197f90620d763b80672698506decb4d7aeafd",
+    "tet_indices_int32_C_bytes_sha256": "584046083bb2e90d65064a68cc96239037679292eee66e29c574b139edfc7440"
+  },
+  "independent_cpu_geometry_audit": {
+    "inputs": "Original source-region-6 asset geometry and preserved post-failure particle_q/particle_qd; no simulation or pose overwrite.",
+    "minimum_raw_volume_ratio": -0.0034785737593006636,
+    "tetrahedra_with_nonpositive_J": 1,
+    "tetrahedra_below_barrier_J_02": 2,
+    "failed_tet_local_index": 6910,
+    "failed_tet_global_index": 100399,
+    "failed_local_vertex_indices": [
+      1449,
+      648,
+      661,
+      4331
+    ],
+    "failed_global_vertex_indices": [
+      19492,
+      11547,
+      11620,
+      61284
+    ],
+    "rest_centroid_m": [
+      0.030079443525811517,
+      -0.040733465910338745,
+      0.001825001165536505
+    ],
+    "failed_centroid_m": [
+      0.029978502541780472,
+      -0.04237438924610615,
+      0.0019314400269649923
+    ],
+    "rest_volume_m3": 8.498887474269603e-11,
+    "previous_positions_reconstruction": "x_previous = x_saved - float32(1/60) * v_saved, because update_state uses backward-Euler x_new=x_old+dt*v_new. Reconstructed positions are approximate by the rounding of the original float32 position update; no previous velocity or exact previous external force is available.",
+    "reconstructed_previous_minimum_J": 0.013589788925535537,
+    "previous_log_minimum_J": 0.013590081971032491,
+    "previous_J_absolute_difference": 2.9304549695359505e-07,
+    "along_step_volume_parameterization": "J(s)=det([e1+s*de1,e2+s*de2,e3+s*de3])/det(D_rest), with s=0 the reconstructed preceding tetrahedron and s=1 the saved failed candidate. Coefficients are ascending powers [constant,linear,quadratic,cubic]. Roots describe scaling this already computed displacement; they do not predict a fresh solve at a different dt.",
+    "approx_start_J": 0.013589788925535537,
+    "linear_delta_J": 0.006916467009618454,
+    "linear_predicted_J": 0.02050625593515399,
+    "actual_end_J": -0.0034785737593006636,
+    "det_polynomial_coefficients_ascending": [
+      0.013589788925535532,
+      0.006916467009618709,
+      -0.027419933936452093,
+      0.0034351042419971923
+    ],
+    "real_positive_det_zero_step_fractions": [
+      0.9031816793207554,
+      7.651553436098533
+    ],
+    "failed_node_step_lengths_m": [
+      0.0006371194659071433,
+      0.00044839823137427214,
+      0.0004588418948741062,
+      0.0003676096156128197
+    ],
+    "old_F_principal_stretches": [
+      1.228492462803836,
+      0.6957081409343199,
+      0.015900585987341974
+    ],
+    "end_F_principal_stretches": [
+      1.1153387770369827,
+      1.0082706997320967,
+      0.0030932660007980985
+    ],
+    "per_vertex_final_speed_m_per_s": [
+      0.03822716596072653,
+      0.026903892479308838,
+      0.027530512256618102,
+      0.02205657578642912
+    ],
+    "all_particle_speed_max_m_per_s": 0.040383318547795886
+  },
+  "constitutive_and_coupling_context": {
+    "young_modulus_Pa": 25000.0,
+    "poisson_ratio": 0.35,
+    "lambda_Pa": 21604.938271604937,
+    "mu_Pa": 9259.25925925926,
+    "barrier_threshold_J": 0.2,
+    "constitutive_J_floor": 0.01,
+    "before_barrier_evaluation": {
+      "J_used": 0.013589788925535537,
+      "barrier_stress_Pa": 461749.3534197527,
+      "barrier_force_N": [
+        [
+          -0.005286178402111734,
+          -0.015667806725324928,
+          0.019674194876190706
+        ],
+        [
+          0.008362464667989428,
+          0.029222619646394492,
+          -0.03480649373590053
+        ],
+        [
+          -0.0019119684686913312,
+          -0.007455950430547329,
+          0.009534231156126638
+        ],
+        [
+          -0.001164317797186362,
+          -0.006098862490522235,
+          0.005598067703583185
+        ]
+      ],
+      "barrier_tangent_coefficient_ratio_to_lambda": 3187.5121789974264
+    },
+    "barrier_scope": "Barrier-only contribution of this tetrahedron, computed from reconstructed preceding positions; excludes neighboring-element forces, damping, inertia and needle/interface loads. The pre-step J remains above the .01 numerical floor.",
+    "thread_contact_and_eyelet_stiffness_N_per_m": 32.80703435029586,
+    "assumed_tissue_node_lower_bound_N_per_m": 8.201758587573964,
+    "thread_force_relaxation_fraction": 0.2,
+    "relaxation_interpretation": "For a fixed fresh load, the force difference is multiplied by .8 each accepted thread step. This scalar lag calculation is not a stability proof for the deformed coupled tissue.",
+    "effective_fixed_load_exponential_lag_s_at_one_substep": 0.07469033529540918,
+    "effective_fixed_load_exponential_lag_s_at_four_substeps": 0.018672583823852295,
+    "saved_external_force_scope": "external_forces is computed after the failing FEM step by the thread solver and would be applied at the next step; it cannot establish the exact initiating load or prove force imbalance in the failing step.",
+    "saved_next_lagged_force_max_nodal_norm_N": 0.010856048710859151,
+    "saved_next_lagged_force_sum_nodal_norms_N": 0.1060581420687693,
+    "saved_next_lagged_force_norms_on_failed_tet_vertices_N": [
+      0.001490485586805578,
+      0.010676473500782243,
+      7.446031620054343e-05,
+      0.001981109900241041
+    ]
+  },
+  "conclusions": [
+    "The raw candidate geometry inverted despite an increasing, positive first-order prediction of its volume. The quadratic determinant term dominates the linear prediction for this actual accepted displacement.",
+    "An increasing local linearized volume, a stiff compression barrier, and convergence of the needle-force interface do not certify positive volume after a finite linearly implicit FEM step.",
+    "The narrow correction supported by this evidence is to test actual candidate tetrahedron volumes before committing, reject/refine invalid trial steps, and use the separately validated smaller default substeps for this lagged thread/tissue example.",
+    "This audit does not isolate the sole cause of the large deformation or establish a universal stable timestep. It does not justify changing material stiffness, disabling thread reactions, clamping accepted positions, or claiming the linear constitutive model itself is inversion-free."
+  ],
+  "artifacts": [
+    {
+      "path": "/tmp/suture_inversion_default.log",
+      "sha256": "cd1a9da3c331dac53baa80ed21b9813a66749bb217a9bc0e86e881bf50ecf0f6",
+      "bytes": 17940
+    },
+    {
+      "path": "/tmp/suture_inversion_default.json",
+      "sha256": "96de33a134cfe3ff6ad0986b9db763f8bf5f64dfd1a1d1386d448eb6dd917a37",
+      "bytes": 276
+    },
+    {
+      "path": "/tmp/suture_inversion_default_state.npz",
+      "sha256": "bffd73359594570bee54164043f4ae329190f7b6759b42c30824caac4b843093",
+      "bytes": 264786
+    },
+    {
+      "path": "/tmp/reproduce_suture_inversion.py",
+      "sha256": "ee56cd0801de5b71aed7e1530ba1646094a56dcde97853984b2fbe44f33694cc",
+      "bytes": 1560
+    },
+    {
+      "path": "/tmp/inspect_suture_inversion.py",
+      "sha256": "4c2cf847abdc814f1555c460986594560e13a6c746bd33085cfc976b6de8d819",
+      "bytes": 5110
+    }
+  ],
+  "cpu_audit_reproduction": {
+    "command": "CUDA_VISIBLE_DEVICES='' OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python /tmp/inspect_suture_inversion.py",
+    "analysis_script_sha256": "4c2cf847abdc814f1555c460986594560e13a6c746bd33085cfc976b6de8d819",
+    "uses_gpu": false
+  }
+}

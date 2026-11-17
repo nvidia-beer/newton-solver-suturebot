@@ -17,14 +17,12 @@ from test_needle_tissue_coupler import _native_state
 from test_surface_anderson_coupling import _contact, _snapshot
 from test_surface_contact_preconditioner import enable
 
-from newton_solver_suturebot._src import surface_preconditioner
-from newton_solver_suturebot._src.coupling import (
-    NeedleCouplingNotConverged,
-    NeedleTissueCoupler,
-)
-from newton_solver_suturebot._src.host_trial_forces import CapturedHostTrialForces
-from newton_solver_suturebot._src.insertion import NeedleStepTooLarge
-from newton_solver_suturebot._src.needle_trial_forces import _NeedleTrialForces
+from newton_solver_suturebot._src.solvers.coupled.acceleration import surface_preconditioner
+from newton_solver_suturebot._src.solvers.coupled.coupling import NeedleCouplingNotConverged, NeedleTissueCoupler
+from newton_solver_suturebot._src.solvers.coupled.host_trial_forces import CapturedHostTrialForces
+from newton_solver_suturebot._src.solvers.coupled.interface.insertion import NeedleStepTooLarge
+from newton_solver_suturebot._src.solvers.coupled.interface.needle_trial_forces import _NeedleTrialForces
+from newton_solver_suturebot._src.utils.capture import census
 
 
 def seed_contact(example, coupler):
@@ -133,6 +131,21 @@ def articulated_contact():
 
 
 class SurfaceCapturePreparationTests(unittest.TestCase):
+    def test_force_packet_layout_distinguishes_free_needle_and_certified_grasp(self):
+        # Packet ownership is configured by the real example, independently of
+        # whether a step later succeeds, exhausts its budget, or rolls back.
+        with contact() as (_ex, c, _native, _pc):
+            graph = CapturedHostTrialForces(c)
+            self.assertIsNone(graph.certificate)
+            self.assertEqual(graph.result.shape, (10,))
+        with articulated_contact() as (scene, c):
+            graph = CapturedHostTrialForces(c)
+            # GraspScene enables this forward certificate on CUDA only.
+            expected_certificate = scene.model.device.is_cuda
+            self.assertEqual(graph.certificate is not None, expected_certificate)
+            self.assertIs(graph.certificate, scene.solver._certified_linear)
+            self.assertEqual(graph.result.shape, (10 + int(expected_certificate),))
+
     def test_articulated_initial_seed_closes_alm_without_advancing_physics(self):
         with articulated_contact() as (scene, c):
             before = _snapshot(scene.state_0)
@@ -179,6 +192,15 @@ class SurfaceCapturePreparationTests(unittest.TestCase):
             self.assertNotEqual(graph.signature, original)
             self.assertIs(graph.permissions._surface_recorder_owners[8], pc.anchors.matrices)
 
+    def test_start_up_entry_declines_where_the_solve_is_not_captured(self):
+        with contact() as (ex, c, _native, pc):
+            if pc._conditional:
+                self.skipTest("This device captures the solve")
+            c._residual.zero_()
+            self.assertFalse(pc.capture_host_graph(c._candidate, ex.sim_dt, c._residual, c._direction))
+            self.assertEqual((pc.graph_captures, pc.graph_launches, pc.applications), (0, 0, 0))
+            self.assertIsNone(pc._graph_key)
+
 
 class SurfaceCaptureCudaTests(unittest.TestCase):
     def setUp(self):
@@ -186,13 +208,15 @@ class SurfaceCaptureCudaTests(unittest.TestCase):
         if not device.is_cuda or not wp.is_conditional_graph_supported():
             self.skipTest("Requires conditional CUDA capture")
 
-    def assert_graphs_ran(self, c, pc, *, pc_graph=True):
+    def assert_graphs_ran(self, c, pc, *, expected_certificate, pc_graph=True):
         graph = c._host_trial_forces
         self.assertIsNotNone(graph)
         self.assertGreater(graph.launches, 0)
         self.assertGreater(graph.captures, 0)
         self.assertEqual(graph.fallbacks, 0)
-        self.assertEqual(graph.result.size, 10)
+        # Only the articulated fixture configures certified compact FEM.
+        self.assertEqual(graph.certificate is not None, expected_certificate)
+        self.assertEqual(graph.result.size, 10 + int(expected_certificate))
         self.assertGreater(pc.applications, 0)
         if pc_graph:
             self.assertGreater(pc.graph_captures, 0)
@@ -237,7 +261,7 @@ class SurfaceCaptureCudaTests(unittest.TestCase):
                     ),
                 )
                 if capture:
-                    self.assert_graphs_ran(c, pc)
+                    self.assert_graphs_ran(c, pc, expected_certificate=False)
                     self.assertGreater(c.fem_graph_launches, 0)
                 endpoints.append(_snapshot(ex.state_1))
         for name in (
@@ -380,7 +404,7 @@ class SurfaceCaptureCudaTests(unittest.TestCase):
                         self.assertRaises(NeedleStepTooLarge),
                     ):
                         c.step(ex.state_0, ex.state_1, ex.control, ex.sim_dt)
-                self.assert_graphs_ran(c, pc, pc_graph=failure != "budget")
+                self.assert_graphs_ran(c, pc, expected_certificate=False, pc_graph=failure != "budget")
                 self.assert_rollback(ex, c, native, before)
 
     def test_pc_graph_rebinding_preserves_old_output_and_reads_new_residual(self):
@@ -405,6 +429,82 @@ class SurfaceCaptureCudaTests(unittest.TestCase):
             np.testing.assert_array_equal(old_output.numpy(), np.full(old_output.size, 123.0))
             np.testing.assert_array_equal(output.numpy(), 2.0 * expected)
 
+    def test_start_up_entry_captures_the_solve_and_applications_then_only_launch(self):
+        # The entry issues the solve twice with a zero residual and a recording marked not
+        # valid: as written for the key of its arrays, then captured and launched. It counts
+        # the capture and gives back the launch. An application of a trial loop with the same
+        # arrays then launches that graph, with the correction of the application as written.
+        with contact(capture=True) as (ex, c, _native, pc):
+            dt = ex.sim_dt
+            graph = prepare_forces(ex, c, pc)
+            graph.evaluate(dt, False)
+            residual = c._residual.numpy().copy()
+            pc.active = True
+            # The reference: the same application as written, into another output array.
+            expected = wp.empty_like(c._direction)
+            self.assertTrue(pc.apply(c._candidate, dt, c._residual, expected))
+            self.assertEqual((pc.graph_captures, pc.graph_launches, pc.applications), (0, 0, 1))
+            self.assertGreater(np.abs(expected.numpy()).max(), 0.0)
+            pc._graph = pc._graph_key = None
+            pc._last_dt = None
+            c._residual.zero_()
+            self.assertTrue(pc.capture_host_graph(c._candidate, dt, c._residual, c._direction))
+            self.assertEqual(
+                (pc.graph_captures, pc.graph_launches, pc.native_mass_fallbacks, pc.applications), (1, 0, 0, 1)
+            )
+            self.assertIsNotNone(pc._graph.graph_exec)
+            self.assertFalse(pc._native_mass_ready)
+            self.assertIsNone(pc._last_dt)
+            self.assertEqual(int(pc.valid.numpy()[0]), 0)
+            # A zero residual has a zero correction.
+            np.testing.assert_array_equal(c._direction.numpy(), 0.0)
+            kept, captures = pc._graph, (census.captures, census.solver_captures)
+            # The key has its graph: a second call captures nothing and counts nothing.
+            self.assertTrue(pc.capture_host_graph(c._candidate, dt, c._residual, c._direction))
+            self.assertEqual((pc.graph_captures, pc.graph_launches, pc.applications), (1, 0, 1))
+            # A trial: its evaluation validates the recording, its residual is the trial's.
+            pc.validate()
+            c._residual.assign(residual)
+            self.assertTrue(pc.apply(c._candidate, dt, c._residual, c._direction))
+            self.assertEqual((pc.graph_captures, pc.graph_launches, pc.applications), (1, 1, 2))
+            self.assertIs(pc._graph, kept)
+            self.assertEqual((census.captures, census.solver_captures), captures)
+            scale = np.abs(expected.numpy()).max()
+            np.testing.assert_allclose(c._direction.numpy(), expected.numpy(), rtol=1e-5, atol=1e-6 * scale)
+
+    def test_pc_graph_replays_at_every_time_step_without_recapture(self):
+        # The surface contact metric h Jᵀ D J reads the time step h from the coupler's step
+        # time, so the solve graph, whose key is storage only, replays at a halved step and at
+        # a frame remainder. The reference is the same application into another output array:
+        # that is another key, which is issued as written. The graph of the first output is
+        # put back after it.
+        with contact(capture=True) as (ex, c, _native, pc):
+            graph = prepare_forces(ex, c, pc)
+            graph.evaluate(ex.sim_dt, False)
+            pc.active = True
+            base, expected, corrections = ex.sim_dt, wp.empty_like(c._direction), {}
+            for index, dt in enumerate((base, base, base, base / 2, 0.37 * base, base, base / 2)):
+                self.assertTrue(pc.apply(c._candidate, dt, c._residual, c._direction))
+                actual = c._direction.numpy().copy()
+                counters = (pc.graph_captures, pc.graph_launches)
+                # The first application is issued as written, the second is captured.
+                self.assertEqual(counters, (min(index, 1), index))
+                np.testing.assert_array_equal(pc.time_step.numpy(), [np.float32(dt)])
+                self.assertIs(pc.step_time, c.step_time)
+                kept = (pc._graph, pc._graph_key, pc._graph_inputs)
+                self.assertTrue(pc.apply(c._candidate, dt, c._residual, expected))
+                self.assertEqual((pc.graph_captures, pc.graph_launches), counters)
+                pc._graph, pc._graph_key, pc._graph_inputs = kept
+                np.testing.assert_array_equal(actual, expected.numpy(), err_msg=f"application {index}")
+                corrections.setdefault(dt, actual)
+            # The correction depends on the time step (by 0.2 % of its size between h and h / 2
+            # here), so a graph that kept the time step of its capture would differ from the
+            # application issued as written, which is compared bit for bit above.
+            for dt in (base / 2, 0.37 * base):
+                self.assertGreater(
+                    np.abs(corrections[dt] - corrections[base]).max(), 1e-3 * np.abs(corrections[base]).max()
+                )
+
     def test_articulated_graph_uses_one_metric_per_transaction(self):
         with articulated_contact() as (scene, c):
             seed_contact(scene, c)
@@ -416,7 +516,7 @@ class SurfaceCaptureCudaTests(unittest.TestCase):
             ) as metric:
                 c.step(scene.state_0, scene.state_1, scene.control, scene.sim_dt)
                 self.assertEqual(metric.call_count, 1)
-            self.assert_graphs_ran(c, pc)
+            self.assert_graphs_ran(c, pc, expected_certificate=True)
             self.assertGreater(pc.applications, 1)
             self.assertEqual(scene.rigid_solver.rigid_substeps, 4)
             self.assertEqual(scene.rigid_solver.mj_model.neq, 0)

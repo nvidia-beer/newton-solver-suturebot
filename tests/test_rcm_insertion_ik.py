@@ -10,10 +10,10 @@ import numpy as np
 import warp as wp
 
 from newton_solver_suturebot import NeedleGeometry
-from newton_solver_suturebot._src.grasp import needle_to_gripper_pose
-from newton_solver_suturebot._src.pose_ik import NativePoseIK, UnreachablePoseError
-from newton_solver_suturebot._src.rcm_grasp import add_rcm_grasper
-from newton_solver_suturebot._src.subcycled_mujoco import SubcycledMuJoCo
+from newton_solver_suturebot._src.sim.ik.pose_ik import NativePoseIK, UnreachablePoseError
+from newton_solver_suturebot._src.solvers.mujoco.subcycled_mujoco import SubcycledMuJoCo
+from newton_solver_suturebot.examples.grasp._dvrk_grasper import needle_to_gripper_pose
+from newton_solver_suturebot.examples.grasp._dvrk_rcm_grasper import add_rcm_grasper
 
 
 class RCMInsertionIKTests(unittest.TestCase):

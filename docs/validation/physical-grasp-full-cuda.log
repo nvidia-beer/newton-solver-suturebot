@@ -1,0 +1,1286 @@
+test_default_stretch_clamp_has_finite_state_derivative_in_smooth_region (test_activation_gradients.TestActivationGradients.test_default_stretch_clamp_has_finite_state_derivative_in_smooth_region) ... ok
+test_matrix_refresh_and_state_alias_are_rejected_during_recording (test_activation_gradients.TestActivationGradients.test_matrix_refresh_and_state_alias_are_rejected_during_recording) ... ok
+test_matrix_revision_change_invalidates_recorded_backward (test_activation_gradients.TestActivationGradients.test_matrix_revision_change_invalidates_recorded_backward) ... ok
+test_network_weights_multistep_gradient_with_floor_contact (test_activation_gradients.TestActivationGradients.test_network_weights_multistep_gradient_with_floor_contact) ... ok
+test_recorded_snapshots_survive_unrelated_forward_rollout (test_activation_gradients.TestActivationGradients.test_recorded_snapshots_survive_unrelated_forward_rollout) ... ok
+test_tet_activation_direction_and_component_derivatives (test_activation_gradients.TestActivationGradients.test_tet_activation_direction_and_component_derivatives) ... ok
+test_tet_hex_clamp_derivatives_at_repeated_rest_and_active_limits (test_activation_gradients.TestActivationGradients.test_tet_hex_clamp_derivatives_at_repeated_rest_and_active_limits) ... ok
+test_apply_is_symmetric_positive_definite_and_polynomial_in_operator (test_chebyshev_preconditioner.ChebyshevTests.test_apply_is_symmetric_positive_definite_and_polynomial_in_operator) ... ok
+test_cg_with_chebyshev_meets_the_unchanged_stopping_rule_in_fewer_iterations (test_chebyshev_preconditioner.ChebyshevTests.test_cg_with_chebyshev_meets_the_unchanged_stopping_rule_in_fewer_iterations) ... ok
+test_fixed_rows_are_excluded_and_invariant (test_chebyshev_preconditioner.ChebyshevTests.test_fixed_rows_are_excluded_and_invariant) ... ok
+test_miss_and_repeated_hole_do_not_publish_another_edit (test_cut_cylinder.TestLinearFEMCylinderCut.test_miss_and_repeated_hole_do_not_publish_another_edit) ... Warp 1.17.0 initialized:
+   CUDA Toolkit 13.0, Driver 13.0
+   Devices:
+     "cpu"      : "aarch64"
+     "cuda:0"   : "NVIDIA GB10" (120 GiB, sm_121, mempool enabled)
+   Kernel cache:
+     /home/beer/.cache/warp/1.17.0
+Module newton._src.utils.mesh 92b663b load on device 'cpu' took 1.07 ms  (cached)
+Module newton._src.geometry.bvh 531c5cd load on device 'cuda:0' took 1.04 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.kernels 72bc723 load on device 'cuda:0' took 13.93 ms  (cached)
+Module _bsr_accumulate_triplet_values_5520c14c a398b74 load on device 'cuda:0' took 0.44 ms  (cached)
+Module warp.sparse 628f4a0 load on device 'cuda:0' took 8.46 ms  (cached)
+Module _bsr_assign_copy_blocks_78aeece8 205fdaf load on device 'cuda:0' took 0.60 ms  (cached)
+Module _bsr_transpose_values_657752e3 ce41d54 load on device 'cuda:0' took 0.34 ms  (cached)
+Module _create_tiled_dot_kernels__locals__block_dot_kernel_7cdd1072 6c375b5 load on device 'cuda:0' took 0.36 ms  (cached)
+Module _create_tiled_dot_kernels__locals__block_sum_kernel_85ad7d89 c0cec86 load on device 'cuda:0' took 0.36 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.differentiation 081d74f load on device 'cuda:0' took 0.84 ms  (cached)
+Module warp.optim.linear 7055af3 load on device 'cuda:0' took 1.68 ms  (cached)
+Module make_bsr_mv_kernel__locals__bsr_mv_kernel_4173b1de 618d9ec load on device 'cuda:0' took 0.30 ms  (cached)
+Module _create_update_condition_kernel__locals___update_condition_bba29a29 9aa1266 load on device 'cuda:0' took 0.32 ms  (cached)
+Module warp.optim.linear 296b21d load on device 'cuda:0' took 1.31 ms  (cached)
+Module warp.optim.linear a86933b load on device 'cuda:0' took 1.29 ms  (cached)
+Module test_solver 60c9547 load on device 'cuda:0' took 0.38 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.sparse_update 9bf97fa load on device 'cuda:0' took 0.40 ms  (cached)
+Module test_activation_gradients f79cb33 load on device 'cuda:0' took 0.47 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.chebyshev 3bcf583 load on device 'cuda:0' took 0.41 ms  (cached)
+[full pad cutting] 8 vertices, 6 tetrahedra; all material active
+Module newton._src.viewer.kernels 5c7ec33 load on device 'cuda:0' took 2.71 ms  (cached)
+Module newton_solver_suturebot.examples._cylinder_extent 303f9e2 load on device 'cuda:0' took 0.30 ms  (cached)
+Module newton_solver_suturebot._src.cutting.tunnel ac2cc42 load on device 'cuda:0' took 0.36 ms  (cached)
+Module newton_solver_suturebot._src.cutting.fragment_adjacency ed700de load on device 'cuda:0' took 0.91 ms  (cached)
+Module newton_solver_suturebot._src.cutting.adjacency 573123f load on device 'cuda:0' took 0.34 ms  (cached)
+Module newton_solver_suturebot._src.cutting.fragment_connectivity_gpu 5c5fac2 load on device 'cuda:0' took 0.55 ms  (cached)
+Module newton_solver_suturebot._src.cutting.tetrahedral_cut 3bbe141 load on device 'cuda:0' took 0.43 ms  (cached)
+Module newton_solver_suturebot._src.cutting.fragment_device b38c608 load on device 'cuda:0' took 4.60 ms  (cached)
+Module newton_solver_suturebot._src.cutting.fragment_merge 3a1ab92 load on device 'cuda:0' took 0.85 ms  (cached)
+Module newton_solver_suturebot._src.cutting.model 0426f78 load on device 'cuda:0' took 0.29 ms  (cached)
+Module newton_solver_suturebot._src.cutting.contact 8afa984 load on device 'cuda:0' took 0.49 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.solver bb5258a load on device 'cuda:0' took 0.28 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.streaming 1d387b9 load on device 'cuda:0' took 0.74 ms  (cached)
+Module newton_solver_suturebot.examples.example_fem_phantom_cut f62d53f load on device 'cuda:0' took 0.31 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.component_scaling 0dba00b load on device 'cuda:0' took 0.30 ms  (cached)
+Module newton_solver_suturebot._src.cutting.holds f0fe8b1 load on device 'cuda:0' took 0.72 ms  (cached)
+Module newton_solver_suturebot._src.cutting.volume_guard 6d32971 load on device 'cuda:0' took 0.44 ms  (cached)
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_one_consumed_click_produces_one_full_depth_request (test_cut_cylinder.TestLinearFEMCylinderCut.test_one_consumed_click_produces_one_full_depth_request) ... ok
+test_single_ray_opens_a_constant_diameter_through_hole (test_cut_cylinder.TestLinearFEMCylinderCut.test_single_ray_opens_a_constant_diameter_through_hole) ... Module newton_solver_suturebot._src.cutting.sphere bb95396 load on device 'cuda:0' took 2.96 ms  (cached)
+Module newton_solver_suturebot._src.cutting.sphere 9dcd248 load on device 'cuda:0' took 2.65 ms  (cached)
+[full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_accepted_cuts_reuse_physics_graph_and_buffers (test_cut_pipeline.TestCutPipeline.test_accepted_cuts_reuse_physics_graph_and_buffers) ... Module newton_solver_suturebot.examples._surface_pick 759f22b load on device 'cuda:0' took 0.48 ms  (cached)
+[full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_debug_view_rebuilds_and_renders_after_cut (test_cut_pipeline.TestCutPipeline.test_debug_view_rebuilds_and_renders_after_cut) ... [full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_failed_publication_restores_geometry_state_mass_and_surface (test_cut_pipeline.TestCutPipeline.test_failed_publication_restores_geometry_state_mass_and_surface) ... Module newton_solver_suturebot._src.cutting.debug 8ce941b load on device 'cuda:0' took 0.84 ms  (cached)
+[full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+[full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_finite_incisions_preserve_mass_state_and_reset (test_cut_pipeline.TestCutPipeline.test_finite_incisions_preserve_mass_state_and_reset) ... [full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_rejected_patch_keeps_live_state_and_topology (test_cut_pipeline.TestCutPipeline.test_rejected_patch_keeps_live_state_and_topology) ... [full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_separated_pieces_both_free_fall (test_cut_pipeline.TestCutPipeline.test_separated_pieces_both_free_fall) ... [full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_repeated_reset_matches_fresh_trajectory_after_surface_growth (test_cut_reset.TestLinearFEMCutReset.test_repeated_reset_matches_fresh_trajectory_after_surface_growth) ... [full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_capture_preserves_both_complete_state_buffers (test_cut_surface_growth.TestLinearFEMSurfaceGrowth.test_capture_preserves_both_complete_state_buffers) ... [full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_capture_uses_new_model_component_labels_before_geometry_publication (test_cut_surface_growth.TestLinearFEMSurfaceGrowth.test_capture_uses_new_model_component_labels_before_geometry_publication) ... [full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_cpu_warmup_restores_persistent_hold_and_guard_on_capture_failure (test_cut_surface_growth.TestLinearFEMSurfaceGrowth.test_cpu_warmup_restores_persistent_hold_and_guard_on_capture_failure) ... [full pad cutting] 8 vertices, 6 tetrahedra; all material active
+Module newton._src.geometry.bvh 6808164 load on device 'cpu' took 0.22 ms  (cached)
+Module newton._src.viewer.kernels c2b7e52 load on device 'cpu' took 0.20 ms  (cached)
+Module newton_solver_suturebot.examples._cylinder_extent 8ce5a05 load on device 'cpu' took 0.09 ms  (cached)
+Module newton_solver_suturebot._src.cutting.tunnel 930ebdb load on device 'cpu' took 0.08 ms  (cached)
+Module newton_solver_suturebot._src.cutting.fragment_adjacency 98e0719 load on device 'cpu' took 0.13 ms  (cached)
+Module newton_solver_suturebot._src.cutting.adjacency e5fa21c load on device 'cpu' took 0.09 ms  (cached)
+Module newton_solver_suturebot._src.cutting.fragment_connectivity_gpu 5c5fac2 load on device 'cpu' took 0.08 ms  (cached)
+Module newton_solver_suturebot._src.cutting.tetrahedral_cut 0e177ef load on device 'cpu' took 0.09 ms  (cached)
+Module newton_solver_suturebot._src.cutting.fragment_device b7ff23f load on device 'cpu' took 0.09 ms  (cached)
+Module newton_solver_suturebot._src.cutting.fragment_merge 4dd2913 load on device 'cpu' took 0.10 ms  (cached)
+Module newton_solver_suturebot._src.cutting.fragment_connectivity_gpu 5955872 load on device 'cpu' took 0.09 ms  (cached)
+Module newton_solver_suturebot._src.cutting.model 372b031 load on device 'cpu' took 0.08 ms  (cached)
+Module newton_solver_suturebot._src.cutting.contact 57ab997 load on device 'cpu' took 0.09 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.kernels ee6664c load on device 'cpu' took 0.16 ms  (cached)
+Module _bsr_accumulate_triplet_values_5520c14c 5f22d31 load on device 'cpu' took 0.08 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.solver 08f22c1 load on device 'cpu' took 0.07 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.streaming f30d235 load on device 'cpu' took 0.11 ms  (cached)
+Module newton_solver_suturebot.examples.example_fem_phantom_cut 90cbcc5 load on device 'cpu' took 0.08 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.component_scaling f568eb3 load on device 'cpu' took 0.07 ms  (cached)
+Module newton_solver_suturebot._src.cutting.holds 5364408 load on device 'cpu' took 0.09 ms  (cached)
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_cpu_warmup_restores_persistent_hold_and_guard_on_capture_success (test_cut_surface_growth.TestLinearFEMSurfaceGrowth.test_cpu_warmup_restores_persistent_hold_and_guard_on_capture_success) ... Module batch_dot_kernel_c57525b8 1a6b87f load on device 'cpu' took 0.09 ms  (cached)
+Module warp.optim.linear 3bce838 load on device 'cpu' took 0.13 ms  (cached)
+Module make_bsr_mv_kernel__locals__bsr_mv_kernel_4173b1de d679c4c load on device 'cpu' took 0.07 ms  (cached)
+Module _create_update_condition_kernel__locals___update_condition_bba29a29 51c9998 load on device 'cpu' took 0.07 ms  (cached)
+Module newton_solver_suturebot._src.cutting.volume_guard f9b110c load on device 'cpu' took 0.09 ms  (cached)
+[full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_failed_capture_restores_guard_component_labels (test_cut_surface_growth.TestLinearFEMSurfaceGrowth.test_failed_capture_restores_guard_component_labels) ... [full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_failed_capture_restores_old_surface_graph_and_material (test_cut_surface_growth.TestLinearFEMSurfaceGrowth.test_failed_capture_restores_old_surface_graph_and_material) ... [full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_following_edit_within_reserve_reuses_surface_and_graph (test_cut_surface_growth.TestLinearFEMSurfaceGrowth.test_following_edit_within_reserve_reuses_surface_and_graph) ... [full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_plane_growth_preserves_state_mass_and_mechanical_storage (test_cut_surface_growth.TestLinearFEMSurfaceGrowth.test_plane_growth_preserves_state_mass_and_mechanical_storage) ... [full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_sphere_growth_removes_material_without_advancing_state (test_cut_surface_growth.TestLinearFEMSurfaceGrowth.test_sphere_growth_removes_material_without_advancing_state) ... [full pad cutting] 8 vertices, 6 tetrahedra; all material active
+[full pad cutting] Ready: left-drag to slice; right-drag to lift.
+ok
+test_bad_arguments_and_missing_display_fail_before_docker (test_docker.TestDocker.test_bad_arguments_and_missing_display_fail_before_docker) ... ok
+test_build_uses_project_name_and_quoted_context (test_docker.TestDocker.test_build_uses_project_name_and_quoted_context) ... ok
+test_cpu_headless_launch_is_self_contained (test_docker.TestDocker.test_cpu_headless_launch_is_self_contained) ... ok
+test_default_container_command_discovers_renamed_package (test_docker.TestDocker.test_default_container_command_discovers_renamed_package) ... ok
+test_listing_discovers_new_examples_without_loading_them (test_docker.TestDocker.test_listing_discovers_new_examples_without_loading_them) ... ok
+test_metadata_mismatch_prevents_command_execution (test_docker.TestDocker.test_metadata_mismatch_prevents_command_execution) ... ok
+test_nsys_explicit_override_mounts_host_profiler_and_preserves_arguments (test_docker.TestDocker.test_nsys_explicit_override_mounts_host_profiler_and_preserves_arguments) ... ok
+test_nsys_forwards_explicit_directives_including_empty_override (test_docker.TestDocker.test_nsys_forwards_explicit_directives_including_empty_override) ... ok
+test_nsys_metadata_commands_do_not_need_docker_or_profiler (test_docker.TestDocker.test_nsys_metadata_commands_do_not_need_docker_or_profiler) ... ok
+test_nsys_rejects_emulated_platform_and_wrong_architecture_override (test_docker.TestDocker.test_nsys_rejects_emulated_platform_and_wrong_architecture_override) ... ok
+test_nsys_uses_image_profiler_without_host_discovery (test_docker.TestDocker.test_nsys_uses_image_profiler_without_host_discovery) ... ok
+test_nsys_uses_last_viewer_and_ignores_example_arguments_for_docker (test_docker.TestDocker.test_nsys_uses_last_viewer_and_ignores_example_arguments_for_docker) ... ok
+test_nsys_validation_and_explicit_gl_fail_before_docker (test_docker.TestDocker.test_nsys_validation_and_explicit_gl_fail_before_docker) ... ok
+test_raw_command_preserves_arguments (test_docker.TestDocker.test_raw_command_preserves_arguments) ... ok
+test_terminal_and_explicit_viewer_run_without_display (test_docker.TestDocker.test_terminal_and_explicit_viewer_run_without_display) ... ok
+test_all_recordings_import_versius_metals_without_recoloring_pad_or_black_shaft (test_dvrk_materials.DvrkMaterialTests.test_all_recordings_import_versius_metals_without_recoloring_pad_or_black_shaft) ... ok
+test_barrier_is_inactive_at_and_above_the_threshold (test_fem_compression_barrier.CompressionBarrierTests.test_barrier_is_inactive_at_and_above_the_threshold) ... ok
+test_hex_force_matches_formula_across_the_barrier (test_fem_compression_barrier.CompressionBarrierTests.test_hex_force_matches_formula_across_the_barrier) ... ok
+test_stretch_clamp_cannot_saturate_compression_resistance (test_fem_compression_barrier.CompressionBarrierTests.test_stretch_clamp_cannot_saturate_compression_resistance) ... ok
+test_tet_force_matches_formula_across_the_barrier (test_fem_compression_barrier.CompressionBarrierTests.test_tet_force_matches_formula_across_the_barrier) ... ok
+test_capture_rhs_actions_solve_and_reconstruction (test_fem_prepared_step.TestPreparedFEMStep.test_capture_rhs_actions_solve_and_reconstruction) ... ok
+test_changed_timestep_requires_refresh_and_invalidates_old_preparation (test_fem_prepared_step.TestPreparedFEMStep.test_changed_timestep_requires_refresh_and_invalidates_old_preparation) ... ok
+test_interrupted_preparation_fails_closed_without_mutating_input (test_fem_prepared_step.TestPreparedFEMStep.test_interrupted_preparation_fails_closed_without_mutating_input) ... ok
+test_mixed_elements_damping_clamps_external_load_and_fixed_support_parity (test_fem_prepared_step.TestPreparedFEMStep.test_mixed_elements_damping_clamps_external_load_and_fixed_support_parity) ... ok
+test_operator_diagonal_rhs_affinity_and_reconstruction_without_solve (test_fem_prepared_step.TestPreparedFEMStep.test_operator_diagonal_rhs_affinity_and_reconstruction_without_solve) ... ok
+test_preparation_owns_input_and_reuses_storage_without_force_reevaluation (test_fem_prepared_step.TestPreparedFEMStep.test_preparation_owns_input_and_reuses_storage_without_force_reevaluation) ... ok
+test_triangle_only_legacy_predictor_and_prepared_constant_load (test_fem_prepared_step.TestPreparedFEMStep.test_triangle_only_legacy_predictor_and_prepared_constant_load) ... ok
+test_unsupported_modes_and_invalid_alias_fail_before_state_change (test_fem_prepared_step.TestPreparedFEMStep.test_unsupported_modes_and_invalid_alias_fail_before_state_change) ... ok
+test_boundary_is_restored_even_after_external_state_changes (test_fixed_particles.TestFixedParticles.test_boundary_is_restored_even_after_external_state_changes) ... ok
+test_capture_uses_live_forces_and_exact_anchors (test_fixed_particles.TestFixedParticles.test_capture_uses_live_forces_and_exact_anchors) ... ok
+test_free_motion_matches_reduced_system_and_preserves_predictor (test_fixed_particles.TestFixedParticles.test_free_motion_matches_reduced_system_and_preserves_predictor) ... ok
+test_invalid_indices_and_unsupported_modes_rejected (test_fixed_particles.TestFixedParticles.test_invalid_indices_and_unsupported_modes_rejected) ... ok
+test_projected_operator_preserves_affine_alias_and_cpu_fallback (test_fixed_particles.TestFixedParticles.test_projected_operator_preserves_affine_alias_and_cpu_fallback) ... ok
+test_projected_operator_refreshes_values_topology_and_storage (test_fixed_particles.TestFixedParticles.test_projected_operator_refreshes_values_topology_and_storage) ... ok
+test_reassembly_uses_the_same_fixed_positions_as_force_evaluation (test_fixed_particles.TestFixedParticles.test_reassembly_uses_the_same_fixed_positions_as_force_evaluation) ... ok
+test_contact_grips_under_gravity_from_first_step_and_transports (test_grasp.ContactGraspTests.test_contact_grips_under_gravity_from_first_step_and_transports) ... ok
+test_invalid_commands_and_parameters_do_not_mutate_controls (test_grasp.ContactGraspTests.test_invalid_commands_and_parameters_do_not_mutate_controls) ... ok
+test_opening_releases_needle_and_gravity_continues_independently (test_grasp.ContactGraspTests.test_opening_releases_needle_and_gravity_continues_independently) ... ok
+test_sufficient_external_load_slips_instead_of_enforcing_grasp (test_grasp.ContactGraspTests.test_sufficient_external_load_slips_instead_of_enforcing_grasp) ... ok
+test_topology_capsules_and_reset_keep_needle_independent (test_grasp.ContactGraspTests.test_topology_capsules_and_reset_keep_needle_independent) ... ok
+test_adaptive_retry_advances_thread_only_for_accepted_intervals (test_grasp_scene.GraspSceneTests.test_adaptive_retry_advances_thread_only_for_accepted_intervals) ... Module newton._src.geometry.inertia f6b4bd8 load on device 'cpu' took 0.21 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.fixed_particles 483d0f3 load on device 'cuda:0' took 0.58 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.prepared_step 8c16833 load on device 'cuda:0' took 0.37 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.implicit_predictor 7099689 load on device 'cuda:0' took 0.33 ms  (cached)
+Module warp.optim.linear 4faaa00 load on device 'cuda:0' took 1.39 ms  (cached)
+Module warp.optim.linear f32ae91 load on device 'cuda:0' took 1.38 ms  (cached)
+Module warp.optim.linear 5a60bf5 load on device 'cuda:0' took 1.44 ms  (cached)
+Module newton._src.geometry.inertia 060c986 load on device 'cuda:0' took 0.80 ms  (cached)
+Module validate_and_correct_inertia_kernel_5f6549e0 5f6549e load on device 'cuda:0' took 0.41 ms  (cached)
+Module compute_body_inverses_kernel_ec4671e6 ec4671e load on device 'cuda:0' took 0.27 ms  (cached)
+Module newton._src.sim.articulation 1bf11b4 load on device 'cuda:0' took 4.22 ms  (cached)
+Module warp._src.coloring 811e0ea load on device 'cpu' took 0.18 ms  (cached)
+Module newton._src.solvers.mujoco.kernels e0002a9 load on device 'cuda:0' took 6.86 ms  (cached)
+Module newton_solver_suturebot.examples._needle_insertion_drive f498ecc load on device 'cuda:0' took 0.39 ms  (cached)
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_incremental_actions_do_not_reposition_independent_needle_or_thread (test_grasp_scene.GraspSceneTests.test_incremental_actions_do_not_reposition_independent_needle_or_thread) ... Module newton_solver_suturebot._src.geometry.mesh_refit b29de7c load on device 'cuda:0' took 0.79 ms  (cached)
+Module newton_solver_suturebot.grasp_scene b1d428f load on device 'cuda:0' took 0.30 ms  (cached)
+Module newton_solver_suturebot._src.solvers.thread.attachment 5b97915 load on device 'cuda:0' took 0.47 ms  (cached)
+Module newton_solver_suturebot._src.thread_rigid_contact 7ffd972 load on device 'cuda:0' took 0.68 ms  (cached)
+Module newton_solver_suturebot._src.worker_thread ea0df50 load on device 'cuda:0' took 0.28 ms  (cached)
+Module newton_solver_suturebot._src.coupling f483e14 load on device 'cuda:0' took 0.39 ms  (cached)
+Module newton_solver_suturebot._src.insertion e46a919 load on device 'cuda:0' took 0.89 ms  (cached)
+Module newton_solver_suturebot._src.geometry.needle_queries 855b4be load on device 'cuda:0' took 0.46 ms  (cached)
+Module newton_solver_suturebot._src.insertion 01b3775 load on device 'cuda:0' took 0.88 ms  (cached)
+Module newton_solver_suturebot._src.tet_step f43f969 load on device 'cuda:0' took 0.33 ms  (cached)
+Module newton_solver_suturebot._src.solvers.thread.tissue 83d61e2 load on device 'cuda:0' took 0.50 ms  (cached)
+Module newton_solver_suturebot._src.solvers.thread.kernels 1281d58 load on device 'cuda:0' took 2.89 ms  (cached)
+Module newton_solver_suturebot._src.solvers.thread.kernels 128e426 load on device 'cuda:0' took 2.79 ms  (cached)
+Module newton_solver_suturebot.examples.example_fem_needle_insertion 45a8941 load on device 'cuda:0' took 0.35 ms  (cached)
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_rejected_multi_body_trial_restores_native_and_output_without_advancing_thread (test_grasp_scene.GraspSceneTests.test_rejected_multi_body_trial_restores_native_and_output_without_advancing_thread) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_invalid_subcycles_and_timestep_fail_without_mutation (test_grasp_subcycling.GraspSubcyclingTests.test_invalid_subcycles_and_timestep_fail_without_mutation) ... ok
+test_matches_explicit_native_steps_and_preserves_output_particles (test_grasp_subcycling.GraspSubcyclingTests.test_matches_explicit_native_steps_and_preserves_output_particles) ... ok
+test_deformed_bounds_mean_closest_points_and_edge_signs (test_mesh_refit.RefitTests.test_deformed_bounds_mean_closest_points_and_edge_signs) ... ok
+test_full_force_law_matches_native_refit_after_deformation (test_mesh_refit.RefitTests.test_full_force_law_matches_native_refit_after_deformation) ... Module test_mesh_refit 748aa4b load on device 'cuda:0' took 0.44 ms  (cached)
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+Module newton._src.sim.articulation 224953d load on device 'cuda:0' took 4.17 ms  (cached)
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_masked_refit_matches_unmasked_bitwise (test_mesh_refit.RefitTests.test_masked_refit_matches_unmasked_bitwise) ... ok
+test_one_and_two_leaf_trees_update_bounds_and_mean (test_mesh_refit.RefitTests.test_one_and_two_leaf_trees_update_bounds_and_mean) ... ok
+test_unsupported_version_and_replaced_storage_are_rejected (test_mesh_refit.RefitTests.test_unsupported_version_and_replaced_storage_are_rejected) ... ok
+test_winding_mesh_rejected_without_mutation (test_mesh_refit.RefitTests.test_winding_mesh_rejected_without_mutation) ... ok
+test_activation_selects_physics_but_visibility_does_not (test_mesh_regions.MeshRegionTests.test_activation_selects_physics_but_visibility_does_not) ... ok
+test_bundled_phantom_has_complete_volume_and_smaller_selected_payload (test_mesh_regions.MeshRegionTests.test_bundled_phantom_has_complete_volume_and_smaller_selected_payload) ... ok
+test_catalog_and_subset_do_not_load_unselected_payload (test_mesh_regions.MeshRegionTests.test_catalog_and_subset_do_not_load_unselected_payload) ... ok
+test_conflicting_shared_coordinates_are_rejected (test_mesh_regions.MeshRegionTests.test_conflicting_shared_coordinates_are_rejected) ... ok
+test_dataset_labels_preserve_original_payloads_except_allowed_wound_five_split (test_mesh_regions.MeshRegionTests.test_dataset_labels_preserve_original_payloads_except_allowed_wound_five_split) ... ok
+test_empty_and_unknown_selection (test_mesh_regions.MeshRegionTests.test_empty_and_unknown_selection) ... ok
+test_overlap_and_corrupt_boundary_are_rejected (test_mesh_regions.MeshRegionTests.test_overlap_and_corrupt_boundary_are_rejected) ... ok
+test_subset_welding_and_cut_constraints (test_mesh_regions.MeshRegionTests.test_subset_welding_and_cut_constraints) ... ok
+test_vertex_and_edge_pinches_are_rejected_even_with_valid_tetrahedra (test_mesh_regions.MeshRegionTests.test_vertex_and_edge_pinches_are_rejected_even_with_valid_tetrahedra) ... ok
+test_applied_fem_zero_rhs_and_nonfinite_metrics_have_no_hidden_accuracy_floor (test_mujoco_fem_control.TestMuJoCoFEMControl.test_applied_fem_zero_rhs_and_nonfinite_metrics_have_no_hidden_accuracy_floor) ... ok
+test_captured_acceptance_replays_live_statistics_and_certifies_only_success (test_mujoco_fem_control.TestMuJoCoFEMControl.test_captured_acceptance_replays_live_statistics_and_certifies_only_success) ... ok
+test_certificate_continuation_requires_two_remaining_evaluations_and_valid_geometry (test_mujoco_fem_control.TestMuJoCoFEMControl.test_certificate_continuation_requires_two_remaining_evaluations_and_valid_geometry) ... ok
+test_certification_rechecks_original_force_normal_dual_and_fallback_gates (test_mujoco_fem_control.TestMuJoCoFEMControl.test_certification_rechecks_original_force_normal_dual_and_fallback_gates) ... ok
+test_correction_counter_counts_runtime_calls_and_resets_explicitly (test_mujoco_fem_control.TestMuJoCoFEMControl.test_correction_counter_counts_runtime_calls_and_resets_explicitly) ... ok
+test_each_physical_threshold_is_required_independently_of_raw_merit (test_mujoco_fem_control.TestMuJoCoFEMControl.test_each_physical_threshold_is_required_independently_of_raw_merit) ... ok
+test_failed_finite_certificate_resumes_without_resetting_shared_budget (test_mujoco_fem_control.TestMuJoCoFEMControl.test_failed_finite_certificate_resumes_without_resetting_shared_budget) ... ok
+test_failure_flag_prevents_success_even_with_a_converged_measurement (test_mujoco_fem_control.TestMuJoCoFEMControl.test_failure_flag_prevents_success_even_with_a_converged_measurement) ... ok
+test_fem_descent_can_outweigh_rigid_plateau_without_relaxing_acceptance (test_mujoco_fem_control.TestMuJoCoFEMControl.test_fem_descent_can_outweigh_rigid_plateau_without_relaxing_acceptance) ... ok
+test_finite_geometry_checks_reject_nonfinite_vectors_and_multipliers (test_mujoco_fem_control.TestMuJoCoFEMControl.test_finite_geometry_checks_reject_nonfinite_vectors_and_multipliers) ... ok
+test_friction_l2_search_surrogate_does_not_replace_aggregate_l1_gate (test_mujoco_fem_control.TestMuJoCoFEMControl.test_friction_l2_search_surrogate_does_not_replace_aggregate_l1_gate) ... ok
+test_invalid_proposal_backtracks_without_reusing_stale_convergence (test_mujoco_fem_control.TestMuJoCoFEMControl.test_invalid_proposal_backtracks_without_reusing_stale_convergence) ... ok
+test_last_nonlinear_evaluation_reserves_one_certification_evaluation (test_mujoco_fem_control.TestMuJoCoFEMControl.test_last_nonlinear_evaluation_reserves_one_certification_evaluation) ... ok
+test_line_search_keeps_base_weights_despite_an_improving_force_denominator (test_mujoco_fem_control.TestMuJoCoFEMControl.test_line_search_keeps_base_weights_despite_an_improving_force_denominator) ... ok
+test_new_search_recomputes_both_weights_and_base_merit (test_mujoco_fem_control.TestMuJoCoFEMControl.test_new_search_recomputes_both_weights_and_base_merit) ... ok
+test_only_applied_fem_relative_accuracy_is_required_but_fresh_metrics_must_be_finite (test_mujoco_fem_control.TestMuJoCoFEMControl.test_only_applied_fem_relative_accuracy_is_required_but_fresh_metrics_must_be_finite) ... ok
+test_physically_converged_proposal_needs_no_further_merit_decrease (test_mujoco_fem_control.TestMuJoCoFEMControl.test_physically_converged_proposal_needs_no_further_merit_decrease) ... ok
+test_proposal_may_request_correction_but_configured_fem_tolerance_controls_acceptance (test_mujoco_fem_control.TestMuJoCoFEMControl.test_proposal_may_request_correction_but_configured_fem_tolerance_controls_acceptance) ... ok
+test_recovery_changes_only_rigid_unknowns_and_uses_both_orientation_frames (test_mujoco_fem_control.TestMuJoCoFEMControl.test_recovery_changes_only_rigid_unknowns_and_uses_both_orientation_frames) ... ok
+test_rhs_and_friction_scale_growth_cannot_fake_weighted_descent (test_mujoco_fem_control.TestMuJoCoFEMControl.test_rhs_and_friction_scale_growth_cannot_fake_weighted_descent) ... ok
+test_friction_row_has_weighted_force_units_and_no_extra_timestep (test_mujoco_fem_equations.MujocoFEMEquationTests.test_friction_row_has_weighted_force_units_and_no_extra_timestep) ... ok
+test_joint_jacobian_matches_force_residual_differences_in_all_smooth_branches (test_mujoco_fem_equations.MujocoFEMEquationTests.test_joint_jacobian_matches_force_residual_differences_in_all_smooth_branches) ... ok
+test_native_implicitfast_angular_increment_and_gyro_jacobian (test_mujoco_fem_equations.MujocoFEMEquationTests.test_native_implicitfast_angular_increment_and_gyro_jacobian) ... ok
+test_projected_drag_momentum_is_row_equivalent_to_physical_multiplier_momentum (test_mujoco_fem_equations.MujocoFEMEquationTests.test_projected_drag_momentum_is_row_equivalent_to_physical_multiplier_momentum) ... ok
+test_redundant_sticking_rows_gain_bounded_search_inverse_without_changing_residual (test_mujoco_fem_equations.MujocoFEMEquationTests.test_redundant_sticking_rows_gain_bounded_search_inverse_without_changing_residual) ... ok
+test_runtime_anchor_linearization_preserves_radial_derivative_and_branches (test_mujoco_fem_equations.MujocoFEMEquationTests.test_runtime_anchor_linearization_preserves_radial_derivative_and_branches) ... ok
+test_runtime_block_preconditioner_matches_dense_schur_inverse (test_mujoco_fem_equations.MujocoFEMEquationTests.test_runtime_block_preconditioner_matches_dense_schur_inverse) ... ok
+test_runtime_contact_action_matches_dense_equations_and_fixed_projection (test_mujoco_fem_equations.MujocoFEMEquationTests.test_runtime_contact_action_matches_dense_equations_and_fixed_projection) ... ok
+test_runtime_preconditioner_flags_unsupported_stick_mobility_instead_of_dividing (test_mujoco_fem_equations.MujocoFEMEquationTests.test_runtime_preconditioner_flags_unsupported_stick_mobility_instead_of_dividing) ... ok
+test_runtime_reconstruction_uses_old_frame_increment_and_new_world_angular_velocity (test_mujoco_fem_equations.MujocoFEMEquationTests.test_runtime_reconstruction_uses_old_frame_increment_and_new_world_angular_velocity) ... ok
+test_runtime_rigid_system_matches_rotated_offdiagonal_native_equations (test_mujoco_fem_equations.MujocoFEMEquationTests.test_runtime_rigid_system_matches_rotated_offdiagonal_native_equations) ... ok
+test_runtime_tangent_predictor_preserves_quiet_history_and_clears_zero_capacity (test_mujoco_fem_equations.MujocoFEMEquationTests.test_runtime_tangent_predictor_preserves_quiet_history_and_clears_zero_capacity) ... ok
+test_runtime_tangent_predictor_uses_relative_free_velocity_and_current_bound (test_mujoco_fem_equations.MujocoFEMEquationTests.test_runtime_tangent_predictor_uses_relative_free_velocity_and_current_bound) ... ok
+test_scatter_work_and_world_moment_include_fixed_support_reaction (test_mujoco_fem_equations.MujocoFEMEquationTests.test_scatter_work_and_world_moment_include_fixed_support_reaction) ... ok
+test_search_regularization_only_changes_stick_dual_diagonal_and_matching_schur (test_mujoco_fem_equations.MujocoFEMEquationTests.test_search_regularization_only_changes_stick_dual_diagonal_and_matching_schur) ... ok
+test_slip_keeps_normal_dependent_bound_and_is_nonsymmetric (test_mujoco_fem_equations.MujocoFEMEquationTests.test_slip_keeps_normal_dependent_bound_and_is_nonsymmetric) ... ok
+test_slip_schur_is_triangular_and_disabled_contact_has_no_constraint (test_mujoco_fem_equations.MujocoFEMEquationTests.test_slip_schur_is_triangular_and_disabled_contact_has_no_constraint) ... ok
+test_stick_is_a_velocity_constraint_with_positive_mobility_schur (test_mujoco_fem_equations.MujocoFEMEquationTests.test_stick_is_a_velocity_constraint_with_positive_mobility_schur) ... ok
+test_exhausted_budget_leaves_no_accepted_history_and_retry_matches_reference (test_mujoco_fem_solver.MuJoCoFEMSolverTests.test_exhausted_budget_leaves_no_accepted_history_and_retry_matches_reference) ... Module newton_solver_suturebot._src.solvers.mujoco_fem.control a23d5e6 load on device 'cuda:0' took 0.54 ms  (cached)
+Module newton_solver_suturebot._src.solvers.mujoco_fem.kernels c46b9ca load on device 'cuda:0' took 1.12 ms  (cached)
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_final_affine_correction_preserves_applied_accuracy_and_balanced_loads (test_mujoco_fem_solver.MuJoCoFEMSolverTests.test_final_affine_correction_preserves_applied_accuracy_and_balanced_loads) ... Module make_gmres_solve_least_squares_kernel_tiled__locals__gmres_solve_least_squares_tiled_01398e3b 1ac0fbe load on device 'cuda:0' took 0.48 ms  (cached)
+Module warp.optim.linear f95dd63 load on device 'cuda:0' took 1.80 ms  (cached)
+Module warp.optim.linear 5e445b2 load on device 'cuda:0' took 1.38 ms  (cached)
+Module warp.optim.linear da31358 load on device 'cuda:0' took 1.39 ms  (cached)
+Module newton_solver_suturebot._src.needle_trial_forces 9c10f20 load on device 'cuda:0' took 1.10 ms  (cached)
+Module newton_solver_suturebot._src.needle_trial_forces 633b5ed load on device 'cuda:0' took 1.20 ms  (cached)
+Module newton_solver_suturebot._src.insertion 62f2525 load on device 'cuda:0' took 0.92 ms  (cached)
+Module newton_solver_suturebot._src.tunnel_alm a7f0df5 load on device 'cuda:0' took 0.33 ms  (cached)
+Module warp.optim.linear fda3ae1 load on device 'cuda:0' took 1.45 ms  (cached)
+Module warp.optim.linear 157f70a load on device 'cuda:0' took 1.44 ms  (cached)
+Module newton_solver_suturebot._src.mujoco_free_body_gpu e02688a load on device 'cuda:0' took 0.32 ms  (cached)
+Module newton_solver_suturebot._src.mujoco_free_body 8b3dbbb load on device 'cuda:0' took 0.27 ms  (cached)
+Module newton_solver_suturebot._src.shaft_preconditioner a7ff5d4 load on device 'cuda:0' took 0.65 ms  (cached)
+Module warp.optim.linear 32431bc load on device 'cuda:0' took 1.83 ms  (cached)
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_inaccurate_final_affine_solve_rejects_rolls_back_and_clean_retry_matches (test_mujoco_fem_solver.MuJoCoFEMSolverTests.test_inaccurate_final_affine_solve_rejects_rolls_back_and_clean_retry_matches) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_late_resolution_rejection_restores_native_output_warmstart_and_duals (test_mujoco_fem_solver.MuJoCoFEMSolverTests.test_late_resolution_rejection_restores_native_output_warmstart_and_duals) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_same_law_replay_with_changed_load_timestep_and_alternating_buffers (test_mujoco_fem_solver.MuJoCoFEMSolverTests.test_same_law_replay_with_changed_load_timestep_and_alternating_buffers) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+Module newton_solver_suturebot._src.coupling_graph 6b218ce load on device 'cuda:0' took 0.51 ms  (cached)
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_exact_prepared_equation_defect_is_measured_in_force_units_without_changing_loads (test_mujoco_fem_solver.TissueMomentumCertificationTests.test_exact_prepared_equation_defect_is_measured_in_force_units_without_changing_loads) ... ok
+test_fixed_reactions_are_not_momentum_rows_and_nonfinite_free_rows_fail_closed (test_mujoco_fem_solver.TissueMomentumCertificationTests.test_fixed_reactions_are_not_momentum_rows_and_nonfinite_free_rows_fail_closed) ... ok
+test_newton_and_certificate_measure_the_same_exact_rhs_and_free_rows (test_mujoco_fem_solver.TissueMomentumCertificationTests.test_newton_and_certificate_measure_the_same_exact_rhs_and_free_rows) ... ok
+test_bundled_authored_needle_is_eligible_and_coupler_uses_expected_path (test_mujoco_free_body.MuJoCoFreeBodyTests.test_bundled_authored_needle_is_eligible_and_coupler_uses_expected_path) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_custom_step_installed_after_bridge_construction_is_respected (test_mujoco_free_body.MuJoCoFreeBodyTests.test_custom_step_installed_after_bridge_construction_is_respected) ... ok
+test_guard_rejects_unsupported_sync_frames_and_custom_solver_step (test_mujoco_free_body.MuJoCoFreeBodyTests.test_guard_rejects_unsupported_sync_frames_and_custom_solver_step) ... ok
+test_none_control_and_native_contacts_remain_native (test_mujoco_free_body.MuJoCoFreeBodyTests.test_none_control_and_native_contacts_remain_native) ... ok
+test_random_rotated_pose_twist_loads_native_damping_and_rollback (test_mujoco_free_body.MuJoCoFreeBodyTests.test_random_rotated_pose_twist_loads_native_damping_and_rollback) ... ok
+test_requested_legacy_observables_delegate_to_general_adapter (test_mujoco_free_body.MuJoCoFreeBodyTests.test_requested_legacy_observables_delegate_to_general_adapter) ... ok
+test_advancing_trajectory_with_changed_timestep_and_damping (test_mujoco_free_body_gpu.MuJoCoFreeBodyGPUTests.test_advancing_trajectory_with_changed_timestep_and_damping) ... ok
+test_captured_trials_keep_input_and_native_state_and_refresh_coefficients (test_mujoco_free_body_gpu.MuJoCoFreeBodyGPUTests.test_captured_trials_keep_input_and_native_state_and_refresh_coefficients) ... ok
+test_changed_native_settings_rejected_before_output_or_history_mutation (test_mujoco_free_body_gpu.MuJoCoFreeBodyGPUTests.test_changed_native_settings_rejected_before_output_or_history_mutation) ... ok
+test_eligibility_rejects_contacts_frames_versions_and_callbacks (test_mujoco_free_body_gpu.MuJoCoFreeBodyGPUTests.test_eligibility_rejects_contacts_frames_versions_and_callbacks) ... ok
+test_prepare_refreshes_buffers_without_newton_readback_and_rejects_bad_use (test_mujoco_free_body_gpu.MuJoCoFreeBodyGPUTests.test_prepare_refreshes_buffers_without_newton_readback_and_rejects_bad_use) ... ok
+test_random_native_parity_without_mutating_inputs_or_native_history (test_mujoco_free_body_gpu.MuJoCoFreeBodyGPUTests.test_random_native_parity_without_mutating_inputs_or_native_history) ... ok
+test_failed_tightened_attempt_restores_tolerance_state_native_and_warm_start (test_needle_adaptive_inner.AdaptiveInnerTests.test_failed_tightened_attempt_restores_tolerance_state_native_and_warm_start) ... Module test_mujoco_free_body_gpu 4f39c18 load on device 'cuda:0' took 0.39 ms  (cached)
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_tightening_matches_analytic_contact_and_fixed_tight_reference (test_needle_adaptive_inner.AdaptiveInnerTests.test_tightening_matches_analytic_contact_and_fixed_tight_reference) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_clearance_and_disengaged_or_zero_measure_have_no_contact_tangent (test_needle_alm_preconditioner.NeedleALMPreconditionerTests.test_clearance_and_disengaged_or_zero_measure_have_no_contact_tangent) ... ok
+test_fixed_support_correction_preserves_force_and_moment (test_needle_alm_preconditioner.NeedleALMPreconditionerTests.test_fixed_support_correction_preserves_force_and_moment) ... ok
+test_normal_derivative_matches_independent_proximal_finite_difference (test_needle_alm_preconditioner.NeedleALMPreconditionerTests.test_normal_derivative_matches_independent_proximal_finite_difference) ... ok
+test_sticking_and_sliding_tangents_use_current_multiplier_bound (test_needle_alm_preconditioner.NeedleALMPreconditionerTests.test_sticking_and_sliding_tangents_use_current_multiplier_bound) ... ok
+test_certified_finish_reuses_forces_and_publishes_identical_metadata (test_needle_certified_finish.CertifiedFinishTests.test_certified_finish_reuses_forces_and_publishes_identical_metadata) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+Module newton_solver_suturebot._src.needle_trial_forces bea2f8b load on device 'cuda:0' took 1.26 ms  (cached)
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_late_rejection_discards_staged_metadata_and_identical_retry_succeeds (test_needle_certified_finish.CertifiedFinishTests.test_late_rejection_discards_staged_metadata_and_identical_retry_succeeds) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_native_mismatch_in_any_endpoint_field_restores_then_uses_host (test_needle_certified_finish.CertifiedFinishTests.test_native_mismatch_in_any_endpoint_field_restores_then_uses_host) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_all_joint_and_body_fields_are_compared_bitwise (test_needle_certified_finish.EndpointAuditTests.test_all_joint_and_body_fields_are_compared_bitwise) ... ok
+test_poisoned_candidate_near_exit_falls_back_to_original_authorization (test_needle_coupling_copy_once.NeedleCouplingCopyOnceTests.test_poisoned_candidate_near_exit_falls_back_to_original_authorization) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_poisoned_rejected_attempts_do_not_escape_then_retry_commits_once (test_needle_coupling_copy_once.NeedleCouplingCopyOnceTests.test_poisoned_rejected_attempts_do_not_escape_then_retry_commits_once) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_poisoned_scratch_replay_and_swapped_inputs_match_loaded_reference (test_needle_coupling_copy_once.NeedleCouplingCopyOnceTests.test_poisoned_scratch_replay_and_swapped_inputs_match_loaded_reference) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_exhausted_budget_rolls_back_then_retries_without_committing_history (test_needle_coupling_graph.NeedleCouplingGraphTests.test_exhausted_budget_rolls_back_then_retries_without_committing_history) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_failed_preparation_is_not_cached_and_identical_retry_succeeds (test_needle_coupling_graph.NeedleCouplingGraphTests.test_failed_preparation_is_not_cached_and_identical_retry_succeeds) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_late_resolution_rejection_restores_native_warmstart_output_and_alm_duals (test_needle_coupling_graph.NeedleCouplingGraphTests.test_late_resolution_rejection_restores_native_warmstart_output_and_alm_duals) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_native_damping_change_at_fixed_dt_refreshes_capture (test_needle_coupling_graph.NeedleCouplingGraphTests.test_native_damping_change_at_fixed_dt_refreshes_capture) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_near_exit_geometry_uses_original_authorization_and_commits_once (test_needle_coupling_graph.NeedleCouplingGraphTests.test_near_exit_geometry_uses_original_authorization_and_commits_once) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_penalty_and_alm_advances_match_with_alternating_buffers_timestep_and_loads (test_needle_coupling_graph.NeedleCouplingGraphTests.test_penalty_and_alm_advances_match_with_alternating_buffers_timestep_and_loads) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_alm_threshold_preserves_double_host_comparison (test_needle_coupling_graph_control.DeviceControlTests.test_alm_threshold_preserves_double_host_comparison) ... ok
+test_failure_and_geometry_fallback_cannot_commit (test_needle_coupling_graph_control.DeviceControlTests.test_failure_and_geometry_fallback_cannot_commit) ... ok
+test_tolerance_schedule_aitken_and_dual_restart_match_host (test_needle_coupling_graph_control.DeviceControlTests.test_tolerance_schedule_aitken_and_dual_restart_match_host) ... ok
+test_configuration_preserves_existing_damping_and_survives_reset_and_notification (test_needle_drive.NeedleDriveTests.test_configuration_preserves_existing_damping_and_survives_reset_and_notification) ... ok
+test_explicit_damping_injects_energy_at_large_step_while_native_damping_dissipates (test_needle_drive.NeedleDriveTests.test_explicit_damping_injects_energy_at_large_step_while_native_damping_dissipates) ... ok
+test_explicit_integrator_cannot_silently_enable_implicit_drive_mode (test_needle_drive.NeedleDriveTests.test_explicit_integrator_cannot_silently_enable_implicit_drive_mode) ... ok
+test_general_rotation_spring_linearization_converges_under_timestep_refinement (test_needle_drive.NeedleDriveTests.test_general_rotation_spring_linearization_converges_under_timestep_refinement) ... ok
+test_implicit_spring_matches_backward_euler_translation_and_principal_axes (test_needle_drive.NeedleDriveTests.test_implicit_spring_matches_backward_euler_translation_and_principal_axes) ... ok
+test_nonzero_com_is_rejected_before_any_damping_or_mode_change (test_needle_drive.NeedleDriveTests.test_nonzero_com_is_rejected_before_any_damping_or_mode_change) ... ok
+test_ramp_distance_still_supports_independent_vector_axes (test_needle_drive.NeedleDriveTests.test_ramp_distance_still_supports_independent_vector_axes) ... ok
+test_single_free_body_matches_implicit_damping_discrete_solution (test_needle_drive.NeedleDriveTests.test_single_free_body_matches_implicit_damping_discrete_solution) ... ok
+test_split_external_and_native_damping_recover_the_same_pd_wrench (test_needle_drive.NeedleDriveTests.test_split_external_and_native_damping_recover_the_same_pd_wrench) ... ok
+test_timestep_changes_update_native_spring_once_and_preserve_passive_damping (test_needle_drive.NeedleDriveTests.test_timestep_changes_update_native_spring_once_and_preserve_passive_damping) ... ok
+test_candidates_match_original_arithmetic_at_ulp_boundaries (test_needle_insertion_aabb.NeedleInsertionAabbTests.test_candidates_match_original_arithmetic_at_ulp_boundaries) ... ok
+test_sparse_dense_and_empty_candidates_preserve_order (test_needle_insertion_aabb.NeedleInsertionAabbTests.test_sparse_dense_and_empty_candidates_preserve_order) ... ok
+test_swept_crossings_match_cached_and_uncached_bounds (test_needle_insertion_aabb.NeedleInsertionAabbTests.test_swept_crossings_match_cached_and_uncached_bounds) ... ok
+test_vertex_bounds_equal_reductions_for_empty_and_strided_arrays (test_needle_insertion_aabb.NeedleInsertionAabbTests.test_vertex_bounds_equal_reductions_for_empty_and_strided_arrays) ... ok
+test_large_unresolved_tip_step_reports_failure (test_needle_insertion_contact_guards.TestNeedleInsertionContactGuards.test_large_unresolved_tip_step_reports_failure) ... ok
+test_opening_does_not_authorize_a_separate_active_wall (test_needle_insertion_contact_guards.TestNeedleInsertionContactGuards.test_opening_does_not_authorize_a_separate_active_wall) ... ok
+test_shaft_track_association_cannot_cross_an_internal_inactive_layer (test_needle_insertion_contact_guards.TestNeedleInsertionContactGuards.test_shaft_track_association_cannot_cross_an_internal_inactive_layer) ... ok
+test_thin_gap_between_inside_endpoints_is_not_silently_bridged (test_needle_insertion_contact_guards.TestNeedleInsertionContactGuards.test_thin_gap_between_inside_endpoints_is_not_silently_bridged) ... ok
+test_thin_material_between_outside_endpoints_cannot_be_skipped (test_needle_insertion_contact_guards.TestNeedleInsertionContactGuards.test_thin_material_between_outside_endpoints_cannot_be_skipped) ... ok
+test_tip_cannot_bridge_an_internal_inactive_layer_hidden_from_reference_exterior (test_needle_insertion_contact_guards.TestNeedleInsertionContactGuards.test_tip_cannot_bridge_an_internal_inactive_layer_hidden_from_reference_exterior) ... ok
+test_track_does_not_shadow_a_separate_active_wall (test_needle_insertion_contact_guards.TestNeedleInsertionContactGuards.test_track_does_not_shadow_a_separate_active_wall) ... ok
+test_batched_embeddings_match_cpu_ties_deformation_and_extra_particles (test_needle_insertion_device_queries.NeedleDeviceQueryTests.test_batched_embeddings_match_cpu_ties_deformation_and_extra_particles) ... ok
+test_device_and_complete_cpu_queries_preserve_forces_and_handling_events (test_needle_insertion_device_queries.NeedleDeviceQueryTests.test_device_and_complete_cpu_queries_preserve_forces_and_handling_events) ... ok
+test_point_candidates_include_exact_ulp_boundaries_and_overflow (test_needle_insertion_device_queries.NeedleDeviceQueryTests.test_point_candidates_include_exact_ulp_boundaries_and_overflow) ... ok
+test_swept_candidates_preserve_exact_moving_surface_crossings (test_needle_insertion_device_queries.NeedleDeviceQueryTests.test_swept_candidates_preserve_exact_moving_surface_crossings) ... ok
+test_bad_map_clicks_leave_valid_selections_and_plan_unchanged (test_needle_insertion_example.NeedleInsertionExampleTests.test_bad_map_clicks_leave_valid_selections_and_plan_unchanged) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_compact_integrity_checks_detect_inversion_fixed_motion_and_nonfinite_velocity (test_needle_insertion_example.NeedleInsertionExampleTests.test_compact_integrity_checks_detect_inversion_fixed_motion_and_nonfinite_velocity) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_compact_render_preserves_triangles_through_motion_opacity_and_region_change (test_needle_insertion_example.NeedleInsertionExampleTests.test_compact_render_preserves_triangles_through_motion_opacity_and_region_change) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 6 fixed
+Module newton_solver_suturebot.examples.example_fem_phantom_regions 663f404 load on device 'cuda:0' took 0.40 ms  (cached)
+[phantom regions] active=[2]: 6/12 tetrahedra, 8 nodes, 6 fixed
+[phantom regions] active=[2]: 6/12 tetrahedra, 8 nodes, 6 fixed
+ok
+test_controller_requires_actual_exit_and_continues_past_an_intermediate_exit (test_needle_insertion_example.NeedleInsertionExampleTests.test_controller_requires_actual_exit_and_continues_past_an_intermediate_exit) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_current_deformation_and_historical_peak_follow_material_motion (test_needle_insertion_example.NeedleInsertionExampleTests.test_current_deformation_and_historical_peak_follow_material_motion) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_default_tunnel_uses_alm_and_advances_the_real_coupled_step (test_needle_insertion_example.NeedleInsertionExampleTests.test_default_tunnel_uses_alm_and_advances_the_real_coupled_step) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_external_force_and_torque_change_actual_motion_under_same_drive (test_needle_insertion_example.NeedleInsertionExampleTests.test_external_force_and_torque_change_actual_motion_under_same_drive) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_generated_tissue_reaction_survives_fem_and_drives_mujoco (test_needle_insertion_example.NeedleInsertionExampleTests.test_generated_tissue_reaction_survives_fem_and_drives_mujoco) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_marker_follows_selected_fem_material (test_needle_insertion_example.NeedleInsertionExampleTests.test_marker_follows_selected_fem_material) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_nonfinite_accepted_state_stops_for_each_position_and_velocity_kind (test_needle_insertion_example.NeedleInsertionExampleTests.test_nonfinite_accepted_state_stops_for_each_position_and_velocity_kind) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_pause_preserves_both_states_and_time_resume_then_reset (test_needle_insertion_example.NeedleInsertionExampleTests.test_pause_preserves_both_states_and_time_resume_then_reset) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_region_switch_clears_material_selections_plan_and_committed_history (test_needle_insertion_example.NeedleInsertionExampleTests.test_region_switch_clears_material_selections_plan_and_committed_history) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[2]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_render_empty_selection_then_return_to_active_region (test_needle_insertion_example.NeedleInsertionExampleTests.test_render_empty_selection_then_return_to_active_region) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[]: 0/12 tetrahedra, 0 nodes, 0 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_solver_selection_constructs_public_class_and_advances_physical_state (test_needle_insertion_example.NeedleInsertionExampleTests.test_solver_selection_constructs_public_class_and_advances_physical_state) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_analytic_crossings_retain_subsample_gaps_and_thin_material (test_needle_insertion_geometry.NeedleInsertionGeometryTests.test_analytic_crossings_retain_subsample_gaps_and_thin_material) ... ok
+test_authored_geometry_preserves_proxy_shape_and_physical_values (test_needle_insertion_geometry.NeedleInsertionGeometryTests.test_authored_geometry_preserves_proxy_shape_and_physical_values) ... ok
+test_bundled_wound_one_plan_has_two_passages_with_true_empty_gap (test_needle_insertion_geometry.NeedleInsertionGeometryTests.test_bundled_wound_one_plan_has_two_passages_with_true_empty_gap) ... ok
+test_full_shaft_radius_rejects_nearby_inactive_surface (test_needle_insertion_geometry.NeedleInsertionGeometryTests.test_full_shaft_radius_rejects_nearby_inactive_surface) ... ok
+test_impossible_chord_arc_and_coincident_selection_rejected (test_needle_insertion_geometry.NeedleInsertionGeometryTests.test_impossible_chord_arc_and_coincident_selection_rejected) ... ok
+test_map_inverse_rotation_exact_depth_and_material_deformation (test_needle_insertion_geometry.NeedleInsertionGeometryTests.test_map_inverse_rotation_exact_depth_and_material_deformation) ... ok
+test_map_rejects_background_and_frontmost_other_region (test_needle_insertion_geometry.NeedleInsertionGeometryTests.test_map_rejects_background_and_frontmost_other_region) ... ok
+test_plan_keeps_rigid_shape_follows_minor_arc_and_starts_above_pad (test_needle_insertion_geometry.NeedleInsertionGeometryTests.test_plan_keeps_rigid_shape_follows_minor_arc_and_starts_above_pad) ... ok
+test_shaft_sampling_preserves_capsule_segments_and_tip (test_needle_insertion_geometry.NeedleInsertionGeometryTests.test_shaft_sampling_preserves_capsule_segments_and_tip) ... ok
+test_solid_path_passes_and_fixed_surface_rejected (test_needle_insertion_geometry.NeedleInsertionGeometryTests.test_solid_path_passes_and_fixed_surface_rejected) ... ok
+test_tet_occupancy_does_not_fill_wound_gap (test_needle_insertion_geometry.NeedleInsertionGeometryTests.test_tet_occupancy_does_not_fill_wound_gap) ... ok
+test_accepted_geometry_stays_owned_during_trials_and_rollback (test_needle_insertion_geometry_cache.NeedleInsertionGeometryCacheTests.test_accepted_geometry_stays_owned_during_trials_and_rollback) ... ok
+test_full_geometry_parity_for_in_place_deformation_and_rollback (test_needle_insertion_geometry_cache.NeedleInsertionGeometryCacheTests.test_full_geometry_parity_for_in_place_deformation_and_rollback) ... ok
+test_inactive_reference_is_owned_and_independent_of_particle_motion (test_needle_insertion_geometry_cache.NeedleInsertionGeometryCacheTests.test_inactive_reference_is_owned_and_independent_of_particle_motion) ... ok
+test_backtracking_does_not_duplicate_created_track (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_backtracking_does_not_duplicate_created_track) ... ok
+test_below_threshold_stays_contact_and_unapproved_crossing_fails (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_below_threshold_stays_contact_and_unapproved_crossing_fails) ... ok
+test_candidate_emergence_has_no_artificial_tip_force_or_early_exit_event (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_candidate_emergence_has_no_artificial_tip_force_or_early_exit_event) ... ok
+test_candidate_exit_does_not_authorize_contact_with_the_next_gap_wall (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_candidate_exit_does_not_authorize_contact_with_the_next_gap_wall) ... ok
+test_continuous_lateral_motion_keeps_shaft_resistance_beyond_capture_radius (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_continuous_lateral_motion_keeps_shaft_resistance_beyond_capture_radius) ... ok
+test_exit_uses_deformed_surface_and_allows_reentry (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_exit_uses_deformed_surface_and_allows_reentry) ... ok
+test_fixed_support_is_reported_separately_and_rejects_puncture (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_fixed_support_is_reported_separately_and_rejects_puncture) ... ok
+test_implicit_friction_is_dissipative_and_not_scaled_by_timestep (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_implicit_friction_is_dissipative_and_not_scaled_by_timestep) ... ok
+test_inactive_surface_cannot_be_punctured (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_inactive_surface_cannot_be_punctured) ... ok
+test_lateral_shaft_motion_across_internal_cells_adds_no_surface_barrier (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_lateral_shaft_motion_across_internal_cells_adds_no_surface_barrier) ... ok
+test_leading_tip_continues_across_an_internal_cell_without_surface_force (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_leading_tip_continues_across_an_internal_cell_without_surface_force) ... ok
+test_physical_radius_tangent_regularizes_authored_joint_and_is_refinement_invariant (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_physical_radius_tangent_regularizes_authored_joint_and_is_refinement_invariant) ... ok
+test_puncture_threshold_is_independent_of_shaft_sampling (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_puncture_threshold_is_independent_of_shaft_sampling) ... ok
+test_retained_shaft_association_has_no_interior_capture_radius_force_jump (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_retained_shaft_association_has_no_interior_capture_radius_force_jump) ... ok
+test_shaft_slides_without_tangential_spring_and_friction_dissipates (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_shaft_slides_without_tangential_spring_and_friction_dissipates) ... ok
+test_stationary_tip_pivot_still_checks_motion_of_the_whole_shaft (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_stationary_tip_pivot_still_checks_motion_of_the_whole_shaft) ... ok
+test_surface_damper_is_continuous_at_onset_compressive_and_timestep_independent (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_surface_damper_is_continuous_at_onset_compressive_and_timestep_independent) ... ok
+test_surface_force_and_torque_balance_and_actual_threshold_force (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_surface_force_and_torque_balance_and_actual_threshold_force) ... ok
+test_track_resolution_preserves_integrated_shaft_load (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_track_resolution_preserves_integrated_shaft_load) ... ok
+test_trial_forces_do_not_authorize_or_commit_and_final_evaluation_uses_time_n (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_trial_forces_do_not_authorize_or_commit_and_final_evaluation_uses_time_n) ... ok
+test_trial_withdrawal_preserves_engagement_and_temporary_penetration_is_not_fatal (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_trial_withdrawal_preserves_engagement_and_temporary_penetration_is_not_fatal) ... ok
+test_two_material_passages_keep_gap_empty_and_each_new_surface_needs_puncture (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_two_material_passages_keep_gap_empty_and_each_new_surface_needs_puncture) ... ok
+test_withdrawal_and_reentry_reuse_the_local_opening_and_track (test_needle_insertion_physics.TestNeedleInsertionPhysics.test_withdrawal_and_reentry_reuse_the_local_opening_and_track) ... ok
+test_authorized_first_entry_trial_has_no_unvisited_backface_barrier (test_needle_insertion_surface_patch.NeedleSurfacePatchTests.test_authorized_first_entry_trial_has_no_unvisited_backface_barrier) ... ok
+test_authorized_first_entry_trial_still_contacts_intact_front_wall (test_needle_insertion_surface_patch.NeedleSurfacePatchTests.test_authorized_first_entry_trial_still_contacts_intact_front_wall) ... ok
+test_concave_bisector_has_continuous_force_and_material_load (test_needle_insertion_surface_patch.NeedleSurfacePatchTests.test_concave_bisector_has_continuous_force_and_material_load) ... ok
+test_concave_patch_conserves_force_and_moment_with_friction (test_needle_insertion_surface_patch.NeedleSurfacePatchTests.test_concave_patch_conserves_force_and_moment_with_friction) ... ok
+test_convex_edge_first_touch_is_continuous (test_needle_insertion_surface_patch.NeedleSurfacePatchTests.test_convex_edge_first_touch_is_continuous) ... ok
+test_deep_interior_recovery_requires_an_actual_punctured_passage (test_needle_insertion_surface_patch.NeedleSurfacePatchTests.test_deep_interior_recovery_requires_an_actual_punctured_passage) ... ok
+test_dynamic_contact_crosses_concave_crease_without_a_planned_path (test_needle_insertion_surface_patch.NeedleSurfacePatchTests.test_dynamic_contact_crosses_concave_crease_without_a_planned_path) ... Module test_needle_insertion_physics 35a0da2 load on device 'cuda:0' took 0.44 ms  (cached)
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_local_opening_does_not_hide_another_intact_wall (test_needle_insertion_surface_patch.NeedleSurfacePatchTests.test_local_opening_does_not_hide_another_intact_wall) ... ok
+test_nonpenetrating_facet_retains_its_positive_normalization_weight (test_needle_insertion_surface_patch.NeedleSurfacePatchTests.test_nonpenetrating_facet_retains_its_positive_normalization_weight) ... ok
+test_opening_does_not_authorize_a_distant_first_entry_trial (test_needle_insertion_surface_patch.NeedleSurfacePatchTests.test_opening_does_not_authorize_a_distant_first_entry_trial) ... ok
+test_opposite_face_of_thin_layer_does_not_cancel_exterior_contact (test_needle_insertion_surface_patch.NeedleSurfacePatchTests.test_opposite_face_of_thin_layer_does_not_cancel_exterior_contact) ... ok
+test_planar_force_is_preserved_under_surface_subdivision (test_needle_insertion_surface_patch.NeedleSurfacePatchTests.test_planar_force_is_preserved_under_surface_subdivision) ... ok
+test_separate_wall_contact_starts_continuously_at_physical_radius (test_needle_insertion_surface_patch.NeedleSurfacePatchTests.test_separate_wall_contact_starts_continuously_at_physical_radius) ... ok
+test_separate_wall_outside_radius_does_not_contact_through_its_aabb (test_needle_insertion_surface_patch.NeedleSurfacePatchTests.test_separate_wall_outside_radius_does_not_contact_through_its_aabb) ... ok
+test_traversed_tip_crosses_adjacent_facet_plane_without_surface_barrier (test_needle_insertion_surface_patch.NeedleSurfacePatchTests.test_traversed_tip_crosses_adjacent_facet_plane_without_surface_barrier) ... ok
+test_cli_preserves_gap_report_and_fails_on_failed_or_missing_checks (test_needle_insertion_validation_report.TestNeedleInsertionValidationReport.test_cli_preserves_gap_report_and_fails_on_failed_or_missing_checks) ... ok
+test_controller_success_is_independent_of_physical_outside_status (test_needle_insertion_validation_report.TestNeedleInsertionValidationReport.test_controller_success_is_independent_of_physical_outside_status) ... ok
+test_different_scenario_is_not_compared_as_a_baseline_refinement (test_needle_insertion_validation_report.TestNeedleInsertionValidationReport.test_different_scenario_is_not_compared_as_a_baseline_refinement) ... ok
+test_equal_scalar_errors_do_not_hide_opposite_exit_directions (test_needle_insertion_validation_report.TestNeedleInsertionValidationReport.test_equal_scalar_errors_do_not_hide_opposite_exit_directions) ... ok
+test_force_trace_does_not_shift_event_times_to_hide_disagreement (test_needle_insertion_validation_report.TestNeedleInsertionValidationReport.test_force_trace_does_not_shift_event_times_to_hide_disagreement) ... ok
+test_force_trace_excludes_rejected_trial_diagnostics_at_accepted_state_time (test_needle_insertion_validation_report.TestNeedleInsertionValidationReport.test_force_trace_excludes_rejected_trial_diagnostics_at_accepted_state_time) ... ok
+test_force_trace_reports_vector_disagreement_despite_equal_magnitudes (test_needle_insertion_validation_report.TestNeedleInsertionValidationReport.test_force_trace_reports_vector_disagreement_despite_equal_magnitudes) ... ok
+test_gap_scenario_requires_actual_multiple_visits_and_sections (test_needle_insertion_validation_report.TestNeedleInsertionValidationReport.test_gap_scenario_requires_actual_multiple_visits_and_sections) ... ok
+test_missing_force_evidence_is_not_marked_as_a_pass (test_needle_insertion_validation_report.TestNeedleInsertionValidationReport.test_missing_force_evidence_is_not_marked_as_a_pass) ... ok
+test_stable_task_does_not_imply_force_history_convergence (test_needle_insertion_validation_report.TestNeedleInsertionValidationReport.test_stable_task_does_not_imply_force_history_convergence) ... ok
+test_actual_track_lateral_motion_withdrawal_and_disconnected_wall (test_needle_insertion_vectorization.NeedleVectorizationParityTests.test_actual_track_lateral_motion_withdrawal_and_disconnected_wall) ... ok
+test_batched_distance_norms_preserve_capture_comparisons_and_anchor_order (test_needle_insertion_vectorization.NeedleVectorizationParityTests.test_batched_distance_norms_preserve_capture_comparisons_and_anchor_order) ... ok
+test_empty_visited_history_retains_provisional_tip_permission_only (test_needle_insertion_vectorization.NeedleVectorizationParityTests.test_empty_visited_history_retains_provisional_tip_permission_only) ... ok
+test_random_and_boundary_membership_matches_scalar_contractions (test_needle_insertion_vectorization.NeedleVectorizationParityTests.test_random_and_boundary_membership_matches_scalar_contractions) ... ok
+test_abrupt_goals_resolve_actual_motion_without_slowing_the_direct_target (test_needle_manual_controller.NeedleManualControllerTests.test_abrupt_goals_resolve_actual_motion_without_slowing_the_direct_target) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_first_accepted_step_uses_full_slider_goal_with_zero_target_velocity (test_needle_manual_controller.NeedleManualControllerTests.test_first_accepted_step_uses_full_slider_goal_with_zero_target_velocity) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_goals_require_preview_and_preview_cannot_restart_active_manual_task (test_needle_manual_controller.NeedleManualControllerTests.test_goals_require_preview_and_preview_cannot_restart_active_manual_task) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_insert_and_retract_follow_arc_without_teleporting_body (test_needle_manual_controller.NeedleManualControllerTests.test_insert_and_retract_follow_arc_without_teleporting_body) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_invalid_goals_do_not_start_or_mutate_controller_or_physics (test_needle_manual_controller.NeedleManualControllerTests.test_invalid_goals_do_not_start_or_mutate_controller_or_physics) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_lift_and_lower_change_world_z_without_rotating_the_target (test_needle_manual_controller.NeedleManualControllerTests.test_lift_and_lower_change_world_z_without_rotating_the_target) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_manual_exit_is_observed_without_finishing_and_deadline_is_ignored (test_needle_manual_controller.NeedleManualControllerTests.test_manual_exit_is_observed_without_finishing_and_deadline_is_ignored) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_pause_freezes_physics_and_resume_retains_the_direct_goal (test_needle_manual_controller.NeedleManualControllerTests.test_pause_freezes_physics_and_resume_retains_the_direct_goal) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_rejected_step_does_not_commit_direct_target_or_advance_clock (test_needle_manual_controller.NeedleManualControllerTests.test_rejected_step_does_not_commit_direct_target_or_advance_clock) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_reset_clears_manual_goals_history_and_failure_and_restores_automatic_mode (test_needle_manual_controller.NeedleManualControllerTests.test_reset_clears_manual_goals_history_and_failure_and_restores_automatic_mode) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_takeover_seeds_goal_without_changing_actual_state_time_or_desired_pose (test_needle_manual_controller.NeedleManualControllerTests.test_takeover_seeds_goal_without_changing_actual_state_time_or_desired_pose) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_actual_force_launches_keep_default_sizes_and_override_only_queries (test_needle_query_policy.NeedleQueryPolicyTests.test_actual_force_launches_keep_default_sizes_and_override_only_queries) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_both_joint_graph_paths_inherit_policy_but_default_driver_does_not (test_needle_query_policy.NeedleQueryPolicyTests.test_both_joint_graph_paths_inherit_policy_but_default_driver_does_not) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_each_actual_launch_size_invalidates_the_capture_signature (test_needle_query_policy.NeedleQueryPolicyTests.test_each_actual_launch_size_invalidates_the_capture_signature) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_accepted_applied_loads_are_distinguished_from_endpoint_force_law (test_needle_shaft_preconditioner.IndependentShaftPreconditionerTests.test_accepted_applied_loads_are_distinguished_from_endpoint_force_law) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_direction_application_preserves_force_state_and_committed_history (test_needle_shaft_preconditioner.IndependentShaftPreconditionerTests.test_direction_application_preserves_force_state_and_committed_history) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_inexact_direction_keeps_fixed_reactions_and_net_wrench (test_needle_shaft_preconditioner.IndependentShaftPreconditionerTests.test_inexact_direction_keeps_fixed_reactions_and_net_wrench) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_rotated_nondiagonal_inertia_and_positive_contact_operator (test_needle_shaft_preconditioner.IndependentShaftPreconditionerTests.test_rotated_nondiagonal_inertia_and_positive_contact_operator) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_runtime_friction_tangent_is_continuous_psd_without_changing_coulomb_force (test_needle_shaft_preconditioner.IndependentShaftPreconditionerTests.test_runtime_friction_tangent_is_continuous_psd_without_changing_coulomb_force) ... ok
+test_same_equilibrium_for_coarse_steps_and_identical_accepted_history (test_needle_shaft_preconditioner.IndependentShaftPreconditionerTests.test_same_equilibrium_for_coarse_steps_and_identical_accepted_history) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_zero_contact_is_exact_identity_and_public_flag_has_fallback (test_needle_shaft_preconditioner.IndependentShaftPreconditionerTests.test_zero_contact_is_exact_identity_and_public_flag_has_fallback) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_coarse_normal_step_can_resolve_a_short_transient_without_loosening_tolerance (test_needle_step_resolution.NeedleStepResolutionTests.test_coarse_normal_step_can_resolve_a_short_transient_without_loosening_tolerance) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_converged_oversized_step_rolls_back_and_smaller_retry_commits_once (test_needle_step_resolution.NeedleStepResolutionTests.test_converged_oversized_step_rolls_back_and_smaller_retry_commits_once) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_frictional_iteration_rejection_can_retry_without_changing_force_law_or_tolerances (test_needle_step_resolution.NeedleStepResolutionTests.test_frictional_iteration_rejection_can_retry_without_changing_force_law_or_tolerances) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_pure_preflight_catches_outside_to_outside_thin_material_crossing (test_needle_step_resolution.NeedleStepResolutionTests.test_pure_preflight_catches_outside_to_outside_thin_material_crossing) ... ok
+test_pure_preflight_catches_rotation_with_stationary_tip (test_needle_step_resolution.NeedleStepResolutionTests.test_pure_preflight_catches_rotation_with_stationary_tip) ... ok
+test_pure_preflight_catches_thin_gap_despite_small_endpoint_displacement (test_needle_step_resolution.NeedleStepResolutionTests.test_pure_preflight_catches_thin_gap_despite_small_endpoint_displacement) ... ok
+test_resolved_transient_recovers_step_size_and_finishes_exactly_one_frame (test_needle_step_resolution.NeedleStepResolutionTests.test_resolved_transient_recovers_step_size_and_finishes_exactly_one_frame) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_default_keeps_the_shared_shaft_stiffness (test_needle_surface_sample_stiffness.TestNeedleSurfaceSampleStiffness.test_default_keeps_the_shared_shaft_stiffness) ... ok
+test_every_lying_sample_is_at_least_this_stiff_and_a_larger_share_is_kept (test_needle_surface_sample_stiffness.TestNeedleSurfaceSampleStiffness.test_every_lying_sample_is_at_least_this_stiff_and_a_larger_share_is_kept) ... ok
+test_fixed_support_carries_one_sample_without_the_failure_flag (test_needle_surface_sample_stiffness.TestNeedleSurfaceSampleStiffness.test_fixed_support_carries_one_sample_without_the_failure_flag) ... ok
+test_invalid_values_are_rejected (test_needle_surface_sample_stiffness.TestNeedleSurfaceSampleStiffness.test_invalid_values_are_rejected) ... ok
+test_one_end_sample_carries_the_stated_stiffness_and_damping (test_needle_surface_sample_stiffness.TestNeedleSurfaceSampleStiffness.test_one_end_sample_carries_the_stated_stiffness_and_damping) ... ok
+test_setter_switches_the_law_in_the_same_device_array (test_needle_surface_sample_stiffness.TestNeedleSurfaceSampleStiffness.test_setter_switches_the_law_in_the_same_device_array) ... ok
+test_tip_stiffness_and_puncture_force_are_unchanged (test_needle_surface_sample_stiffness.TestNeedleSurfaceSampleStiffness.test_tip_stiffness_and_puncture_force_are_unchanged) ... ok
+test_material_outside_authorization_and_moving_boundary_cases (test_needle_tip_certificate.NeedleTipCertificateTests.test_material_outside_authorization_and_moving_boundary_cases) ... ok
+test_tie_order_and_degenerate_tetrahedra (test_needle_tip_certificate.NeedleTipCertificateTests.test_tie_order_and_degenerate_tetrahedra) ... ok
+test_actual_fem_contact_trials_commit_once_and_preserve_external_drive (test_needle_tissue_coupler.NeedleTissueCouplerTests.test_actual_fem_contact_trials_commit_once_and_preserve_external_drive) ... Module test_needle_tip_certificate c082a8d load on device 'cuda:0' took 0.59 ms  (cached)
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_captured_contact_preserves_trajectory_interface_iterations_and_native_state (test_needle_tissue_coupler.NeedleTissueCouplerTests.test_captured_contact_preserves_trajectory_interface_iterations_and_native_state) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_captured_nonconvergence_restores_warmstart_and_native_state (test_needle_tissue_coupler.NeedleTissueCouplerTests.test_captured_nonconvergence_restores_warmstart_and_native_state) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_fem_graph_tracks_tangent_state_storage_numerical_settings_and_timestep (test_needle_tissue_coupler.NeedleTissueCouplerTests.test_fem_graph_tracks_tangent_state_storage_numerical_settings_and_timestep) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_implicit_normal_contact_matches_closed_form_and_advances_native_time_once (test_needle_tissue_coupler.NeedleTissueCouplerTests.test_implicit_normal_contact_matches_closed_form_and_advances_native_time_once) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_lateral_friction_contact_converges_and_applied_loads_balance (test_needle_tissue_coupler.NeedleTissueCouplerTests.test_lateral_friction_contact_converges_and_applied_loads_balance) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_leading_tip_crosses_internal_tetrahedron_face_in_coupled_step (test_needle_tissue_coupler.NeedleTissueCouplerTests.test_leading_tip_crosses_internal_tetrahedron_face_in_coupled_step) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_nonconvergence_restores_native_state_and_does_not_commit_interaction (test_needle_tissue_coupler.NeedleTissueCouplerTests.test_nonconvergence_restores_native_state_and_does_not_commit_interaction) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_requested_capture_keeps_custom_structural_solver_eager (test_needle_tissue_coupler.NeedleTissueCouplerTests.test_requested_capture_keeps_custom_structural_solver_eager) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_requested_capture_leaves_host_residual_checks_eager (test_needle_tissue_coupler.NeedleTissueCouplerTests.test_requested_capture_leaves_host_residual_checks_eager) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_sparse_native_state_updates_are_rejected_before_trials (test_needle_tissue_coupler.NeedleTissueCouplerTests.test_sparse_native_state_updates_are_rejected_before_trials) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_withdrawal_and_offset_reentry_commit_engagement_after_convergence (test_needle_tissue_coupler.NeedleTissueCouplerTests.test_withdrawal_and_offset_reentry_commit_engagement_after_convergence) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_discard_and_single_consumption_prevent_stale_trial_reuse (test_needle_trial_commit.NeedleTrialCommitTests.test_discard_and_single_consumption_prevent_stale_trial_reuse) ... ok
+test_retained_failed_candidate_preserves_failure_without_committing_track (test_needle_trial_commit.NeedleTrialCommitTests.test_retained_failed_candidate_preserves_failure_without_committing_track) ... ok
+test_retained_trial_matches_fresh_forces_events_and_track_through_reentry (test_needle_trial_commit.NeedleTrialCommitTests.test_retained_trial_matches_fresh_forces_events_and_track_through_reentry) ... ok
+test_boundary_motion_requests_fallback_and_does_not_commit_history (test_needle_trial_forces.NeedleTrialForcesTests.test_boundary_motion_requests_fallback_and_does_not_commit_history) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_cuda_capture_replays_updated_trial_geometry (test_needle_trial_forces.NeedleTrialForcesTests.test_cuda_capture_replays_updated_trial_geometry) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_deformed_rotated_shaft_masks_and_exact_force_outputs (test_needle_trial_forces.NeedleTrialForcesTests.test_deformed_rotated_shaft_masks_and_exact_force_outputs) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_prepare_storage_and_complete_penalty_alm_force_parity (test_needle_trial_forces.NeedleTrialForcesTests.test_prepare_storage_and_complete_penalty_alm_force_parity) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_static_crossings_match_float64_cpu_endpoints_and_clear_paths (test_needle_trial_forces.NeedleTrialForcesTests.test_static_crossings_match_float64_cpu_endpoints_and_clear_paths) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_cached_bounds_match_rebuild_at_double_padding_thresholds (test_needle_trial_geometry.NeedleTrialGeometryTests.test_cached_bounds_match_rebuild_at_double_padding_thresholds) ... ok
+test_capture_reuses_scratch_for_changed_geometry_and_engagement (test_needle_trial_geometry.NeedleTrialGeometryTests.test_capture_reuses_scratch_for_changed_geometry_and_engagement) ... ok
+test_first_segment_ties_and_finite_endpoint_coverage (test_needle_trial_geometry.NeedleTrialGeometryTests.test_first_segment_ties_and_finite_endpoint_coverage) ... ok
+test_parallel_projection_matches_serial_nonuniform_curved_segments (test_needle_trial_geometry.NeedleTrialGeometryTests.test_parallel_projection_matches_serial_nonuniform_curved_segments) ... ok
+test_appended_anchor_starts_zero_without_rescaling_existing_density (test_needle_tunnel_alm.NeedleTunnelALMTests.test_appended_anchor_starts_zero_without_rescaling_existing_density) ... ok
+test_barycentric_force_and_origin_moment_include_fixed_reaction (test_needle_tunnel_alm.NeedleTunnelALMTests.test_barycentric_force_and_origin_moment_include_fixed_reaction) ... ok
+test_clearance_is_free_and_compliance_equilibrium_is_penalty_independent (test_needle_tunnel_alm.NeedleTunnelALMTests.test_clearance_is_free_and_compliance_equilibrium_is_penalty_independent) ... ok
+test_coulomb_static_traction_slip_and_reversal (test_needle_tunnel_alm.NeedleTunnelALMTests.test_coulomb_static_traction_slip_and_reversal) ... ok
+test_finite_normal_is_exact_in_one_evaluation_independent_of_warm_dual_and_rho (test_needle_tunnel_alm.NeedleTunnelALMTests.test_finite_normal_is_exact_in_one_evaluation_independent_of_warm_dual_and_rho) ... ok
+test_hard_normal_first_proposal_remains_the_original_augmented_projection (test_needle_tunnel_alm.NeedleTunnelALMTests.test_hard_normal_first_proposal_remains_the_original_augmented_projection) ... ok
+test_hard_wall_does_not_treat_geometric_overlap_as_converged (test_needle_tunnel_alm.NeedleTunnelALMTests.test_hard_wall_does_not_treat_geometric_overlap_as_converged) ... ok
+test_new_passage_has_zero_duals_and_no_track_quadrature_in_gap (test_needle_tunnel_alm.NeedleTunnelALMTests.test_new_passage_has_zero_duals_and_no_track_quadrature_in_gap) ... ok
+test_rejected_coupled_step_preserves_committed_tunnel_and_output (test_needle_tunnel_alm.NeedleTunnelALMTests.test_rejected_coupled_step_preserves_committed_tunnel_and_output) ... Module test_needle_trial_forces 18a75d7 load on device 'cuda:0' took 0.58 ms  (cached)
+Module test_needle_trial_geometry 8032c64 load on device 'cuda:0' took 0.86 ms  (cached)
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_small_local_residuals_cannot_hide_large_accumulated_reaction_change (test_needle_tunnel_alm.NeedleTunnelALMTests.test_small_local_residuals_cannot_hide_large_accumulated_reaction_change) ... ok
+test_trial_discard_preserves_duals_and_withdrawal_clears_them (test_needle_tunnel_alm.NeedleTunnelALMTests.test_trial_discard_preserves_duals_and_withdrawal_clears_them) ... ok
+test_dual_cycles_share_one_physical_accept_and_do_not_tighten_short_primal_blocks (test_needle_tunnel_coupler.TunnelCouplerTests.test_dual_cycles_share_one_physical_accept_and_do_not_tighten_short_primal_blocks) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_exhausted_shared_budget_discards_duals_and_retry_matches_fresh_step (test_needle_tunnel_coupler.TunnelCouplerTests.test_exhausted_shared_budget_discards_duals_and_retry_matches_fresh_step) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_late_resolution_rejection_preserves_nonzero_committed_multipliers (test_needle_tunnel_coupler.TunnelCouplerTests.test_late_resolution_rejection_preserves_nonzero_committed_multipliers) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_real_normal_only_coupled_step_needs_no_dual_updates (test_needle_tunnel_coupler.TunnelCouplerTests.test_real_normal_only_coupled_step_needs_no_dual_updates) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_small_hard_wall_preload_is_resolved_by_real_two_way_motion (test_needle_tunnel_coupler.TunnelCouplerTests.test_small_hard_wall_preload_is_resolved_by_real_two_way_motion) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_example_bearing_compliance_reduces_separation_without_locking_withdrawal (test_needle_tunnel_lift.NeedleTunnelLiftTests.test_example_bearing_compliance_reduces_separation_without_locking_withdrawal) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_cli_selects_exact_counts_preserves_failed_cases_and_continues (test_needle_validation_scenarios.NeedleValidationScenarioTests.test_cli_selects_exact_counts_preserves_failed_cases_and_continues) ... ok
+test_constructor_failure_is_a_saved_failed_case_in_both_suites (test_needle_validation_scenarios.NeedleValidationScenarioTests.test_constructor_failure_is_a_saved_failed_case_in_both_suites) ... ok
+test_each_frame_is_checked_and_unscheduled_failure_snapshot_is_preserved (test_needle_validation_scenarios.NeedleValidationScenarioTests.test_each_frame_is_checked_and_unscheduled_failure_snapshot_is_preserved) ... ok
+test_forwarded_parameters_define_baseline_then_refinement_is_applied (test_needle_validation_scenarios.NeedleValidationScenarioTests.test_forwarded_parameters_define_baseline_then_refinement_is_applied) ... ok
+test_integrity_failure_retains_last_trace_and_does_not_report_success (test_needle_validation_scenarios.NeedleValidationScenarioTests.test_integrity_failure_retains_last_trace_and_does_not_report_success) ... ok
+test_robustness_rejects_forwarded_geometry_and_count_overrides (test_needle_validation_scenarios.NeedleValidationScenarioTests.test_robustness_rejects_forwarded_geometry_and_count_overrides) ... ok
+test_scheduled_actions_cover_signed_direct_jumps_and_arc_reversal (test_needle_validation_scenarios.NeedleValidationScenarioTests.test_scheduled_actions_cover_signed_direct_jumps_and_arc_reversal) ... ok
+test_capture_scope_and_literal_example_arguments (test_nsys.TestProfiling.test_capture_scope_and_literal_example_arguments) ... ok
+test_collection_settings_ignore_locations_order_and_option_syntax (test_nsys.TestProfiling.test_collection_settings_ignore_locations_order_and_option_syntax) ... ok
+test_comparison_requires_same_runner_and_collection_but_allows_solver_changes (test_nsys.TestProfiling.test_comparison_requires_same_runner_and_collection_but_allows_solver_changes) ... Profiling scene: /tmp/tmpxhirtc_a/results/20261112T083549.062119Z_scene_e9thfzyk
+  Full output: /tmp/tmpxhirtc_a/results/20261112T083549.062119Z_scene_e9thfzyk/capture.log
+scene: complete; /tmp/tmpxhirtc_a/results/20261112T083549.062119Z_scene_e9thfzyk/summary.md
+Profiling scene: /tmp/tmpxhirtc_a/results/20261112T083549.084725Z_scene_z33nz0s8
+  Full output: /tmp/tmpxhirtc_a/results/20261112T083549.084725Z_scene_z33nz0s8/capture.log
+scene: complete; /tmp/tmpxhirtc_a/results/20261112T083549.084725Z_scene_z33nz0s8/summary.md
+Profiling scene: /tmp/tmpxhirtc_a/results/20261112T083549.106688Z_scene_9vj7h_i_
+  Full output: /tmp/tmpxhirtc_a/results/20261112T083549.106688Z_scene_9vj7h_i_/capture.log
+scene: complete; /tmp/tmpxhirtc_a/results/20261112T083549.106688Z_scene_9vj7h_i_/summary.md
+Profiling scene: /tmp/tmpxhirtc_a/results/20261112T083549.131545Z_scene_nmehg8je
+  Full output: /tmp/tmpxhirtc_a/results/20261112T083549.131545Z_scene_nmehg8je/capture.log
+scene: complete; /tmp/tmpxhirtc_a/results/20261112T083549.131545Z_scene_nmehg8je/summary.md
+Profiling scene: /tmp/tmpxhirtc_a/results/20261112T083549.157802Z_scene_m5wjbdua
+  Full output: /tmp/tmpxhirtc_a/results/20261112T083549.157802Z_scene_m5wjbdua/capture.log
+scene: complete; /tmp/tmpxhirtc_a/results/20261112T083549.157802Z_scene_m5wjbdua/summary.md
+ok
+test_csv_units_summary_size_and_comparison_compatibility (test_nsys.TestProfiling.test_csv_units_summary_size_and_comparison_compatibility) ... ok
+test_failed_capture_retains_history_and_error (test_nsys.TestProfiling.test_failed_capture_retains_history_and_error) ... Profiling scene: /tmp/tmp1rfuj31q/results/20261112T083549.199912Z_scene_c05ea0j3
+  Full output: /tmp/tmp1rfuj31q/results/20261112T083549.199912Z_scene_c05ea0j3/capture.log
+scene: failed; /tmp/tmp1rfuj31q/results/20261112T083549.199912Z_scene_c05ea0j3/summary.md
+ok
+test_input_changes_are_detected_with_either_argument_syntax (test_nsys.TestProfiling.test_input_changes_are_detected_with_either_argument_syntax) ... ok
+test_known_incompatible_profiler_is_rejected_before_capture (test_nsys.TestProfiling.test_known_incompatible_profiler_is_rejected_before_capture) ... ok
+test_only_discovered_video_examples_and_recorder_flags (test_nsys.TestProfiling.test_only_discovered_video_examples_and_recorder_flags) ... ok
+test_actual_info_level_dropped_record_diagnostic_invalidates_capture (test_nsys_coverage.TestGraphCoverage.test_actual_info_level_dropped_record_diagnostic_invalidates_capture) ... ok
+test_generic_boundary_warning_is_preserved_without_fabricating_record_loss (test_nsys_coverage.TestGraphCoverage.test_generic_boundary_warning_is_preserved_without_fabricating_record_loss) ... ok
+test_graph_mode_requires_actual_gpu_duration_events (test_nsys_coverage.TestGraphCoverage.test_graph_mode_requires_actual_gpu_duration_events) ... ok
+test_hardware_trace_incomplete_cupti_events_are_rejected (test_nsys_coverage.TestGraphCoverage.test_hardware_trace_incomplete_cupti_events_are_rejected) ... ok
+test_invalid_graph_records_are_not_accepted_as_duration_evidence (test_nsys_coverage.TestGraphCoverage.test_invalid_graph_records_are_not_accepted_as_duration_evidence) ... ok
+test_missing_and_corrupt_exports_fail_clearly (test_nsys_coverage.TestGraphCoverage.test_missing_and_corrupt_exports_fail_clearly) ... ok
+test_new_schema_counts_graph_membership_without_double_counting (test_nsys_coverage.TestGraphCoverage.test_new_schema_counts_graph_membership_without_double_counting) ... ok
+test_node_mode_with_graph_launches_needs_graph_kernel_evidence (test_nsys_coverage.TestGraphCoverage.test_node_mode_with_graph_launches_needs_graph_kernel_evidence) ... ok
+test_numeric_incomplete_records_are_not_a_generic_boundary_warning (test_nsys_coverage.TestGraphCoverage.test_numeric_incomplete_records_are_not_a_generic_boundary_warning) ... ok
+test_old_schema_does_not_invent_missing_graph_ids (test_nsys_coverage.TestGraphCoverage.test_old_schema_does_not_invent_missing_graph_ids) ... ok
+test_summary_preserves_observed_counts_and_diagnostics (test_nsys_coverage.TestGraphCoverage.test_summary_preserves_observed_counts_and_diagnostics) ... ok
+test_unknown_kernel_schema_does_not_report_zero_graph_work (test_nsys_coverage.TestGraphCoverage.test_unknown_kernel_schema_does_not_report_zero_graph_work) ... ok
+test_absent_or_empty_graph_events_have_no_fabricated_costs (test_nsys_graphs.TestGraphReports.test_absent_or_empty_graph_events_have_no_fabricated_costs) ... ok
+test_actual_gpu_graph_durations_are_grouped_without_merging_contexts (test_nsys_graphs.TestGraphReports.test_actual_gpu_graph_durations_are_grouped_without_merging_contexts) ... ok
+test_corrupt_sqlite_raises_a_capture_validation_error (test_nsys_graphs.TestGraphReports.test_corrupt_sqlite_raises_a_capture_validation_error) ... ok
+test_graph_summary_marks_kernel_tables_partial_and_compares_graph_totals (test_nsys_graphs.TestGraphReports.test_graph_summary_marks_kernel_tables_partial_and_compares_graph_totals) ... ok
+test_invalid_duration_is_not_reported_as_gpu_work (test_nsys_graphs.TestGraphReports.test_invalid_duration_is_not_reported_as_gpu_work) ... ok
+test_unknown_schema_fails_instead_of_silently_reporting_zero (test_nsys_graphs.TestGraphReports.test_unknown_schema_fails_instead_of_silently_reporting_zero) ... ok
+test_insertion_queries_have_nested_ranges_and_restore_original_calls (test_nsys_runner.TestNsightRunner.test_insertion_queries_have_nested_ranges_and_restore_original_calls) ... ok
+test_loop_keeps_video_frame_order_and_only_boundary_syncs (test_nsys_runner.TestNsightRunner.test_loop_keeps_video_frame_order_and_only_boundary_syncs) ... ok
+test_metadata_is_not_required_during_warmup_or_for_other_examples (test_nsys_runner.TestNsightRunner.test_metadata_is_not_required_during_warmup_or_for_other_examples) ... ok
+test_needle_failure_cannot_be_accepted_as_completed_idle_frames (test_nsys_runner.TestNsightRunner.test_needle_failure_cannot_be_accepted_as_completed_idle_frames) ... ok
+test_needle_records_success_and_distinguishes_idle_from_physics_frames (test_nsys_runner.TestNsightRunner.test_needle_records_success_and_distinguishes_idle_from_physics_frames) ... ok
+test_partial_progress_survives_failure (test_nsys_runner.TestNsightRunner.test_partial_progress_survives_failure) ... ok
+test_terminal_runs_the_optimizer_once_without_video_playback (test_nsys_runner.TestNsightRunner.test_terminal_runs_the_optimizer_once_without_video_playback) ... ok
+test_warmup_does_not_run_final_horizon_assertions (test_nsys_runner.TestNsightRunner.test_warmup_does_not_run_final_horizon_assertions) ... ok
+test_wrappers_preserve_descriptors_return_values_and_restore (test_nsys_runner.TestNsightRunner.test_wrappers_preserve_descriptors_return_values_and_restore) ... ok
+test_geometry_exports_full_pad_binding_by_vertex_identity_not_coordinates (test_parallel_scenes.ParallelSceneConfigurationTests.test_geometry_exports_full_pad_binding_by_vertex_identity_not_coordinates) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[2]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_invalid_time_scales_coordinates_and_counts_fail_before_starting_workers (test_parallel_scenes.ParallelSceneConfigurationTests.test_invalid_time_scales_coordinates_and_counts_fail_before_starting_workers) ... ok
+test_actions_affect_only_their_scene_and_selective_reset_preserves_other_history (test_parallel_scenes.ParallelScenePhysicsTests.test_actions_affect_only_their_scene_and_selective_reset_preserves_other_history) ... skipped 'Opt-in authored multi-process physics workload'
+test_seeded_resets_are_reproducible_independent_and_reset_only (test_parallel_scenes.ParallelScenePhysicsTests.test_seeded_resets_are_reproducible_independent_and_reset_only) ... skipped 'Opt-in authored multi-process physics workload'
+test_complete_positive_volume_and_rigid_floor_translation (test_phantom_cut.FullPadCutGeometryTests.test_complete_positive_volume_and_rigid_floor_translation) ... ok
+test_only_true_exterior_faces_remain_after_welding (test_phantom_cut.FullPadCutGeometryTests.test_only_true_exterior_faces_remain_after_welding) ... ok
+test_bad_damping_rejected_before_loading (test_phantom_regions_example.PhantomRegionsExampleTests.test_bad_damping_rejected_before_loading) ... ok
+test_inactive_rejects_grab_and_active_spring_deforms_fem (test_phantom_regions_example.PhantomRegionsExampleTests.test_inactive_rejects_grab_and_active_spring_deforms_fem) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 6 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 6 fixed
+ok
+test_map_click_selects_one_region_and_rejected_load_keeps_previous_selection (test_phantom_regions_example.PhantomRegionsExampleTests.test_map_click_selects_one_region_and_rejected_load_keeps_previous_selection) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 6 fixed
+[phantom regions] active=[2]: 6/12 tetrahedra, 8 nodes, 6 fixed
+[phantom regions] active=[]: 0/12 tetrahedra, 0 nodes, 0 fixed
+ok
+test_model_contains_only_selected_cells_and_inactive_display_stays_at_rest (test_phantom_regions_example.PhantomRegionsExampleTests.test_model_contains_only_selected_cells_and_inactive_display_stays_at_rest) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 6 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 6 fixed
+[phantom regions] active=[2]: 6/12 tetrahedra, 8 nodes, 6 fixed
+[phantom regions] active=[]: 0/12 tetrahedra, 0 nodes, 0 fixed
+ok
+test_model_switch_restores_each_ui_callback_once (test_phantom_regions_example.PhantomRegionsExampleTests.test_model_switch_restores_each_ui_callback_once) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 6 fixed
+[phantom regions] active=[2]: 6/12 tetrahedra, 8 nodes, 6 fixed
+[phantom regions] active=[]: 0/12 tetrahedra, 0 nodes, 0 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 6 fixed
+[phantom regions] active=[2]: 6/12 tetrahedra, 8 nodes, 6 fixed
+ok
+test_odd_substeps_match_eager_after_live_grip_changes (test_phantom_regions_example.PhantomRegionsExampleTests.test_odd_substeps_match_eager_after_live_grip_changes) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 6 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 6 fixed
+ok
+test_one_numbering_selects_original_geometry_without_changing_membership (test_phantom_regions_example.PhantomRegionsExampleTests.test_one_numbering_selects_original_geometry_without_changing_membership) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 6 fixed
+[phantom regions] active=[2]: 6/12 tetrahedra, 8 nodes, 6 fixed
+ok
+test_selection_compacts_physics_and_rejects_multiple_active_regions (test_phantom_regions_example.PhantomRegionsExampleTests.test_selection_compacts_physics_and_rejects_multiple_active_regions) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 6 fixed
+[phantom regions] active=[]: 0/12 tetrahedra, 0 nodes, 0 fixed
+[phantom regions] active=[2]: 6/12 tetrahedra, 8 nodes, 6 fixed
+ok
+test_discovery_and_stale_check (test_readme.TestReadme.test_discovery_and_stale_check) ... ok
+test_method_is_linked_without_inlining_and_required_media_are_checked (test_readme.TestReadme.test_method_is_linked_without_inlining_and_required_media_are_checked) ... ok
+test_resize_is_rejected_before_writing_wrong_frame_bytes (test_record_examples.TestVideoDimensions.test_resize_is_rejected_before_writing_wrong_frame_bytes) ... ok
+test_captured_tiny_rhs_replays_with_live_force_and_stable_buffers (test_reference_block_preconditioner.TestLinearFEMBlockPreconditioner.test_captured_tiny_rhs_replays_with_live_force_and_stable_buffers) ... ok
+test_singular_block_fallback_retains_small_positive_diagonal (test_reference_block_preconditioner.TestLinearFEMBlockPreconditioner.test_singular_block_fallback_retains_small_positive_diagonal) ... ok
+test_spd_off_diagonal_blocks_are_scale_invariant (test_reference_block_preconditioner.TestLinearFEMBlockPreconditioner.test_spd_off_diagonal_blocks_are_scale_invariant) ... ok
+test_tiny_physical_mass_falls_with_same_gravity (test_reference_block_preconditioner.TestLinearFEMBlockPreconditioner.test_tiny_physical_mass_falls_with_same_gravity) ... ok
+test_hex_reference_quadrature_and_mass_ownership (test_reference_builder.TestReferenceBuilder.test_hex_reference_quadrature_and_mass_ownership) ... ok
+test_hex_replication_remaps_indices_and_rejects_unsupported_rotation (test_reference_builder.TestReferenceBuilder.test_hex_replication_remaps_indices_and_rejects_unsupported_rotation) ... ok
+test_unique_tet_edges_and_reference_spring_material (test_reference_builder.TestReferenceBuilder.test_unique_tet_edges_and_reference_spring_material) ... ok
+test_capture_uses_updated_component_masses_and_rhs (test_reference_component_scaling.TestLinearFEMComponentScaling.test_capture_uses_updated_component_masses_and_rhs) ... ok
+test_equation_scaling_preserves_dense_solution_and_symmetry (test_reference_component_scaling.TestLinearFEMComponentScaling.test_equation_scaling_preserves_dense_solution_and_symmetry) ... ok
+test_fixed_iteration_pcg_resolves_tiny_disconnected_block (test_reference_component_scaling.TestLinearFEMComponentScaling.test_fixed_iteration_pcg_resolves_tiny_disconnected_block) ... ok
+test_mass_and_label_updates_reuse_buffers (test_reference_component_scaling.TestLinearFEMComponentScaling.test_mass_and_label_updates_reuse_buffers) ... ok
+test_sparse_preparation_after_component_scaling_preserves_bound_matrix (test_reference_component_scaling.TestLinearFEMComponentScaling.test_sparse_preparation_after_component_scaling_preserves_bound_matrix) ... ok
+test_topology_refresh_retains_scaled_connectivity_storage (test_reference_component_scaling.TestLinearFEMComponentScaling.test_topology_refresh_retains_scaled_connectivity_storage) ... ok
+test_invalid_source_rejected_before_assembly_changes (test_reference_streaming.TestLinearFEMStreaming.test_invalid_source_rejected_before_assembly_changes) ... ok
+test_legacy_rebuild_preserves_prepared_storage (test_reference_streaming.TestLinearFEMStreaming.test_legacy_rebuild_preserves_prepared_storage) ... ok
+test_moved_unchanged_tet_refreshes_current_tangent (test_reference_streaming.TestLinearFEMStreaming.test_moved_unchanged_tet_refreshes_current_tangent) ... ok
+test_original_capture_replays_after_multiple_edits (test_reference_streaming.TestLinearFEMStreaming.test_original_capture_replays_after_multiple_edits) ... ok
+test_reject_unreserved_edge_without_mutating_assembly (test_reference_streaming.TestLinearFEMStreaming.test_reject_unreserved_edge_without_mutating_assembly) ... ok
+test_split_shuffled_lineage_shared_edge_removal_cpu (test_reference_streaming.TestLinearFEMStreaming.test_split_shuffled_lineage_shared_edge_removal_cpu) ... ok
+test_split_shuffled_lineage_shared_edge_removal_cuda (test_reference_streaming.TestLinearFEMStreaming.test_split_shuffled_lineage_shared_edge_removal_cuda) ... ok
+test_dataset_label_anchors_keep_ownership_and_original_orientation (test_region_map.RegionMapTests.test_dataset_label_anchors_keep_ownership_and_original_orientation) ... ok
+test_display_orientation_rotates_region_targets_with_the_surface (test_region_map.RegionMapTests.test_display_orientation_rotates_region_targets_with_the_surface) ... ok
+test_labels_are_inside_concave_region_and_screen_picking_is_consistent (test_region_map.RegionMapTests.test_labels_are_inside_concave_region_and_screen_picking_is_consistent) ... ok
+test_visible_owner_uses_interpolated_depth_not_triangle_order (test_region_map.RegionMapTests.test_visible_owner_uses_interpolated_depth_not_triangle_order) ... ok
+test_checked_and_fast_paths_use_same_physics_and_sparse_matrix (test_solver.TestFEM.test_checked_and_fast_paths_use_same_physics_and_sparse_matrix) ... ok
+test_fast_linear_tolerance_change_refreshes_cached_solve (test_solver.TestFEM.test_fast_linear_tolerance_change_refreshes_cached_solve) ... ok
+test_fast_linear_tolerance_validation_and_original_default (test_solver.TestFEM.test_fast_linear_tolerance_validation_and_original_default) ... ok
+test_floor_force_and_fixed_contact_state_velocity_derivatives (test_solver.TestFEM.test_floor_force_and_fixed_contact_state_velocity_derivatives) ... ok
+test_force_is_energy_gradient (test_solver.TestFEM.test_force_is_energy_gradient) ... ok
+test_forward_is_independent_of_interleaved_large_adjoint_solves (test_solver.TestFEM.test_forward_is_independent_of_interleaved_large_adjoint_solves) ... ok
+test_freefall_across_mass_scales_and_zero_rhs (test_solver.TestFEM.test_freefall_across_mass_scales_and_zero_rhs) ... ok
+test_hex_quadrature_and_material_storage (test_solver.TestFEM.test_hex_quadrature_and_material_storage) ... ok
+test_load_optimization (test_solver.TestFEM.test_load_optimization) ... ok
+test_multistep_state_force_gradients_and_reuse (test_solver.TestFEM.test_multistep_state_force_gradients_and_reuse) ... ok
+test_public_solver_names_are_one_backend (test_solver.TestFEM.test_public_solver_names_are_one_backend) ... ok
+test_rest_rigid_motion_and_hex_patch (test_solver.TestFEM.test_rest_rigid_motion_and_hex_patch) ... ok
+test_step_matches_dense_solve_and_force_input_is_preserved (test_solver.TestFEM.test_step_matches_dense_solve_and_force_input_is_preserved) ... ok
+test_zero_rhs_has_nonzero_force_derivative (test_solver.TestFEM.test_zero_rhs_has_nonzero_force_derivative) ... ok
+test_captured_elastic_update_matches_fixed_budget_with_live_tangent (test_solver_conditional_graph.TestConditionalLinearGraph.test_captured_elastic_update_matches_fixed_budget_with_live_tangent) ... ok
+test_cpu_and_host_checks_retain_existing_paths (test_solver_conditional_graph.TestConditionalLinearGraph.test_cpu_and_host_checks_retain_existing_paths) ... ok
+test_unsupported_cuda_and_public_flag_fall_back (test_solver_conditional_graph.TestConditionalLinearGraph.test_unsupported_cuda_and_public_flag_fall_back) ... ok
+test_zero_first_capture_replays_changed_loads_and_warm_starts (test_solver_conditional_graph.TestConditionalLinearGraph.test_zero_first_capture_replays_changed_loads_and_warm_starts) ... ok
+test_fixed_physics_with_live_loads_warm_starts_and_preconditioners (test_solver_cpu_batch.TestCPUCGReduction.test_fixed_physics_with_live_loads_warm_starts_and_preconditioners) ... ok
+test_changed_timestep_discards_only_the_numerical_warm_start (test_solver_timestep.TestSolverTimestep.test_changed_timestep_discards_only_the_numerical_warm_start) ... ok
+test_differentiable_and_tape_timestep_changes_are_rejected (test_solver_timestep.TestSolverTimestep.test_differentiable_and_tape_timestep_changes_are_rejected) ... ok
+test_full_matrix_and_physical_update_match_fresh_solvers (test_solver_timestep.TestSolverTimestep.test_full_matrix_and_physical_update_match_fresh_solvers) ... ok
+test_streaming_and_invalid_timestep_changes_are_rejected (test_solver_timestep.TestSolverTimestep.test_streaming_and_invalid_timestep_changes_are_rejected) ... ok
+test_installed_resources_load_from_unrelated_working_directory_without_sibling (test_standalone.StandalonePackageTests.test_installed_resources_load_from_unrelated_working_directory_without_sibling) ... ok
+test_metadata_has_no_sibling_or_local_external_dependency (test_standalone.StandalonePackageTests.test_metadata_has_no_sibling_or_local_external_dependency) ... ok
+test_requested_examples_are_discovered_from_the_package (test_standalone.StandalonePackageTests.test_requested_examples_are_discovered_from_the_package) ... ok
+test_runtime_has_no_foreign_solver_import_or_external_symlink (test_standalone.StandalonePackageTests.test_runtime_has_no_foreign_solver_import_or_external_symlink) ... ok
+test_drop_failure_disguised_as_success_cannot_pass (test_suture_full_sequence.AuditTests.test_drop_failure_disguised_as_success_cannot_pass) ... ok
+test_failed_pull_initialization_does_not_record_successful_transition (test_suture_full_sequence.AuditTests.test_failed_pull_initialization_does_not_record_successful_transition) ... ok
+test_fixed_position_velocity_and_nonfinite_tissue_states_are_rejected (test_suture_full_sequence.AuditTests.test_fixed_position_velocity_and_nonfinite_tissue_states_are_rejected) ... ok
+test_inverted_and_collapsed_accepted_states_are_rejected (test_suture_full_sequence.AuditTests.test_inverted_and_collapsed_accepted_states_are_rejected) ... ok
+test_successful_pull_transition_survives_immediate_same_frame_drop (test_suture_full_sequence.AuditTests.test_successful_pull_transition_survives_immediate_same_frame_drop) ... ok
+test_time_limit_and_partial_row_cannot_pass (test_suture_full_sequence.AuditTests.test_time_limit_and_partial_row_cannot_pass) ... ok
+test_every_default_stitch_closing_pull_and_settled_drop (test_suture_full_sequence.FullDefaultSequenceTests.test_every_default_stitch_closing_pull_and_settled_drop) ... skipped 'Opt-in full default physical suturing sequence'
+test_curve_joins_the_end_points_along_the_end_directions (test_suture_stitches.BridgeTests.test_curve_joins_the_end_points_along_the_end_directions)
+Fails if the curve does not start and end at the given points along the given directions. ... ok
+test_neighbouring_points_are_about_a_step_apart (test_suture_stitches.BridgeTests.test_neighbouring_points_are_about_a_step_apart)
+Fails if the curve is sampled so coarsely that neighbouring points are farther apart than its bound. ... ok
+test_reach_sets_how_wide_the_curve_turns (test_suture_stitches.BridgeTests.test_reach_sets_how_wide_the_curve_turns)
+Fails if the inner control points are not the given fraction of the chord from the ends. ... ok
+Module make_gmres_solve_least_squares_kernel_tiled__locals__gmres_solve_least_squares_tiled_be257604 9ef02db load on device 'cuda:0' took 0.52 ms  (cached)
+Module warp.optim.linear d7c8d3f load on device 'cuda:0' took 1.60 ms  (cached)
+Module warp.optim.linear 788e8a8 load on device 'cuda:0' took 1.77 ms  (cached)
+Module warp.optim.linear da475f8 load on device 'cuda:0' took 1.73 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.sparse_update 822432f load on device 'cpu' took 0.20 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.implicit_predictor 028ff9a load on device 'cpu' took 0.09 ms  (cached)
+Module warp.optim.linear 5da388c load on device 'cpu' took 0.29 ms  (cached)
+Module diffsim_optimize 9a0ccf1 load on device 'cuda:0' took 0.57 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.fixed_particles d29760f load on device 'cpu' took 0.21 ms  (cached)
+Module make_gmres_solve_least_squares_kernel_tiled__locals__gmres_solve_least_squares_tiled_535e4c66 88fa1b4 load on device 'cuda:0' took 0.52 ms  (cached)
+Module warp.optim.linear e5b6106 load on device 'cuda:0' took 2.07 ms  (cached)
+Module _bsr_get_diag_kernel_7a6beb6f f6efd1b load on device 'cpu' took 0.19 ms  (cached)
+Module _extract_inverse_diagonal_blocked_23cffb22 05ee4fb load on device 'cpu' took 0.09 ms  (cached)
+Module _diag_mv_kernel_cf66d25c 1949161 load on device 'cpu' took 0.09 ms  (cached)
+[phantom regions] active=[1]: 29,160/413,405 tetrahedra, 7,205 nodes, 1,841 fixed
+test_example_runs_thirty_frames_headless (test_suture_stitches.BundledPadTests.test_example_runs_thirty_frames_headless)
+Fails if the default run cannot be built without a window, stops or fails within half a second. ... ok
+test_passages_index_the_track_points_of_each_lip (test_suture_stitches.BundledPadTests.test_passages_index_the_track_points_of_each_lip)
+Fails if a passage does not span the track points of one stretch of tissue, first to last. ... ok
+test_row_has_the_requested_number_of_stitches_the_needle_can_make (test_suture_stitches.BundledPadTests.test_row_has_the_requested_number_of_stitches_the_needle_can_make)
+Fails if the row is short, or a stitch's sweep goes through pad material that is not the tissue. ... ok
+test_row_is_the_first_stitch_and_copies_along_the_wound (test_suture_stitches.BundledPadTests.test_row_is_the_first_stitch_and_copies_along_the_wound)
+Fails if the stitches are not the given one and copies moved by whole pitches along the wound. ... ok
+test_rows_the_needle_cannot_make_are_refused (test_suture_stitches.BundledPadTests.test_rows_the_needle_cannot_make_are_refused)
+Fails if a row is returned although its first stitch or enough of its copies cannot be made. ... ok
+test_track_points_lie_in_the_tissue_on_the_needle_circle (test_suture_stitches.BundledPadTests.test_track_points_lie_in_the_tissue_on_the_needle_circle)
+Fails if a track point's tetrahedron and weights do not give its point of the stitch's circle. ... ok
+test_node_on_a_corner_takes_the_bisector (test_suture_stitches.LayAlongPathTests.test_node_on_a_corner_takes_the_bisector)
+Fails if a node that lies on a corner of the path does not take the unit bisector of its two directions. ... ok
+test_node_on_a_corner_takes_the_bisector_whatever_the_rounding (test_suture_stitches.LayAlongPathTests.test_node_on_a_corner_takes_the_bisector_whatever_the_rounding)
+Fails while the rounding of a node's station decides whether a node on a corner gets the bisector. ... expected failure
+test_nodes_are_one_spacing_apart_along_the_path (test_suture_stitches.LayAlongPathTests.test_nodes_are_one_spacing_apart_along_the_path)
+Fails if a node is off the path or not at its multiple of the spacing along it. ... ok
+test_path_must_be_as_long_as_the_chain (test_suture_stitches.LayAlongPathTests.test_path_must_be_as_long_as_the_chain)
+Fails if a chain longer than its path is laid anyway, or one that just fits is refused. ... ok
+test_repeated_path_points_are_refused (test_suture_stitches.LayAlongPathTests.test_repeated_path_points_are_refused)
+Fails if a path with two equal neighbouring points, which has no direction there, is accepted. ... ok
+test_tangents_are_the_unit_directions_of_the_path (test_suture_stitches.LayAlongPathTests.test_tangents_are_the_unit_directions_of_the_path)
+Fails if a node's slope is not the unit direction of the segment it lies on. ... ok
+test_lift_moves_across_only_with_the_whole_needle_above_the_clear_height (test_suture_stitches.NeedleScheduleTests.test_lift_moves_across_only_with_the_whole_needle_above_the_clear_height)
+Fails if the needle turns or moves sideways during a lift while a point of it is below the clear height. ... ok
+test_lift_moves_no_point_of_the_needle_farther_than_its_length (test_suture_stitches.NeedleScheduleTests.test_lift_moves_no_point_of_the_needle_farther_than_its_length)
+Fails if a point of the needle goes a longer way than the length the lift's duration is made from. ... ok
+test_pose_is_continuous_where_a_stitch_and_a_travel_meet (test_suture_stitches.NeedleScheduleTests.test_pose_is_continuous_where_a_stitch_and_a_travel_meet)
+Fails if the needle jumps at the end of a stitch or of the travel after it. ... ok
+test_stitch_takes_the_tip_from_its_approach_angle_to_where_the_tail_has_left (test_suture_stitches.NeedleScheduleTests.test_stitch_takes_the_tip_from_its_approach_angle_to_where_the_tail_has_left)
+Fails if a stitch does not start at the plan's first pose, end at its leave angle or stay on its circle. ... ok
+test_time_past_the_end_keeps_the_last_pose (test_suture_stitches.NeedleScheduleTests.test_time_past_the_end_keeps_the_last_pose)
+Fails if the schedule runs on, or wraps around, after its duration. ... ok
+test_tip_cruises_at_the_pass_speed (test_suture_stitches.NeedleScheduleTests.test_tip_cruises_at_the_pass_speed)
+Fails while the tip's steady speed during a pass is below the pass speed the schedule was given. ... expected failure
+test_tip_is_never_faster_than_the_pass_speed (test_suture_stitches.NeedleScheduleTests.test_tip_is_never_faster_than_the_pass_speed)
+Fails if the tip goes along its circle faster than the pass speed, or the row takes less time than that. ... ok
+test_travel_reports_the_stitch_it_left_at_its_leave_angle (test_suture_stitches.NeedleScheduleTests.test_travel_reports_the_stitch_it_left_at_its_leave_angle)
+Fails if the stitch index advances before the travel is over or the tip angle moves during it. ... ok
+test_turn_and_lift_start_where_the_stitch_left_and_end_at_the_next_first_pose (test_suture_stitches.NeedleScheduleTests.test_turn_and_lift_start_where_the_stitch_left_and_end_at_the_next_first_pose)
+Fails if a travel does not begin at the leave pose of its stitch or end at the next stitch's first pose. ... ok
+test_turn_keeps_the_needle_on_a_circle_that_moves_to_the_next_stitch (test_suture_stitches.NeedleScheduleTests.test_turn_keeps_the_needle_on_a_circle_that_moves_to_the_next_stitch)
+Fails if the needle leaves its circle during a turn or the circle does not move steadily to the next one. ... ok
+test_length_is_reached_with_less_than_one_row_and_turn_to_spare (test_suture_stitches.SerpentineTests.test_length_is_reached_with_less_than_one_row_and_turn_to_spare)
+Fails if the polyline is shorter than asked, or goes on after it has reached the length. ... ok
+test_rows_run_back_and_forth_two_turn_radii_apart (test_suture_stitches.SerpentineTests.test_rows_run_back_and_forth_two_turn_radii_apart)
+Fails if a row is not straight along the row direction, not opposite to its neighbour or not 2 r from it. ... ok
+test_turns_are_half_circles_of_the_turn_radius (test_suture_stitches.SerpentineTests.test_turns_are_half_circles_of_the_turn_radius)
+Fails if the points between two rows leave the half circle that joins them or are more than a step apart. ... ok
+test_composite_preserves_uncovered_and_invalid_pixels (test_suturebot_cameras.CalibratedCameraTests.test_composite_preserves_uncovered_and_invalid_pixels) ... ok
+test_cv_rays_and_pose_preserve_world_projection (test_suturebot_cameras.CalibratedCameraTests.test_cv_rays_and_pose_preserve_world_projection) ... ok
+test_edges_ignore_coplanar_partitions_but_preserve_geometry (test_suturebot_cameras.CalibratedCameraTests.test_edges_ignore_coplanar_partitions_but_preserve_geometry) ... ok
+test_generic_overlay_rejects_ambiguous_order_and_four_view_wrapper_stays_strict (test_suturebot_cameras.CalibratedCameraTests.test_generic_overlay_rejects_ambiguous_order_and_four_view_wrapper_stays_strict) ... ok
+test_sensor_projection_occlusion_motion_and_unavailable_frames (test_suturebot_cameras.CalibratedCameraTests.test_sensor_projection_occlusion_motion_and_unavailable_frames) ... ok
+test_variable_views_render_in_declared_order_and_show_placeholder_labels (test_suturebot_cameras.CalibratedCameraTests.test_variable_views_render_in_declared_order_and_show_placeholder_labels) ... ok
+test_compatibility_alias_is_hidden_but_explicit_sample_still_works (test_suturebot_cli.TestSutureBotCLI.test_compatibility_alias_is_hidden_but_explicit_sample_still_works) ... ok
+test_explicit_sample_is_preserved_even_when_menu_requested (test_suturebot_cli.TestSutureBotCLI.test_explicit_sample_is_preserved_even_when_menu_requested) ... ok
+test_forced_menu_accepts_piped_choice_and_retries_invalid_input (test_suturebot_cli.TestSutureBotCLI.test_forced_menu_accepts_piped_choice_and_retries_invalid_input) ... ok
+test_known_alignment_failure_is_not_presented_as_only_unvalidated (test_suturebot_cli.TestSutureBotCLI.test_known_alignment_failure_is_not_presented_as_only_unvalidated) ... ok
+test_listing_uses_actual_playback_scope_and_features (test_suturebot_cli.TestSutureBotCLI.test_listing_uses_actual_playback_scope_and_features) ... ok
+test_quit_and_end_of_input_exit_without_viewer (test_suturebot_cli.TestSutureBotCLI.test_quit_and_end_of_input_exit_without_viewer) ... ok
+test_scripted_and_headless_launches_keep_default_without_reading_stdin (test_suturebot_cli.TestSutureBotCLI.test_scripted_and_headless_launches_keep_default_without_reading_stdin) ... ok
+test_terminal_selects_number_name_and_default (test_suturebot_cli.TestSutureBotCLI.test_terminal_selects_number_name_and_default) ... ok
+test_rotated_translated_body_contact_conserves_force_and_torque (test_suturebot_example.PadContactTests.test_rotated_translated_body_contact_conserves_force_and_torque) ... ok
+Module newton_solver_suturebot._src.solvers.thread.capsules 976767f load on device 'cuda:0' took 0.87 ms  (cached)
+Suturing: running, stitch, stitch 1 of 3, 0 of 22 track points threaded, largest pull on a track point 0.000 mN, largest tissue displacement 0.000 mm, 120 accepted steps, 0 refinements
+Module create_kernel__locals__render_megakernel_34712872 085434c load on device 'cuda:0' took 0.76 ms  (cached)
+Module newton_solver_suturebot.examples._suturebot_contacts b658fcb load on device 'cuda:0' took 0.53 ms  (cached)
+[phantom regions] active=[]: 0/413,405 tetrahedra, 0 nodes, 0 fixed
+/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/.venv/lib/python3.12/site-packages/newton/_src/solvers/mujoco/solver_mujoco.py:4908: NewtonWarning: SolverMuJoCo is converting 1 joint(s) outside articulations as standalone world roots: ['/SutureBot/FixtureFixed']. This fallback is specific to SolverMuJoCo.
+  self._convert_to_mjc(
+test_imported_drives_needle_support_and_rcm (test_suturebot_example.SuturebotRigTests.test_imported_drives_needle_support_and_rcm) ... ok
+test_invalid_tool_control_is_atomic (test_suturebot_example.SuturebotRigTests.test_invalid_tool_control_is_atomic) ... ok
+test_needle_has_physical_mujoco_contact_with_a_jaw (test_suturebot_example.SuturebotRigTests.test_needle_has_physical_mujoco_contact_with_a_jaw) ... ok
+test_backward_seek_replays_the_same_physics (test_suturebot_needle.TestSutureBotNeedle.test_backward_seek_replays_the_same_physics) ... ok
+test_closure_while_other_arm_holds_does_not_arm_a_later_remote_pickup (test_suturebot_needle.TestSutureBotNeedle.test_closure_while_other_arm_holds_does_not_arm_a_later_remote_pickup) ... ok
+test_distal_segment_handoff_waits_for_release_and_preserves_pose (test_suturebot_needle.TestSutureBotNeedle.test_distal_segment_handoff_waits_for_release_and_preserves_pose)
+A needle near the jaw tip can miss its centre without missing its jaws. ... ok
+test_fresh_closure_translates_to_segment_without_rotation (test_suturebot_needle.TestSutureBotNeedle.test_fresh_closure_translates_to_segment_without_rotation) ... ok
+test_grasp_segment_does_not_extend_past_its_finite_endpoint (test_suturebot_needle.TestSutureBotNeedle.test_grasp_segment_does_not_extend_past_its_finite_endpoint) ... ok
+test_handoff_requires_close_jaw_and_preserves_pose (test_suturebot_needle.TestSutureBotNeedle.test_handoff_requires_close_jaw_and_preserves_pose) ... ok
+test_hysteresis_release_gravity_and_no_far_capture (test_suturebot_needle.TestSutureBotNeedle.test_hysteresis_release_gravity_and_no_far_capture) ... ok
+test_initial_free_needle_still_falls_when_support_hold_is_absent (test_suturebot_needle.TestSutureBotNeedle.test_initial_free_needle_still_falls_when_support_hold_is_absent) ... ok
+test_initial_support_hold_ends_at_first_grasp_and_never_returns_after_release (test_suturebot_needle.TestSutureBotNeedle.test_initial_support_hold_ends_at_first_grasp_and_never_returns_after_release) ... ok
+test_initial_support_hold_rejects_an_existing_holder (test_suturebot_needle.TestSutureBotNeedle.test_initial_support_hold_rejects_an_existing_holder) ... ok
+test_mismatched_clock_is_rejected (test_suturebot_needle.TestSutureBotNeedle.test_mismatched_clock_is_rejected) ... ok
+test_nonfinite_grasp_segment_is_rejected (test_suturebot_needle.TestSutureBotNeedle.test_nonfinite_grasp_segment_is_rejected) ... ok
+test_repeated_closures_translate_into_each_grip_without_rotating (test_suturebot_needle.TestSutureBotNeedle.test_repeated_closures_translate_into_each_grip_without_rotating) ... ok
+test_every_labeled_recording_shows_spheres_on_an_untextured_pad (test_suturebot_point_labels.TestSutureBotPointLabels.test_every_labeled_recording_shows_spheres_on_an_untextured_pad) ... ok
+test_label_spheres_render_display_color_at_material_points (test_suturebot_point_labels.TestSutureBotPointLabels.test_label_spheres_render_display_color_at_material_points) ... ok
+test_reference_triangle_bindings (test_suturebot_point_labels.TestSutureBotPointLabels.test_reference_triangle_bindings) ... ok
+test_no_active_tissue_does_not_misreport_fixed_pad_contact_as_a_press (test_suturebot_press.SuturebotPressTests.test_no_active_tissue_does_not_misreport_fixed_pad_contact_as_a_press) ... Module newton._src.sim.articulation 26c5537 load on device 'cuda:0' took 4.81 ms  (cached)
+Module validate_and_correct_inertia_kernel_5f6549e0 5e20ea4 load on device 'cpu' took 0.20 ms  (cached)
+Module compute_body_inverses_kernel_ec4671e6 28153d3 load on device 'cpu' took 0.10 ms  (cached)
+Module newton._src.solvers.mujoco.kernels 4693fd0 load on device 'cpu' took 0.31 ms  (cached)
+Module newton._src.sim.articulation 8b1067d load on device 'cpu' took 0.19 ms  (cached)
+Module create_kernel__locals__render_megakernel_8500a824 60be957 load on device 'cuda:0' took 0.72 ms  (cached)
+[phantom regions] active=[]: 0/413,405 tetrahedra, 0 nodes, 0 fixed
+ok
+test_runtime_demo_loads_free_tissue_recovers_and_resets_after_selection (test_suturebot_press.SuturebotPressTests.test_runtime_demo_loads_free_tissue_recovers_and_resets_after_selection) ... Module mujoco_warp._src.set_const c2a535e load on device 'cuda:0' took 2.10 ms  (cached)
+Module _accumulate_subtreemass__locals__kernel_29c32c95 29c32c9 load on device 'cuda:0' took 0.36 ms  (cached)
+Module mujoco_warp._src.smooth 11fd811 load on device 'cuda:0' took 1.49 ms  (cached)
+Module _subtree_com_acc__locals__kernel_edcab3a5 edcab3a load on device 'cuda:0' took 0.28 ms  (cached)
+Module _crb_accumulate__locals__kernel_c473801d c473801 load on device 'cuda:0' took 0.27 ms  (cached)
+Module _small_cholesky_factorize_block__locals__kernel_79a57364 20d25ea load on device 'cuda:0' took 0.33 ms  (cached)
+Module _tile_cholesky_factorize_block__locals__kernel_9f936d9a 297f8b4 load on device 'cuda:0' took 19.36 ms  (cached)
+Module _transmission__locals__kernel_1bdbf482 1bdbf48 load on device 'cuda:0' took 0.60 ms  (cached)
+Module _small_cholesky_solve_block__locals__kernel_c4e2dcc2 4c4cbb4 load on device 'cuda:0' took 0.33 ms  (cached)
+Module _tile_cholesky_solve_block__locals__kernel_4e00920c d5eb3a9 load on device 'cuda:0' took 20.06 ms  (cached)
+Module _nxn_broadphase__locals__kernel_f67d158d f67d158 load on device 'cuda:0' took 0.44 ms  (cached)
+Module _nxn_broadphase__locals__kernel_f67d158d 0ef9096 load on device 'cuda:0' took 0.30 ms  (cached)
+Module _primitive_narrowphase__locals__primitive_narrowphase_0e647373 0e64737 load on device 'cuda:0' took 0.83 ms  (cached)
+Module mujoco_warp._src.constraint 8d4d513 load on device 'cuda:0' took 0.30 ms  (cached)
+Module _equality_weld__locals__kernel_c9bf2fd2 c9bf2fd load on device 'cuda:0' took 0.51 ms  (cached)
+Module _friction_dof__locals__kernel_17c6dde8 17c6dde load on device 'cuda:0' took 0.35 ms  (cached)
+Module _limit_slide_hinge__locals__kernel_04ef6385 04ef638 load on device 'cuda:0' took 0.37 ms  (cached)
+Module _efc_contact_init__locals__kernel_2a59fcea 2a59fce load on device 'cuda:0' took 0.33 ms  (cached)
+Module _efc_contact_jac_dense__locals__kernel_875229a2 564801a load on device 'cuda:0' took 0.37 ms  (cached)
+Module _efc_contact_update__locals__kernel_efb3ac6e efb3ac6 load on device 'cuda:0' took 0.32 ms  (cached)
+Module mujoco_warp._src.forward 827bf97 load on device 'cuda:0' took 1.23 ms  (cached)
+Module mujoco_warp._src.passive 051fd2b load on device 'cuda:0' took 0.58 ms  (cached)
+Module _gravity_force__locals__kernel_0a335ab0 0a335ab load on device 'cuda:0' took 0.30 ms  (cached)
+Module _qfrc_passive_kernel__locals__kernel_976399dd 976399d load on device 'cuda:0' took 0.35 ms  (cached)
+Module _cfrc_backward__locals__kernel_2b55454e 2b55454 load on device 'cuda:0' took 0.27 ms  (cached)
+Module _qfrc_actuator__locals__kernel_5704235d 5704235 load on device 'cuda:0' took 0.30 ms  (cached)
+Module _qfrc_smooth__locals__kernel_8b823980 8b82398 load on device 'cuda:0' took 0.26 ms  (cached)
+Module mujoco_warp._src.support 970ef9a load on device 'cuda:0' took 0.33 ms  (cached)
+Module _small_cholesky_factorize_solve_block__locals__kernel_9da335f1 a5c2521 load on device 'cuda:0' took 0.31 ms  (cached)
+Module _tile_cholesky_factorize_solve_block__locals__kernel_379cda95 6fb4a35 load on device 'cuda:0' took 29.37 ms  (cached)
+Module _solve_init_dof__locals__kernel_60896b56 60896b5 load on device 'cuda:0' took 0.38 ms  (cached)
+Module mujoco_warp._src.solver 38fd86c load on device 'cuda:0' took 0.68 ms  (cached)
+Module _solve_init_jaref_kernel__locals__kernel_633e9a87 633e9a8 load on device 'cuda:0' took 0.30 ms  (cached)
+Module mul_m_kernel__locals___mul_m_f3de1cc7 f3de1cc load on device 'cuda:0' took 0.41 ms  (cached)
+Module _update_constraint_efc__locals__kernel_867d7711 867d771 load on device 'cuda:0' took 0.29 ms  (cached)
+Module _update_constraint_init_qfrc_constraint_dense__locals__kernel_bd7ca2ec bd7ca2e load on device 'cuda:0' took 0.27 ms  (cached)
+Module _update_gradient_zero_grad_dot__locals__kernel_b20934d7 b20934d load on device 'cuda:0' took 0.25 ms  (cached)
+Module _update_gradient_grad__locals__kernel_b7028268 b702826 load on device 'cuda:0' took 0.26 ms  (cached)
+Module _update_gradient_JTDAJ_dense_tiled__locals__kernel_8dc43c83 db4db9d load on device 'cuda:0' took 0.93 ms  (cached)
+Module _update_gradient_cholesky__locals__kernel_c1cb9e18 f462ea4 load on device 'cuda:0' took 29.27 ms  (cached)
+Module _linesearch_iterative_kernel__locals__kernel_f142bc43 cb1721a load on device 'cuda:0' took 0.57 ms  (cached)
+Module _update_constraint_efc__locals__kernel_ed0ab50a ed0ab50 load on device 'cuda:0' took 0.29 ms  (cached)
+Module _update_constraint_init_qfrc_constraint_dense__locals__kernel_d92a3413 d92a341 load on device 'cuda:0' took 0.28 ms  (cached)
+Module _update_gradient_zero_grad_dot__locals__kernel_e9f8c963 e9f8c96 load on device 'cuda:0' took 0.26 ms  (cached)
+Module _update_gradient_grad__locals__kernel_a0aed6fb a0aed6f load on device 'cuda:0' took 0.24 ms  (cached)
+Module _update_gradient_cholesky__locals__kernel_31abb8ff 7511a88 load on device 'cuda:0' took 29.57 ms  (cached)
+Module _solve_done__locals__kernel_5c8f0d18 5c8f0d1 load on device 'cuda:0' took 0.34 ms  (cached)
+Module mujoco_warp._src.derivative b739a14 load on device 'cuda:0' took 1.22 ms  (cached)
+Module _qderiv_actuator_passive_actuation_sparse__locals__kernel_78ba6323 78ba632 load on device 'cuda:0' took 0.34 ms  (cached)
+Module _next_time_builder__locals___next_time_bc454e15 bc454e1 load on device 'cuda:0' took 0.31 ms  (cached)
+[phantom regions] active=[1]: 29,160/413,405 tetrahedra, 7,205 nodes, 1,841 fixed
+[phantom regions] active=[]: 0/413,405 tetrahedra, 0 nodes, 0 fixed
+[phantom regions] active=[1]: 29,160/413,405 tetrahedra, 7,205 nodes, 1,841 fixed
+ok
+test_copied_package_has_no_dependency_on_preparation_checkout (test_suturebot_recording.PreparedReplayTests.test_copied_package_has_no_dependency_on_preparation_checkout) ... ok
+test_every_recording_uses_distinct_instrument_assets_with_unchanged_scene_poses (test_suturebot_recording.PreparedReplayTests.test_every_recording_uses_distinct_instrument_assets_with_unchanged_scene_poses) ... ok
+test_packaged_usd_and_all_measured_frames_share_the_camera_clock (test_suturebot_recording.PreparedReplayTests.test_packaged_usd_and_all_measured_frames_share_the_camera_clock) ... ok
+test_switch_recordings_preserves_each_source_clock_and_replays_only_prepared_scene (test_suturebot_recording.PreparedReplayTests.test_switch_recordings_preserves_each_source_clock_and_replays_only_prepared_scene) ... ok
+test_tool_mesh_alias_uses_the_default_geometry_and_recorded_motion (test_suturebot_recording.PreparedReplayTests.test_tool_mesh_alias_uses_the_default_geometry_and_recorded_motion) ... ok
+test_camera_clock_cannot_drift_even_one_nanosecond (test_suturebot_recording.RecordingClockTests.test_camera_clock_cannot_drift_even_one_nanosecond) ... ok
+test_explicit_catalog_and_direct_path_do_not_use_dvrk_lookup (test_suturebot_recording.RecordingClockTests.test_explicit_catalog_and_direct_path_do_not_use_dvrk_lookup) ... ok
+test_float_timestamps_are_rejected (test_suturebot_recording.RecordingClockTests.test_float_timestamps_are_rejected) ... ok
+test_improper_camera_frames_are_rejected (test_suturebot_recording.RecordingClockTests.test_improper_camera_frames_are_rejected) ... ok
+test_internal_clock_gaps_are_rejected (test_suturebot_recording.RecordingClockTests.test_internal_clock_gaps_are_rejected) ... ok
+test_missing_camera_pose_stays_explicitly_unavailable (test_suturebot_recording.RecordingClockTests.test_missing_camera_pose_stays_explicitly_unavailable) ... ok
+test_nonuniform_nanosecond_clock_seek_and_loop (test_suturebot_recording.RecordingClockTests.test_nonuniform_nanosecond_clock_seek_and_loop) ... ok
+test_placeholder_provenance_is_explicit_and_does_not_assert_alignment (test_suturebot_recording.RecordingClockTests.test_placeholder_provenance_is_explicit_and_does_not_assert_alignment) ... ok
+test_schema_one_does_not_silently_accept_a_different_camera_contract (test_suturebot_recording.RecordingClockTests.test_schema_one_does_not_silently_accept_a_different_camera_contract) ... ok
+test_schema_two_camera_order_preserves_pose_identity_and_availability (test_suturebot_recording.RecordingClockTests.test_schema_two_camera_order_preserves_pose_identity_and_availability) ... ok
+test_schema_two_rejects_ambiguous_camera_order_and_mismatched_arrays (test_suturebot_recording.RecordingClockTests.test_schema_two_rejects_ambiguous_camera_order_and_mismatched_arrays) ... ok
+test_shared_models_resolve_within_declared_asset_root_and_reject_external_paths (test_suturebot_recording.RecordingClockTests.test_shared_models_resolve_within_declared_asset_root_and_reject_external_paths) ... ok
+test_source_phase_limits_playback_without_rewriting_source_clock (test_suturebot_recording.RecordingClockTests.test_source_phase_limits_playback_without_rewriting_source_clock) ... ok
+test_unsupported_clock_boundary_is_never_replayed (test_suturebot_recording.RecordingClockTests.test_unsupported_clock_boundary_is_never_replayed) ... ok
+test_actual_runtime_anchor_rejects_missing_shifted_or_wrong_body (test_suturebot_thread.ThreadReferenceTests.test_actual_runtime_anchor_rejects_missing_shifted_or_wrong_body) ... ok
+test_alias_sample_id_does_not_invalidate_identical_anchor_assets (test_suturebot_thread.ThreadReferenceTests.test_alias_sample_id_does_not_invalidate_identical_anchor_assets) ... ok
+test_attached_schema_cannot_silently_drop_its_anchor (test_suturebot_thread.ThreadReferenceTests.test_attached_schema_cannot_silently_drop_its_anchor) ... ok
+test_attachment_mirrors_cannot_silently_disagree (test_suturebot_thread.ThreadReferenceTests.test_attachment_mirrors_cannot_silently_disagree) ... ok
+test_detached_control_and_sample_endpoint_is_rejected (test_suturebot_thread.ThreadReferenceTests.test_detached_control_and_sample_endpoint_is_rejected) ... ok
+test_initial_held_runtime_preserves_anchor_without_grasp_translation (test_suturebot_thread.ThreadReferenceTests.test_initial_held_runtime_preserves_anchor_without_grasp_translation) ... Warning: The rigid body at /Needle/Body has a possibly invalid inertia tensor of {1.0, 1.0, 1.0}, small sphere approximated inertia was used. Either specify correct values in the mass properties, or add collider(s) to any shape(s) that you wish to automatically compute mass properties for. If you do not want the objects to collide, add colliders regardless then disable the 'enable collision' property. [python3.12]
+Warning: The rigid body at /Needle/Body has a possibly invalid inertia tensor of {1.0, 1.0, 1.0}, small sphere approximated inertia was used. Either specify correct values in the mass properties, or add collider(s) to any shape(s) that you wish to automatically compute mass properties for. If you do not want the objects to collide, add colliders regardless then disable the 'enable collision' property. [python3.12]
+ok
+test_invalid_oriented_arrays_are_not_silently_repaired (test_suturebot_thread.ThreadReferenceTests.test_invalid_oriented_arrays_are_not_silently_repaired) ... ok
+test_legacy_partial_reference_does_not_claim_an_attachment (test_suturebot_thread.ThreadReferenceTests.test_legacy_partial_reference_does_not_claim_an_attachment) ... ok
+test_oriented_samples_and_original_source_clock_are_preserved (test_suturebot_thread.ThreadReferenceTests.test_oriented_samples_and_original_source_clock_are_preserved) ... ok
+test_quaternion_sign_continuity_preserves_rotation_without_repair (test_suturebot_thread.ThreadReferenceTests.test_quaternion_sign_continuity_preserves_rotation_without_repair) ... ok
+test_stale_baked_usd_endpoint_is_rejected_even_with_correct_metadata (test_suturebot_thread.ThreadReferenceTests.test_stale_baked_usd_endpoint_is_rejected_even_with_correct_metadata) ... ok
+test_stale_initial_pose_and_needle_geometry_are_rejected (test_suturebot_thread.ThreadReferenceTests.test_stale_initial_pose_and_needle_geometry_are_rejected) ... ok
+test_stale_or_unsupported_source_frame_is_rejected (test_suturebot_thread.ThreadReferenceTests.test_stale_or_unsupported_source_frame_is_rejected) ... ok
+test_start_and_end_anchors_use_rotated_body_local_point (test_suturebot_thread.ThreadReferenceTests.test_start_and_end_anchors_use_rotated_body_local_point) ... ok
+test_thread_usd_cannot_introduce_collision_or_rigid_bodies (test_suturebot_thread.ThreadReferenceTests.test_thread_usd_cannot_introduce_collision_or_rigid_bodies) ... Warning: The rigid body at /SutureBotThread has a possibly invalid inertia tensor of {1.0, 1.0, 1.0}, small sphere approximated inertia was used. Either specify correct values in the mass properties, or add collider(s) to any shape(s) that you wish to automatically compute mass properties for. If you do not want the objects to collide, add colliders regardless then disable the 'enable collision' property. [python3.12]
+ok
+test_unclamped_or_partially_sampled_spline_domain_is_rejected (test_suturebot_thread.ThreadReferenceTests.test_unclamped_or_partially_sampled_spline_domain_is_rejected) ... ok
+test_coupled_rejection_restores_native_and_fem_state_then_retry_commits_once (test_tet_step_guard.TetStepGuardTests.test_coupled_rejection_restores_native_and_fem_state_then_retry_commits_once) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_invalid_endpoint_initial_volume_and_nonfinite_geometry_fail_closed (test_tet_step_guard.TetStepGuardTests.test_invalid_endpoint_initial_volume_and_nonfinite_geometry_fail_closed) ... ok
+test_large_finite_coefficients_cannot_overflow_derivative_root_search (test_tet_step_guard.TetStepGuardTests.test_large_finite_coefficients_cannot_overflow_derivative_root_search) ... ok
+test_positive_compression_shear_translation_and_scale_are_not_projected (test_tet_step_guard.TetStepGuardTests.test_positive_compression_shear_translation_and_scale_are_not_projected) ... ok
+test_positive_endpoints_do_not_hide_interior_orientation_crossings (test_tet_step_guard.TetStepGuardTests.test_positive_endpoints_do_not_hide_interior_orientation_crossings) ... ok
+test_zero_material_reserved_slots_are_skipped_before_touching_geometry (test_tet_step_guard.TetStepGuardTests.test_zero_material_reserved_slots_are_skipped_before_touching_geometry) ... ok
+test_floor_bar_and_support_carry_the_weight (test_thread_contact.ThreadCapsuleContactTests.test_floor_bar_and_support_carry_the_weight)
+Fails if the bar's forces on the thread do not make up for what the floor and the support do not carry. ... ok
+test_thread_stays_outside_the_bar (test_thread_contact.ThreadCapsuleContactTests.test_thread_stays_outside_the_bar)
+Fails if the thread sinks into the bar's capsule or falls through it to the floor. ... ok
+test_wrench_on_the_body_is_the_opposite_of_the_forces_on_the_thread (test_thread_contact.ThreadCapsuleContactTests.test_wrench_on_the_body_is_the_opposite_of_the_forces_on_the_thread)
+Fails if the body's wrench has the sign of the thread's forces, a wrong lever or a wrong relaxation. ... ok
+test_draw_over_eyelets_needs_the_coulomb_factor (test_thread_contact.ThreadEyeletTests.test_draw_over_eyelets_needs_the_coulomb_factor)
+Fails if an eyelet's friction is not the coefficient times its force across the thread. ... ok
+test_eyelet_force_is_the_threads_force_on_the_eyelets (test_thread_contact.ThreadEyeletTests.test_eyelet_force_is_the_threads_force_on_the_eyelets)
+Fails if ``eyelet_force`` has the wrong sign or size: with the support it must balance the thread. ... ok
+test_eyelet_point_is_the_threads_point_at_the_eyelet (test_thread_contact.ThreadEyeletTests.test_eyelet_point_is_the_threads_point_at_the_eyelet)
+Fails if ``eyelet_point`` is not the chain point an eyelet tracks, or not its own place when unthreaded. ... ok
+test_feeding_back_needs_the_inverse_factor (test_thread_contact.ThreadEyeletTests.test_feeding_back_needs_the_inverse_factor)
+Fails if eyelet friction does not turn round with the direction in which the thread slides. ... ok
+test_frictionless_eyelets_hold_no_tension_difference (test_thread_contact.ThreadEyeletTests.test_frictionless_eyelets_hold_no_tension_difference)
+Fails if eyelets with friction 0 hold the thread back along itself. ... ok
+test_held_eyelet_keeps_its_point_and_holds_a_pull (test_thread_contact.ThreadEyeletTests.test_held_eyelet_keeps_its_point_and_holds_a_pull)
+Fails if a held eyelet lets the thread slide through it, or an eyelet that is not held holds the pull. ... ok
+test_stopped_thread_keeps_its_tension_difference (test_thread_contact.ThreadEyeletTests.test_stopped_thread_keeps_its_tension_difference)
+Fails if the eyelets let the tension difference go, or the thread creep, once the draw has stopped. ... ok
+test_tracked_point_follows_the_thread_through_nodes (test_thread_contact.ThreadEyeletTests.test_tracked_point_follows_the_thread_through_nodes)
+Fails if an eyelet's tracked point stays behind the thread that slides through it, as at a node. ... ok
+test_drag_is_held_back_by_friction_times_normal_forces (test_thread_contact.ThreadPlaneFrictionTests.test_drag_is_held_back_by_friction_times_normal_forces)
+Fails if a sliding node's friction is not the coefficient times its normal force, against its motion. ... ok
+test_moving_surface_drags_a_held_thread (test_thread_contact.ThreadPlaneFrictionTests.test_moving_surface_drags_a_held_thread)
+Fails if friction ignores a node's own contact plane, or anchors that are carried along with a surface. ... ok
+test_no_friction_no_hold_back (test_thread_contact.ThreadPlaneFrictionTests.test_no_friction_no_hold_back)
+Fails if a floor with friction 0 holds the dragged thread back or keeps tension in it after the stop. ... ok
+test_thread_keeps_its_tension_after_the_drag (test_thread_contact.ThreadPlaneFrictionTests.test_thread_keeps_its_tension_after_the_drag)
+Fails if the thread creeps on once node 0 has stopped, or the nodes do not stick and hold its tension. ... ok
+test_self_contact_keeps_crossing_stretches_a_diameter_apart (test_thread_contact.ThreadSelfContactTests.test_self_contact_keeps_crossing_stretches_a_diameter_apart)
+Fails if a stretch sinks into the stretch it lies on, or is held further off than the contact's onset. ... ok
+test_thread_resting_on_itself_adds_no_weight (test_thread_contact.ThreadSelfContactTests.test_thread_resting_on_itself_adds_no_weight)
+Fails if the forces of self-contact on the two stretches do not cancel: the floor then carries more. ... expected failure
+test_without_self_contact_the_stretches_pass_through_each_other (test_thread_contact.ThreadSelfContactTests.test_without_self_contact_the_stretches_pass_through_each_other)
+Fails if the scene above needs no self-contact: without it the lifted stretch must sink into the other. ... ok
+test_both_jaws_contribute_and_head_exclusion_is_body_specific (test_thread_rigid_contact.TestThreadRigidContact.test_both_jaws_contribute_and_head_exclusion_is_body_specific) ... ok
+test_complete_state_restores_friction_and_lagged_reactions (test_thread_rigid_contact.TestThreadRigidContact.test_complete_state_restores_friction_and_lagged_reactions) ... ok
+test_gradient_matches_line_search_energy_with_friction (test_thread_rigid_contact.TestThreadRigidContact.test_gradient_matches_line_search_energy_with_friction) ... ok
+test_invalid_contracts_fail_before_registration (test_thread_rigid_contact.TestThreadRigidContact.test_invalid_contracts_fail_before_registration) ... ok
+test_moving_capsules_carry_friction_and_conserve_fresh_wrench (test_thread_rigid_contact.TestThreadRigidContact.test_moving_capsules_carry_friction_and_conserve_fresh_wrench) ... ok
+test_penetrating_thread_resolves_with_solver_not_projection (test_thread_rigid_contact.TestThreadRigidContact.test_penetrating_thread_resolves_with_solver_not_projection) ... ok
+test_rotating_surface_transports_existing_friction_anchor (test_thread_rigid_contact.TestThreadRigidContact.test_rotating_surface_transports_existing_friction_anchor) ... ok
+test_chains_of_a_batch_step_independently (test_thread_solver.SolverThreadTests.test_chains_of_a_batch_step_independently)
+Each chain of a batch moves as it does alone, with its own number of updates. ... ok
+test_cuda_and_cpu_agree (test_thread_solver.SolverThreadTests.test_cuda_and_cpu_agree)
+The cyclic reduction on CUDA and the serial elimination on the CPU give the same motion. ... ok
+test_floor_carries_the_threads_weight (test_thread_solver.SolverThreadTests.test_floor_carries_the_threads_weight)
+A thread let down on a level floor comes to rest with its weight on the floor. ... ok
+test_hanging_chain_comes_to_rest_on_its_support (test_thread_solver.SolverThreadTests.test_hanging_chain_comes_to_rest_on_its_support)
+A level chain let go, held at node 0, comes to rest and its support then carries its weight. ... ok
+test_level_slack_thread_starts_to_fall (test_thread_solver.SolverThreadTests.test_level_slack_thread_starts_to_fall)
+A level slack thread held at one end falls with the default multiples and freezes without the small ones. ... ok
+test_residual_is_gradient_of_step_potential (test_thread_solver.SolverThreadTests.test_residual_is_gradient_of_step_potential)
+The residual of an unconverged step is the gradient of the documented step potential. ... ok
+test_set_prescribed_holds_and_frees_coordinates (test_thread_solver.SolverThreadTests.test_set_prescribed_holds_and_frees_coordinates)
+A prescribed coordinate follows boundary_q against the thread; freed, it obeys the forces and keeps moving. ... ok
+test_solver_rejects_bad_options (test_thread_solver.SolverThreadTests.test_solver_rejects_bad_options)
+Fails if the solver accepts an option outside its documented range. ... ok
+test_state_restores_a_step (test_thread_solver.SolverThreadTests.test_state_restores_a_step)
+Steps made from a restored copy of ``state`` repeat the steps made from the original. ... ok
+test_attachment_rejects_bad_input (test_thread_solver.ThreadAttachmentTests.test_attachment_rejects_bad_input)
+Fails if an attachment accepts a wrong body list, a zero tangent or a negative support. ... ok
+test_classic_mode_keeps_node_0_on_the_body (test_thread_solver.ThreadAttachmentTests.test_classic_mode_keeps_node_0_on_the_body)
+A free body let go on a straight, pinned thread swings to rest with node 0 on its attachment point. ... ok
+test_lagged_mode_settles_at_the_tension_of_a_taut_thread (test_thread_solver.ThreadAttachmentTests.test_lagged_mode_settles_at_the_tension_of_a_taut_thread)
+A pinned thread drawn taut pulls a body on a stiff spring with the tension of its stretch. ... ok
+test_lagged_mode_settles_at_the_weight_of_a_hanging_thread (test_thread_solver.ThreadAttachmentTests.test_lagged_mode_settles_at_the_weight_of_a_hanging_thread)
+A thread hanging from a body on a spring pulls on it with its weight, at its centre of mass. ... ok
+test_lagged_mode_settles_on_a_slow_spring (test_thread_solver.ThreadAttachmentTests.test_lagged_mode_settles_on_a_slow_spring)
+The same taut thread must settle on a critically damped spring with sqrt(k / m) dt = 0.75 as well. ... expected failure
+test_create_rejects_bad_input (test_thread_solver.ThreadModelTests.test_create_rejects_bad_input)
+Fails if a chain that cannot be built, or a nonpositive or non-finite material value, is accepted. ... ok
+test_curved_chain_has_bisecting_slopes_and_mass_along_its_curve (test_thread_solver.ThreadModelTests.test_curved_chain_has_bisecting_slopes_and_mass_along_its_curve)
+On an arc the inner slopes are the arc's tangents, and the chain weighs as much as its reference curve. ... ok
+test_straight_chain_has_exact_lengths_stiffnesses_and_mass (test_thread_solver.ThreadModelTests.test_straight_chain_has_exact_lengths_stiffnesses_and_mass)
+A straight chain with unequal elements has the textbook section stiffnesses and Hermite mass. ... ok
+test_block_is_filled_closed_and_faces_outwards (test_thread_tissue.BlockFixtureTests.test_block_is_filled_closed_and_faces_outwards)
+Fails if the fixture's tetrahedra are inverted or its surface is open or wound inwards. ... ok
+test_nodes_beyond_the_margin_take_no_plane (test_thread_tissue.ContactPlaneTests.test_nodes_beyond_the_margin_take_no_plane)
+Fails if a node farther than the margin keeps a plane, such as the solver's floor that it starts with. ... ok
+test_nodes_within_the_margin_take_the_nearest_surface_point_and_its_outward_normal (test_thread_tissue.ContactPlaneTests.test_nodes_within_the_margin_take_the_nearest_surface_point_and_its_outward_normal)
+Fails if a plane is not at the nearest surface point or its normal does not point out of the block. ... ok
+test_planes_follow_the_moved_particles (test_thread_tissue.ContactPlaneTests.test_planes_follow_the_moved_particles)
+Fails if the planes stay with the surface as it was built: particles not copied or the tree not refitted. ... ok
+test_surface_beyond_the_tissue_stays_where_it_was_given (test_thread_tissue.ContactPlaneTests.test_surface_beyond_the_tissue_stays_where_it_was_given)
+Fails if surface vertices that are no tissue particles move, or the tissue's ones do not. ... ok
+test_coupling_refuses_a_batch_of_chains (test_thread_tissue.EyeletTrackTests.test_coupling_refuses_a_batch_of_chains)
+Fails if a solver with more than one chain is accepted. ... ok
+test_eyelets_sit_at_their_material_points_of_the_deformed_tissue (test_thread_tissue.EyeletTrackTests.test_eyelets_sit_at_their_material_points_of_the_deformed_tissue)
+Fails if an eyelet's position is not its tetrahedron's corners weighted with its barycentric weights. ... ok
+test_held_eyelet_ties_the_thread (test_thread_tissue.EyeletTrackTests.test_held_eyelet_ties_the_thread)
+Fails if a held eyelet lets the thread slide or pulls its tetrahedron with another force than the tension. ... ok
+test_nodes_inside_a_track_take_no_plane (test_thread_tissue.EyeletTrackTests.test_nodes_inside_a_track_take_no_plane)
+Fails if a node between a track's first and last threaded eyelet, or in a half-made track, has contact. ... ok
+test_thread_is_drawn_into_a_track_through_its_mouth (test_thread_tissue.EyeletTrackTests.test_thread_is_drawn_into_a_track_through_its_mouth)
+Fails while nodes that reach the mouth of a track are stopped by the contact with the surface around it. ... expected failure
+test_thread_slides_through_its_eyelets (test_thread_tissue.EyeletTrackTests.test_thread_slides_through_its_eyelets)
+Fails if the eyelets hold the thread along its length or lose the point of the chain they track. ... ok
+test_threaded_track_holds_the_thread_at_its_material_points (test_thread_tissue.EyeletTrackTests.test_threaded_track_holds_the_thread_at_its_material_points)
+Fails if the thread leaves the track's material points when the tissue carries them away. ... ok
+test_tracks_take_their_slots_in_order_and_refuse_what_does_not_fit (test_thread_tissue.EyeletTrackTests.test_tracks_take_their_slots_in_order_and_refuse_what_does_not_fit)
+Fails if add_track hands out other slots than the next free ones or accepts more than there is room for. ... ok
+test_anchors_of_nodes_with_grip_move_with_the_surface (test_thread_tissue.FrictionTests.test_anchors_of_nodes_with_grip_move_with_the_surface)
+Fails if update leaves the friction anchors behind when the surface under them moves. ... ok
+test_anchors_without_friction_are_left_alone (test_thread_tissue.FrictionTests.test_anchors_without_friction_are_left_alone)
+Fails if update moves the anchor of a node that has no grip. ... ok
+test_sliding_thread_drags_the_tissue_with_its_friction (test_thread_tissue.FrictionTests.test_sliding_thread_drags_the_tissue_with_its_friction)
+Fails if the friction of a sliding thread does not reach the particles, opposite and in full. ... ok
+test_sticking_thread_rides_on_the_tissue_and_a_frictionless_one_stays (test_thread_tissue.FrictionTests.test_sticking_thread_rides_on_the_tissue_and_a_frictionless_one_stays)
+Fails if a thread with friction is left behind by the moving surface, or one without is taken along. ... ok
+test_applied_force_approaches_the_contact_force_by_the_stiffness_ratio_per_step (test_thread_tissue.ReactionTests.test_applied_force_approaches_the_contact_force_by_the_stiffness_ratio_per_step)
+Fails if a step moves the applied force by another fraction than K / (K + k), k the stiffer spring. ... ok
+test_forces_are_added_to_what_the_array_holds (test_thread_tissue.ReactionTests.test_forces_are_added_to_what_the_array_holds)
+Fails if add_forces overwrites the particle forces instead of adding the applied force to them. ... ok
+test_only_the_tissue_particles_of_a_triangle_take_the_reaction (test_thread_tissue.ReactionTests.test_only_the_tissue_particles_of_a_triangle_take_the_reaction)
+Fails if a surface vertex that is no tissue particle passes its share of a reaction on to the tissue. ... ok
+test_resting_thread_loads_the_particles_with_its_weight (test_thread_tissue.ReactionTests.test_resting_thread_loads_the_particles_with_its_weight)
+Fails if the particle forces are not the opposite of the contact forces, spread by the triangle weights. ... ok
+test_coupled_step_replays_in_a_cuda_graph (test_thread_tissue.StateTests.test_coupled_step_replays_in_a_cuda_graph)
+Fails if update, the thread's step or add_forces do anything a captured CUDA graph cannot replay. ... ok
+test_state_holds_what_a_restored_run_needs (test_thread_tissue.StateTests.test_state_holds_what_a_restored_run_needs)
+Fails if the coupling's state leaves out an array that the next step reads from the last one. ... ok
+test_catalog_and_cli_do_not_select_dvrk_recordings (test_versius_recording.VersiusRecordingTests.test_catalog_and_cli_do_not_select_dvrk_recordings) ... ok
+test_copied_bundle_closes_all_usd_dependencies_and_retains_the_full_static_pad (test_versius_recording.VersiusRecordingTests.test_copied_bundle_closes_all_usd_dependencies_and_retains_the_full_static_pad) ... ok
+test_null_viewer_replays_all_eight_links_and_resets_without_moving_pad (test_versius_recording.VersiusRecordingTests.test_null_viewer_replays_all_eight_links_and_resets_without_moving_pad) ... ok
+test_two_view_generated_preview_preserves_placeholder_identity_and_clocks (test_versius_recording.VersiusRecordingTests.test_two_view_generated_preview_preserves_placeholder_identity_and_clocks) ... ok
+test_accepted_thread_step_returns_real_loads_and_passive_positions (test_worker_thread.WorkerThreadTests.test_accepted_thread_step_returns_real_loads_and_passive_positions) ... ok
+test_independent_workers_and_load_reads_never_advance_history (test_worker_thread.WorkerThreadTests.test_independent_workers_and_load_reads_never_advance_history) ... ok
+test_loose_initialization_keeps_tail_and_rest_length_scale (test_worker_thread.WorkerThreadTests.test_loose_initialization_keeps_tail_and_rest_length_scale) ... ok
+
+----------------------------------------------------------------------
+Ran 646 tests in 147.523s
+
+OK (skipped=3, expected failures=5)
+Module newton_solver_suturebot._src.solvers.thread.kernels a95f9f7 load on device 'cpu' took 0.35 ms  (cached)

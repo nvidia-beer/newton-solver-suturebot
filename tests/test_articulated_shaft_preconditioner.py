@@ -7,7 +7,7 @@ import mujoco
 import numpy as np
 import warp as wp
 
-from newton_solver_suturebot._src.shaft_preconditioner import (
+from newton_solver_suturebot._src.solvers.coupled.acceleration.shaft_preconditioner import (
     _native_needle_mass,
     _rigid_blocks_from_mass,
     rigid_mass_action,

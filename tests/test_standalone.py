@@ -36,7 +36,8 @@ class StandalonePackageTests(unittest.TestCase):
                 "fem_phantom_regions",
                 "fem_dvrk",
                 "fem_needle_grasp",
-                "fem_phantom_cut",
+                "fem_surgical_incision",
+                "fem_tool_tissue",
                 "fem_versius",
                 "needle_thread",
             },
@@ -121,9 +122,9 @@ class BlockForeignSolver(importlib.abc.MetaPathFinder):
 sys.meta_path.insert(0, BlockForeignSolver())
 import newton_solver_suturebot as package
 import newton_solver_suturebot._src as runtime
-from newton_solver_suturebot.examples._suturebot_recording import DEFAULT_RECORDING, Recording, bundled_recordings
-from newton_solver_suturebot.examples.example_fem_phantom_regions import Example as Phantom
-from newton_solver_suturebot.examples.example_fem_versius import Example as Versius
+from newton_solver_suturebot.examples.recording._suturebot_recording import DEFAULT_RECORDING, Recording, bundled_recordings
+from newton_solver_suturebot.examples.phantom.example_fem_phantom_regions import Example as Phantom
+from newton_solver_suturebot.examples.recording.example_fem_versius import Example as Versius
 from pxr import UsdUtils
 
 for module in pkgutil.walk_packages(runtime.__path__, runtime.__name__ + "."):

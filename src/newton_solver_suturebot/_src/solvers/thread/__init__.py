@@ -8,5 +8,13 @@ from .capsules import ThreadCapsuleContact
 from .model import ThreadModel
 from .solver import SolverThread
 from .tissue import ThreadTissueCoupling
+from .track import NeedleTrackEyelets
 
-__all__ = ["SolverThread", "ThreadAttachment", "ThreadCapsuleContact", "ThreadModel", "ThreadTissueCoupling"]
+__all__ = [
+    "NeedleTrackEyelets",
+    "SolverThread",
+    "ThreadAttachment",
+    "ThreadCapsuleContact",
+    "ThreadModel",
+    "ThreadTissueCoupling",
+]

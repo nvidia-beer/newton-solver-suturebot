@@ -11,7 +11,7 @@ from types import SimpleNamespace
 import numpy as np
 import warp as wp
 
-from newton_solver_suturebot.examples._grasp_procedure import (
+from newton_solver_suturebot.examples.grasp._grasp_procedure import (
     ProceduralGraspController,
     action_to,
     gripper_target,

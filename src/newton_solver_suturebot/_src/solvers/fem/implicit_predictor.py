@@ -27,7 +27,7 @@ def subtract_elastic_predictor(
 def restore_spring_damping_predictor(
     indices: wp.array[int],
     damping: wp.array[float],
-    dt: float,
+    dt: wp.array[float],
     velocity: wp.array[wp.vec3],
     rhs: wp.array[wp.vec3],
 ):
@@ -36,6 +36,7 @@ def restore_spring_damping_predictor(
     if a >= 0 and b >= 0:
         # The matrix contains h*C as well as h²*K, but only the latter enters
         # the position predictor; velocity damping is already in h*f.
-        correction = dt * damping[spring] * (velocity[a] - velocity[b])
+        # dt holds the timestep h [s] in its one element (StepTime.seconds).
+        correction = dt[0] * damping[spring] * (velocity[a] - velocity[b])
         wp.atomic_add(rhs, a, correction)
         wp.atomic_sub(rhs, b, correction)

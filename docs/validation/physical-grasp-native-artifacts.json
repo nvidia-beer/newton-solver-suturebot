@@ -1,0 +1,300 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-11-12T08:31:56.022392+00:00",
+  "scope": "Staged physical-grasp CUDA scaling and native Isaac Lab lifecycle validation; no learned policy, insertion, grasp-load or completed suturing result",
+  "installed_target_modified": false,
+  "solver_fingerprint": "1ae8d9eee6c5bbb9d2668c17398acb8965f277754cc4748c552f5f0468fa64cb",
+  "runtime_identity": {
+    "physical_configuration": {
+      "device": "cuda:0",
+      "asset": null,
+      "region": 1,
+      "entry_xy": [
+        0.03,
+        -0.04
+      ],
+      "exit_xy": [
+        0.03,
+        -0.048
+      ],
+      "substeps": 4,
+      "frame_dt": 0.016666666666666666,
+      "translation_step": 0.0001,
+      "rotation_step": 0.01,
+      "needle_solver": "partitioned",
+      "control_mode": "physical_grasp",
+      "jaw_step_rad": 0.02,
+      "thread_elements": 90,
+      "thread_length_m": 0.18,
+      "thread_radius_m": 0.00015,
+      "thread_modulus_pa": 2000000.0,
+      "example_arguments": []
+    },
+    "dependencies": {
+      "newton": "1.8.0",
+      "warp-lang": "1.17.0+cu13",
+      "mujoco": "3.17.0",
+      "mujoco-warp": "3.17.0",
+      "numpy": "2.5.4",
+      "newton-usd-schemas": "0.6.0",
+      "usd-exchange": "3.0.1",
+      "python": "3.12.12"
+    },
+    "hardware": {
+      "machine": "aarch64",
+      "system": "Linux",
+      "host": "spark-9ff2",
+      "cpu_count": 20,
+      "device": "cuda:0",
+      "device_name": "NVIDIA GB10",
+      "is_cuda": true,
+      "gpu_uuid": "GPU-5e5ac15c-90f3-9cd4-d150-7b619c20702e",
+      "gpu_arch": 121,
+      "gpu_memory_bytes": 128524087296,
+      "cuda_driver": [
+        13,
+        0
+      ]
+    },
+    "assets": {
+      "files": {
+        "phantom/phantom_regions.usd": "45218965fe8b3eef6d0492f79317a5a42c154b29b2b96bf7e937fc197d415324",
+        "phantom/phantom_regions_payloads/region_000_base_and_lettering.usdc": "e1d67af37a3cb6d2c0dff2bb1b39d773f1197f7bc2db9fdd883d78267b5a48c7",
+        "phantom/phantom_regions_payloads/region_001_feature_01.usdc": "9a8460b85b0af05a05fb0f556231361649261f06e73a508f9daa3580ac03e7cc",
+        "phantom/phantom_regions_payloads/region_002_feature_02.usdc": "ffd338ba156b14d2391d8f48c8c903bd8084dde8ce675fa9b34a79fcecc3b013",
+        "phantom/phantom_regions_payloads/region_003_feature_03.usdc": "76c7cb1fbfeb72e61bb4402a27b5d1f10eaecb15b115efa100d1d7f0d3026ed4",
+        "phantom/phantom_regions_payloads/region_004_feature_04.usdc": "638a2728bb203b7f7ccc2c10e5d2fc17ca662d3763bc16cf65f2f6de73b5fd7a",
+        "phantom/phantom_regions_payloads/region_005_feature_05.usdc": "38824c34a68a6788146982b08192ccaf556eef5ecd6f9791ed3632d7aedc19d3",
+        "phantom/phantom_regions_payloads/region_006_feature_06.usdc": "b8ac9e3d67ca515e74a2e7495683716637911b650a7ba2c1c39918bb1de1cae3",
+        "phantom/phantom_regions_payloads/region_007_feature_07.usdc": "28763d6c606ac323169c395bfb7059e5d9d6f1f7c9c0da69dff35409bf888567",
+        "phantom/phantom_regions_payloads/region_008_feature_08.usdc": "3f11004229357330d068099eefd0e457f3bd60c0b7cd543b555348a0fc1d5fe1",
+        "phantom/phantom_regions_payloads/region_009_upper_paired_strips.usdc": "2356925ad8eed756a7a2181bc3891e8175149e8fcae05d99da97ed6013cb0040",
+        "phantom/phantom_regions_payloads/region_010_wound_5_slit_patch.usdc": "9a25df1b3f2de927f520f4f8e11c72ed348a0cb723f0d395e0149c27f12390ba",
+        "phantom/phantom_regions_payloads/region_011_upper_narrow_slit.usdc": "e0dc91b6bf07edb5e60ce765d6f78015b6727c9533390e68d549642644cac249",
+        "phantom/suturebot_region_map.json": "b922b82dd66230963601f2fa05b186c94296ea795557157d18883b83663949ac",
+        "needle/needle.usda": "e7a1c64b7c8e6798845ee1f7e238e9af36936a192edd9fee08f4661cef299b21"
+      },
+      "sha256": "08dcaaa956fbcee5f981a7019c554b62ac31e0220447fb52d3d695cef8b135b4"
+    }
+  },
+  "config": {
+    "device": "cuda:0",
+    "asset": null,
+    "region": 1,
+    "entry_xy": [
+      0.03,
+      -0.04
+    ],
+    "exit_xy": [
+      0.03,
+      -0.048
+    ],
+    "substeps": 4,
+    "frame_dt": 0.016666666666666666,
+    "translation_step": 0.0001,
+    "rotation_step": 0.01,
+    "reset_position_noise_m": 0.0,
+    "seed": 0,
+    "needle_solver": "partitioned",
+    "control_mode": "physical_grasp",
+    "jaw_step_rad": 0.02,
+    "thread_elements": 90,
+    "thread_length_m": 0.18,
+    "thread_radius_m": 0.00015,
+    "thread_modulus_pa": 2000000.0,
+    "example_arguments": []
+  },
+  "commands": {
+    "scaling": "PYTHONPATH=<stage>/src:<solver_source>/src WARP_CACHE_PATH=/tmp/suturebot-grasp-integration-cache scripts/with_mps.sh <target>/.venv/bin/python -m isaaclab_suturebot.scaling --control-mode physical_grasp --num-envs 8 --steps 120 --output outputs/physical_grasp/scaling.json",
+    "native": "PYTHONPATH=<stage>/src:<solver_source>/src WARP_CACHE_PATH=/tmp/suturebot-grasp-integration-cache scripts/with_mps.sh <target>/.venv/bin/python scripts/check_native.py --control-mode physical_grasp --gate outputs/physical_grasp/scaling.json --output outputs/physical_grasp/native"
+  },
+  "command_context": {
+    "stage": "/home/beer/Dev/Robotics/NewtonSolvers/isaaclab-suturebot-grasp-work",
+    "solver_source": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot",
+    "target": "/home/beer/Dev/Robotics/IsaacLabSuturebot"
+  },
+  "outcomes": {
+    "scaling_exit_code": 0,
+    "scaling_wrapper_seconds": 29.46900381,
+    "all_17_scaling_checks_passed": true,
+    "healthy_environment_steps_per_second": 127.756961353766,
+    "native_exit_code": 0,
+    "native_wrapper_seconds": 34.201107139,
+    "native_physical_steps": 8,
+    "native_time_limit_resets": true,
+    "native_observation_shapes": {
+      "policy": [
+        8,
+        72
+      ],
+      "critic": [
+        8,
+        72
+      ],
+      "teacher_state": [
+        8,
+        72
+      ],
+      "proprioception": [
+        8,
+        20
+      ],
+      "stereo_rgb": [
+        8,
+        12,
+        144,
+        192
+      ]
+    },
+    "native_physics_mirror_bodies": 56,
+    "native_render_bodies": 56,
+    "physical_thread_diagnostics_match_snapshot_times": true,
+    "preview_visually_inspected": true
+  },
+  "limits": [
+    "The historical initial failed gate is retained unchanged. Its old throughput fields counted calls after stopped worlds and are not healthy throughput evidence.",
+    "Measured scaling workload is above-tissue oscillatory gripper/jaw actuation, not insertion or a sustained load-bearing grasp certificate.",
+    "Jaw contact forces describe the last accepted native integration interval rather than a freshly recomputed endpoint contact certificate.",
+    "Native smoke is headless; it does not claim an interactive GUI session was verified.",
+    "Physical thread diagnostics agree with snapshot times; the old visual_thread_matches_snapshot_times_and_resets report field is null because this mode uses worker thread state rather than the legacy presentation thread."
+  ],
+  "files": {
+    "physical_grasp_scaling.json": {
+      "sha256": "75b850b7f2039eb8562c02c2e76604efe60e2baa04bed4e8317c0c514eed0ae3",
+      "bytes": 39237
+    },
+    "physical_grasp_scaling_console.log": {
+      "sha256": "85e7a1e42a34a15b753a9e4b6a9245a6c0a3b1668d044e9cbd5d8eb5417003ac",
+      "bytes": 1001
+    },
+    "physical_grasp_native.json": {
+      "sha256": "2c94eb45700f20baea72c829bd5521de594a950727aeaf3c1d8a3af83f022a8a",
+      "bytes": 41457
+    },
+    "physical_grasp_native_console.log": {
+      "sha256": "c736cab70ca9f9434280e6e17f5ce3bde6fde239910f301182e3e96d9a89d06b",
+      "bytes": 23426
+    },
+    "physical_grasp_scaling_failed_initial.json": {
+      "sha256": "127d7ec361c877e19e1d16323183773f7f7716a0500be5b6ef63ac2924deda43",
+      "bytes": 38282
+    },
+    "physical_grasp_scaling_failed_initial_console.log": {
+      "sha256": "9010e28380a63bede4d9ecc1a5c944cf7929231d1abb170f3400adc454411ef5",
+      "bytes": 1005
+    },
+    "physical_grasp_scaling_failed_initial_source.py.txt": {
+      "sha256": "90e00d1bf931254d13b32e83429b0c693edcceedfa81185754e5183cd3d4c236",
+      "bytes": 23034
+    },
+    "physical_grasp_scaling_workers/worker_000.log": {
+      "sha256": "ed78edaa5266f19153605d56a412e08919e436e5bf229d9214ccc08f44e5a917",
+      "bytes": 9080
+    },
+    "physical_grasp_scaling_workers/worker_001.log": {
+      "sha256": "eb58e948b15b87e27d7dac96aa579f29f7ea41d4b6da6b0f3efd7d009a857bda",
+      "bytes": 8866
+    },
+    "physical_grasp_scaling_workers/worker_002.log": {
+      "sha256": "f2e3c5b9b39c015e93555e7f1503947183a3ec6a39d693e2a1a9fa1264ec5e75",
+      "bytes": 8859
+    },
+    "physical_grasp_scaling_workers/worker_003.log": {
+      "sha256": "4ff0dfce6145a3104876f7c3359bd83fee75549097952b0b1b4fccf13937d13c",
+      "bytes": 8856
+    },
+    "physical_grasp_scaling_workers/worker_004.log": {
+      "sha256": "52d939240d709a080c962a1d3d42fb11c9bfa633efd0a323018d82b0b902ffec",
+      "bytes": 8859
+    },
+    "physical_grasp_scaling_workers/worker_005.log": {
+      "sha256": "154098b7caaad5c435e2f4fd5d5423ec29bba6ebf760cc050d9ae50c5acccab0",
+      "bytes": 8863
+    },
+    "physical_grasp_scaling_workers/worker_006.log": {
+      "sha256": "aa4722914a8fbb381a6b57bf07b46434eec6f4654fc78071ed73f60519ba972b",
+      "bytes": 8859
+    },
+    "physical_grasp_scaling_workers/worker_007.log": {
+      "sha256": "870e450ef21cfa9857a62a99a63a61fbd4be19d776dbd9a2619c931b78c96ba7",
+      "bytes": 8867
+    },
+    "physical_grasp_native_workers/worker_000.log": {
+      "sha256": "a2fb73049cfd69a376783f3c0f36820d4baa50b45143dcce0d62380544eddd50",
+      "bytes": 246
+    },
+    "physical_grasp_native_workers/worker_001.log": {
+      "sha256": "a2fb73049cfd69a376783f3c0f36820d4baa50b45143dcce0d62380544eddd50",
+      "bytes": 246
+    },
+    "physical_grasp_native_workers/worker_002.log": {
+      "sha256": "a2fb73049cfd69a376783f3c0f36820d4baa50b45143dcce0d62380544eddd50",
+      "bytes": 246
+    },
+    "physical_grasp_native_workers/worker_003.log": {
+      "sha256": "a2fb73049cfd69a376783f3c0f36820d4baa50b45143dcce0d62380544eddd50",
+      "bytes": 246
+    },
+    "physical_grasp_native_workers/worker_004.log": {
+      "sha256": "a2fb73049cfd69a376783f3c0f36820d4baa50b45143dcce0d62380544eddd50",
+      "bytes": 246
+    },
+    "physical_grasp_native_workers/worker_005.log": {
+      "sha256": "a2fb73049cfd69a376783f3c0f36820d4baa50b45143dcce0d62380544eddd50",
+      "bytes": 246
+    },
+    "physical_grasp_native_workers/worker_006.log": {
+      "sha256": "a2fb73049cfd69a376783f3c0f36820d4baa50b45143dcce0d62380544eddd50",
+      "bytes": 246
+    },
+    "physical_grasp_native_workers/worker_007.log": {
+      "sha256": "a2fb73049cfd69a376783f3c0f36820d4baa50b45143dcce0d62380544eddd50",
+      "bytes": 246
+    },
+    "physical_grasp_scaling_failed_initial_workers/worker_000.log": {
+      "sha256": "96a0941295f376ddf4f077d8a4b29c0a7a9782cfac9a468946caa080c5030d1a",
+      "bytes": 4618
+    },
+    "physical_grasp_scaling_failed_initial_workers/worker_001.log": {
+      "sha256": "afba4478d3dd292f1766f4c55104f85abdc4a9a9e286e8a01fd8a48b49fe3c5b",
+      "bytes": 4486
+    },
+    "physical_grasp_scaling_failed_initial_workers/worker_002.log": {
+      "sha256": "a2f7181580c3d19c6fab0c9592c374347c6fa45df548a24592c1b874302774c4",
+      "bytes": 4479
+    },
+    "physical_grasp_scaling_failed_initial_workers/worker_003.log": {
+      "sha256": "f65cce8c2d4028f2882ae7506786687cab62c696ffa98fe59cace7ee44c0e912",
+      "bytes": 4476
+    },
+    "physical_grasp_scaling_failed_initial_workers/worker_004.log": {
+      "sha256": "f5134de73e7bfa1ee3a7897f5d08210201afe6c9d1d159831f7072cdb4c84a31",
+      "bytes": 4479
+    },
+    "physical_grasp_scaling_failed_initial_workers/worker_005.log": {
+      "sha256": "716d4736ee54d726574abaacc3ea3a6e18db200d0cc09b3335d907df763c44be",
+      "bytes": 4483
+    },
+    "physical_grasp_scaling_failed_initial_workers/worker_006.log": {
+      "sha256": "b4d8a19fe2ee62e2d4bc48647306d3e1b07b73a406546f4b5d22ccd1b2adfcff",
+      "bytes": 4479
+    },
+    "physical_grasp_scaling_failed_initial_workers/worker_007.log": {
+      "sha256": "2c0afe565f9907a3d24cd5c4ace764baab3227dc0c662cb1766caa43f66bb6cf",
+      "bytes": 4487
+    },
+    "../media/physical_grasp_native_stereo.png": {
+      "sha256": "6c1ad9c0154a6654fdd7f1febb2bd13ae1e2bde34b9ca30fc96d66290091aa90",
+      "bytes": 443068
+    }
+  },
+  "code_sha256": {
+    "src/isaaclab_suturebot/scaling.py": "b9bb7b0bf3a72cb2ea93f529efb1e563709f8da12602060759a2fcdc218f744f",
+    "scripts/check_native.py": "42239728511da8f01274315573ce0d5f610351a9d6b8dbb95dc547f12db54960",
+    "src/isaaclab_suturebot/physics.py": "41ad8956e1f71293b98c8f916640ac316c3b33f6343b774ef271741ec4ffd515",
+    "src/isaaclab_suturebot/tasks/env.py": "1128faa7e1fc9d3fa48db501e4014d2a07cbb3ef969a5200d7030a9ae215e5ff",
+    "src/isaaclab_suturebot/tasks/env_cfg.py": "03da0c508aa67fcfe8ca037aa616007ff7c82244a63dacfa536615cf12034883",
+    "src/isaaclab_suturebot/rendering.py": "89e1353cf53009d90ce209dc2c2d4fdc9dd9fa50107979ffda34dcb3172fb5a8",
+    "src/isaaclab_suturebot/physical_surgical_render.py": "79b475d7eae5541ad7e02b2428509e67cf96f0697734b31a48538befe9ab615e"
+  }
+}

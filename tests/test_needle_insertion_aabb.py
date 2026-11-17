@@ -7,7 +7,7 @@ import unittest
 
 import numpy as np
 
-from newton_solver_suturebot._src.insertion import (
+from newton_solver_suturebot._src.solvers.coupled.interface.insertion import (
     _point_aabb_candidates,
     _segment_aabb_candidates,
     _surface_crossings,

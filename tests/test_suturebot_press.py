@@ -13,7 +13,7 @@ import numpy as np
 import warp as wp
 from newton.viewer import ViewerNull
 
-from newton_solver_suturebot.examples._suturebot_contact_demo import Example
+from newton_solver_suturebot.examples.recording._suturebot_contact_demo import Example
 
 _HAS_RIG_DEPS = all(importlib.util.find_spec(name) is not None for name in ("pxr", "mujoco", "mujoco_warp"))
 

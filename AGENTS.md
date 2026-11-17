@@ -2,17 +2,23 @@
 
 This repository is self-contained: keep required FEM, cutting, MuJoCo needle interaction,
 geometry, assets and examples here. Do not import a sibling solver package or
-modify installed Newton, Warp or MuJoCo code. Preserve upstream licenses.
+modify installed Newton, Warp, MuJoCo or MuJoCo Warp code, and do not keep a copy
+of such a library in this repository. Preserve upstream licenses.
 
-FEM mechanics live in `src/newton_solver_suturebot/_src/solvers/fem/`, the
-simultaneous needle/FEM solver in `_src/solvers/mujoco_fem/` and the suture
-thread solver in `_src/solvers/thread/`. Preserve physical
-laws, sparse operators, fixed boundaries, gradient contracts and convergence
-checks during refactoring. Recorded-motion replay is not physical insertion.
+FEM mechanics live in `src/newton_solver_suturebot/_src/solvers/fem/`, rigid
+MuJoCo integration in `_src/solvers/mujoco/` (the solver's own step on MuJoCo
+Warp in `_src/solvers/mujoco/warp_step/`), the needle/tissue coupling in
+`_src/solvers/coupled/` and the suture thread solver in `_src/solvers/thread/`.
+Cutting is in `_src/cutting/`, geometry in `_src/geometry/`, pose inverse
+kinematics in `_src/sim/ik/` and CUDA graph capture helpers in `_src/utils/`.
+Preserve physical laws, sparse operators, fixed boundaries, gradient contracts
+and convergence checks during refactoring. Recorded-motion replay is not
+physical insertion.
 
-Examples use the public package API; shared viewer helpers belong in `examples`.
+Examples use the public package API; shared viewer helpers belong in `examples`,
+in the folder of their example group (`phantom/`, `needle/`, `grasp/`, `recording/`).
 Discover runnable `example_*.py` files automatically. Each needs a module
-docstring and a `__main__` guard. Keep the seven examples and their
+docstring and a `__main__` guard. Keep the nine examples and their
 required data bundled; external dataset preparation is optional.
 
 Keep shared platform models under `assets/dvrk/models` and `assets/versius/models`;

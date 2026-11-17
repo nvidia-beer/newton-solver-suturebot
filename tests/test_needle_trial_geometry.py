@@ -9,7 +9,12 @@ import numpy as np
 import warp as wp
 
 from newton_solver_suturebot._src.geometry.needle_queries import NeedleQueryGeometry, _conservative_box
-from newton_solver_suturebot._src.needle_trial_forces import embedding, located, track_geometry, track_segments
+from newton_solver_suturebot._src.solvers.coupled.interface.needle_trial_forces import (
+    embedding,
+    located,
+    track_geometry,
+    track_segments,
+)
 
 
 @wp.kernel
@@ -139,6 +144,8 @@ class NeedleTrialGeometryTests(unittest.TestCase):
             wp.array(samples, dtype=wp.vec3d, device=self.device),
             wp.array(arc, dtype=wp.float64, device=self.device),
             wp.array(np.arange(count) % 3 != 0, dtype=int, device=self.device),
+            # Live counts [visited, track, openings]: the storage has exactly the live size.
+            wp.array([0, count, 0], dtype=int, device=self.device),
         ]
         outputs = [
             [wp.empty(count, dtype=dtype, device=self.device) for dtype in (wp.vec3d, wp.float64, int)]
@@ -148,10 +155,18 @@ class NeedleTrialGeometryTests(unittest.TestCase):
         return inputs, outputs, scratch
 
     def launch(self, inputs, outputs, scratch):
-        count = len(inputs[0])
-        wp.launch(serial_track_geometry, count, inputs + outputs[0], device=self.device)
-        wp.launch(track_segments, scratch.shape, inputs[:5] + [outputs[1][0], scratch], device=self.device)
-        wp.launch(track_geometry, count, [scratch, inputs[4], inputs[5], *outputs[1][1:]], device=self.device)
+        nodes, bary, q, samples, arc, engaged, live = inputs
+        count = len(nodes)
+        wp.launch(
+            serial_track_geometry, count, [nodes, bary, q, samples, arc, engaged, *outputs[0]], device=self.device
+        )
+        wp.launch(
+            track_segments,
+            scratch.shape,
+            [nodes, bary, live, q, samples, arc, outputs[1][0], scratch],
+            device=self.device,
+        )
+        wp.launch(track_geometry, count, [scratch, arc, engaged, live, *outputs[1][1:]], device=self.device)
 
     def assert_equal(self, outputs):
         for original, parallel in zip(*outputs, strict=True):

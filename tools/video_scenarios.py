@@ -6,7 +6,7 @@ import numpy as np
 
 
 def configure(name, example):
-    if name == "fem_phantom_cut":
+    if name == "fem_surgical_incision":
         example.recording_events = []
         example.recording_drag = None
     if name == "fem_phantom_regions":
@@ -20,7 +20,7 @@ def configure(name, example):
         "fem_dvrk",
         "fem_versius",
         "fem_needle_insertion",
-        "fem_phantom_cut",
+        "fem_surgical_incision",
         "fem_needle_suture",
         "needle_thread",
     ):
@@ -196,23 +196,25 @@ def _phantom_frame(example, frame):
         example.recording_events.append({"frame": frame, "action": "clear_holds"})
 
 
-def _pad_cut_frame(example, frame):
-    """Slice off an edge strip, lift it through a physical grip, then release."""
+def _incision_frame(example, frame):
+    """Slice off the low-x end of the body (a hand of the Baymax body), lift it through a physical grip, then release."""
     lower, upper = example.reference_positions.min(axis=0), example.reference_positions.max(axis=0)
     span = upper - lower
+    # The blade reaches beyond the body by a tenth of its smallest size; a ray starts half its thickness above it.
+    margin, above = 0.1 * float(span.min()), upper[2] + 0.5 * span[2]
+    x = lower[0] + 0.14 * span[0]
     if frame == 30:
-        x = lower[0] + 0.14 * span[0]
         corners = np.array(
             [
-                (x, lower[1] - 0.01, lower[2] - 0.01),
-                (x, upper[1] + 0.01, lower[2] - 0.01),
-                (x, upper[1] + 0.01, upper[2] + 0.01),
-                (x, lower[1] - 0.01, upper[2] + 0.01),
+                (x, lower[1] - margin, lower[2] - margin),
+                (x, upper[1] + margin, lower[2] - margin),
+                (x, upper[1] + margin, upper[2] + margin),
+                (x, lower[1] - margin, upper[2] + margin),
             ]
         )
         mass_before = float(example.model.cut_physical_mass.numpy().sum())
         if not example.cut(corners[[[0, 1, 2], [0, 2, 3]]]):
-            raise RuntimeError(f"Recorded full-pad incision failed: {example.cut_error}")
+            raise RuntimeError(f"Recorded incision failed: {example.cut_error}")
         components = len(np.unique(example.cutter.material_components.numpy()[: example.fragment_count]))
         mass_after = float(example.model.cut_physical_mass.numpy().sum())
         if components < 2 or not np.isclose(mass_after, mass_before, rtol=1e-5):
@@ -227,10 +229,16 @@ def _pad_cut_frame(example, frame):
             }
         )
     if frame == 60:
-        origin = np.array((lower[0] + 0.07 * span[0], (lower[1] + upper[1]) / 2, upper[2] + 0.05))
+        # Straight above the middle of the piece that was cut off, wherever it lies by now.
+        example.contact.update_surface(example.state_0.particle_q)
+        surface = example.contact.points.numpy()[: 3 * example._surface_count]
+        piece = surface[surface[:, 0] < x]
+        if not len(piece):
+            raise RuntimeError("The cut piece must remain available for a physical surface grip")
+        origin = np.array((*piece[:, :2].mean(axis=0), above))
         point = example._begin_pick(origin, np.array((0.0, 0.0, -1.0)))
         if point is None:
-            raise RuntimeError("The cut strip must remain available for a physical surface grip")
+            raise RuntimeError("The cut piece must remain available for a physical surface grip")
         example.recording_drag = np.asarray(point).copy()
         example.recording_events.append({"frame": frame, "action": "begin_surface_grip"})
     if 60 < frame <= 210:
@@ -248,8 +256,8 @@ def _pad_cut_frame(example, frame):
 
 
 def before_frame(name, example, frame):
-    if name == "fem_phantom_cut":
-        _pad_cut_frame(example, frame)
+    if name == "fem_surgical_incision":
+        _incision_frame(example, frame)
         return
     if name == "fem_needle_insertion":
         if frame == 5:
@@ -293,8 +301,8 @@ def before_frame(name, example, frame):
 
 
 def frame_label(name, example):
-    if name == "fem_phantom_cut":
-        return f"Whole pad ({len(example.reference_elements):,} source tets) | Cuts: {example.cut_revision} | Simulation-time playback"
+    if name == "fem_surgical_incision":
+        return f"Baymax body ({len(example.reference_elements):,} source tets) | Cuts: {example.cut_revision} | Simulation-time playback"
     if name == "fem_needle_insertion":
         return f"{example.outcome} | Simulation-time playback | coupled MuJoCo/FEM, illustrative interaction"
     if name in ("fem_dvrk", "fem_versius"):
@@ -311,7 +319,7 @@ def frame_label(name, example):
 
 
 def recording_metadata(name, example):
-    if name == "fem_phantom_cut":
+    if name == "fem_surgical_incision":
         example.test_final()
         return {
             "original_vertices": len(example.reference_positions),

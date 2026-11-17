@@ -199,7 +199,7 @@ class TipOnlyQueryParityTests(unittest.TestCase):
     def test_device_mask_fallback_lazily_prepares_full_sample_batch_before_exact_cpu_mask(self):
         if not self.device.is_cuda:
             self.skipTest("Lazy force query batching is CUDA-specific")
-        from newton_solver_suturebot._src.needle_trial_forces import _NeedleTrialForces
+        from newton_solver_suturebot._src.solvers.coupled.interface.needle_trial_forces import _NeedleTrialForces
 
         candidate, reference = self.build(), self.build(full_queries=True)
         for interaction, state, forces in (candidate, reference):

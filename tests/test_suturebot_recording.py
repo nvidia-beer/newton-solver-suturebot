@@ -17,13 +17,13 @@ import numpy as np
 import warp as wp
 from newton.viewer import ViewerNull
 
-from newton_solver_suturebot.examples._suturebot_recording import (
+from newton_solver_suturebot.examples.recording._suturebot_recording import (
     CAMERAS,
     DEFAULT_RECORDING,
     Recording,
     bundled_recordings,
 )
-from newton_solver_suturebot.examples.example_fem_dvrk import Example
+from newton_solver_suturebot.examples.recording.example_fem_dvrk import Example
 
 
 class RecordingClockTests(unittest.TestCase):
@@ -219,7 +219,7 @@ class RecordingClockTests(unittest.TestCase):
         self.save()
         path = self.root / "recording.json"
         with patch(
-            "newton_solver_suturebot.examples._suturebot_recording.bundled_recordings",
+            "newton_solver_suturebot.examples.recording._suturebot_recording.bundled_recordings",
             side_effect=AssertionError("must not use the dVRK catalog"),
         ):
             for recording in (Recording(path), Recording("other_robot", catalog={"other_robot": path})):

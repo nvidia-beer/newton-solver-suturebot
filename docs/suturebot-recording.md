@@ -42,6 +42,19 @@ uv run --locked --extra examples python -m newton_solver_suturebot.examples fem_
 
 The panel provides recording selection, play/pause, an exact source-frame slider
 and restart. `--sample` accepts a bundled sample name or a `recording.json` path.
+The camera overlay of a recording is built and rendered once while the
+recording loads, at the start and at every recording switch, so that the
+ray-tracing kernel of the camera sensor loads there and not in the first frame.
+This also holds while the overlays are hidden. With `--no-camera-overlays` the
+overlay is still built at the load when the viewer has the panel, so that
+ticking the box later builds and loads nothing; a viewer without the panel
+(`--viewer null`, `--viewer usd`) has no box and builds no overlay.
+`--test` plays a scripted user for 100 frames: the frame slider, restart, the
+overlays off and on, every bundled recording in turn (one of them loaded while
+the overlays are hidden), **Frame phantom** and **Frame scene**; a run that
+cannot show overlays leaves the overlay steps out. It checks the replayed
+poses and, on CUDA, fails if a kernel module was loaded after a start-up; it
+prints the counts.
 The same recording menu appears with `./docker/run.sh fem_dvrk`.
 Every bundled recording uses separate USD assets for the PSM1 Large Needle
 Driver and the revised PSM2 DeBakey jaw estimate. The DeBakey has straight outer
@@ -308,7 +321,7 @@ validation. It does not drive the recording replay or its alignment overlays.
 
 The current `fem_dvrk` entry point loads the prepared
 `tissue_3/2_needle_throw/20250428-215300-489212` recording through
-[_suturebot_recording.py](../src/newton_solver_suturebot/examples/_suturebot_recording.py).
+[_suturebot_recording.py](../src/newton_solver_suturebot/examples/recording/_suturebot_recording.py).
 Its 601 source frames depict work on dataset region 1. USD supplies the tool
 and camera meshes, static full phantom, RCM fixture, table and endoscope housing.
 Prepared link poses are derived
@@ -348,7 +361,7 @@ without changing vertices, region ownership or triangle indices. The bindings
 can follow updated triangle vertices, but the default replay does not deform
 them.
 
-[_suturebot_cameras.py](../src/newton_solver_suturebot/examples/_suturebot_cameras.py)
+[_suturebot_cameras.py](../src/newton_solver_suturebot/examples/recording/_suturebot_cameras.py)
 uses the public Newton `SensorCamera` renderer. Lens inversion and frame
 resizing happen under the MSc preparation tree. For a displayed pixel
 $(u,v)$ in an image of size $(w,h)$, its prepared ray corresponds to native
@@ -480,7 +493,7 @@ and CUDA. They validate the rendering implementation, not the source fit.
 This is a retained validation utility, not a fourth launcher example. The
 `fem_dvrk` entry point remains kinematic replay.
 
-[_suturebot_contact_demo.py](../src/newton_solver_suturebot/examples/_suturebot_contact_demo.py)
+[_suturebot_contact_demo.py](../src/newton_solver_suturebot/examples/recording/_suturebot_contact_demo.py)
 retains the earlier approximate rig experiment separately from the recording
 replay. It imports the rigid articulation from USD. MuJoCo
 advances its joints, free needle and rigid contacts. The existing FEM update
@@ -488,7 +501,7 @@ advances one selected wound, retaining fixed cut and underside nodes. Its
 reference surface includes the inactive regions so a needle can also rest on
 fixed tissue.
 
-[_suturebot_contacts.py](../src/newton_solver_suturebot/examples/_suturebot_contacts.py)
+[_suturebot_contacts.py](../src/newton_solver_suturebot/examples/recording/_suturebot_contacts.py)
 samples the axes of imported capsule colliders at spacing no greater than
 their radius. For sample centre $c$, radius $r$, signed distance $d$ to the
 current triangle surface, outward normal $n$, and relative contact velocity
@@ -534,17 +547,17 @@ drive the `fem_dvrk` recording or its camera overlays.
 
 Source: Haworth et al., [SutureBot (2025)](https://suturebot.github.io/static/SutureBot_NeurIPS_2025.pdf), Fig. 2 and §2.1.
 
-[fem_dvrk](../src/newton_solver_suturebot/examples/example_fem_dvrk.py) replays the recorded tool motion for `tissue_3/2_needle_throw/20250428-215300-489212` over the original static phantom, with four model/source-video overlays. Prepared USD geometry, link poses, optical poses and lens rays come from the separate MSc preparation pipeline. Region 1 identifies the training wound; the regional FEM example presents wounds 1–6 and other areas 7–12. Camera/phantom registration remains a fitted estimate. Tool motion is an alignment replay. Needle and thread reconstruction are excluded from the prepared replay; it does not reproduce the paper's policy or suturing results.
+[fem_dvrk](../src/newton_solver_suturebot/examples/recording/example_fem_dvrk.py) replays the recorded tool motion for `tissue_3/2_needle_throw/20250428-215300-489212` over the original static phantom, with four model/source-video overlays. Prepared USD geometry, link poses, optical poses and lens rays come from the separate MSc preparation pipeline. Region 1 identifies the training wound; the regional FEM example presents wounds 1–6 and other areas 7–12. Camera/phantom registration remains a fitted estimate. Tool motion is an alignment replay. Needle and thread reconstruction are excluded from the prepared replay; it does not reproduce the paper's policy or suturing results.
 
 | Source concept | Current implementation |
 | --- | --- |
-| Fig. 2: six numbered pad wounds | [fem_phantom_regions](../src/newton_solver_suturebot/examples/example_fem_phantom_regions.py) uses one visible numbering scheme, 1–12. Offline preparation partitions one connected original feature into wound 5 with its thin upper rim, remainder 8 including the lower-left tail, and upper slit 12; the other nine original payloads and native tetrahedral coordinates are preserved. |
-| §2.1: recorded tool motion and four camera views | [Recording](../src/newton_solver_suturebot/examples/_suturebot_recording.py) reads a structured JSON/USD/NPZ package and preserves exact source timestamps. The replay selects one source index for tool poses, camera poses and all four images, holding each sample until its successor. Derived link poses are assigned kinematically; no dynamics or force measurement is inferred. |
-| Checking model placement against recorded pixels | [FourCameraOverlay](../src/newton_solver_suturebot/examples/_suturebot_cameras.py) renders actual Newton model geometry through prepared inverse-lens rays and camera-to-world poses, then blends visible surfaces and outlines onto indexed source frames. This rendering/registration workflow is an implementation addition, not a claimed algorithm or calibration result from the paper. Numerical projection tests do not establish accuracy of the fitted recording alignment. |
+| Fig. 2: six numbered pad wounds | [fem_phantom_regions](../src/newton_solver_suturebot/examples/phantom/example_fem_phantom_regions.py) uses one visible numbering scheme, 1–12. Offline preparation partitions one connected original feature into wound 5 with its thin upper rim, remainder 8 including the lower-left tail, and upper slit 12; the other nine original payloads and native tetrahedral coordinates are preserved. |
+| §2.1: recorded tool motion and four camera views | [Recording](../src/newton_solver_suturebot/examples/recording/_suturebot_recording.py) reads a structured JSON/USD/NPZ package and preserves exact source timestamps. The replay selects one source index for tool poses, camera poses and all four images, holding each sample until its successor. Derived link poses are assigned kinematically; no dynamics or force measurement is inferred. |
+| Checking model placement against recorded pixels | [FourCameraOverlay](../src/newton_solver_suturebot/examples/recording/_suturebot_cameras.py) renders actual Newton model geometry through prepared inverse-lens rays and camera-to-world poses, then blends visible surfaces and outlines onto indexed source frames. This rendering/registration workflow is an implementation addition, not a claimed algorithm or calibration result from the paper. Numerical projection tests do not establish accuracy of the fitted recording alignment. |
 | Visible tool-shaft alignment | Offline preparation compares independently observed wrist-image cylinder edges with finite perspective tangents of the retained shaft CAD, and checks the result against actual triangle renders. The [shaft objective](#suturebot-recorded-motion-and-camera-overlays) estimates mount/lens alignment; an own-shaft view cannot independently determine global tool/table height. This is an implementation addition, not a calibration procedure or measured optical specification supplied by the paper. |
 | Fig. 2: pad, RCM fixture and endoscope arrangement | Offline preparation ties each constant arm-base calibration to a fixture port, constrains wrist optical axes parallel to shafts and the pad normal parallel to fixture support, and fits the pad's independent displacement. The source fixture feet define the table plane. A transparent endoscope housing follows the stereo optics; its optical-to-shaft angle is unmeasured. These scene-registration constraints are implementation choices, not measured hand-eye calibration supplied by the paper. |
 | Dataset point targets | Existing final-frame clicked points bind to the unchanged tet exterior through barycentric coordinates and appear as visual-only spheres at their bound surface points. The bindings and static replay surface preserve the supplied material targets. |
-| Earlier approximate physical rig demonstration | [_suturebot_contact_demo.py](../src/newton_solver_suturebot/examples/_suturebot_contact_demo.py) retains the MuJoCo tools/free needle and sampled two-way FEM contact experiment. Available instrument CAD includes a documented DeBakey surrogate. The [legacy contact method](#legacy-suturebot-rigid-and-deformable-contact-experiment) and press validation are separate from the default recording replay. |
+| Earlier approximate physical rig demonstration | [_suturebot_contact_demo.py](../src/newton_solver_suturebot/examples/recording/_suturebot_contact_demo.py) retains the MuJoCo tools/free needle and sampled two-way FEM contact experiment. Available instrument CAD includes a documented DeBakey surrogate. The [legacy contact method](#legacy-suturebot-rigid-and-deformable-contact-experiment) and press validation are separate from the default recording replay. |
 
 All fitting, source-image decoding and USD preparation remain under the MSc
 workbench; the solver package consumes published assets. The package's alignment

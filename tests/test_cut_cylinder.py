@@ -10,7 +10,7 @@ from unittest.mock import Mock
 import numpy as np
 from test_cut_surface_growth import _growth_example, _mechanical_pointers
 
-from newton_solver_suturebot.examples import example_fem_phantom_cut as cutting
+from newton_solver_suturebot.examples.incision import example_fem_surgical_incision as cutting
 
 
 class TestLinearFEMCylinderCut(unittest.TestCase):

@@ -8,8 +8,11 @@ import numpy as np
 import warp as wp
 
 from newton_solver_suturebot._src.geometry.swept_certificate import swept_triangle_clear, tip_roundoff_bound
-from newton_solver_suturebot._src.insertion import _surface_crossings
-from newton_solver_suturebot._src.needle_trial_forces import tip_boundary_certificate
+from newton_solver_suturebot._src.solvers.coupled.interface.insertion import _surface_crossings
+from newton_solver_suturebot._src.solvers.coupled.interface.needle_trial_forces import (
+    FALLBACK_REASONS,
+    tip_boundary_certificate,
+)
 
 
 @wp.kernel(enable_backward=False)
@@ -113,7 +116,7 @@ class SweptCertificateTests(unittest.TestCase):
         tips = wp.array([[0, 0, 1]], dtype=wp.vec3d)
         old_tips = wp.array([[0, 0, 0.9]], dtype=wp.vec3d)
         poses = wp.array([wp.transform_identity()], dtype=wp.transform)
-        fallback = wp.zeros(1, dtype=int)
+        fallback = wp.zeros(len(FALLBACK_REASONS), dtype=int)
         faces = wp.array([[0, 1, 2]], dtype=wp.vec3i)
         inputs = [
             mesh.id,

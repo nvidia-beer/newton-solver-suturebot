@@ -13,7 +13,7 @@ from test_needle_insertion_example import _example, _prepare
 from test_needle_tissue_coupler import _native_state
 
 from newton_solver_suturebot import NeedleStepTooLarge
-from newton_solver_suturebot._src.tet_step import TetStepGuard
+from newton_solver_suturebot._src.solvers.coupled.tet_step import TetStepGuard
 
 
 class TetStepGuardTests(unittest.TestCase):
@@ -96,77 +96,76 @@ class TetStepGuardTests(unittest.TestCase):
             guard.check(state_in, state_out)
 
     def test_coupled_rejection_restores_native_and_fem_state_then_retry_commits_once(self):
-        for backend in ("partitioned", "mujoco-fem"):
-            with self.subTest(backend=backend), _example(needle_solver=backend) as example:
-                _prepare(example)
-                example.start()
-                coupler, interaction = example.coupler, example.interaction
-                example.state_0.body_f.assign(np.array([[0, 0, 1e-5, 0, 0, 0]], np.float32))
-                example.state_0.particle_f.fill_(wp.vec3(0.123, 0.234, 0.345))
-                example.solver.velocity_increment.fill_(wp.vec3(1e-7, -2e-7, 3e-7))
-                names = (
-                    "particle_q",
-                    "particle_qd",
-                    "particle_f",
-                    "body_q",
-                    "body_qd",
-                    "joint_q",
-                    "joint_qd",
-                    "body_f",
+        with _example() as example:
+            _prepare(example)
+            example.start()
+            coupler, interaction = example.coupler, example.interaction
+            example.state_0.body_f.assign(np.array([[0, 0, 1e-5, 0, 0, 0]], np.float32))
+            example.state_0.particle_f.fill_(wp.vec3(0.123, 0.234, 0.345))
+            example.solver.velocity_increment.fill_(wp.vec3(1e-7, -2e-7, 3e-7))
+            names = (
+                "particle_q",
+                "particle_qd",
+                "particle_f",
+                "body_q",
+                "body_qd",
+                "joint_q",
+                "joint_qd",
+                "body_f",
+            )
+            before = [
+                {name: getattr(state, name).numpy().copy() for name in names}
+                for state in (example.state_0, example.state_1)
+            ]
+            native = _native_state(example.rigid_solver)
+            increment = example.solver.velocity_increment.numpy().copy()
+            load = coupler._load.numpy().copy()
+            events = interaction.events
+            history = (interaction.status, interaction.reason, interaction.puncture_count, interaction.track_count)
+            solve = coupler._solve_host
+
+            def adversarial_converged_candidate(state_in, control, dt, *args, solve=solve, coupler=coupler):
+                converged = solve(state_in, control, dt, *args)
+                self.assertTrue(converged)
+                if dt == example.sim_dt:
+                    q = coupler._candidate.particle_q.numpy()
+                    ids = example.model.tet_indices.numpy()[0]
+                    # A converged interface residual cannot certify this
+                    # deliberately invalid FEM endpoint. Native MuJoCo has
+                    # really advanced and must be restored by rejection.
+                    q[ids[3]] = q[ids[0]] - 0.1 * (q[ids[3]] - q[ids[0]])
+                    coupler._candidate.particle_q.assign(q)
+                return converged
+
+            with (
+                patch.object(coupler, "_solve_host", side_effect=adversarial_converged_candidate),
+                patch.object(interaction, "accept", wraps=interaction.accept) as accept,
+            ):
+                with self.assertRaisesRegex(NeedleStepTooLarge, "FEM tetrahedron"):
+                    coupler.step(example.state_0, example.state_1, example.control, example.sim_dt)
+                self.assertEqual(accept.call_count, 0)
+                self.assertEqual(coupler.tet_step_rejections, 1)
+                self.assertEqual(coupler.minimum_accepted_tet_j, math.inf)
+                np.testing.assert_array_equal(_native_state(example.rigid_solver), native)
+                np.testing.assert_array_equal(example.solver.velocity_increment.numpy(), increment)
+                np.testing.assert_array_equal(coupler._load.numpy(), load)
+                for state, values in zip((example.state_0, example.state_1), before, strict=True):
+                    for name in names:
+                        np.testing.assert_array_equal(getattr(state, name).numpy(), values[name], err_msg=name)
+                self.assertIs(interaction.events, events)
+                self.assertEqual(
+                    (interaction.status, interaction.reason, interaction.puncture_count, interaction.track_count),
+                    history,
                 )
-                before = [
-                    {name: getattr(state, name).numpy().copy() for name in names}
-                    for state in (example.state_0, example.state_1)
-                ]
-                native = _native_state(example.rigid_solver)
-                increment = example.solver.velocity_increment.numpy().copy()
-                load = coupler._load.numpy().copy()
-                events = interaction.events
-                history = (interaction.status, interaction.reason, interaction.puncture_count, interaction.track_count)
-                solve = coupler._solve_host
-
-                def adversarial_converged_candidate(state_in, control, dt, *args, solve=solve, coupler=coupler):
-                    converged = solve(state_in, control, dt, *args)
-                    self.assertTrue(converged)
-                    if dt == example.sim_dt:
-                        q = coupler._candidate.particle_q.numpy()
-                        ids = example.model.tet_indices.numpy()[0]
-                        # A converged interface residual cannot certify this
-                        # deliberately invalid FEM endpoint. Native MuJoCo has
-                        # really advanced and must be restored by rejection.
-                        q[ids[3]] = q[ids[0]] - 0.1 * (q[ids[3]] - q[ids[0]])
-                        coupler._candidate.particle_q.assign(q)
-                    return converged
-
-                with (
-                    patch.object(coupler, "_solve_host", side_effect=adversarial_converged_candidate),
-                    patch.object(interaction, "accept", wraps=interaction.accept) as accept,
-                ):
-                    with self.assertRaisesRegex(NeedleStepTooLarge, "FEM tetrahedron"):
-                        coupler.step(example.state_0, example.state_1, example.control, example.sim_dt)
-                    self.assertEqual(accept.call_count, 0)
-                    self.assertEqual(coupler.tet_step_rejections, 1)
-                    self.assertEqual(coupler.minimum_accepted_tet_j, math.inf)
-                    np.testing.assert_array_equal(_native_state(example.rigid_solver), native)
-                    np.testing.assert_array_equal(example.solver.velocity_increment.numpy(), increment)
-                    np.testing.assert_array_equal(coupler._load.numpy(), load)
-                    for state, values in zip((example.state_0, example.state_1), before, strict=True):
-                        for name in names:
-                            np.testing.assert_array_equal(getattr(state, name).numpy(), values[name], err_msg=name)
-                    self.assertIs(interaction.events, events)
-                    self.assertEqual(
-                        (interaction.status, interaction.reason, interaction.puncture_count, interaction.track_count),
-                        history,
-                    )
-                    dt = example.sim_dt / 2
-                    example.solver.refresh_tangent(example.state_0.particle_q, dt)
-                    start_time = float(example.rigid_solver.mj_data.time)
-                    coupler.step(example.state_0, example.state_1, example.control, dt)
-                    self.assertEqual(accept.call_count, 1)
-                    self.assertEqual(coupler.tet_step_rejections, 1)
-                    self.assertGreater(coupler.minimum_accepted_tet_j, 0)
-                    self.assertTrue(math.isfinite(coupler.minimum_accepted_tet_j))
-                    self.assertAlmostEqual(float(example.rigid_solver.mj_data.time), start_time + dt, places=12)
+                dt = example.sim_dt / 2
+                example.solver.refresh_tangent(example.state_0.particle_q, dt)
+                start_time = float(example.rigid_solver.mj_data.time)
+                coupler.step(example.state_0, example.state_1, example.control, dt)
+                self.assertEqual(accept.call_count, 1)
+                self.assertEqual(coupler.tet_step_rejections, 1)
+                self.assertGreater(coupler.minimum_accepted_tet_j, 0)
+                self.assertTrue(math.isfinite(coupler.minimum_accepted_tet_j))
+                self.assertAlmostEqual(float(example.rigid_solver.mj_data.time), start_time + dt, places=12)
 
 
 if __name__ == "__main__":

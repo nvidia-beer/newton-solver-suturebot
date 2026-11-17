@@ -15,7 +15,7 @@ import numpy as np
 import warp as wp
 from pxr import Gf, Usd, UsdGeom, UsdPhysics
 
-from newton_solver_suturebot.examples._suturebot_needle import (
+from newton_solver_suturebot.examples.recording._suturebot_needle import (
     NeedleReplay,
     add_needle_to_builder,
     closest_segment_points,

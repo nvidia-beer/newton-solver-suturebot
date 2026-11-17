@@ -288,12 +288,15 @@ def predict(
     qd: wp.array[wp.float64],
     boundary_q: wp.array[wp.float64],
     fixed: wp.array[int],
-    dt: wp.float64,
+    dt: wp.array[wp.float64],
     predicted_q: wp.array[wp.float64],
 ):
-    """Store the inertial target q + dt qd and move q to the first iterate; launch over all coordinates."""
+    """Store the inertial target q + dt qd and move q to the first iterate; launch over all coordinates.
+
+    ``dt`` holds the time step [s] in its one element (``StepTime.seconds_f64``).
+    """
     i = wp.tid()
-    predicted_q[i] = q[i] + dt * qd[i]
+    predicted_q[i] = q[i] + dt[0] * qd[i]
     if fixed[i % fixed.shape[0]] != 0:
         q[i] = boundary_q[i]
     else:
@@ -498,9 +501,9 @@ def assemble(
     status: wp.array[int],
     tangent_blocks: bool,
     gravity: wp.vec3d,
-    dt: wp.float64,
+    dt: wp.array[wp.float64],
     damping: wp.float64,
-    inertia_scale: wp.float64,
+    inertia_scale: wp.array[wp.float64],
     contact: bool,
     contact_distance: wp.float64,
     contact_stiffness: wp.float64,
@@ -531,6 +534,10 @@ def assemble(
     rows stay complete because the solve condenses the chain onto them. With a
     rigid head those rows are expressed in the head's translation and rotation
     and include its inertia.
+
+    ``dt`` and ``inertia_scale`` hold, in their one element, the time step [s]
+    (``StepTime.seconds_f64``) and the displacement coefficient of the consistent
+    mass, 1 / dt² + damping / dt, that the host forms from it.
     """
     node = wp.tid()
     count = mass_diagonal.shape[0]
@@ -539,7 +546,7 @@ def assemble(
     local = node % count
     element = (node // count) * (count - 1) + local
     inertia, drag, weight = _node_dynamics(
-        q, 0, predicted_q, qd, mass_diagonal, mass_coupling, gravity, dt, damping, node
+        q, 0, predicted_q, qd, mass_diagonal, mass_coupling, gravity, dt[0], damping, node
     )
     internal = _node_elastic(element_gradient, count, node) + drag
     value = Vec6d()
@@ -596,8 +603,8 @@ def assemble(
             element_hessian[element, 1, 2],
             element_hessian[element, 1, 3],
         )
-        next_block = _add_mass(next_block, mass_coupling[local], inertia_scale)
-    block = _add_mass(_blocks(k_pp, k_ps, k_sp, k_ss), mass_diagonal[local], inertia_scale)
+        next_block = _add_mass(next_block, mass_coupling[local], inertia_scale[0])
+    block = _add_mass(_blocks(k_pp, k_ps, k_sp, k_ss), mass_diagonal[local], inertia_scale[0])
     for i in range(3):
         for j in range(3):
             block[i, j] += contact_tangent[i, j]
@@ -926,7 +933,7 @@ def trial_node_energy(
     mass_diagonal: wp.array[wp.mat22d],
     mass_coupling: wp.array[wp.mat22d],
     gravity: wp.vec3d,
-    dt: wp.float64,
+    dt: wp.array[wp.float64],
     damping: wp.float64,
     contact: bool,
     contact_distance: wp.float64,
@@ -948,17 +955,18 @@ def trial_node_energy(
     """Inertial, damping, weight and contact part of the step potential of one node; launch (candidates, nodes).
 
     Its gradient with the elastic energy is the step residual, so a candidate
-    with a lower total is a better iterate.
+    with a lower total is a better iterate. ``dt`` holds the time step [s] in its
+    one element (``StepTime.seconds_f64``).
     """
     candidate, node = wp.tid()
     if status[node // mass_diagonal.shape[0]] != 0:
         return
     shift = candidate * total_nodes
     inertia, drag, weight = _node_dynamics(
-        trial_q, shift, predicted_q, qd, mass_diagonal, mass_coupling, gravity, dt, damping, node
+        trial_q, shift, predicted_q, qd, mass_diagonal, mass_coupling, gravity, dt[0], damping, node
     )
     # Damping at the start of the step: the damping potential is quadratic between the two.
-    predicted_drag = drag - (damping * dt) * inertia
+    predicted_drag = drag - (damping * dt[0]) * inertia
     position = _node_values(trial_q, node + shift)
     increment = position - _node_values(predicted_q, node)
     value = wp.float64(0.5) * wp.dot(increment, inertia) + (
@@ -1103,10 +1111,15 @@ def check(
 
 
 @wp.kernel(enable_backward=False)
-def finish(q: wp.array[wp.float64], predicted_q: wp.array[wp.float64], dt: wp.float64, qd: wp.array[wp.float64]):
-    """Accept the step: v = v_n + dt a with a = (q - q~) / dt²; launch over all coordinates."""
+def finish(
+    q: wp.array[wp.float64], predicted_q: wp.array[wp.float64], dt: wp.array[wp.float64], qd: wp.array[wp.float64]
+):
+    """Accept the step: v = v_n + dt a with a = (q - q~) / dt²; launch over all coordinates.
+
+    ``dt`` holds the time step [s] in its one element (``StepTime.seconds_f64``).
+    """
     i = wp.tid()
-    qd[i] = qd[i] + dt * ((q[i] - predicted_q[i]) / (dt * dt))
+    qd[i] = qd[i] + dt[0] * ((q[i] - predicted_q[i]) / (dt[0] * dt[0]))
 
 
 # Eyelets: points in space that the thread must pass through but may slide along. Each eyelet tracks

@@ -20,7 +20,7 @@ from test_cut_pipeline import (
     _surface_faces,
 )
 
-from newton_solver_suturebot.examples import example_fem_phantom_cut as cutting
+from newton_solver_suturebot.examples.incision import example_fem_surgical_incision as cutting
 
 
 @contextmanager
@@ -46,7 +46,7 @@ def _growth_example():
         ]
     )
     device = os.environ.get("NEWTON_TEST_DEVICE", "cpu")
-    with wp.ScopedDevice(device), patch.object(cutting, "load_pad", side_effect=lambda *_: _cube()):
+    with wp.ScopedDevice(device), patch.object(cutting, "load_body", side_effect=lambda *_: _cube()):
         viewer = ViewerNull()
         try:
             yield cutting.Example(viewer, args)

@@ -12,7 +12,7 @@ import numpy as np
 import warp as wp
 from newton.solvers import SolverMuJoCo
 
-from newton_solver_suturebot.examples._needle_insertion_drive import NeedleDrive, ramp_distance
+from newton_solver_suturebot.examples.needle._needle_insertion_drive import NeedleDrive, ramp_distance
 
 
 @contextmanager

@@ -9,15 +9,15 @@ import warp as wp
 from test_needle_tissue_coupler import _native_state
 from test_surface_anderson_coupling import _contact, _snapshot
 
-from newton_solver_suturebot._src.coupling import NeedleCouplingNotConverged
-from newton_solver_suturebot._src.surface_contact_tangent import SurfaceTangentAnchors
-from newton_solver_suturebot._src.surface_preconditioner import (
+from newton_solver_suturebot._src.solvers.coupled.acceleration.surface_contact_tangent import SurfaceTangentAnchors
+from newton_solver_suturebot._src.solvers.coupled.acceleration.surface_preconditioner import (
     SurfaceContactPreconditioner,
     surface_balanced_correction,
     surface_contact_action,
     surface_contact_diagonal,
     validate_recording,
 )
+from newton_solver_suturebot._src.solvers.coupled.coupling import NeedleCouplingNotConverged
 
 
 def _skew(v):
@@ -112,6 +112,33 @@ def enable(coupler, capacity=4096):
     return pc
 
 
+def _capsules_on_wire_at_reset(scene):
+    """For each jaw of the first tool, how many of its capsules lie on the needle wire at the reset opening."""
+    from newton_solver_suturebot.examples.grasp._dvrk_grasper import _segment_distance, needle_to_gripper_pose
+
+    tool, radius = scene.graspers[0], scene.geometry.thickness
+    relative = wp.transform_inverse(
+        wp.transform(*needle_to_gripper_pose(scene.geometry, **scene.initial_grasp_parameters))
+    )
+    line = np.asarray(
+        [np.asarray(wp.transform_point(relative, wp.vec3(*point))) for point in scene.geometry.centerline]
+    )
+    segments = np.stack((line[:-1], line[1:]), axis=1)
+    counts = []
+    for body, sign, opened in zip(tool.jaw_bodies, (1.0, -1.0), scene.reset_jaw_openings[0], strict=True):
+        cosine, sine = np.cos(sign * opened), np.sin(sign * opened)
+        turn = np.array([[cosine, -sine, 0.0], [sine, cosine, 0.0], [0.0, 0.0, 1.0]])
+        counts.append(
+            sum(
+                min(_segment_distance(tool.capsule_endpoints[row] @ turn.T, segment) for segment in segments)
+                < tool.capsule_radii[row] + radius
+                for row in range(len(tool.capsule_bodies))
+                if tool.capsule_bodies[row] == body
+            )
+        )
+    return counts
+
+
 class SurfaceMetricContactTests(unittest.TestCase):
     def test_native_first_contact_matches_same_exact_residual_tolerances(self):
         records = []
@@ -179,7 +206,7 @@ class SurfaceMetricContactTests(unittest.TestCase):
             self.assertFalse(pc.begin_trials(ex.state_0, ex.control))
 
     def test_valid_overflow_valid_switches_reset_histories_and_rejection_rolls_back(self):
-        from newton_solver_suturebot._src.surface_anderson import SurfaceAnderson
+        from newton_solver_suturebot._src.solvers.coupled.acceleration.surface_anderson import SurfaceAnderson
 
         with _contact(iterations=6) as (ex, c, native, _external):
             pc = enable(c)
@@ -202,7 +229,7 @@ class SurfaceMetricContactTests(unittest.TestCase):
 
             before_in, before_out = _snapshot(ex.state_0), _snapshot(ex.state_1)
             before_native = _native_state(native)
-            from newton_solver_suturebot._src.insertion import NeedleStepTooLarge
+            from newton_solver_suturebot._src.solvers.coupled.interface.insertion import NeedleStepTooLarge
 
             with (
                 patch.object(pc, "pack_statistics", side_effect=packet),
@@ -237,7 +264,7 @@ class SurfaceMetricContactTests(unittest.TestCase):
     def test_articulated_contact_metric_keeps_real_grasp_and_native_budget(self):
         from test_grasp_scene import _scene
 
-        from newton_solver_suturebot._src.coupling import NeedleTissueCoupler
+        from newton_solver_suturebot._src.solvers.coupled.coupling import NeedleTissueCoupler
 
         endpoints = []
         for enabled in (False, True):
@@ -245,6 +272,14 @@ class SurfaceMetricContactTests(unittest.TestCase):
                 pose = scene.plan.pose(0).copy()
                 pose[2] += 0.6 * scene.geometry.thickness
                 scene._initialize_pose(pose)  # Initial condition only; elapsed remains zero.
+                # The grasp of this test, stated: the reset seats each jaw on the wire with two
+                # capsules side by side (jaw_opening_on_needle), so the bite has its contacts
+                # from the first trial on. The loop without the surface metric converges on it
+                # (3 trials on the CPU, measured) and is the reference of the comparison below.
+                # With one capsule of each jaw on the wire at zero gap that loop alternates
+                # between contact sets and uses up its 160 trials (measured), which is not what
+                # this test is about.
+                self.assertTrue(all(count >= 2 for count in _capsules_on_wire_at_reset(scene)))
                 scene.interaction.puncture_force = 1.0
                 scene.solver.linear_solver_tolerance = 1e-6
                 scene.solver.refresh_tangent(scene.state_0.particle_q, scene.sim_dt)

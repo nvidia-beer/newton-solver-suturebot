@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 """FEM tissue, rigid needle coupling and SutureBot examples for Newton."""
 
-from ._src.coupling import NeedleCouplingNotConverged, NeedleTissueCoupler
 from ._src.cutting import (
     CutConnectivityDebug,
     CutModel,
@@ -23,17 +22,11 @@ from ._src.geometry import (
     load_mesh,
     load_mesh_regions,
 )
-from ._src.insertion import NeedleStepTooLarge, NeedleTissueInteraction
 from ._src.solvers import FEMBuilder, LinearFEMData, SolverFEM, SolverLinearFEM
-from ._src.solvers.mujoco_fem.solver import SolverMuJoCoFEM
-from ._src.solvers.thread import (
-    SolverThread,
-    ThreadAttachment,
-    ThreadCapsuleContact,
-    ThreadModel,
-    ThreadTissueCoupling,
-)
-from ._src.thread_rigid_contact import ThreadRigidCapsuleContact
+from ._src.solvers.coupled.coupling import NeedleCouplingNotConverged, NeedleTissueCoupler
+from ._src.solvers.coupled.interface.insertion import NeedleStepTooLarge, NeedleTissueInteraction
+from ._src.solvers.thread import SolverThread, ThreadAttachment, ThreadCapsuleContact, ThreadModel, ThreadTissueCoupling
+from ._src.solvers.thread.thread_rigid_contact import ThreadRigidCapsuleContact
 
 __all__ = [
     "CutConnectivityDebug",
@@ -55,7 +48,6 @@ __all__ = [
     "RegionMesh",
     "SolverFEM",
     "SolverLinearFEM",
-    "SolverMuJoCoFEM",
     "SolverThread",
     "TetrahedralTunnelGuide",
     "ThreadAttachment",

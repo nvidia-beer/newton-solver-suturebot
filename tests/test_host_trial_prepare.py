@@ -9,8 +9,8 @@ import newton
 import numpy as np
 import warp as wp
 
-from newton_solver_suturebot._src.coupling import _apply_interface_load
-from newton_solver_suturebot._src.host_trial_prepare import CapturedTrialPreparation, _arrays
+from newton_solver_suturebot._src.solvers.coupled.coupling import _apply_interface_load
+from newton_solver_suturebot._src.solvers.coupled.host_trial_prepare import CapturedTrialPreparation, _arrays
 
 
 def state(device):
@@ -130,6 +130,77 @@ class HostTrialPrepareTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "history.previous"):
             CapturedTrialPreparation(c).bind(incoming)()
 
+    def test_capture_graph_leaves_one_launched_graph_per_state_and_trials_then_only_replay(self):
+        reference, captured = coupler(self.device), coupler(self.device)
+        actual = [state(self.device), state(self.device)]
+        expected = [state(self.device), state(self.device)]
+        helper = CapturedTrialPreparation(captured)
+
+        def fill(trial):
+            current, baseline = actual[trial % 2], expected[trial % 2]
+            for index, ((name, array), (_, other)) in enumerate(zip(_arrays(current), _arrays(baseline), strict=True)):
+                array.fill_((trial + index) % 2 if name == "_tendon_initialized" else trial + index + 0.25)
+                other.assign(array)
+            for c in (reference, captured):
+                c._trial_load.assign(np.arange(15, dtype=float) * (trial + 1))
+                c._external_nodes.fill_(0.5 * trial)
+                c._external_wrench.fill_(0.75 * trial)
+                c._candidate.history.previous.fill_(-1000)
+            return current, baseline
+
+        def check(current, baseline):
+            eager(reference, baseline)
+            for (name, array), (_, expected_array) in zip(
+                _arrays(captured._candidate), _arrays(reference._candidate), strict=True
+            ):
+                np.testing.assert_array_equal(array.numpy(), expected_array.numpy(), err_msg=name)
+            np.testing.assert_array_equal(current.body_f.numpy(), baseline.body_f.numpy())
+            np.testing.assert_array_equal(captured._forces.numpy(), reference._forces.numpy())
+
+        if not self.device.is_cuda:
+            # No graph on the CPU: the entry declines and issues nothing; the trials run as written.
+            for item in actual:
+                self.assertFalse(helper.capture_graph(item))
+            self.assertFalse(helper.warmed)
+            self.assertEqual((helper.captures, helper.launches, len(helper.graphs)), (0, 0, 0))
+            np.testing.assert_array_equal(captured._candidate.history.previous.numpy(), [0.0] * 3)
+            return
+        for trial in range(2):
+            current, baseline = fill(trial)
+            self.assertTrue(helper.capture_graph(current))
+            # Each pass of the entry is the real preparation of that state.
+            check(current, baseline)
+            # The first state runs once as written and is then captured; the second is captured at once.
+            self.assertEqual((helper.captures, helper.launches, len(helper.graphs)), (trial + 1, 0, trial + 1))
+        self.assertTrue(helper.warmed)
+        graphs = [entry[0] for entry in helper.graphs.values()]
+        # Warp builds the executable graph at the first launch: both were launched.
+        self.assertEqual([graph.graph_exec is None for graph in graphs], [False, False])
+        # A state that has its graph is left alone.
+        for item in actual:
+            self.assertTrue(helper.capture_graph(item))
+        self.assertEqual((helper.captures, helper.launches), (2, 0))
+        # The trials of both states only replay, with the values of the moment.
+        for trial in range(2, 8):
+            current, baseline = fill(trial)
+            helper.bind(current)()
+            check(current, baseline)
+            self.assertEqual((helper.captures, helper.launches), (2, trial - 1))
+        self.assertEqual([entry[0] for entry in helper.graphs.values()], graphs)
+
+    def test_capture_graph_declines_where_the_preparation_runs_as_written(self):
+        c, incoming = coupler(self.device), state(self.device)
+        helper = CapturedTrialPreparation(c)
+        c.capture_fem = False
+        self.assertFalse(helper.capture_graph(incoming))
+        c.capture_fem = True
+        incoming.history.previous.requires_grad = True
+        self.assertFalse(helper.capture_graph(incoming))
+        self.assertFalse(helper.warmed)
+        self.assertEqual((helper.captures, helper.launches, len(helper.graphs)), (0, 0, 0))
+        # Nothing ran: the candidate holds what it held.
+        np.testing.assert_array_equal(c._candidate.history.previous.numpy(), [0.0] * 3)
+
     def test_graph_cache_is_bounded(self):
         if not self.device.is_cuda:
             self.skipTest("CUDA capture cache regression")
@@ -139,6 +210,14 @@ class HostTrialPrepareTests(unittest.TestCase):
             helper.bind(state(self.device))()
         self.assertEqual(helper.captures, 11)
         self.assertEqual(len(helper.graphs), 8)
+        # The start-up entry uses the same cache: a ninth state evicts the oldest graph.
+        helper = CapturedTrialPreparation(c)
+        states = [state(self.device) for _ in range(9)]
+        for item in states:
+            self.assertTrue(helper.capture_graph(item))
+        self.assertEqual((helper.captures, helper.launches, len(helper.graphs)), (9, 0, 8))
+        self.assertTrue(helper.capture_graph(states[0]))
+        self.assertEqual((helper.captures, len(helper.graphs)), (10, 8))
 
 
 if __name__ == "__main__":

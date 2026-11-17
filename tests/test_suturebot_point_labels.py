@@ -16,10 +16,18 @@ from newton.viewer import ViewerNull
 from PIL import Image
 from pxr import Usd, UsdGeom, UsdShade
 
-from newton_solver_suturebot.examples._recording_example import POINT_LABEL_RADIUS, add_point_label_spheres
-from newton_solver_suturebot.examples._suturebot_cameras import CameraOverlay, camera_rays_cv, camera_transform_cv
-from newton_solver_suturebot.examples._suturebot_recording import DEFAULT_RECORDING, Recording, bundled_recordings
-from newton_solver_suturebot.examples.example_fem_dvrk import Example
+from newton_solver_suturebot.examples.recording._recording_example import POINT_LABEL_RADIUS, add_point_label_spheres
+from newton_solver_suturebot.examples.recording._suturebot_cameras import (
+    CameraOverlay,
+    camera_rays_cv,
+    camera_transform_cv,
+)
+from newton_solver_suturebot.examples.recording._suturebot_recording import (
+    DEFAULT_RECORDING,
+    Recording,
+    bundled_recordings,
+)
+from newton_solver_suturebot.examples.recording.example_fem_dvrk import Example
 
 
 class TestSutureBotPointLabels(unittest.TestCase):

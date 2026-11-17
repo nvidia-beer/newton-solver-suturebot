@@ -12,8 +12,8 @@ import numpy as np
 import warp as wp
 from newton.solvers import SolverMuJoCo
 
-from newton_solver_suturebot._src.mujoco_free_body import MuJoCoFreeBody
-from newton_solver_suturebot._src.mujoco_free_body_gpu import MuJoCoFreeBodyGPU
+from newton_solver_suturebot._src.solvers.mujoco.mujoco_free_body import MuJoCoFreeBody
+from newton_solver_suturebot._src.solvers.mujoco.mujoco_free_body_gpu import MuJoCoFreeBodyGPU
 
 _STATE_ARRAYS = ("joint_q", "joint_qd", "body_q", "body_qd")
 

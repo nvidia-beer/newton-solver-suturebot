@@ -1,0 +1,10 @@
+Private CUDA MPS pipe: /tmp/isaaclab-suturebot-mps.EL3teWJ0/pipe
+Warp 1.17.0 initialized:
+   CUDA Toolkit 13.0, Driver 13.0
+   Devices:
+     "cpu"      : "aarch64"
+     "cuda:0"   : "NVIDIA GB10" (120 GiB, sm_121, mempool enabled)
+   Kernel cache:
+     /tmp/suturebot-grasp-integration-cache/1.17.0
+{"passed": true, "checks": {"eight_or_more_scenes": true, "distinct_worker_processes": true, "concurrent_worker_intervals": true, "finite_state": true, "positive_tetrahedral_volumes": true, "fixed_boundaries_preserved": true, "all_scenes_advanced": true, "distinct_action_response": true, "selective_reset_restores_time": true, "selective_reset_preserves_neighbors": true, "reset_restores_needle": true, "runtime_unchanged": true, "grasp_state_contract": true, "independent_rigid_body_state": true, "jaw_actuation_response": true, "reset_restores_grasp": true, "no_solver_failures": true}, "environment_steps_per_second": 127.756961353766, "num_envs": 8}
+MPS logs: /tmp/isaaclab-suturebot-mps.EL3teWJ0

@@ -8,7 +8,10 @@ import unittest
 import numpy as np
 import warp as wp
 
-from newton_solver_suturebot._src.shaft_preconditioner import balanced_correction, prepare_alm_anchors
+from newton_solver_suturebot._src.solvers.coupled.acceleration.shaft_preconditioner import (
+    balanced_correction,
+    prepare_alm_anchors,
+)
 
 
 def _prox(d, normal, penalty, compliance, clearance):
@@ -35,6 +38,10 @@ class NeedleALMPreconditionerTests(unittest.TestCase):
         self.pose = wp.array([wp.transform_identity()], dtype=wp.transform, device=self.device)
         self.matrices = wp.zeros(1, dtype=wp.mat33, device=self.device)
         self.levers = wp.zeros(1, dtype=wp.vec3, device=self.device)
+        # Shear of a sliding anchor (the change of its drag with the wall reaction); zero otherwise.
+        self.shears = wp.zeros(1, dtype=wp.mat33, device=self.device)
+        # Live counts of the interaction [visited, track, openings]: the kernels run the rows of the track samples.
+        self.live = wp.array([0, 1, 0], dtype=int, device=self.device)
 
     def prepare(
         self,
@@ -65,6 +72,7 @@ class NeedleALMPreconditionerTests(unittest.TestCase):
                 self.bary,
                 lengths,
                 engagement,
+                self.live,
                 self.q,
                 self.qd,
                 samples,
@@ -79,10 +87,12 @@ class NeedleALMPreconditionerTests(unittest.TestCase):
                 compliance,
                 clearance,
                 friction,
-                h,
+                # The kernel reads the time step from a one-element device array.
+                wp.array([h], dtype=float, device=self.device),
                 0.01,
                 self.matrices,
                 self.levers,
+                self.shears,
             ],
             device=self.device,
         )
@@ -143,7 +153,7 @@ class NeedleALMPreconditionerTests(unittest.TestCase):
         wp.launch(
             balanced_correction,
             1,
-            [fixed, self.nodes, self.bary, self.matrices, self.levers, h, velocity, output],
+            [fixed, self.nodes, self.bary, self.live, self.matrices, self.levers, self.shears, h, velocity, output],
             device=self.device,
         )
         load = output.numpy().reshape(-1, 3)

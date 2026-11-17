@@ -74,7 +74,7 @@ def _attach(
     bodies: wp.array[int],
     point: wp.vec3,
     slope: wp.vec3,
-    dt: float,
+    dt: wp.array[float],
     dofs: int,
     support: wp.array[wp.vec4],
     lagged: bool,
@@ -89,7 +89,8 @@ def _attach(
 
     ``support`` holds the linear and angular damping and the linear and
     angular stiffness of whatever holds the body. In lagged mode the given
-    pose includes the last wrench, which is taken out again.
+    pose includes the last wrench, which is taken out again. ``dt`` holds the
+    time step [s] in its one element (``StepTime.seconds``).
     """
     chain = wp.tid()
     body = bodies[chain]
@@ -99,8 +100,8 @@ def _attach(
     turn = wp.quat_to_matrix(rotation)
     inertia = turn * body_inertia[body] * wp.transpose(turn)
     held = support[chain]
-    linear = body_mass[body] / (dt * dt) + held[0] / dt + held[2]
-    angular = inertia / (dt * dt) + (held[1] / dt + held[3]) * wp.identity(n=3, dtype=float)
+    linear = body_mass[body] / (dt[0] * dt[0]) + held[0] / dt[0] + held[2]
+    angular = inertia / (dt[0] * dt[0]) + (held[1] / dt[0] + held[3]) * wp.identity(n=3, dtype=float)
     if lagged:
         applied = wrench[chain]
         center -= wp.spatial_top(applied) / linear
@@ -117,13 +118,13 @@ def _attach(
     head_center[chain] = wp.vec3d(center)
     head_arm[chain] = wp.vec3d(arm)
     head_slope[chain] = wp.vec3d(tangent)
-    rate = wp.float64(1.0) / (wp.float64(dt) * wp.float64(dt))
+    rate = wp.float64(1.0) / (wp.float64(dt[0]) * wp.float64(dt[0]))
     inertial = Mat66d()
     for i in range(3):
-        inertial[i, i] = rate * wp.float64(body_mass[body]) + wp.float64(held[0] / dt + held[2])
+        inertial[i, i] = rate * wp.float64(body_mass[body]) + wp.float64(held[0] / dt[0] + held[2])
         for j in range(3):
             inertial[i + 3, j + 3] = rate * wp.float64(inertia[i, j])
-        inertial[i + 3, i + 3] += wp.float64(held[1] / dt + held[3])
+        inertial[i + 3, i + 3] += wp.float64(held[1] / dt[0] + held[3])
     head_inertia[chain] = inertial
 
 
@@ -132,7 +133,7 @@ def _start_head(
     q: wp.array[wp.float64],
     qd: wp.array[wp.float64],
     dofs: int,
-    dt: wp.float64,
+    dt: wp.array[wp.float64],
     head_center: wp.array[wp.vec3d],
     head_arm: wp.array[wp.vec3d],
     head_slope: wp.array[wp.vec3d],
@@ -141,14 +142,19 @@ def _start_head(
     """Start each head at the motion that puts node 0 at q + dt qd; one thread per chain.
 
     The rotation is the smallest one that turns the predicted slope onto the
-    extrapolated one; the translation then places node 0.
+    extrapolated one; the translation then places node 0. ``dt`` holds the time
+    step [s] in its one element (``StepTime.seconds_f64``).
     """
     chain = wp.tid()
     first = chain * dofs
-    position = wp.vec3d(q[first] + dt * qd[first], q[first + 1] + dt * qd[first + 1], q[first + 2] + dt * qd[first + 2])
+    position = wp.vec3d(
+        q[first] + dt[0] * qd[first], q[first + 1] + dt[0] * qd[first + 1], q[first + 2] + dt[0] * qd[first + 2]
+    )
     slope = wp.normalize(
         wp.vec3d(
-            q[first + 3] + dt * qd[first + 3], q[first + 4] + dt * qd[first + 4], q[first + 5] + dt * qd[first + 5]
+            q[first + 3] + dt[0] * qd[first + 3],
+            q[first + 4] + dt[0] * qd[first + 4],
+            q[first + 5] + dt[0] * qd[first + 5],
         )
     )
     predicted = wp.normalize(head_slope[chain])
@@ -277,9 +283,12 @@ class ThreadAttachment:
 
         ``predicted`` is a state or its ``body_q`` array: the rigid solver's
         step of size ``dt`` without the thread's wrench or, in lagged mode,
-        with the wrench of the thread's previous step.
+        with the wrench of the thread's previous step. The kernels read ``dt``
+        from the thread solver's ``step_time``, which this call writes; inside
+        a CUDA graph capture it must already hold ``dt``.
         """
         model, thread = self.model, self.thread
+        thread.step_time.set(dt)
         body_q = predicted.body_q if hasattr(predicted, "body_q") else predicted
         wp.launch(
             _attach,
@@ -292,7 +301,7 @@ class ThreadAttachment:
                 self._bodies,
                 self._point,
                 self._slope,
-                dt,
+                thread.step_time.seconds,
                 thread.thread.dof_count,
                 self._support,
                 self.lagged,
@@ -316,7 +325,7 @@ class ThreadAttachment:
                     thread.q,
                     thread.qd,
                     thread.thread.dof_count,
-                    dt,
+                    thread.step_time.seconds_f64,
                     thread.head_center,
                     thread.head_arm,
                     thread.head_slope,

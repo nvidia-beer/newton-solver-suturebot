@@ -9,12 +9,9 @@ import numpy as np
 from test_needle_insertion_example import _example, _prepare
 from test_needle_tissue_coupler import _native_state
 
-from newton_solver_suturebot._src.coupling import (
-    NeedleCouplingNotConverged,
-    NeedleTissueCoupler,
-)
-from newton_solver_suturebot._src.subcycled_mujoco import SubcycledMuJoCo
-from newton_solver_suturebot._src.surface_anderson import SurfaceAnderson
+from newton_solver_suturebot._src.solvers.coupled.acceleration.surface_anderson import SurfaceAnderson
+from newton_solver_suturebot._src.solvers.coupled.coupling import NeedleCouplingNotConverged, NeedleTissueCoupler
+from newton_solver_suturebot._src.solvers.mujoco.subcycled_mujoco import SubcycledMuJoCo
 
 _STATE_FIELDS = (
     "particle_q",

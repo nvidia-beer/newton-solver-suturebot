@@ -8,7 +8,7 @@ import unittest
 import numpy as np
 
 from newton_solver_suturebot import MeshRegion
-from newton_solver_suturebot.examples._region_map import RegionMap, rasterize_regions
+from newton_solver_suturebot.examples.phantom._region_map import RegionMap, rasterize_regions
 
 
 def _rectangle(x0, y0, x1, y1, height):

@@ -11,7 +11,7 @@ from test_needle_shaft_preconditioner import history, setup
 from test_needle_tissue_coupler import _native_state
 
 from newton_solver_suturebot import NeedleTissueCoupler
-from newton_solver_suturebot._src.tunnel_alm import _TunnelALM
+from newton_solver_suturebot._src.solvers.coupled.interface.tunnel_alm import _TunnelALM
 
 _STEP = 0.0005
 _FIELDS = ("particle_q", "particle_qd", "particle_f", "body_q", "body_qd", "body_f")

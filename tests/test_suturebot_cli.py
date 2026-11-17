@@ -10,8 +10,12 @@ from contextlib import redirect_stderr, redirect_stdout
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from newton_solver_suturebot.examples import _suturebot_cli as cli
-from newton_solver_suturebot.examples._suturebot_recording import DEFAULT_RECORDING, Recording, bundled_recordings
+from newton_solver_suturebot.examples.recording import _suturebot_cli as cli
+from newton_solver_suturebot.examples.recording._suturebot_recording import (
+    DEFAULT_RECORDING,
+    Recording,
+    bundled_recordings,
+)
 
 
 class TestSutureBotCLI(unittest.TestCase):

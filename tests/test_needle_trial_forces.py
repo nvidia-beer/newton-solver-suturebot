@@ -4,7 +4,7 @@
 
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 import numpy as np
 import warp as wp
@@ -12,9 +12,19 @@ from test_needle_insertion_example import _example
 from test_needle_shaft_preconditioner import setup
 
 from newton_solver_suturebot._src.geometry.needle_queries import NeedleQueryGeometry
-from newton_solver_suturebot._src.insertion import _surface_crossings, _surface_positions
-from newton_solver_suturebot._src.needle_trial_forces import _NeedleTrialForces, static_crossing
-from newton_solver_suturebot._src.tunnel_alm import _TunnelALM
+from newton_solver_suturebot._src.solvers.coupled.interface.insertion import (
+    LIVE_OPENINGS,
+    LIVE_TRACK,
+    LIVE_VISITED,
+    _surface_crossings,
+    _surface_positions,
+)
+from newton_solver_suturebot._src.solvers.coupled.interface.needle_trial_forces import (
+    FALLBACK_REASONS,
+    _NeedleTrialForces,
+    static_crossing,
+)
+from newton_solver_suturebot._src.solvers.coupled.interface.tunnel_alm import _TunnelALM
 
 
 def prepare(x, state, body):
@@ -191,6 +201,79 @@ class NeedleTrialForcesTests(unittest.TestCase):
             np.testing.assert_array_equal(device.old_tip.numpy()[0], x._previous_tip)
             self.assertEqual(signature, device.signature())
             self.assertEqual(pointers, {name: getattr(device, name).ptr for name in arrays})
+            # A new opening or visited tetrahedron changes neither a pointer nor the signature: the
+            # interaction writes both in place into storage it made once, and the helper reads that.
+            history = (
+                "_visited",
+                "_opening_nodes",
+                "_opening_bary_d",
+                "_opening_points",
+                "_all_opening_faces",
+                "_live",
+            )
+            owned = {name: getattr(x, name).ptr for name in history}
+            self.assertIs(device.visited, x._visited)
+            self.assertIs(device.opening_nodes, x._opening_nodes)
+            self.assertIs(device.opening_bary, x._opening_bary_d)
+            counts = x._live.numpy().copy()
+            x._visited_tets.add(next(i for i in range(len(x.tetrahedra)) if i not in x._visited_tets))
+            self.assertFalse(device.prepare(x))
+            face = int(np.flatnonzero(np.all(x.mapping[x.surface_triangles] >= 0, axis=1))[0])
+            x._register_opening(x.mapping[x.surface_triangles[face]], np.full(3, 1 / 3), face)
+            self.assertFalse(device.prepare(x))
+            self.assertEqual(signature, device.signature())
+            self.assertEqual(pointers, {name: getattr(device, name).ptr for name in arrays})
+            self.assertEqual(owned, {name: getattr(x, name).ptr for name in history})
+            self.assertEqual(x.opening_storage_growths, 0)
+            # Both were counted, and the new rows hold what was registered.
+            live = x._live.numpy()
+            self.assertEqual(
+                (live[LIVE_VISITED], live[LIVE_OPENINGS]), (counts[LIVE_VISITED] + 1, counts[LIVE_OPENINGS] + 1)
+            )
+            np.testing.assert_array_equal(device.visited.numpy()[: live[LIVE_VISITED]], sorted(x._visited_tets))
+            row = live[LIVE_OPENINGS] - 1
+            np.testing.assert_array_equal(device.opening_nodes.numpy()[row], x.mapping[x.surface_triangles[face]])
+            np.testing.assert_array_equal(device.opening_bary.numpy()[row], np.full(3, 1 / 3))
+            np.testing.assert_array_equal(x._all_opening_faces.numpy()[row], x._opening_masks[-1])
+            # A new track sample changes neither a pointer nor the signature either: the interaction
+            # writes its row in place into storage it made once at the track reserve, the helper reads
+            # that storage, and the helper's scratch per track row has the rows of the reserve.
+            track = (
+                "_track_nodes",
+                "_track_bary",
+                "_track_bary_d",
+                "_track_lengths",
+                "_track_engaged",
+                "_track_points",
+            )
+            owned.update({name: getattr(x, name).ptr for name in track})
+            self.assertIs(device.nodes, x._track_nodes)
+            self.assertIs(device.bary, x._track_bary_d)
+            count = x.track_count
+            self.assertEqual(int(live[LIVE_TRACK]), count)
+            self.assertGreater(x.track_capacity, count + 1)
+            for name in ("points", "projected_arc", "associated"):
+                self.assertEqual(getattr(device, name).shape, (x.track_capacity,), name)
+            self.assertEqual(device.segments.shape, (x.track_capacity, len(x.samples) - 1))
+            engaged = x._track_engaged.numpy()[:count].copy()
+            # A material point of a tetrahedron that the needle has not visited, with no edge to the track.
+            tet = next(i for i in range(len(x.tetrahedra)) if i not in x._visited_tets)
+            x._track_anchor = None
+            x._record_track(x.tetrahedra[tet].copy(), np.array([0.4, 0.3, 0.2, 0.1]))
+            self.assertEqual(x.track_count, count + 1)
+            self.assertFalse(device.prepare(x))
+            self.assertEqual(signature, device.signature())
+            self.assertEqual(pointers, {name: getattr(device, name).ptr for name in arrays})
+            self.assertEqual(owned, {name: getattr(x, name).ptr for name in (*history, *track)})
+            self.assertEqual(x.track_storage_growths, 0)
+            self.assertEqual(int(x._live.numpy()[LIVE_TRACK]), count + 1)
+            np.testing.assert_array_equal(device.nodes.numpy()[count], x.tetrahedra[tet])
+            np.testing.assert_array_equal(device.bary.numpy()[count], [0.4, 0.3, 0.2, 0.1])
+            np.testing.assert_array_equal(x._track_bary.numpy()[count], np.float32([0.4, 0.3, 0.2, 0.1]))
+            # The older rows keep their engagement, the new sample starts engaged, the rest of the reserve is empty.
+            np.testing.assert_array_equal(x._track_engaged.numpy()[: count + 1], [*engaged, 1])
+            for name in ("_track_nodes", "_track_bary_d", "_track_lengths", "_track_engaged"):
+                self.assertFalse(getattr(x, name).numpy()[count + 1 :].any(), name)
 
     def test_cuda_capture_replays_updated_trial_geometry(self):
         if not wp.get_device(os.environ.get("NEWTON_TEST_DEVICE", "cpu")).is_cuda:
@@ -265,6 +348,72 @@ class NeedleTrialForcesTests(unittest.TestCase):
             self.assertEqual(
                 saved, (x.track_count, x.puncture_count, x.entry_count, x.exit_count, tuple(x._track_edges))
             )
+            # The request also names at least one certificate that raised it.
+            raised = np.flatnonzero(device.fallback.numpy()[1:]) + 1
+            self.assertGreater(len(raised), 0)
+            self.assertLess(raised.max(), len(FALLBACK_REASONS))
+
+    def test_visited_storage_holds_every_tetrahedron_and_masks_equal_an_exact_size_reference(self):
+        with _example() as ex:
+            setup(ex, 0.0005, 1500)
+            x = ex.interaction
+            prepare(x, ex.state_0, ex.needle_body)
+            accepted = sorted(x._visited_tets)
+            self.assertGreater(len(accepted), 1)
+            device = _NeedleTrialForces(x)
+            # One entry per tetrahedron, made once by the interaction: a set of ids cannot outgrow it.
+            storage, pointer, signature = x._visited, x._visited.ptr, device.signature()
+            every = set(range(len(x.tetrahedra)))
+            self.assertIs(device.visited, storage)
+            self.assertEqual((storage.shape, storage.dtype), ((len(every),), wp.int32))
+            self.assertGreater(len(every), len(accepted) + 1)
+
+            def masks():
+                device.evaluate(ex.state_0, ex.needle_body)
+                return device.mask.numpy().copy(), device.fallback.numpy().copy()
+
+            def check(visited):
+                """The masks of a visited set, which equal those of a buffer of exactly the live size."""
+                label = f"visited {sorted(visited)}"
+                x._visited_tets.clear()
+                x._visited_tets.update(visited)
+                # In place: the sorted ids in the first live entries, the count on the device.
+                self.assertFalse(device.prepare(x), label)
+                self.assertIs(device.visited, storage, label)
+                self.assertEqual((storage.ptr, device.signature()), (pointer, signature), label)
+                ids = np.asarray(sorted(visited), dtype=np.int32)
+                self.assertEqual(int(x._live.numpy()[LIVE_VISITED]), len(ids), label)
+                values = storage.numpy().copy()
+                np.testing.assert_array_equal(values[: len(ids)], ids, err_msg=label)
+                # The entries from the live count on are never read: here they name the tetrahedra
+                # that are not visited, so a kernel that read them would see every tetrahedron visited.
+                others = sorted(every - set(visited))
+                if others:
+                    values[len(ids) :] = others
+                    storage.assign(values)
+                actual = masks()
+                exact = wp.array(ids, dtype=int, device=device.device)
+                with patch.object(type(device), "visited", new_callable=PropertyMock, return_value=exact):
+                    expected = masks()
+                np.testing.assert_array_equal(actual[0], expected[0], err_msg=label)
+                np.testing.assert_array_equal(actual[1], expected[1], err_msg=label)
+                return actual[0]
+
+            reference = check(accepted)
+            self.assertTrue(reference.any())
+            # The set shrinks without clearing, to one tetrahedron and to none. These masks differ
+            # from those of every tetrahedron visited, so the comparison above can fail.
+            complete = check(every)
+            np.testing.assert_array_equal(storage.numpy(), np.arange(len(every)))
+            for visited in (accepted[1:], []):
+                self.assertFalse(np.array_equal(check(visited), complete), visited)
+            # It grows one tetrahedron at a time, as accepted steps grow it, until the storage is full.
+            visited = []
+            for tet in sorted(every - set(accepted)) + accepted:
+                visited.append(tet)
+                check(visited)
+            np.testing.assert_array_equal(storage.numpy(), np.arange(len(every)))
+            np.testing.assert_array_equal(check(accepted), reference)
 
 
 if __name__ == "__main__":

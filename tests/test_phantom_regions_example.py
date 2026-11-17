@@ -3,10 +3,11 @@
 
 """Physical selected-region interaction checks on two adjoining small boxes."""
 
+import io
 import json
 import os
 import unittest
-from contextlib import contextmanager
+from contextlib import contextmanager, redirect_stdout
 from itertools import permutations
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -15,10 +16,13 @@ from unittest.mock import patch
 
 import numpy as np
 import warp as wp
+from _startup_support import final_line, launch_late_kernel, marked_on_every_device, prime, run_script
 from newton.viewer import ViewerNull
 
 from newton_solver_suturebot import MeshRegion, RegionMesh, boundary_faces
-from newton_solver_suturebot.examples import example_fem_phantom_regions as phantom
+from newton_solver_suturebot._src.utils import capture
+from newton_solver_suturebot.examples.phantom import _surface_pick
+from newton_solver_suturebot.examples.phantom import example_fem_phantom_regions as phantom
 
 
 def _regions():
@@ -67,7 +71,7 @@ def _selection(_path, region_ids):
 
 
 @contextmanager
-def _example(substeps=2, viewer_cls=ViewerNull, numbering=None):
+def _example(substeps=2, viewer_cls=ViewerNull, numbering=None, arguments=(), example_cls=phantom.Example):
     with (
         TemporaryDirectory() as directory,
         wp.ScopedDevice(os.environ.get("NEWTON_TEST_DEVICE", "cpu")),
@@ -78,13 +82,23 @@ def _example(substeps=2, viewer_cls=ViewerNull, numbering=None):
         if numbering is not None:
             asset.with_name("suturebot_region_map.json").write_text(json.dumps({"regions": numbering}))
         args = phantom.Example.create_parser().parse_args(
-            ["--asset", str(asset), "--regions", "1", "--substeps", str(substeps)]
+            ["--asset", str(asset), "--regions", "1", "--substeps", str(substeps), *arguments]
         )
         viewer = viewer_cls()
         try:
-            yield phantom.Example(viewer, args)
+            yield example_cls(viewer, args)
         finally:
             viewer.close()
+
+
+@contextmanager
+def _self_test(**options):
+    """The example as ``--test`` starts it, with its start-up marked on the CPU device as well."""
+    with _example() as other:
+        prime(other)
+    options.setdefault("arguments", ("--test",))
+    with marked_on_every_device(), _example(**options) as example:
+        yield example
 
 
 class PhantomRegionsExampleTests(unittest.TestCase):
@@ -313,6 +327,223 @@ class PhantomRegionsExampleTests(unittest.TestCase):
                 example.gui(ui)
             self.assertEqual(example.selected_region_ids, ())
             self.assertIsNone(example.solver)
+
+
+class PhantomRegionsStartupTests(unittest.TestCase):
+    """Start-up of the example: graph launched, kernel modules loaded, scene drawn, and the check of ``--test``."""
+
+    def test_scene_built_on_the_example_keeps_its_own_start_up(self):
+        class Scene(phantom.Example):
+            # As the insertion example and the grasp and tool/tissue scenes have them.
+            _startup_begun = "opened by the scene"
+            _startup_mark = None
+
+        with (
+            patch.object(phantom, "load_kernel_modules") as load,
+            patch.object(phantom, "first_draw") as draw,
+            _example(arguments=("--test",), example_cls=Scene) as scene,
+        ):
+            self.assertIsNone(scene.startup)
+            self.assertIsNone(scene.script)
+            for selection in ([2], [], [1]):
+                scene.select_regions(selection)
+                scene.step()
+            scene.reset()
+            output = io.StringIO()
+            with redirect_stdout(output):
+                scene.test_final()
+            self.assertEqual(output.getvalue(), "")
+            self.assertEqual((scene._startup_begun, scene._startup_mark), ("opened by the scene", None))
+        # Nothing of the example's own start-up ran for the scene.
+        load.assert_not_called()
+        draw.assert_not_called()
+        with _example() as example:
+            self.assertIsNotNone(example.startup)
+            # Without --test there is no script, and test_final checks the state alone.
+            self.assertIsNone(example.script)
+            example.step()
+            output = io.StringIO()
+            with redirect_stdout(output):
+                example.test_final()
+            self.assertEqual(output.getvalue(), "")
+
+    def test_surface_picker_loads_its_kernel_module_when_it_is_built(self):
+        device = wp.get_device(os.environ.get("NEWTON_TEST_DEVICE", "cpu"))
+        with patch.object(_surface_pick, "load_kernel_modules") as load:
+            picker = _surface_pick.SurfacePicker(device)
+        load.assert_called_once_with(device, _surface_pick._intersect, _surface_pick._select, _surface_pick._read_hit)
+        picker = _surface_pick.SurfacePicker(device)
+        loaded = capture.loaded_modules()
+        self.assertIn((_surface_pick._intersect.module.name, device.alias, 256 if device.is_cuda else 1), loaded)
+        # The first press of a run then loads nothing.
+        points = wp.array([(0, 0, 0), (1, 0, 0), (0, 1, 0)], dtype=wp.vec3, device=device)
+        indices = wp.array([0, 1, 2], dtype=int, device=device)
+        hit = picker.pick((0.2, 0.2, 1.0), (0, 0, -1), [(points, indices, 1)])
+        self.assertEqual(hit[:2], (0, 0))
+        self.assertEqual(capture.loaded_modules(), loaded)
+
+    def test_start_state_is_drawn_without_using_a_frame_of_a_limited_viewer(self):
+        class Window(ViewerNull):
+            # As the OpenGL viewer with a window: it ignores its frame limit.
+            _headless = False
+
+        with _example() as example:
+            self.assertEqual(example.viewer.frame_count, 0)
+            example.select_regions([2])
+            self.assertEqual(example.viewer.frame_count, 0)
+        with _example(viewer_cls=Window) as example:
+            # One whole frame at construction; a rebuild comes from inside a frame and begins none.
+            self.assertEqual(example.viewer.frame_count, 1)
+            example.select_regions([2])
+            example.reset()
+            self.assertEqual(example.viewer.frame_count, 1)
+        calls = []
+        with (
+            patch.object(phantom, "load_kernel_modules", lambda device, *kernels: calls.append(kernels)),
+            patch.object(phantom, "first_draw", lambda viewer, draw, time, frame: calls.append(frame)),
+            _example() as example,
+        ):
+            example.select_regions([2])
+            example.reset()
+            example.select_regions([])
+        # The kernel of the drawing is loaded and the scene drawn in the constructor and in every rebuild.
+        self.assertEqual(calls, [(phantom._scatter_selected,), True] + 3 * [(phantom._scatter_selected,), False])
+
+    def test_self_test_plays_its_script_and_finds_nothing_after_start_up(self):
+        with _self_test() as example:
+            self.assertEqual(example.script.frames, 100)
+            run_script(example)
+            line = final_line(example)
+            self.assertEqual(
+                [label for _, label in example.script.done],
+                ["right press", "right drag", "right release"] * 2
+                + ["middle click on the first marker", "Clear holds", "region map click"]
+                + ["right press", "right drag", "right release", "Reset deformation", "right press", "right drag"]
+                + ["Esc", "None", "region map click"],
+            )
+            self.assertEqual(example._presses, [True] * 4)
+            self.assertEqual(example.selected_region_ids, (1,))
+            self.assertEqual(example.holds.count, 0)
+            self.assertEqual((line["presses"], line["script_frames"], line["script_actions"]), (4, [100, 100], 18))
+            # The construction and four rebuilds: the other region, the reset, None, the first region.
+            self.assertEqual((line["capture_census_status"], line["startups"]), ("checked", 5))
+            for name in (*phantom.Startup.numbers, "render_module_loads_after_startup"):
+                self.assertEqual(line[name], 0, name)
+            if example.device.is_cuda:
+                # One frame graph in every start-up with an active region; two Krylov solves in its eager frame.
+                self.assertEqual((line["startup_captures"], line["startup_solver_captures"]), (4, 8))
+            # A scripted press that took no hold fails the self-test: the script must do what it says.
+            example._presses[1] = False
+            with self.assertRaisesRegex(AssertionError, "missed the active region"):
+                example.test_final()
+
+    def test_self_test_that_starts_without_an_active_region(self):
+        with _self_test(arguments=("--test", "--regions")) as example:
+            self.assertEqual(example.selected_region_ids, ())
+            run_script(example)
+            line = final_line(example)
+            # No press while nothing is active; the two presses on the region that the script selects.
+            self.assertEqual(example._presses, [True, True])
+            self.assertEqual(example.selected_region_ids, ())
+            self.assertIsNone(example.solver)
+            self.assertEqual((line["presses"], line["script_actions"], line["startups"]), (2, 18, 5))
+            for name in phantom.Startup.numbers:
+                self.assertEqual(line[name], 0, name)
+
+    def test_late_kernel_module_load_fails_the_self_test(self):
+        with _self_test() as example:
+            draw = example.render_pad
+
+            def wrong_render_pad():
+                # A wrong version: the module of its drawing kernel loads with the fourth frame.
+                if example.script.frame == 4:
+                    launch_late_kernel(example.device)
+                draw()
+
+            example.render_pad = wrong_render_pad
+            run_script(example, frames=6)
+            with self.assertRaisesRegex(AssertionError, r"'module_loads_after_startup': 1.*late_startup_test_kernel"):
+                example.test_final()
+
+    def test_late_load_before_a_rebuild_still_fails_after_it(self):
+        with _self_test() as example:
+            run_script(example, frames=45)
+            # A user action loads a kernel module; the region switch of frame 46 then starts up again.
+            launch_late_kernel(example.device)
+            run_script(example)
+            self.assertEqual(example.startup.startups, 5)
+            with self.assertRaisesRegex(AssertionError, "'module_loads_after_startup': 1"):
+                example.test_final()
+
+    def test_capture_in_a_frame_fails_the_self_test(self):
+        with _self_test() as example:
+            if not example.device.is_cuda:
+                self.skipTest("A graph needs CUDA")
+            run_script(example, frames=3)
+            # A wrong version: the frame graph is captured at its first use, inside a frame.
+            example._capture_physics()
+            run_script(example, frames=3)
+            with self.assertRaisesRegex(
+                AssertionError, "'captures_after_startup': 1, 'solver_captures_after_startup': 2"
+            ):
+                example.test_final()
+        with _self_test() as example:
+            # A wrong version: no frame graph, so stock Warp captures a graph for every Krylov solve of a frame.
+            example.graph = None
+            run_script(example, frames=3)
+            with self.assertRaisesRegex(AssertionError, "'solver_captures_after_startup': 6"):
+                example.test_final()
+
+    def test_frame_graph_is_launched_at_start_up_and_the_rest_state_is_put_back(self):
+        with _self_test() as example:
+            if not example.device.is_cuda:
+                self.skipTest("A graph needs CUDA")
+            self.assertIsNotNone(example.graph.graph_exec)
+            census = example.startup.census()
+            self.assertEqual((census["startup_captures"], census["startup_unlaunched_graphs"]), (1, 0))
+            np.testing.assert_array_equal(
+                example.state_0.particle_q.numpy(), example.selection.vertices.astype(np.float32)
+            )
+            for array in (example.state_0.particle_qd, example.state_1.particle_qd, example.solver.velocity_increment):
+                np.testing.assert_array_equal(array.numpy(), 0.0)
+        with patch.object(phantom, "launch_startup_graph", lambda graph, device: None), _self_test() as example:
+            # A wrong version: the graphs are captured at start-up and first launched by a frame.
+            self.assertIsNone(example.graph.graph_exec)
+            run_script(example)
+            with self.assertRaisesRegex(AssertionError, "'startup_unlaunched_graphs': 4"):
+                example.test_final()
+
+    def test_start_up_frames_leave_later_states_bit_identical(self):
+        """A frame that runs at start-up and is put back does not change the run.
+
+        On CUDA the start-up runs the frame twice, eager before the capture and as the launched
+        graph. Here a scene that ran one such frame is compared with scenes that ran two and
+        three. A scene that ran none differs from them in rounding: its first frame assembles
+        the tangent while it builds the sparse structure.
+        """
+        with _example() as one, _example() as two, _example() as three:
+            if one.device.is_cuda:
+                self.skipTest("Float32 assembly on CUDA uses atomics: two runs of one scene differ in rounding")
+            for scene, frames in ((one, 1), (two, 2), (three, 3)):
+                for _ in range(frames):
+                    restore = scene._frame_snapshot()
+                    scene.simulate()
+                    restore()
+                np.testing.assert_array_equal(
+                    scene.state_0.particle_q.numpy(), scene.selection.vertices.astype(np.float32)
+                )
+                hit = scene.begin_grab((0.003, 0.004, 0.1), (0, 0, -1))
+                scene.move_grab(hit + (0.0002, 0, 0.0007))
+            for _ in range(12):
+                for scene in (one, two, three):
+                    scene.step()
+                for other in (two, three):
+                    for name in ("particle_q", "particle_qd"):
+                        np.testing.assert_array_equal(
+                            getattr(one.state_0, name).numpy(), getattr(other.state_0, name).numpy()
+                        )
+            displacement = np.abs(one.state_0.particle_q.numpy() - one.selection.vertices).max()
+            self.assertGreater(displacement, 1.0e-5)
 
 
 if __name__ == "__main__":

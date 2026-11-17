@@ -4,10 +4,16 @@
 import os
 import unittest
 
+import newton
 import numpy as np
 import warp as wp
 
 from newton_solver_suturebot import FEMBuilder, SolverFEM
+
+
+@wp.kernel
+def _sum_x(q: wp.array[wp.vec3], total: wp.array[wp.float64]):
+    wp.atomic_add(total, 0, wp.float64(q[wp.tid()][0]))
 
 
 def dense(matrix):
@@ -127,6 +133,124 @@ class TestSolverTimestep(unittest.TestCase):
             solver.refresh_tangent(model.particle_q, self.dt / 2)
         self.assertEqual(solver.dt, self.dt)
         np.testing.assert_array_equal(dense(solver.A_bsr), before)
+
+    def test_rejected_timestep_is_not_written_and_leaves_taped_gradients_unchanged(self):
+        # The launches of a step read the timestep from solver.step_time, and the taped
+        # integration kernel reads it again in tape.backward(). A request the solver rejects
+        # must therefore never reach that array: one free particle, x_out = x + dt (v + dv),
+        # so d(sum x_out)/d(v_in) is the timestep the step was recorded with.
+        builder = newton.ModelBuilder(gravity=(0, 0, 0))
+        builder.add_particle((0, 0, 1), (0.5, 0, 0), mass=2.0)
+        model = builder.finalize(device=self.device)
+        solver = self.solver(model, differentiable=True, fixed=False)
+        initial, output = model.state(requires_grad=True), model.state(requires_grad=True)
+        scratch = model.state(), model.state()
+        loss = wp.zeros(1, dtype=wp.float64, device=self.device, requires_grad=True)
+        with wp.Tape() as tape:
+            solver.step(initial, output, None, None, self.dt)
+            wp.launch(_sum_x, 1, inputs=[output.particle_q], outputs=[loss], device=self.device)
+        held = solver.step_time.seconds.numpy().copy()
+        with self.assertRaisesRegex(ValueError, "Differentiable dt must match"):
+            solver.step(*scratch, None, None, self.dt / 2)
+        with self.assertRaisesRegex(ValueError, "Differentiable"):
+            solver.refresh_tangent(model.particle_q, self.dt / 2)
+        self.assertEqual((solver.step_time.value, solver.step_time.writes), (self.dt, 1))
+        np.testing.assert_array_equal(solver.step_time.seconds.numpy(), held)
+        tape.backward(loss)
+        np.testing.assert_array_equal(initial.particle_qd.grad.numpy()[0], np.float32([self.dt, 0, 0]))
+
+        # The same for the other requests that are refused: nothing is written before the refusal.
+        model = self.model()
+        solver = self.solver(model)
+        current, following = model.state(), model.state()
+        with wp.Tape(), self.assertRaisesRegex(RuntimeError, "differentiable=True"):
+            solver.step(current, following, None, None, self.dt / 2)
+        wrong = wp.zeros(model.particle_count + 1, dtype=wp.vec3, device=self.device)
+        with self.assertRaisesRegex(ValueError, "particle shape"):
+            solver.refresh_tangent(wrong, self.dt / 2)
+        with self.assertRaisesRegex(ValueError, "external_forces"):
+            solver.step(current, following, None, None, self.dt / 2, external_forces=wrong)
+        self.assertEqual((solver.dt, solver.step_time.value, solver.step_time.writes), (self.dt, self.dt, 1))
+        np.testing.assert_array_equal(solver.step_time.seconds.numpy(), np.float32([self.dt]))
+
+    def test_captured_refresh_and_step_follow_a_timestep_changed_outside_capture(self):
+        # A caller's graph of a tangent refresh and a step, as the phantom examples capture.
+        # The element blocks are assembled inside the graph from the timestep in
+        # solver.step_time; refresh_tangent(q, dt) outside capture rebuilds the blocks that
+        # no graph holds and writes that timestep. The one graph then gives the step of a
+        # fresh solver at every timestep. With the timestep of the capture kept in the
+        # element kernels, the replays at another one would assemble dt0² K.
+        if not wp.get_device(self.device).is_cuda:
+            self.skipTest("CUDA graph capture")
+        model = self.model()
+        actual = self.solver(model)
+        current, following = model.state(), model.state()
+        q = model.particle_q.numpy().copy()
+        q[2] += (0.002, -0.001, 0.001)
+        q[6] += (-0.001, 0.002, -0.003)
+        velocity = np.linspace(-0.02, 0.03, 24, dtype=np.float32).reshape(8, 3)
+        velocity[:2] = 0
+        external = wp.array(
+            np.linspace(-0.01, 0.02, 24, dtype=np.float32).reshape(8, 3), dtype=wp.vec3, device=self.device
+        )
+
+        def frame():
+            actual.refresh_tangent(current.particle_q)
+            actual.step(current, following, None, None, actual.dt, external_forces=external)
+
+        def start(state, solver):
+            state.particle_q.assign(q)
+            state.particle_qd.assign(velocity)
+            solver.velocity_increment.zero_()
+
+        # Sparse structure, Krylov storage and kernels first; then one capture.
+        start(current, actual)
+        frame()
+        start(current, actual)
+        with wp.ScopedCapture(device=self.device) as capture:
+            frame()
+            # What still takes the timestep as a launch argument, the mass, spring and triangle
+            # blocks, cannot enter a graph; nor can a write of another timestep.
+            with self.assertRaisesRegex(RuntimeError, "outside CUDA graph capture"):
+                actual._build_constant_matrix(model, actual.dt)
+            with self.assertRaisesRegex(RuntimeError, "outside tapes and CUDA graph capture"):
+                actual.refresh_tangent(current.particle_q, self.dt / 2)
+            with self.assertRaisesRegex(RuntimeError, "during a CUDA graph capture"):
+                actual.step(current, following, None, None, self.dt / 2, external_forces=external)
+        self.assertEqual((actual.dt, actual.step_time.value), (self.dt, self.dt))
+        pointers = (actual.A_bsr.values.ptr, actual._pc_inv_diag.ptr, actual.step_time.seconds.ptr)
+        results = {}
+        for dt in (self.dt, self.dt / 2, self.dt / 3, 0.0020833333333333355 / 2, self.dt):
+            with self.subTest(dt=dt):
+                reference = self.solver(model, dt)
+                reference_in, reference_out = model.state(), model.state()
+                start(reference_in, reference)
+                reference.refresh_tangent(reference_in.particle_q, dt)
+                reference.step(reference_in, reference_out, None, None, dt, external_forces=external)
+                # Host preparation of the replay: the constant blocks and the step time.
+                actual.refresh_tangent(current.particle_q, dt)
+                self.assertEqual((actual.dt, actual.step_time.value), (dt, dt))
+                start(current, actual)
+                wp.capture_launch(capture.graph)
+                np.testing.assert_allclose(dense(actual.A_bsr), dense(reference.A_bsr), rtol=1e-6, atol=1e-9)
+                np.testing.assert_allclose(
+                    actual.velocity_increment.numpy(), reference.velocity_increment.numpy(), rtol=2e-5, atol=1e-7
+                )
+                np.testing.assert_allclose(
+                    following.particle_qd.numpy(), reference_out.particle_qd.numpy(), rtol=2e-5, atol=1e-7
+                )
+                np.testing.assert_allclose(
+                    following.particle_q.numpy(), reference_out.particle_q.numpy(), rtol=1e-6, atol=1e-8
+                )
+                self.assertEqual(
+                    pointers, (actual.A_bsr.values.ptr, actual._pc_inv_diag.ptr, actual.step_time.seconds.ptr)
+                )
+                results.setdefault(dt, (dense(actual.A_bsr), following.particle_qd.numpy().copy()))
+        # The timesteps did differ in their effect, so a stale one would have been seen above.
+        matrix, speed = results[self.dt]
+        halved_matrix, halved_speed = results[self.dt / 2]
+        self.assertFalse(np.allclose(halved_matrix, matrix, rtol=1e-2, atol=0))
+        self.assertFalse(np.allclose(halved_speed, speed, rtol=1e-2, atol=1e-6))
 
     def test_changed_timestep_discards_only_the_numerical_warm_start(self):
         model = self.model()

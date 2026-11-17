@@ -10,9 +10,15 @@ import numpy as np
 import warp as wp
 
 from newton_solver_suturebot._src.geometry.needle import NeedleGeometry
-from newton_solver_suturebot._src.grasp import GrasperConfig, add_grasper, needle_to_gripper_pose
-from newton_solver_suturebot._src.subcycled_mujoco import SubcycledMuJoCo
-from newton_solver_suturebot.examples._needle_insertion_drive import NeedleDrive
+from newton_solver_suturebot._src.solvers.mujoco.subcycled_mujoco import SubcycledMuJoCo
+from newton_solver_suturebot.examples.grasp._dvrk_capsules import dvrk_tool_capsules
+from newton_solver_suturebot.examples.grasp._dvrk_grasper import (
+    GrasperConfig,
+    add_grasper,
+    jaw_opening_on_needle,
+    needle_to_gripper_pose,
+)
+from newton_solver_suturebot.examples.needle._needle_insertion_drive import NeedleDrive
 
 
 class _Rig:
@@ -33,11 +39,19 @@ class _Rig:
         coordinates = self.state.joint_q.numpy()
         coordinates[:7] = needle_pose
         self.state.joint_q.assign(coordinates)
+        relative = needle_to_gripper_pose(self.geometry)
         self.target = np.asarray(
-            wp.transform_multiply(wp.transform(*needle_pose), wp.transform(*needle_to_gripper_pose(self.geometry))),
+            wp.transform_multiply(wp.transform(*needle_pose), wp.transform(*relative)),
             dtype=float,
         )
-        self.tool.initialize(self.model, self.state, self.target)
+        # The jaws start about the needle at the opening at which their capsules touch it.
+        needle_in_palm = wp.transform_inverse(wp.transform(*relative))
+        self.grasp_opening = jaw_opening_on_needle(
+            self.tool,
+            [np.asarray(wp.transform_point(needle_in_palm, wp.vec3(*point))) for point in self.geometry.centerline],
+            self.geometry.thickness,
+        )
+        self.tool.initialize(self.model, self.state, self.target, opening_rad=self.grasp_opening)
         if self.parked:
             self.parked_target = self.target.copy()
             self.parked_target[0] += 0.1
@@ -131,7 +145,21 @@ class ContactGraspTests(unittest.TestCase):
             axis = rotation.reshape(3, 3)[:, 2]
             native_endpoints = [center + side * length * axis for side in (-1, 1)]
             np.testing.assert_allclose(native_endpoints, rig.tool.capsule_endpoints[row], atol=6e-8)
-        np.testing.assert_allclose(rig.tool.capsule_endpoints[0], [[0, -0.1321, 0], [0, -0.0121, 0]])
+        # The rows are the capsule set of the instrument; shaft and wrist lie on the palm as the CAD assembles them.
+        capsules = dvrk_tool_capsules("PSM1", rig.tool.config.shaft_length_m)
+        self.assertEqual(len(rig.tool.capsule_shapes), len(capsules.radii))
+        np.testing.assert_array_equal(rig.tool.capsule_radii, capsules.radii)
+        for row, part in enumerate(capsules.parts):
+            expected = capsules.endpoints[row]
+            if part in ("roll", "pitch"):
+                frame = capsules.frames[part]
+                expected = expected @ frame[:3, :3].T + frame[:3, 3]
+            np.testing.assert_allclose(rig.tool.capsule_endpoints[row], expected, rtol=0, atol=1e-12)
+        self.assertEqual(rig.tool.capsule_parts[0], "shaft")
+        # The shaft lies along the palm's -y axis, behind the wrist.
+        np.testing.assert_allclose(rig.tool.capsule_endpoints[0][:, [0, 2]], 0, rtol=0, atol=1e-6)
+        self.assertLess(rig.tool.capsule_endpoints[0, 0, 1], rig.tool.capsule_endpoints[0, 1, 1])
+        self.assertLess(rig.tool.capsule_endpoints[0, 1, 1], 0)
         # Correct q-indexing must not overwrite either free-joint quaternion.
         before = rig.control.joint_target_q.numpy().copy()
         rig.tool.set_aperture(rig.control, 0.5)
@@ -142,24 +170,26 @@ class ContactGraspTests(unittest.TestCase):
         np.testing.assert_allclose(after[list(rig.tool.jaw_q_indices)], [0.325, -0.325])
 
     def test_configurable_shaft_preserves_wrist_jaws_and_distal_endpoint(self):
-        expected_distal = np.asarray(
-            [
-                [[0, -0.0091, 0], [0, -0.0011, 0]],
-                [[-0.00075, 0.0015, 0], [-0.00075, 0.009, 0]],
-                [[0.00075, 0.0015, 0], [0.00075, 0.009, 0]],
-            ]
-        )
+        default = _Rig()
+        default_length = default.tool.config.shaft_length_m
+        default_shaft = np.linalg.norm(np.diff(default.tool.capsule_endpoints[0], axis=0))
         for length in (0.08, 0.547):
             with self.subTest(length=length):
                 rig = _Rig(config=GrasperConfig(shaft_length_m=length))
-                np.testing.assert_array_equal(rig.tool.capsule_endpoints[1:], expected_distal)
-                np.testing.assert_array_equal(rig.tool.capsule_endpoints[0, 1], [0, -0.0121, 0])
-                self.assertAlmostEqual(np.linalg.norm(np.diff(rig.tool.capsule_endpoints[0], axis=0)), length)
-                np.testing.assert_array_equal(rig.tool.capsule_radii, [0.0043, 0.0022, 0.00065, 0.00065])
+                # Wrist and jaws do not depend on the length of the shaft, which keeps its radius and its distal end.
+                self.assertEqual(rig.tool.capsule_parts, default.tool.capsule_parts)
+                np.testing.assert_array_equal(rig.tool.capsule_endpoints[1:], default.tool.capsule_endpoints[1:])
+                np.testing.assert_array_equal(rig.tool.capsule_radii[1:], default.tool.capsule_radii[1:])
+                self.assertAlmostEqual(rig.tool.capsule_radii[0], default.tool.capsule_radii[0], delta=1e-12)
+                np.testing.assert_allclose(
+                    rig.tool.capsule_endpoints[0, 1], default.tool.capsule_endpoints[0, 1], rtol=0, atol=1e-7
+                )
+                shaft = np.linalg.norm(np.diff(rig.tool.capsule_endpoints[0], axis=0))
+                self.assertAlmostEqual(shaft - default_shaft, length - default_length, delta=1e-6)
                 native_shapes = rig.solver.mjc_geom_to_newton_shape.numpy()[0]
                 geom = int(np.flatnonzero(native_shapes == rig.tool.capsule_shapes[0])[0])
-                self.assertAlmostEqual(rig.solver.mj_model.geom_size[geom, 0], 0.0043, delta=1e-9)
-                self.assertAlmostEqual(rig.solver.mj_model.geom_size[geom, 1], length / 2, delta=3e-8)
+                self.assertAlmostEqual(rig.solver.mj_model.geom_size[geom, 0], rig.tool.capsule_radii[0], delta=1e-9)
+                self.assertAlmostEqual(rig.solver.mj_model.geom_size[geom, 1], shaft / 2, delta=3e-8)
 
     def test_contact_grips_under_gravity_from_first_step_and_transports(self):
         rig = _Rig(second_tool=True)

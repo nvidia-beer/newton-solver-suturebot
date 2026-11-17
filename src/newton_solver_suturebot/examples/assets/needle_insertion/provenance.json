@@ -5,7 +5,8 @@
   "changes": [
     "Copied authored prim subtree with original CAD and all 32 capsule collisions.",
     "Removed original scene placement; body-local geometry and inertial values unchanged.",
-    "Copied the two bound original UsdPreviewSurface materials under /Needle/Looks and retargeted bindings and shader connections."
+    "Copied the two bound original UsdPreviewSurface materials under /Needle/Looks and retargeted bindings and shader connections.",
+    "Added shading data to /Needle/OriginalCAD, points and triangles unchanged: face-varying normals (corner-angle weighted over the faces at a vertex within 35 degrees of the corner's face) and face-varying primvars:st (u along the arc from tip 0 to tail 1, v around the wire)."
   ],
   "parameters": "Mass, inertia and collision proxy dimensions are inherited illustrative values; no pad calibration.",
   "tip": "First endpoint of ContactArc_00, a modeled collision proxy tip; original CAD is retained for display.",

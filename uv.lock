@@ -128,6 +128,7 @@ source = { editable = "." }
 dependencies = [
     { name = "newton", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
     { name = "numpy", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "threadpoolctl", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
     { name = "warp-lang", version = "1.17.0+cu13", source = { url = "https://github.com/NVIDIA/warp/releases/download/v1.17.0/warp_lang-1.17.0%2Bcu13-py3-none-manylinux_2_28_x86_64.whl" }, marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "warp-lang", version = "1.17.0+cu13", source = { url = "https://github.com/NVIDIA/warp/releases/download/v1.17.0/warp_lang-1.17.0%2Bcu13-py3-none-manylinux_2_34_aarch64.whl" }, marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
 ]
@@ -135,6 +136,8 @@ dependencies = [
 [package.optional-dependencies]
 examples = [
     { name = "imgui-bundle", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "mujoco", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "mujoco-warp", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
     { name = "newton", extra = ["sim"], marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
     { name = "newton-usd-schemas", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
     { name = "pillow", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
@@ -155,6 +158,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "imgui-bundle", marker = "extra == 'examples'", specifier = ">=1.92,<2" },
+    { name = "mujoco", marker = "extra == 'examples'", specifier = "==3.17.0" },
+    { name = "mujoco-warp", marker = "extra == 'examples'", specifier = "==3.17.0" },
     { name = "newton", specifier = "==1.8.0" },
     { name = "newton", extras = ["sim"], marker = "extra == 'examples'", specifier = "==1.8.0" },
     { name = "newton-usd-schemas", marker = "extra == 'examples'", specifier = ">=0.6,<0.7" },
@@ -163,6 +168,7 @@ requires-dist = [
     { name = "pillow", marker = "extra == 'examples'", specifier = ">=11.3" },
     { name = "pyglet", marker = "extra == 'examples'", specifier = ">=2.1.6,<3" },
     { name = "pyopengl", marker = "extra == 'examples'", specifier = ">=3.1.9,<4" },
+    { name = "threadpoolctl", specifier = ">=3.6,<4" },
     { name = "usd-core", marker = "(platform_machine != 'aarch64' and extra == 'examples') or (sys_platform != 'linux' and extra == 'examples')", specifier = ">=26.8,<27" },
     { name = "usd-exchange", marker = "platform_machine == 'aarch64' and sys_platform == 'linux' and extra == 'examples'", specifier = ">=3.0.1,<4" },
     { name = "warp-lang", marker = "platform_machine != 'aarch64' and platform_machine != 'x86_64'", specifier = "==1.17.0" },
@@ -247,6 +253,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f0/20/fecedea2209f574ab92033b344e01a7f0c2dc76c6d6d19a14c9f8141173f/ruff-0.17.3-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7fa4b0f931cdbcb8a52044f370a3eb429fb42eb88807b0e800fcaa98dd42b24e", size = 10577491, upload-time = "2026-10-27T00:33:48.233Z" },
     { url = "https://files.pythonhosted.org/packages/5d/b7/7d3f5f14145daead1efb0b9a8289ed1daa100f419d60774375951723ce00/ruff-0.17.3-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:68074094f55ca3d29ab19491f640282f7a84061c4c7977aa5094b968ca457e9a", size = 10075057, upload-time = "2026-10-27T00:33:52.074Z" },
     { url = "https://files.pythonhosted.org/packages/af/b2/05c39857c2526fcbebe46ad93a8dc97424656dfef14d3ef933abe1ffd331/ruff-0.17.3-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:692fdb46d0fd9c71e380947dc5fc72f2c3f881073bc1f739e4579376231affbe", size = 10799780, upload-time = "2026-10-27T00:33:58.204Z" },
+]
+
+[[package]]
+name = "threadpoolctl"
+version = "3.6.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b7/4d/08c89e34946fce2aec4fbb45c9016efd5f4d7f24af8e5d93296e935631d8/threadpoolctl-3.6.0.tar.gz", hash = "sha256:8ab8b4aa3491d812b623328249fab5302a68d2d71745c8a4c719a2fcaba9f44e", size = 21274, upload-time = "2025-03-13T13:49:23.031Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/32/d5/f9a850d79b0851d1d4ef6456097579a9005b31fea68726a4ae5f2d82ddd9/threadpoolctl-3.6.0-py3-none-any.whl", hash = "sha256:43a0b8fd5a2928500110039e43a5eed8480b918967083ea48dc3ab9f13c4a7fb", size = 18638, upload-time = "2025-03-13T13:49:21.846Z" },
 ]
 
 [[package]]

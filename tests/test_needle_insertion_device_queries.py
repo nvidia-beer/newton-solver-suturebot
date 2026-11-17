@@ -11,7 +11,11 @@ import warp as wp
 
 from newton_solver_suturebot import NeedleTissueInteraction, boundary_faces
 from newton_solver_suturebot._src.geometry.needle_queries import NeedleQueryGeometry
-from newton_solver_suturebot._src.insertion import _point_aabb_candidates, _surface_crossings, _vertex_bounds
+from newton_solver_suturebot._src.solvers.coupled.interface.insertion import (
+    _point_aabb_candidates,
+    _surface_crossings,
+    _vertex_bounds,
+)
 
 
 class NeedleDeviceQueryTests(unittest.TestCase):

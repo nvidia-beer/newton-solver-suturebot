@@ -33,7 +33,7 @@
     ],
     "caption": "Replay measured da Vinci Research Kit (dVRK) tissue3 tool motion with prepared USD tools, cameras, fixture and the original static phantom. Four synchronized views compare the model with source video; green point labels stay on the mesh. Camera and pad placement remain fitted estimates."
   },
-  "fem_phantom_cut": {
+  "fem_surgical_incision": {
     "frames": 360,
     "fps": 60,
     "poster_frame": 240,
@@ -41,7 +41,7 @@
     "args": [
       "--test"
     ],
-    "caption": "The complete 413,405-tetrahedron pad rests on the floor. A finite slice separates an edge strip, which a physical spring grip lifts and releases. All material is active; no region selection. Simulation-time playback is not measured live FPS."
+    "caption": "The 38,730-tetrahedron Baymax body, 135 mm across, lies on its back on the floor. A finite slice separates a hand, which a physical spring grip lifts and releases. All material is active; nothing is held. Simulation-time playback is not measured live FPS."
   },
   "fem_versius": {
     "frames": 240,
@@ -74,13 +74,25 @@
     "caption": "Simulation-time playback: the MuJoCo needle makes three planned stitches across the region 1 wound and its thread follows through every track and lies on the pad with friction. The thread is then tied at the first entry and pulled until the tissue limit, which narrows the wound from 2.4 mm to about 1.2 mm, tied at the last exit, and the needle is let go. Blue and orange spheres mark where the thread enters and leaves the tissue. Illustrative forces; no calibration. Playback rate does not measure live FPS."
   },
   "fem_needle_grasp": {
-    "frames": 360,
+    "frames": 1700,
     "fps": 60,
-    "poster_frame": 240,
+    "poster_frame": 470,
     "show_ui": false,
     "args": [
       "--test"
     ],
-    "caption": "Simulation-time playback of procedural joint-actuated dVRK needle insertion. Fixed trocar pivots, shaft insertion, wrist articulation and jaw friction move an independent rigid needle through the entire selected wound region; a physical thread follows. No trained policy or recorded-motion playback. Playback at 60 frames/s does not measure live simulation throughput."
+    "caption": "Simulation-time playback of the procedural procedure with joint-actuated dVRK tools: fixed trocar pivots, shaft insertion, wrist articulation and jaw friction move an independent rigid needle through both sides of the selected wound; a physical thread follows. The tissue is then lifted on the needle and lowered, the needle is released, taken again by its tip and pulled on along its own curve, its tail into the tissue and the thread after it through the track the needle has cut. The tools push the tissue where they touch it: the swept tool/tissue contact, a default of the example (--no-tool-tissue-contact lets the tools pass through the tissue). Recorded by the self-test in whole frames: the frame time budget of the window is not used in a recording. No trained policy or recorded-motion playback. Playback at 60 frames/s does not measure live simulation throughput."
+  },
+  "fem_tool_tissue": {
+    "frames": 1668,
+    "fps": 60,
+    "poster_frame": 165,
+    "show_ui": false,
+    "args": [
+      "--contact",
+      "swept",
+      "--test"
+    ],
+    "caption": "Simulation-time playback of the tool/tissue contact rig with the opt-in swept-capsule contact (--contact swept), in its eight phases. Phases 1 to 7: the closed jaws of one joint-actuated dVRK tool come down, press 1.5 mm and then 3 mm into FEM tissue, slide 10 mm, lift, press at the held border and make one fast approach; the tissue under the jaws is pushed into a dimple and the tool is stopped where the tissue cannot follow. Phase 8, the pinch: the jaws open over a ridge of the tissue, go down beside it, close on it and lift it 5 mm. The tissue between the two jaws is gripped: it is carried with them by friction while its pull stays below the limit that the squeeze sets, comes up 4.5 mm with the jaws and draws a tent of tissue up around it; then it is lowered, let go and comes to rest. In the fast approach the jaws still plunge about 2.5 mm before they are pushed out: a known limit of this contact. Without the option the tools pass through the tissue and nothing is gripped. Playback at 60 frames/s does not measure live simulation throughput."
   }
 }

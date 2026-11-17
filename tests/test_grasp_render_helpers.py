@@ -6,12 +6,17 @@ import unittest
 
 import newton
 import numpy as np
+import warp as wp
 
 from newton_solver_suturebot import NeedleGeometry
-from newton_solver_suturebot.examples._grasp_render import PhysicalSurgicalRenderScene, tube_triangles, tube_vertices
-from newton_solver_suturebot.examples._grasp_surface import FullSurfaceGeometry
-from newton_solver_suturebot.examples._grasp_view import fit_inspection_camera, framing_points, update_scene
-from newton_solver_suturebot.examples._grasp_visual_assets import (
+from newton_solver_suturebot.examples.grasp._grasp_render import (
+    PhysicalSurgicalRenderScene,
+    tube_triangles,
+    tube_vertices,
+)
+from newton_solver_suturebot.examples.grasp._grasp_surface import FullSurfaceGeometry
+from newton_solver_suturebot.examples.grasp._grasp_view import fit_inspection_camera, framing_points, update_scene
+from newton_solver_suturebot.examples.grasp._grasp_visual_assets import (
     load_dvrk_tool,
     load_needle_visual,
     physical_tool_parts,
@@ -91,9 +96,27 @@ class GraspRenderHelpersTests(unittest.TestCase):
         mesh = load_needle_visual().meshes[0]
         stage = Usd.Stage.Open(str(geometry.asset_path))
         prim = stage.GetPrimAtPath("/Needle/OriginalCAD")
-        np.testing.assert_allclose(mesh.vertices, np.asarray(prim.GetAttribute("points").Get()), atol=1e-9)
-        np.testing.assert_array_equal(mesh.triangles.reshape(-1), prim.GetAttribute("faceVertexIndices").Get())
+        # Shading data is per triangle corner, so every corner is a vertex of the visual mesh;
+        # positions and triangles are those of the CAD.
+        indices = np.asarray(prim.GetAttribute("faceVertexIndices").Get())
+        points = np.asarray(prim.GetAttribute("points").Get())
+        np.testing.assert_allclose(mesh.vertices, points[indices], atol=1e-9)
+        np.testing.assert_array_equal(mesh.triangles.reshape(-1), np.arange(len(indices)))
+        np.testing.assert_array_equal(mesh.source_vertex_indices, indices)
         np.testing.assert_allclose(np.linalg.norm(mesh.normals, axis=1), 1, atol=2e-7)
+        np.testing.assert_allclose(mesh.normals, np.asarray(prim.GetAttribute("normals").Get()), atol=1e-6)
+        corners = mesh.vertices[mesh.triangles]
+        face = np.cross(corners[:, 1] - corners[:, 0], corners[:, 2] - corners[:, 0])
+        face /= np.linalg.norm(face, axis=1)[:, None]
+        # a corner normal stays within the 35 degree crease angle of its own face
+        cosines = np.einsum("tki,ti->tk", mesh.normals[mesh.triangles], face)
+        self.assertGreater(cosines.min(), np.cos(np.radians(35.0)) - 1e-4)
+        self.assertEqual(mesh.uvs.shape, (len(indices), 2))
+        self.assertTrue(((mesh.uvs[:, 0] >= 0) & (mesh.uvs[:, 0] <= 1)).all())
+        # No triangle of the wire spans the seam around it; only faces of the two ends, which
+        # cross the wire, cover more than half a turn.
+        around = np.ptp(mesh.uvs[:, 1].reshape(-1, 3), axis=1)
+        self.assertLess(np.count_nonzero(around >= 0.5), 0.01 * len(around))
         self.assertEqual(mesh.metallic, 1)
         self.assertEqual(mesh.roughness, 0.19)
 
@@ -126,6 +149,83 @@ class GraspRenderHelpersTests(unittest.TestCase):
         self.assertGreater(np.linalg.norm(np.subtract(eye, target)), 0)
         observations[0]["rigid_body_poses"][1, 0] += 0.001
         with self.assertRaisesRegex(ValueError, "disagrees"):
+            update_scene(scene, state, observations)
+
+    def test_collision_capsules_are_hidden_collision_shapes_on_their_bodies_for_the_viewer_option(self):
+        geometry, _ = _fixture()
+        needle = NeedleGeometry.load()
+        geometry["needle_centerline"] = needle.centerline.copy()
+        geometry["needle_radius"] = needle.thickness
+        # One tool capsule along x on body 0, as a tool publishes them.
+        tool = {
+            "capsule_bodies": [0],
+            "capsule_endpoints": np.array([[[0.0, 0.0, 0.0], [0.008, 0.0, 0.0]]]),
+            "capsule_radii": [0.0022],
+        }
+        from newton_solver_suturebot.examples.grasp._grasp_render import collision_capsules
+
+        capsules = collision_capsules({**geometry, "grippers": [tool]})
+        self.assertEqual(len(capsules), 1 + len(needle.centerline) - 1)
+        self.assertEqual([body for body, *_ in capsules], [0] + [1] * (len(needle.centerline) - 1))
+        np.testing.assert_array_equal(capsules[1][1], needle.centerline[0])
+        np.testing.assert_array_equal(capsules[-1][2], needle.centerline[-1])
+        self.assertEqual(capsules[1][3], needle.thickness)
+        # In the model: collision flag without the visible flag, on the right bodies, with the
+        # capsule axis along the segment; the visual meshes keep no collision flag.
+        builder = newton.ModelBuilder()
+        scene = PhysicalSurgicalRenderScene(builder, geometry, 2, "cpu")
+        model = builder.finalize(device="cpu")
+        flags = model.shape_flags.numpy()
+        collide, visible = int(newton.ShapeFlags.COLLIDE_SHAPES), int(newton.ShapeFlags.VISIBLE)
+        count = len(needle.centerline) - 1
+        self.assertEqual(len(scene.collision_shapes), 2 * count)
+        self.assertTrue(np.all(flags[scene.collision_shapes] & collide))
+        self.assertFalse(np.any(flags[scene.collision_shapes] & visible))
+        others = np.setdiff1d(np.arange(model.shape_count), scene.collision_shapes)
+        self.assertFalse(np.any(flags[others] & collide))
+        np.testing.assert_array_equal(
+            model.shape_body.numpy()[scene.collision_shapes], np.repeat(scene.body_indices[:, 1], count)
+        )
+        transforms = model.shape_transform.numpy()[scene.collision_shapes[:count]]
+        scale = model.shape_scale.numpy()[scene.collision_shapes[:count]]
+        for row, (start, end) in enumerate(zip(needle.centerline[:-1], needle.centerline[1:], strict=True)):
+            np.testing.assert_allclose(transforms[row, :3], (start + end) / 2, atol=1e-7)
+            axis = np.asarray(wp.quat_rotate(wp.quat(*transforms[row, 3:]), wp.vec3(0.0, 0.0, 1.0)))
+            np.testing.assert_allclose(axis, (end - start) / np.linalg.norm(end - start), atol=1e-5)
+            self.assertAlmostEqual(scale[row, 0], needle.thickness, delta=1e-9)
+            self.assertAlmostEqual(scale[row, 1], np.linalg.norm(end - start) / 2, delta=1e-8)
+
+    def test_rendered_thread_tube_is_the_host_tube_with_display_offsets(self):
+        # The per-frame kernel writes the rings of `tube_vertices` into the thread's slots of the
+        # render particles, after each world's tissue surface block, and adds the display offsets.
+        geometry, observations = _fixture()
+        builder = newton.ModelBuilder()
+        scene = PhysicalSurgicalRenderScene(builder, geometry, 2, "cpu")
+        state = builder.finalize(device="cpu").state()
+        count = scene.thread_point_count
+        t = np.linspace(0.0, 1.0, count)
+        for world, observation in enumerate(observations):
+            # A curved, twisting line: the transported frame is not constant along it.
+            observation["thread_positions"] = np.column_stack(
+                (0.02 * t + 0.01 * world, 0.004 * np.sin(5.0 * t), 0.004 * np.cos(3.0 * t) + 0.01)
+            ).astype(np.float32)
+        centers = np.asarray([observation["thread_positions"] for observation in observations], dtype=np.float32)
+        expected = tube_vertices(centers, scene.thread_radius)
+        surface = len(scene.surface.rest_positions)
+        block = surface + count * 8
+        update_scene(scene, state, observations)
+        particles = state.particle_q.numpy().reshape(2, block, 3)
+        np.testing.assert_allclose(particles[:, surface:], expected, rtol=0, atol=2e-8)
+        tissue = particles[:, :surface].copy()
+        offsets = np.zeros((2, block, 3), dtype=np.float32)
+        offsets[1] += [0.45, 0.0, 0.0]
+        update_scene(scene, state, observations, particle_offsets=offsets.reshape(-1, 3))
+        shifted = state.particle_q.numpy().reshape(2, block, 3)
+        np.testing.assert_allclose(shifted[:, surface:], expected + offsets[:, surface:], rtol=0, atol=5e-8)
+        np.testing.assert_allclose(shifted[:, :surface], tissue + offsets[:, :surface], rtol=0, atol=5e-8)
+        # A repeated point leaves no tangent to build the tube on.
+        observations[0]["thread_positions"][1] = observations[0]["thread_positions"][0]
+        with self.assertRaisesRegex(ValueError, "degenerate"):
             update_scene(scene, state, observations)
 
     def test_thread_tube_uses_physical_radius_and_rejects_invalid_geometry(self):

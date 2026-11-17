@@ -13,7 +13,13 @@ from test_needle_coupling_graph import _DT
 from test_needle_insertion_example import _example, _prepare
 
 from newton_solver_suturebot import NeedleCouplingNotConverged, NeedleStepTooLarge
-from newton_solver_suturebot._src.host_trial_forces import TrialForceFallback
+from newton_solver_suturebot._src.solvers.coupled.host_trial_forces import TrialForceFallback
+from newton_solver_suturebot._src.utils.capture import census
+
+# Every variant of an evaluation: (surface recorder bound, residual of the trial before, new candidate).
+_VARIANTS = sorted(
+    (surface, previous, fresh) for surface in (False, True) for previous in (False, True) for fresh in (False, True)
+)
 
 
 @contextmanager
@@ -51,6 +57,217 @@ class HostTrialForcesTests(unittest.TestCase):
                     self.assertGreater(graph.primal_reuses, 0)
                 self.assertEqual(graph.fallbacks, 0)
                 self.assertEqual(captured.coupler.coupling_graph_launches, 0)
+
+    def test_timestep_changes_replay_the_force_and_fem_graphs_without_recapture(self):
+        # A rejected substep is retried with half the time step, later steps return to the base
+        # step and a frame ends with a remainder that is no halving. The force kernels and the
+        # FEM step of the host-controlled trials read the time step from the coupler's step
+        # time, so no graph of these trials is keyed on it: a force graph stands for one
+        # (previous residual, fresh candidate) variant, an FEM graph for one state buffer and
+        # solver level. Each is captured once and replays at every time step. The reference
+        # runs the same trials without any graph.
+        for mode in ("penalty", "alm"):
+            with self.subTest(mode=mode), pair(mode) as (reference, captured):
+                reference.coupler.capture_fem = False
+                coupler = captured.coupler
+                owner, forces, fem = None, {}, {}
+                steps = (_DT, _DT / 2, _DT, _DT, _DT / 2, 0.37 * _DT, _DT)
+                for index, dt in enumerate(steps):
+                    for example in (reference, captured):
+                        example.drive.prepare_timestep(dt)
+                        example.solver.refresh_tangent(example.state_0.particle_q, dt)
+                    self.step_pair(reference, captured, dt)
+                    graph = coupler._host_trial_forces
+                    owner = graph if index == 0 else owner
+                    self.assertIs(graph, owner)
+                    # Nothing was dropped and nothing was captured a second time.
+                    self.assertEqual(graph.captures, len(graph.graphs))
+                    for key, kept in forces.items():
+                        self.assertIs(graph.graphs[key], kept)
+                    forces = dict(graph.graphs)
+                    current = {key: entry[0] for key, entry in coupler._fem_graphs.items()}
+                    self.assertEqual(coupler.fem_graph_captures, len(current))
+                    for key, kept in fem.items():
+                        self.assertIs(current[key], kept)
+                    fem = current
+                    self.assertEqual(coupler.step_time.value, dt)
+                    np.testing.assert_array_equal(coupler.step_time.seconds.numpy(), [np.float32(dt)])
+                    for example in (reference, captured):
+                        example.state_0, example.state_1 = example.state_1, example.state_0
+                self.assertIsNone(reference.coupler._host_trial_forces)
+                self.assertEqual((reference.coupler.fem_graph_captures, reference.coupler.fem_graph_launches), (0, 0))
+                self.assertGreater(graph.launches, len(steps))
+                self.assertLessEqual(graph.captures, 4)
+                self.assertGreater(coupler.fem_graph_launches, len(steps))
+                self.assertEqual(graph.fallbacks, 0)
+                self.assertEqual(coupler.coupling_graph_launches, 0)
+
+    def test_new_track_sample_replays_the_force_graphs_without_recapture(self):
+        # The force graphs address the track through storage that the interaction made once at its
+        # track reserve, and read the live track count from the device. A new track sample changes
+        # no entry of their signature: every graph captured before it is replayed after it, and
+        # the steps still match the reference without a graph.
+        for mode in ("penalty", "alm"):
+            with self.subTest(mode=mode), pair(mode) as (reference, captured):
+
+                def step():
+                    self.step_pair(reference, captured, _DT)
+                    for example in (reference, captured):
+                        example.state_0, example.state_1 = example.state_1, example.state_0
+
+                for _ in range(3):
+                    step()
+                graph = captured.coupler._host_trial_forces
+                kept, signature = dict(graph.graphs), graph.signature
+                helper_signature = graph.permissions.signature()
+                self.assertGreater(len(kept), 0)
+                self.assertEqual(graph.captures, len(kept))
+                launches = graph.launches
+                x = captured.interaction
+                count = x.track_count
+                self.assertGreater(x.track_capacity, count + 1)
+                # A sample far from the needle, without an edge to the track and released: it has no
+                # quadrature length, exerts no force and permits nothing. Only the history grows.
+                for example in (reference, captured):
+                    x = example.interaction
+                    centers = x._previous_q[x.tetrahedra].mean(axis=1)
+                    order = np.argsort(-np.linalg.norm(centers - x._previous_tip, axis=1))
+                    tet = int(next(tet for tet in order if int(tet) not in x._visited_tets))
+                    anchor, x._track_anchor = x._track_anchor, None
+                    x._record_track(x.tetrahedra[tet].copy(), np.full(4, 0.25))
+                    x._track_anchor = anchor
+                    self.assertEqual(x.track_count, count + 1)
+                    released = wp.array([0], dtype=int, device="cpu")
+                    wp.copy(x._track_engaged, released, dest_offset=count, count=1)
+                    x._engaged_length = None
+                step()
+                step()
+                self.assertIs(captured.coupler._host_trial_forces, graph)
+                self.assertGreater(graph.launches, launches)
+                self.assertEqual(graph.fallbacks, 0)
+                self.assertEqual(graph.signature, signature)
+                self.assertEqual(graph.permissions.signature(), helper_signature)
+                # No graph was captured twice, and the graphs of before are the ones in use.
+                self.assertEqual(graph.captures, len(graph.graphs))
+                for key, entry in kept.items():
+                    self.assertIs(graph.graphs[key], entry, key)
+                x = captured.interaction
+                self.assertEqual((x.track_count, x.track_storage_growths), (count + 1, 0))
+                self.assertEqual(int(x._live.numpy()[1]), count + 1)
+                self.assertEqual(captured.coupler.coupling_graph_launches, 0)
+
+    def test_replayed_force_graph_gives_the_forces_of_the_time_step_it_is_launched_with(self):
+        # The tunnel drag of the ALM law is penalty * dt * sliding speed. With a candidate needle
+        # that slides along its shaft the interface forces depend on the time step, by a few
+        # thousandths of their size between dt and dt / 2 here. The steps of the test above
+        # hardly slide, so their endpoints barely see the time step of the force kernels; this
+        # candidate does. One graph, captured at dt, must give at every other time step the
+        # forces of the eager evaluation at that time step.
+        with pair("alm") as (_, captured):
+            c, alm, body = captured.coupler, captured.interaction.tunnel_alm, captured.coupler.needle_body
+            velocity = captured.state_0.body_qd.numpy().copy()
+            velocity[body, :3] += 1e-2 * np.array([0.6, 0.0, -0.8])
+            velocity[body, 3:] += (0.0, 0.5, 0.0)
+            graph, forces = c._host_force_graph(captured.state_0, captured.control, _DT), {}
+            for index, dt in enumerate((_DT, _DT, _DT / 2, 0.37 * _DT, _DT)):
+                results = []
+                for replay in (True, False):
+                    c._candidate.assign(captured.state_0)
+                    c._candidate.body_qd.assign(velocity)
+                    alm.begin_step()
+                    try:
+                        if replay:
+                            self.assertIs(c._host_force_graph(captured.state_0, captured.control, dt), graph)
+                            graph.evaluate(dt, False)
+                        else:
+                            c._evaluate(c._candidate, dt, trial=True)
+                        results.append((c._forces.numpy().copy(), c._candidate.body_f.numpy().copy()))
+                    finally:
+                        alm.discard()
+                self.assertEqual((graph.captures, graph.launches, graph.fallbacks), (1, index + 1, 0))
+                np.testing.assert_array_equal(c.step_time.seconds.numpy(), [np.float32(dt)])
+                for actual, expected, name in zip(*results, ("nodal forces", "body wrenches"), strict=True):
+                    scale = np.abs(expected).max()
+                    np.testing.assert_allclose(actual, expected, rtol=0, atol=1e-5 * scale, err_msg=f"{name} at {dt}")
+                forces[dt] = results[0]
+            for dt in (_DT / 2, 0.37 * _DT):
+                for changed, base in zip(forces[dt], forces[_DT], strict=True):
+                    self.assertGreater(np.abs(changed - base).max(), 1e-3 * np.abs(base).max())
+
+    def test_each_recorder_state_keeps_its_own_graphs_and_a_recorder_flip_drops_none(self):
+        # A host-controlled trial loop evaluates with the surface recorder bound (first contact,
+        # or a correction with history) or not bound (a punctured solve without history). The
+        # two have different signatures. Each keeps its own graphs under keys that name it, so
+        # going from one to the other and back launches the graph that was captured before.
+        # Only a changed signature of one recorder state drops graphs: those of that state.
+        from test_surface_pc_capture import contact, prepare_forces
+
+        with contact(capture=True) as (ex, c, _native, pc):
+            dt = ex.sim_dt
+            graph = prepare_forces(ex, c, pc)
+            bound = graph.signature
+            graph.evaluate(dt, False)
+            self.assertEqual(list(graph.graphs), [(True, False, True)])
+            first, released = graph.graphs[(True, False, True)], census.releases
+            pc.begin_step()
+            graph.prepare(dt)
+            unbound = graph.signature
+            self.assertNotEqual(unbound, bound)
+            self.assertEqual(graph.signatures, {True: bound, False: unbound})
+            graph.evaluate(dt, False)
+            self.assertEqual(sorted(graph.graphs), [(False, False, True), (True, False, True)])
+            second = graph.graphs[(False, False, True)]
+            pc.begin_step()
+            self.assertTrue(pc.begin_trials(ex.state_0, ex.control))
+            graph.prepare(dt)
+            self.assertEqual(graph.signature, bound)
+            graph.evaluate(dt, False)
+            self.assertIs(graph.graphs[(True, False, True)], first)
+            self.assertIs(graph.graphs[(False, False, True)], second)
+            self.assertEqual((graph.captures, graph.launches, graph.fallbacks), (2, 3, 0))
+            self.assertEqual(census.releases, released)
+            # Other storage of the recorder: the one graph of the bound state is dropped and counted.
+            pc.anchors.matrices = wp.clone(pc.anchors.matrices)
+            graph.prepare(dt)
+            self.assertNotEqual(graph.signature, bound)
+            self.assertEqual(list(graph.graphs), [(False, False, True)])
+            self.assertIs(graph.graphs[(False, False, True)], second)
+            self.assertEqual(census.releases, released + 1)
+
+    def test_start_up_entry_captures_every_variant_once_and_evaluations_then_only_launch(self):
+        # The entry captures the four variants of both recorder states and launches each once,
+        # without counting a launch. Evaluations of a trial loop then find their graph,
+        # whichever recorder state and variant they are.
+        from test_surface_pc_capture import contact, prepare_forces
+
+        with contact(capture=True) as (ex, c, _native, pc):
+            dt = ex.sim_dt
+            graph = prepare_forces(ex, c, pc)
+            graph.capture_graphs(ex.state_0, ex.control, dt)
+            self.assertEqual(sorted(graph.graphs), _VARIANTS)
+            self.assertEqual((graph.captures, graph.launches, graph.primal_reuses, graph.fallbacks), (8, 0, 0, 0))
+            self.assertEqual([entry.graph_exec is None for entry in graph.graphs.values()], [False] * 8)
+            # The recorder is as the begin phase of an attempt leaves it.
+            self.assertFalse(pc.available)
+            self.assertIsNone(ex.interaction._surface_tangent_anchors)
+            self.assertEqual(int(pc.valid.numpy()[0]), 0)
+            kept, captures, released = dict(graph.graphs), census.captures, census.releases
+            # Every variant has its graph: a second call issues nothing.
+            with patch.object(wp, "capture_launch", side_effect=AssertionError("launched")):
+                graph.capture_graphs(ex.state_0, ex.control, dt)
+            for surface in (True, False):
+                pc.begin_step()
+                if surface:
+                    self.assertTrue(pc.begin_trials(ex.state_0, ex.control))
+                graph.prepare(dt)
+                for previous, fresh in ((False, True), (True, True), (False, False), (True, False)):
+                    packet = graph.evaluate(dt, previous, fresh=fresh)
+                    self.assertEqual(packet.shape, (8 if surface else 6,))
+            self.assertEqual((graph.captures, graph.launches, graph.primal_reuses, graph.fallbacks), (8, 8, 4, 0))
+            self.assertEqual((census.captures, census.releases), (captures, released))
+            self.assertEqual(sorted(graph.graphs), _VARIANTS)
+            for key, entry in kept.items():
+                self.assertIs(graph.graphs[key], entry, key)
 
     def test_empty_track_free_air_trials_match_without_host_force_queries(self):
         with ExitStack() as stack:

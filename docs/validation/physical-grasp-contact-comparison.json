@@ -1,0 +1,519 @@
+{
+  "schema_version": 1,
+  "scope": "Historical contact failures, corrected single-world fixtures, final eight-world scaling/native integration, full source test suite, and short scripted FEM entry; no complete physical-grasp suture or learned physical-grasp policy",
+  "native_configuration": {
+    "integrator": "implicitfast",
+    "friction_cone": "elliptic",
+    "impratio": 10,
+    "tolerance": 1e-12,
+    "maximum_iterations": 200,
+    "maximum_line_search_iterations": 50,
+    "normal_impedance": 0.9999,
+    "torsional_friction_length_m": 0.00028,
+    "rolling_friction_length_m": 2e-05,
+    "sliding_friction": 1.0
+  },
+  "interpretation": "Elliptic changes the friction-cone model. Tight convergence controls change numerical accuracy; masses, geometry, actuator gains and contact coefficients remain fixed in these comparisons. No exact sticking constraint is introduced.",
+  "stress_commands": {
+    "control_hz": 60,
+    "initial_zero_frames": 8,
+    "translation_increment_m": 0.0001,
+    "optional_rotation_increment_rad": 0.01,
+    "axis": "world X",
+    "sign_switch_every_frames": 10,
+    "total_jaw_opening_increment_rad": 0.001,
+    "relative_pose_reference": "last zero-command frame, index7; normalized quaternion geodesic, sign invariant"
+  },
+  "baseline_gate": {
+    "passed": false,
+    "num_envs": 8,
+    "failure_times_s": [
+      0.3416666666666667,
+      0.4958333333333328,
+      0.3416666666666667,
+      1.0041666666666644,
+      0.6666666666666655,
+      0.43749999999999967,
+      0.6958333333333321,
+      0.720833333333332
+    ],
+    "failure_reasons": [
+      "Needle center penetrated fixed or inactive tissue; reduce timestep",
+      "Needle center penetrated fixed or inactive tissue; reduce timestep",
+      "Needle center penetrated fixed or inactive tissue; reduce timestep",
+      "Needle center penetrated fixed or inactive tissue; reduce timestep",
+      "Needle center penetrated fixed or inactive tissue; reduce timestep",
+      "Needle center penetrated fixed or inactive tissue; reduce timestep",
+      "Needle center penetrated fixed or inactive tissue; reduce timestep",
+      "Needle center penetrated fixed or inactive tissue; reduce timestep"
+    ],
+    "configuration": "historical pyramidal-cone initial implementation; archived gate binds its solver fingerprint and physical configuration"
+  },
+  "smooth_transport": [
+    {
+      "cone": "elliptic",
+      "impedance": 0.9999,
+      "substeps": 4,
+      "relative_displacement_m": 1.812740967790854e-05,
+      "relative_rotation_rad": 0.005605276747601201,
+      "minimum_normal_N": 0.374903836181538,
+      "zero_contact_steps": 0,
+      "wall": 0.3409493829822168
+    },
+    {
+      "cone": "elliptic",
+      "impedance": 0.9999,
+      "substeps": 16,
+      "relative_displacement_m": 1.4669502284587234e-05,
+      "relative_rotation_rad": 0.005377522092511749,
+      "minimum_normal_N": 0.38082722260052687,
+      "zero_contact_steps": 0,
+      "wall": 1.3551667940046173
+    },
+    {
+      "cone": "elliptic",
+      "impedance": 0.995,
+      "substeps": 4,
+      "relative_displacement_m": 0.00015068715723513338,
+      "relative_rotation_rad": 0.048623573635574804,
+      "minimum_normal_N": 0.15758236421529226,
+      "zero_contact_steps": 0,
+      "wall": 0.3423457930039149
+    }
+  ],
+  "focused_cpu_tests": {
+    "count": 5,
+    "passed": 5,
+    "elapsed_s": 1.378,
+    "log": "physical-grasp-elliptic-tests-cpu.log",
+    "angular_regression_added": true
+  },
+  "stress_4": [
+    {
+      "workload": "x_translation",
+      "outer_substeps": 4,
+      "native_substeps_per_outer": 1,
+      "native_dt_s": 0.004166666666666667,
+      "frames": 32,
+      "physical_time_s": 0.5249999999999994,
+      "accepted_physics_steps": 126,
+      "step_refinements": 0,
+      "task_status": "failed",
+      "failure_reason": "Needle center penetrated fixed or inactive tissue; reduce timestep",
+      "entry_count": 0,
+      "exit_count": 0,
+      "maximum_relative_translation_change_after_warmup_m": 0.001201453834998536,
+      "maximum_relative_rotation_change_after_warmup_rad": 0.10509975061684286,
+      "minimum_normal_force_n": 0.0,
+      "frames_without_bilateral_positive_force": 5,
+      "wall_seconds": 1.115597224998055
+    },
+    {
+      "workload": "x_translation_plus_x_rotation",
+      "outer_substeps": 4,
+      "native_substeps_per_outer": 1,
+      "native_dt_s": 0.004166666666666667,
+      "frames": 19,
+      "physical_time_s": 0.3041666666666668,
+      "accepted_physics_steps": 73,
+      "step_refinements": 0,
+      "task_status": "failed",
+      "failure_reason": "Needle center penetrated fixed or inactive tissue; reduce timestep",
+      "entry_count": 0,
+      "exit_count": 0,
+      "maximum_relative_translation_change_after_warmup_m": 0.0004013734226028679,
+      "maximum_relative_rotation_change_after_warmup_rad": 0.03655082769080195,
+      "minimum_normal_force_n": 0.0,
+      "frames_without_bilateral_positive_force": 1,
+      "wall_seconds": 0.624178537982516
+    }
+  ],
+  "stress_16": [
+    {
+      "workload": "x_translation",
+      "outer_substeps": 16,
+      "native_substeps_per_outer": 1,
+      "native_dt_s": 0.0010416666666666667,
+      "frames": 128,
+      "physical_time_s": 2.1333333333332924,
+      "accepted_physics_steps": 2048,
+      "step_refinements": 0,
+      "task_status": "running",
+      "failure_reason": null,
+      "entry_count": 0,
+      "exit_count": 0,
+      "maximum_relative_translation_change_after_warmup_m": 2.1949667530746746e-05,
+      "maximum_relative_rotation_change_after_warmup_rad": 0.008643612358365829,
+      "minimum_normal_force_n": 0.31865988318695443,
+      "frames_without_bilateral_positive_force": 0,
+      "wall_seconds": 12.708991449995665
+    },
+    {
+      "workload": "x_translation_plus_x_rotation",
+      "outer_substeps": 16,
+      "native_substeps_per_outer": 1,
+      "native_dt_s": 0.0010416666666666667,
+      "frames": 128,
+      "physical_time_s": 2.1333333333332924,
+      "accepted_physics_steps": 2048,
+      "step_refinements": 0,
+      "task_status": "running",
+      "failure_reason": null,
+      "entry_count": 0,
+      "exit_count": 0,
+      "maximum_relative_translation_change_after_warmup_m": 2.1326114517420495e-05,
+      "maximum_relative_rotation_change_after_warmup_rad": 0.007953461914003484,
+      "minimum_normal_force_n": 0.31817121540046117,
+      "frames_without_bilateral_positive_force": 0,
+      "wall_seconds": 12.859440445987275
+    }
+  ],
+  "artifacts": {
+    "physical-grasp-failed-gate.json": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/isaaclab-suturebot-grasp-work/outputs/physical_grasp/scaling_failed_initial.json",
+      "sha256": "127d7ec361c877e19e1d16323183773f7f7716a0500be5b6ef63ac2924deda43",
+      "size_bytes": 38282
+    },
+    "physical-grasp-failed-actions.json": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/nsys/results/physical-grasp/action_diagnosis.json",
+      "sha256": "0e118ad465e7712ac6639fa2c3a9019ee059cfd14e1c58dc186b6885d9876ccb",
+      "size_bytes": 37905
+    },
+    "physical-grasp-elliptic-stress-16.json": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/nsys/results/physical-grasp/elliptic_accuracy16_stress.json",
+      "sha256": "8746afd31b15a360636225628407a5b0d78559b223ca386e4c732b80c467051b",
+      "size_bytes": 311204
+    },
+    "physical-grasp-elliptic-lowlevel.json": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/nsys/results/physical-grasp/elliptic_lowlevel_accuracy.json",
+      "sha256": "db64de027764b171123c363650702ec611bdb5ffba2eb599518240936ab0adb1",
+      "size_bytes": 863
+    },
+    "physical-grasp-elliptic-tests-cpu.log": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/nsys/results/physical-grasp/grasp_elliptic_cpu.log",
+      "sha256": "53f9564eb5ee2238f6787b0d2fe75c96eee75fb34259fd3710fbc2ac320bc3da",
+      "size_bytes": 1873
+    },
+    "physical-grasp-elliptic-stress-4.json": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/nsys/results/physical-grasp/elliptic_accuracy_stress.json",
+      "sha256": "15c0866d52b15f312aab2e5cb2f5c7c82ff0e49a1652fbf85329db93f5fed152",
+      "size_bytes": 68548
+    },
+    "physical-grasp-elliptic-probe-16.py.txt": {
+      "original_path": "/tmp/probe_grasp_elliptic_accuracy16.py",
+      "sha256": "f52b391112672651eca3f70f941f71de29c692fc9d00328d7ef8f9fa8d9fe480",
+      "size_bytes": 2117
+    },
+    "physical-grasp-elliptic-probe-lowlevel.py.txt": {
+      "original_path": "/tmp/probe_grasp_elliptic_accuracy.py",
+      "sha256": "21306b6569874afc0189b29b36e5fbb2e6ddf932994469d4985edd6db161c4cd",
+      "size_bytes": 1666
+    },
+    "physical-grasp-elliptic-probe-4.py.txt": {
+      "original_path": "/tmp/probe_grasp_elliptic_accuracy_stress.py",
+      "sha256": "37c749a3a876d6653e5eb823f91a75239e971936b72886a5c4c930c9548a3889",
+      "size_bytes": 2103
+    },
+    "physical-grasp-subcycling-stress.json": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/nsys/results/physical-grasp/native_subcycling_stress.json",
+      "sha256": "ca409895abef64c8c1bc5b944a3c9b0dc92aaddbc306fdd90ddfc36c98c07c69",
+      "size_bytes": 311876
+    },
+    "physical-grasp-subcycling-stress.log": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/nsys/results/physical-grasp/native_subcycling_stress.log",
+      "sha256": "df8a07d05be913577619d47dd783df076399f2094f4a3f2d1a4a5ee09d4c91f6",
+      "size_bytes": 5004
+    },
+    "physical-grasp-subcycling-cpu.log": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/nsys/results/physical-grasp/subcycling_cpu.log",
+      "sha256": "cfbe97b6e2da3af2a787ce2076990716a34d63644e76b212953166baf835c4a6",
+      "size_bytes": 5374
+    },
+    "physical-grasp-subcycling-cuda.log": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/nsys/results/physical-grasp/subcycling_cuda.log",
+      "sha256": "fd2cf0d65c2feed5c91b0648cc2ab77c4263cccc95919c794e920027027c4de1",
+      "size_bytes": 6360
+    },
+    "physical-grasp-subcycling-probe.py.txt": {
+      "original_path": "/tmp/probe_grasp_subcycling.py",
+      "sha256": "3a07d872aa1f195df4b1717593280fe33a79c65ee29f5ffb87f19ce01ef423c3",
+      "size_bytes": 2103
+    },
+    "physical-grasp-eight-scenes.json": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/isaaclab-suturebot-grasp-work/outputs/physical_grasp/scaling.json",
+      "sha256": "75b850b7f2039eb8562c02c2e76604efe60e2baa04bed4e8317c0c514eed0ae3",
+      "size_bytes": 39237
+    },
+    "physical-grasp-eight-scenes.log": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/isaaclab-suturebot-grasp-work/outputs/physical_grasp/scaling_console.log",
+      "sha256": "85e7a1e42a34a15b753a9e4b6a9245a6c0a3b1668d044e9cbd5d8eb5417003ac",
+      "size_bytes": 1001
+    },
+    "physical-grasp-native-isaaclab.json": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/isaaclab-suturebot-grasp-work/docs/validation/physical_grasp_native.json",
+      "sha256": "2c94eb45700f20baea72c829bd5521de594a950727aeaf3c1d8a3af83f022a8a",
+      "size_bytes": 41457
+    },
+    "physical-grasp-native-artifacts.json": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/isaaclab-suturebot-grasp-work/docs/validation/physical_grasp_gpu_artifacts.json",
+      "sha256": "df57e2427a27958361eb068f78d082a6655d93b61a9e0a8b3d59c400dbef64f6",
+      "size_bytes": 13094
+    },
+    "physical-grasp-full-cuda.log": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/nsys/results/physical-grasp/full-tests.log",
+      "sha256": "2b2835f51d22473678e09ea49d9e689b7875994964037201a50da0eded8b33dc",
+      "size_bytes": 167786
+    },
+    "physical-grasp-fem-entry.json": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/nsys/results/physical-grasp/fem_contact.json",
+      "sha256": "6be4523508e658671ebb197721e916d64226834924d16dfd14ea1b1a195171e2",
+      "size_bytes": 88697
+    },
+    "physical-grasp-fem-entry.log": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/nsys/results/physical-grasp/fem_contact.log",
+      "sha256": "90cb4c5a12a5ed0e93dd22fa810b55c5489f737dcc958356f0869a15027b92b5",
+      "size_bytes": 11753
+    },
+    "physical-grasp-fem-entry-probe.py.txt": {
+      "original_path": "/tmp/probe_grasp_fem_contact.py",
+      "sha256": "3052ebb64ef2e226ab124db185e24de6bba02843a696fedaca987cdbb821698c",
+      "size_bytes": 3389
+    },
+    "physical-grasp-full-cuda-initial.log": {
+      "original_path": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/nsys/results/physical-grasp/full-tests-initial-fixture-errors.log",
+      "sha256": "d86bfb57bc1d3dfc5fe86fe58c4f31d2b9ccff73fa1d6763b32f0d726b5db7f7",
+      "size_bytes": 179559
+    }
+  },
+  "stress_4_outer_4_native": [
+    {
+      "workload": "x_translation",
+      "outer_substeps": 4,
+      "native_substeps_per_outer": 4,
+      "native_dt_s": 0.0010416666666666667,
+      "frames": 128,
+      "physical_time_s": 2.133333333333334,
+      "accepted_physics_steps": 512,
+      "accepted_native_microsteps": 2048,
+      "step_refinements": 0,
+      "task_status": "running",
+      "failure_reason": null,
+      "entry_count": 0,
+      "exit_count": 0,
+      "maximum_relative_translation_change_after_warmup_m": 2.155606099912276e-05,
+      "maximum_relative_rotation_change_after_warmup_rad": 0.008658549454638585,
+      "minimum_normal_force_n": 0.3187342483409859,
+      "frames_without_bilateral_positive_force": 0,
+      "wall_seconds": 4.380916615977185
+    },
+    {
+      "workload": "x_translation_plus_x_rotation",
+      "outer_substeps": 4,
+      "native_substeps_per_outer": 4,
+      "native_dt_s": 0.0010416666666666667,
+      "frames": 128,
+      "physical_time_s": 2.133333333333334,
+      "accepted_physics_steps": 512,
+      "accepted_native_microsteps": 2048,
+      "step_refinements": 0,
+      "task_status": "running",
+      "failure_reason": null,
+      "entry_count": 0,
+      "exit_count": 0,
+      "maximum_relative_translation_change_after_warmup_m": 2.1178934961874648e-05,
+      "maximum_relative_rotation_change_after_warmup_rad": 0.007974789779082706,
+      "minimum_normal_force_n": 0.31823497435808645,
+      "frames_without_bilateral_positive_force": 0,
+      "wall_seconds": 4.600597505021142
+    }
+  ],
+  "final_focused_tests": {
+    "cpu": {
+      "count": 10,
+      "passed": 10,
+      "elapsed_s": 2.505,
+      "log": "physical-grasp-subcycling-cpu.log"
+    },
+    "cuda": {
+      "count": 10,
+      "passed": 10,
+      "elapsed_s": 3.173,
+      "log": "physical-grasp-subcycling-cuda.log"
+    },
+    "scope": "Native grasp, multi-body scene lifecycle/rollback, exact explicit-four-native-step equivalence and untouched output FEM particle sentinel. Separate from earlier ten thread/contact tests and pending full suite."
+  },
+  "production_schedule": {
+    "outer_intervals_per_60hz_frame": 4,
+    "native_substeps_per_outer": 4,
+    "thread_steps_per_accepted_outer_interval": 1,
+    "loads": "external world wrenches and actuator targets held during native microsteps; native contacts and actuators solved each microstep",
+    "drive_linearization": "retains outer timestep",
+    "rollback": "outer partitioned transaction restores complete native integration state on rejection"
+  },
+  "final_eight_world_gate": {
+    "passed": true,
+    "checks": {
+      "eight_or_more_scenes": true,
+      "distinct_worker_processes": true,
+      "concurrent_worker_intervals": true,
+      "finite_state": true,
+      "positive_tetrahedral_volumes": true,
+      "fixed_boundaries_preserved": true,
+      "all_scenes_advanced": true,
+      "distinct_action_response": true,
+      "selective_reset_restores_time": true,
+      "selective_reset_preserves_neighbors": true,
+      "reset_restores_needle": true,
+      "runtime_unchanged": true,
+      "grasp_state_contract": true,
+      "independent_rigid_body_state": true,
+      "jaw_actuation_response": true,
+      "reset_restores_grasp": true,
+      "no_solver_failures": true
+    },
+    "solver_fingerprint": "1ae8d9eee6c5bbb9d2668c17398acb8965f277754cc4748c552f5f0468fa64cb",
+    "num_envs": 8,
+    "measured_steps": 120,
+    "warmup_steps": 8,
+    "startup_seconds": 13.404772170004435,
+    "measured_seconds": 7.514267636201112,
+    "environment_steps_per_second": 127.756961353766,
+    "per_scene_realtime_factor": 0.2661603361536792,
+    "overlap_fraction": 1.0,
+    "vertices_per_scene": 7205,
+    "tetrahedra_per_scene": 29160,
+    "minimum_volume_ratios": [
+      0.9999853448723032,
+      0.9999851685218236,
+      0.9999852781038566,
+      0.9999852019060443,
+      0.9999851257082345,
+      0.9999853782565264,
+      0.9999854636476573,
+      0.9999853114880811
+    ],
+    "scope": "Finite oscillatory gripper/jaw actions above tissue, including worker-owned physical thread. No insertion or loaded-grasp certificate."
+  },
+  "native_isaaclab_smoke": {
+    "num_envs": 8,
+    "physical_steps": 8,
+    "obs_shapes": {
+      "policy": [
+        8,
+        72
+      ],
+      "critic": [
+        8,
+        72
+      ],
+      "teacher_state": [
+        8,
+        72
+      ],
+      "proprioception": [
+        8,
+        20
+      ],
+      "stereo_rgb": [
+        8,
+        12,
+        144,
+        192
+      ]
+    },
+    "time_limit_resets": true,
+    "render_appearance": {
+      "mode": "surgical",
+      "version": 2
+    },
+    "actual_outcomes": {
+      "scaling_exit_code": 0,
+      "scaling_wrapper_seconds": 29.46900381,
+      "all_17_scaling_checks_passed": true,
+      "healthy_environment_steps_per_second": 127.756961353766,
+      "native_exit_code": 0,
+      "native_wrapper_seconds": 34.201107139,
+      "native_physical_steps": 8,
+      "native_time_limit_resets": true,
+      "native_observation_shapes": {
+        "policy": [
+          8,
+          72
+        ],
+        "critic": [
+          8,
+          72
+        ],
+        "teacher_state": [
+          8,
+          72
+        ],
+        "proprioception": [
+          8,
+          20
+        ],
+        "stereo_rgb": [
+          8,
+          12,
+          144,
+          192
+        ]
+      },
+      "native_physics_mirror_bodies": 56,
+      "native_render_bodies": 56,
+      "physical_thread_diagnostics_match_snapshot_times": true,
+      "preview_visually_inspected": true
+    }
+  },
+  "final_full_source_tests": {
+    "tests_run": 646,
+    "skipped": 3,
+    "expected_failures": 5,
+    "unexpected_failures": 0,
+    "errors": 0,
+    "elapsed_s": 147.523,
+    "log": "physical-grasp-full-cuda.log",
+    "device_selection": "cuda:0; individual CPU-only fixtures remain CPU",
+    "note": "Initial six test-double API mismatches corrected in tests; earlier failed full log preserved separately.",
+    "solver_fingerprint": "1ae8d9eee6c5bbb9d2668c17398acb8965f277754cc4748c552f5f0468fa64cb",
+    "production_sources_unchanged_from_gate": true,
+    "test_only_fixes": [
+      "tests/test_needle_insertion_example.py",
+      "tests/test_needle_step_resolution.py"
+    ]
+  },
+  "final_scripted_fem_entry": {
+    "scope": "scripted finite-gripper reference-command diagnostic, not trained policy or complete suturing",
+    "frames": 91,
+    "physical_time_s": 1.5166666666666626,
+    "wall_seconds_including_scene_creation": 9.888707558973692,
+    "accepted_outer_intervals": 364,
+    "step_refinements": 0,
+    "minimum_frame_sampled_volume_ratio_to_initial_state": 0.8940730540961888,
+    "fixed_nodes_unchanged": true,
+    "all_sampled_states_finite": true,
+    "first_entry_frame": 71,
+    "followup_frames": 20,
+    "entry_error_m": 0.00046211590410407235,
+    "entry_count": 1,
+    "exit_count": 0,
+    "peak_interface_force_n": 0.003129518593871878,
+    "peak_deformation_m": 0.0001834000543665588,
+    "final_engaged_track_length_m": 0.0010244353907182813,
+    "final_jaw_normal_force_n": [
+      0.38126838485695286,
+      0.38139914047866563
+    ],
+    "final_thread_head_to_needle_tail_error_m": 5.253909067357735e-09,
+    "failure_reason": null,
+    "task_status": "running",
+    "limitations": [
+      "Scripted command trajectory, not learned policy or autonomous pickup",
+      "No accepted exit or completed suture",
+      "No direct tool/FEM collision solver",
+      "Independent volume audit samples control frames; solver transaction retains its separate accepted-interval integrity checks"
+    ],
+    "solver_fingerprint": "1ae8d9eee6c5bbb9d2668c17398acb8965f277754cc4748c552f5f0468fa64cb"
+  },
+  "archived_runtime_fingerprint": "1ae8d9eee6c5bbb9d2668c17398acb8965f277754cc4748c552f5f0468fa64cb"
+}

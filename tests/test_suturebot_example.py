@@ -13,8 +13,8 @@ import numpy as np
 import warp as wp
 from newton.viewer import ViewerNull
 
-from newton_solver_suturebot.examples._suturebot_contact_demo import Example
-from newton_solver_suturebot.examples._suturebot_contacts import surface_contact_forces
+from newton_solver_suturebot.examples.recording._suturebot_contact_demo import Example
+from newton_solver_suturebot.examples.recording._suturebot_contacts import surface_contact_forces
 
 
 class PadContactTests(unittest.TestCase):

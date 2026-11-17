@@ -11,6 +11,7 @@ import math
 import warp as wp
 from warp.optim.linear import aslinearoperator
 
+from ...utils.capture import PauseGC
 from .differentiation import active_tape
 from .implicit_predictor import restore_spring_damping_predictor
 from .kernels import maximum_rhs_component, normalize_linear_rhs, restore_linear_increment, update_state
@@ -38,9 +39,10 @@ def _subtract(source: wp.array[wp.vec3], target: wp.array[wp.vec3]):
 
 
 @wp.kernel(enable_backward=False)
-def _add_load(source: wp.array[wp.vec3], dt: float, target: wp.array[wp.vec3]):
+def _add_load(source: wp.array[wp.vec3], dt: wp.array[float], target: wp.array[wp.vec3]):
+    # dt holds the timestep [s] in its one element (StepTime.seconds).
     node = wp.tid()
-    target[node] = target[node] + dt * source[node]
+    target[node] = target[node] + dt[0] * source[node]
 
 
 @wp.kernel(enable_backward=False)
@@ -145,7 +147,13 @@ class PreparedFEMStep:
         solver._accumulate_forces(model, self._state, contacts, control, dt)
         wp.copy(self._impulse, self._state.particle_f)
         if external_forces is not None:
-            wp.launch(_add_load, model.particle_count, [external_forces, dt, self._impulse], device=self.device)
+            # _accumulate_forces above made the solver's step time hold dt.
+            wp.launch(
+                _add_load,
+                model.particle_count,
+                [external_forces, solver.step_time.seconds, self._impulse],
+                device=self.device,
+            )
         matrix = solver.A_bsr
         if model.tet_count or solver.hex_count or model.spring_count:
             wp.launch(
@@ -200,15 +208,26 @@ class PreparedFEMStep:
             self._vectors(external_forces, "external_forces")
             if external_forces.ptr == out.ptr:
                 raise ValueError("RHS output must not alias its external-force input")
+        # The launches below read the prepared timestep from the solver's step time.
+        step_time = self.solver.step_time
+        step_time.set(self.dt)
         wp.copy(out, self._impulse)
         if external_forces is not None:
-            wp.launch(_add_load, self.model.particle_count, [external_forces, self.dt, out], device=self.device)
+            wp.launch(
+                _add_load, self.model.particle_count, [external_forces, step_time.seconds, out], device=self.device
+            )
         wp.launch(_subtract, self.model.particle_count, [self._predictor, out], device=self.device)
         if self.model.spring_count:
             wp.launch(
                 restore_spring_damping_predictor,
                 self.model.spring_count,
-                [self.model.spring_indices, self.model.spring_damping, self.dt, self._state.particle_qd, out],
+                [
+                    self.model.spring_indices,
+                    self.model.spring_damping,
+                    step_time.seconds,
+                    self._state.particle_qd,
+                    out,
+                ],
                 device=self.device,
             )
         if self.solver._fixed_particles is not None:
@@ -263,7 +282,8 @@ class PreparedFEMStep:
             [rhs, self._rhs_maximum, self._normalized_rhs, self.velocity_increment],
             device=self.device,
         )
-        self._solvers[key](b=self._normalized_rhs, M=self.preconditioner)
+        with PauseGC():
+            self._solvers[key](b=self._normalized_rhs, M=self.preconditioner)
         wp.launch(
             restore_linear_increment,
             self.model.particle_count,
@@ -284,12 +304,13 @@ class PreparedFEMStep:
         self._vectors(state_out.particle_qd, "particle_qd")
         if state_out.particle_q.ptr == self._state.particle_q.ptr:
             raise ValueError("Reconstruction must not overwrite the prepared input")
+        self.solver.step_time.set(self.dt)
         wp.launch(
             update_state,
             self.model.particle_count,
             [
                 delta_v,
-                self.dt,
+                self.solver.step_time.seconds,
                 self._state.particle_q,
                 self._state.particle_qd,
                 state_out.particle_q,

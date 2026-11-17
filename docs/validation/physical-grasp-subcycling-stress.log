@@ -1,0 +1,50 @@
+Warp 1.17.0 initialized:
+   CUDA Toolkit 13.0, Driver 13.0
+   Devices:
+     "cpu"      : "aarch64"
+     "cuda:0"   : "NVIDIA GB10" (120 GiB, sm_121, mempool enabled)
+   Kernel cache:
+     /home/beer/.cache/warp/1.17.0
+Module newton._src.geometry.inertia 060c986 load on device 'cuda:0' took 1.06 ms  (cached)
+Module newton._src.utils.mesh 92b663b load on device 'cpu' took 1.03 ms  (cached)
+Module validate_and_correct_inertia_kernel_5f6549e0 5f6549e load on device 'cuda:0' took 0.50 ms  (cached)
+Module compute_body_inverses_kernel_ec4671e6 ec4671e load on device 'cuda:0' took 0.28 ms  (cached)
+Module newton._src.geometry.bvh 531c5cd load on device 'cuda:0' took 0.65 ms  (cached)
+Module newton._src.viewer.kernels 5c7ec33 load on device 'cuda:0' took 2.49 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.kernels 72bc723 load on device 'cuda:0' took 8.60 ms  (cached)
+Module _bsr_accumulate_triplet_values_5520c14c a398b74 load on device 'cuda:0' took 0.41 ms  (cached)
+[phantom regions] active=[1]: 29,160/413,405 tetrahedra, 7,205 nodes, 1,841 fixed
+Module warp._src.coloring 811e0ea load on device 'cpu' took 0.19 ms  (cached)
+Module newton._src.solvers.mujoco.kernels e0002a9 load on device 'cuda:0' took 7.04 ms  (cached)
+Module newton._src.sim.articulation 1bf11b4 load on device 'cuda:0' took 4.76 ms  (cached)
+Module newton_solver_suturebot._src.geometry.mesh_refit b29de7c load on device 'cuda:0' took 0.63 ms  (cached)
+Module newton_solver_suturebot._src.worker_thread ea0df50 load on device 'cuda:0' took 0.32 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.fixed_particles 483d0f3 load on device 'cuda:0' took 0.48 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.sparse_update 9bf97fa load on device 'cuda:0' took 0.44 ms  (cached)
+Module newton_solver_suturebot.grasp_scene b1d428f load on device 'cuda:0' took 0.46 ms  (cached)
+Module newton_solver_suturebot.examples._needle_insertion_drive f498ecc load on device 'cuda:0' took 0.23 ms  (cached)
+Module newton_solver_suturebot._src.solvers.thread.attachment 5b97915 load on device 'cuda:0' took 0.44 ms  (cached)
+Module newton_solver_suturebot._src.thread_rigid_contact 7ffd972 load on device 'cuda:0' took 0.67 ms  (cached)
+Module newton_solver_suturebot._src.coupling f483e14 load on device 'cuda:0' took 0.36 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.solver bb5258a load on device 'cuda:0' took 0.26 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.implicit_predictor 7099689 load on device 'cuda:0' took 0.46 ms  (cached)
+Module warp.sparse 628f4a0 load on device 'cuda:0' took 8.59 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.chebyshev 3bcf583 load on device 'cuda:0' took 0.42 ms  (cached)
+Module _create_tiled_dot_kernels__locals__block_dot_kernel_7cdd1072 6c375b5 load on device 'cuda:0' took 0.32 ms  (cached)
+Module _create_tiled_dot_kernels__locals__block_sum_kernel_85ad7d89 c0cec86 load on device 'cuda:0' took 0.29 ms  (cached)
+Module warp.optim.linear 7055af3 load on device 'cuda:0' took 1.16 ms  (cached)
+Module make_bsr_mv_kernel__locals__bsr_mv_kernel_4173b1de 618d9ec load on device 'cuda:0' took 0.35 ms  (cached)
+Module _create_update_condition_kernel__locals___update_condition_bba29a29 9aa1266 load on device 'cuda:0' took 0.80 ms  (cached)
+Module warp.optim.linear 296b21d load on device 'cuda:0' took 1.23 ms  (cached)
+Module warp.optim.linear a86933b load on device 'cuda:0' took 1.25 ms  (cached)
+Module newton_solver_suturebot._src.insertion e46a919 load on device 'cuda:0' took 0.94 ms  (cached)
+Module newton_solver_suturebot._src.geometry.needle_queries 855b4be load on device 'cuda:0' took 0.45 ms  (cached)
+Module newton_solver_suturebot._src.insertion 01b3775 load on device 'cuda:0' took 0.87 ms  (cached)
+Module newton_solver_suturebot._src.tet_step f43f969 load on device 'cuda:0' took 0.31 ms  (cached)
+Module newton_solver_suturebot._src.solvers.thread.tissue 83d61e2 load on device 'cuda:0' took 0.81 ms  (cached)
+Module newton_solver_suturebot._src.solvers.thread.kernels 1281d58 load on device 'cuda:0' took 3.02 ms  (cached)
+Module newton_solver_suturebot._src.solvers.thread.kernels 128e426 load on device 'cuda:0' took 3.10 ms  (cached)
+Module newton_solver_suturebot.examples.example_fem_needle_insertion 45a8941 load on device 'cuda:0' took 0.41 ms  (cached)
+RESULT {"impedance": 0.9999, "amplitude": 1, "native_only": false, "frames": 128, "time": 2.133333333333334, "wall": 4.380916615977185, "needle_delta": [-9.319372475147247e-05, 1.5243887901306152e-05, -2.0129606127738953e-05], "normal": [0.3811736540234126, 0.3812574819867569]}
+[phantom regions] active=[1]: 29,160/413,405 tetrahedra, 7,205 nodes, 1,841 fixed
+RESULT {"impedance": 0.9999, "amplitude": -1, "native_only": false, "frames": 128, "time": 2.133333333333334, "wall": 4.600597505021142, "needle_delta": [-9.311176836490631e-05, 0.00031770020723342896, -0.0002633212134242058], "normal": [0.3805780967642653, 0.38066140948706373]}

@@ -1,0 +1,20 @@
+import sys,json,time
+from pathlib import Path
+import numpy as np,warp as wp
+sys.path.insert(0,'tests')
+import test_grasp as t
+original=t.SolverMuJoCo
+reports=[]
+with wp.ScopedDevice('cpu'):
+ for cone,imp,subs in [('elliptic',.9999,4),('elliptic',.9999,16),('elliptic',.995,4)]:
+  t.SolverMuJoCo=lambda *a,**kw:original(*a,cone=cone,**kw)
+  r=t._Rig(second_tool=True,config=t.GrasperConfig(contact_impedance=imp));r.solver.mj_model.opt.iterations=200;r.solver.mj_model.opt.ls_iterations=50;r.solver.mj_model.opt.tolerance=1e-12;r.dt=1/(60*subs);r.drive.prepare_timestep(r.dt);r.parked_drive.prepare_timestep(r.dt)
+  z=0;minimum=100;start=time.perf_counter()
+  for _ in range(30*subs):r.step()
+  before=r.observe()['needle_relative_pose'].copy()
+  for index in range(60*subs):
+   target=r.target.copy();u=min(index/(30*subs),1);ramp=3*u*u-2*u*u*u;target[0]+=.005*ramp;target[3:]=np.asarray(wp.quat_from_axis_angle(wp.vec3(0,1,0),.1*ramp)*wp.quat(*r.target[3:]));r.step(target=target)
+   normal=r.observe()['jaw_contact_normal_force_n'];minimum=min(minimum,float(normal.min()));z+=int(normal.min()<=0)
+  after=r.observe()['needle_relative_pose'];angle=2*np.arccos(np.clip(abs(np.dot(before[3:],after[3:]))/(np.linalg.norm(before[3:])*np.linalg.norm(after[3:])),0,1))
+  report=dict(cone=cone,impedance=imp,substeps=subs,relative_displacement_m=float(np.linalg.norm(after[:3]-before[:3])),relative_rotation_rad=float(angle),minimum_normal_N=minimum,zero_contact_steps=z,wall=time.perf_counter()-start);reports.append(report);print(json.dumps(report),flush=True)
+Path('nsys/results/physical-grasp/elliptic_lowlevel_accuracy.json').write_text(json.dumps(reports,indent=2))

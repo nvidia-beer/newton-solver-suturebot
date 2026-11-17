@@ -9,9 +9,9 @@ import newton
 import numpy as np
 import warp as wp
 
-from newton_solver_suturebot._src.grasp import GrasperConfig
-from newton_solver_suturebot._src.rcm_grasp import add_rcm_grasper
-from newton_solver_suturebot._src.subcycled_mujoco import SubcycledMuJoCo
+from newton_solver_suturebot._src.solvers.mujoco.subcycled_mujoco import SubcycledMuJoCo
+from newton_solver_suturebot.examples.grasp._dvrk_grasper import GrasperConfig
+from newton_solver_suturebot.examples.grasp._dvrk_rcm_grasper import add_rcm_grasper
 
 
 class _Rig:
@@ -117,9 +117,12 @@ class RCMGrasperTests(unittest.TestCase):
 
     def test_collision_capsules_use_the_actual_articulated_link_frames(self):
         rig = _Rig()
+        # Every capsule lies on the link of the drawn part that it stands for; a part has one or more capsules.
+        links = {"shaft": "roll", "wrist": "pitch", "jaw_1": "jaw1", "jaw_2": "jaw2"}
+        self.assertEqual(set(rig.tool.capsule_parts), set(links))
         self.assertEqual(
             rig.tool.capsule_bodies,
-            tuple(rig.tool.part_body_indices[name] for name in ("roll", "pitch", "jaw1", "jaw2")),
+            tuple(rig.tool.part_body_indices[links[name]] for name in rig.tool.capsule_parts),
         )
         transforms, scales = (rig.model.shape_transform.numpy(), rig.model.shape_scale.numpy())
         for index, shape in enumerate(rig.tool.capsule_shapes):

@@ -9,7 +9,7 @@ from test_needle_insertion_example import _example
 from test_needle_tunnel_coupler import _prepare
 
 from newton_solver_suturebot import NeedleTissueCoupler
-from newton_solver_suturebot.examples.example_fem_needle_insertion import Example
+from newton_solver_suturebot.examples.needle.example_fem_needle_insertion import Example
 
 
 def _axis_distance(interaction, state, body):

@@ -10,7 +10,8 @@ from test_worker_thread import scene_fixture
 
 from newton_solver_suturebot import SolverThread
 from newton_solver_suturebot._src.solvers.thread import kernels, tissue
-from newton_solver_suturebot._src.worker_thread import WorkerThread
+from newton_solver_suturebot._src.solvers.thread.self_contact_pairs import evaluate_pairs, select_ordered
+from newton_solver_suturebot._src.solvers.thread.worker_thread import WorkerThread
 
 QUERY_KERNELS = (tissue._contact_planes, tissue._store_anchors, kernels.find_self_contacts)
 
@@ -21,7 +22,7 @@ class ThreadQueryPolicyTests(unittest.TestCase):
         launch = wp.launch
 
         def record(kernel, *args, **kwargs):
-            if kernel in QUERY_KERNELS:
+            if kernel in (*QUERY_KERNELS, evaluate_pairs, select_ordered):
                 seen[kernel.key] = kwargs.get("block_dim", 256)
             return launch(kernel, *args, **kwargs)
 
@@ -39,17 +40,25 @@ class ThreadQueryPolicyTests(unittest.TestCase):
                     kernel.key: 1 if worker.device.is_cuda and count <= 128 else 256
                     for kernel, count in zip(QUERY_KERNELS, widths, strict=True)
                 }
+                if worker.solver._self_pairs is not None:
+                    expected.pop(kernels.find_self_contacts.key)
+                    expected[evaluate_pairs.key] = 128
+                    expected[select_ordered.key] = 32
                 self.assertEqual(seen, expected)
 
-        # The self-contact threshold counts the whole batch, not one chain.
+        # The bounded pair scratch also covers two independent small chains.
         scene, config = scene_fixture()
         worker = WorkerThread(scene, config, capture=False)
         solver = SolverThread(
             scene.model, worker.thread_model, n_envs=2, self_contact=True, contact_distance=0.00015, max_iterations=1
         )
+        seen.clear()
         with patch.object(wp, "launch", side_effect=record):
             solver.step(None, None, None, None, 1 / 240)
-        self.assertEqual(seen[kernels.find_self_contacts.key], 256)
+        if solver._self_pairs is not None:
+            self.assertEqual(seen, {evaluate_pairs.key: 128, select_ordered.key: 32})
+        else:
+            self.assertEqual(seen[kernels.find_self_contacts.key], 256)
 
     def test_friction_and_moving_tissue_snapshots_match_original_queries_exactly(self):
         scene, config = scene_fixture()
@@ -80,7 +89,7 @@ class ThreadQueryPolicyTests(unittest.TestCase):
             scene.state_0.body_q.assign(body)
             scene.state_0.particle_q.assign(particles)
             before = [array.numpy().copy() for array in worker.state]
-            with patch.object(wp, "launch", side_effect=original):
+            with patch.object(worker.solver, "_self_pairs", None), patch.object(wp, "launch", side_effect=original):
                 worker._advance_device(scene.state_0, 1 / 240)
             reference = [array.numpy().copy() for array in checked]
             # The unchanged float32 atomic scatter is not bitwise deterministic,

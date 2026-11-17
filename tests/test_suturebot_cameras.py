@@ -16,7 +16,7 @@ import newton
 import numpy as np
 import warp as wp
 
-from newton_solver_suturebot.examples._suturebot_cameras import (
+from newton_solver_suturebot.examples.recording._suturebot_cameras import (
     CAMERA_NAMES,
     CameraOverlay,
     FourCameraOverlay,

@@ -43,6 +43,21 @@ release it, or use **Clear holds**. The inactive reference cannot be grabbed.
 The selected region includes its local base. Nodes on interfaces with inactive
 regions are fixed, and the pad underside is supported as well.
 
+On CUDA the substeps of a frame are one captured graph. It is captured, and
+launched once, while the scene is built: at the start, and again when the
+selection changes or **Reset deformation** rebuilds the model. The kernel
+modules of picking and drawing load there as well, and the pad is drawn once.
+No graph is captured and no kernel module is loaded in a frame or in a mouse
+action.
+
+`--test` plays a scripted user for 100 frames: two right-drags that leave
+holds, a middle click that removes the first, **Clear holds**, a switch to
+another region and a drag there, **Reset deformation**, a drag ended with
+Esc, **None**, and the first region again. It checks the state as before and
+that every scripted press took hold. On CUDA it also fails if a graph was
+captured or a kernel module was loaded after one of these start-ups, or if a
+frame graph was not launched in its start-up, and prints the counts.
+
 ```bash
 # Start with the dataset's training wound; click the map to change selection.
 uv run --locked --extra examples python -m newton_solver_suturebot.examples fem_phantom_regions --regions 1

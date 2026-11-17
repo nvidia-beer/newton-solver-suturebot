@@ -17,7 +17,9 @@ back to the host, so a CUDA graph can replay it:
 - Newton iterations run until every chain's residual is below a tolerance or
   the budget is used, tested on the device: the loop is a conditional graph
   node, and a chain that has converged does no further work. Iterations start
-  from the velocity extrapolation ``q + dt qd``. Each chain takes the multiple
+  from the velocity extrapolation ``q + dt qd``. The kernels read the time step
+  from device arrays (``step_time``), so a graph serves every ``dt``; the host
+  writes them before the launch, outside the capture. Each chain takes the multiple
   of its Newton update, among a fixed few that include zero, with the lowest
   step potential, so that potential never increases.
 - The forces are exact; the iteration matrix is positive definite by
@@ -54,16 +56,19 @@ import numpy as np
 import warp as wp
 from newton.solvers import SolverBase
 
+from ...utils.step_time import StepTime
 from ..fem.differentiation import active_tape
 from . import kernels
 from .gauss import ParallelGaussElements
 from .kernels import Mat66d, Vec6d
 from .model import ThreadModel
+from .self_contact_pairs import PairwiseSelfContacts
 
 # Largest number of nodes in a batch that a GPU solves by cyclic reduction. Measured on an NVIDIA GB10 with
 # chains of 91 nodes: 64 chains take 0.65 ms against 2.6 ms for the serial elimination, 256 chains 3.4 ms
 # against 2.7 ms. The reduction pays while the device has idle threads.
 CYCLIC_REDUCTION_NODES = 16384
+_ORIGINAL_SELF_CONTACTS = kernels.find_self_contacts
 
 
 class SolverThread(SolverBase):
@@ -171,6 +176,10 @@ class SolverThread(SolverBase):
             step [N], acting at the tested point.
         residual: Step residual of every node at the last tested coordinates.
         iterations: Newton updates each chain took in the last step.
+        step_time: The time step of the step as device data (``StepTime``).
+            :meth:`step` and the attachment and contact objects of this solver
+            write it; to replay a captured step at another ``dt``, call
+            ``step_time.set(dt)`` before the launch.
     """
 
     def __init__(
@@ -241,6 +250,9 @@ class SolverThread(SolverBase):
         self.obstacle_distance = None if obstacle_distance is None else float(obstacle_distance)
 
         device = thread.device
+        # The time step of the step being solved, read by the kernels from these arrays.
+        self.step_time = StepTime(device)
+        self._inertia_scale()
         self._mask = np.zeros(thread.dof_count, dtype=np.int32)
         self._mask[:6] = 1
         self._mask[fixed] = 1
@@ -272,6 +284,19 @@ class SolverThread(SolverBase):
         total_elements = n_envs * thread.element_count
         own = total_elements if self.self_contact else 0
         self._self_xi, self._self_point, self._self_normal = zeros(own), zeros(own, wp.vec3d), zeros(own, wp.vec3d)
+        # Small batches leave the expensive ordered other-element scan almost
+        # serial. Compute the same complete ordered pairs in parallel, then
+        # select in the original index order. Larger/gradient cases retain the
+        # original query and have no quadratic scratch allocation.
+        self._self_pairs = (
+            PairwiseSelfContacts(thread.node_count, n_envs, device)
+            if self.self_contact
+            and device.is_cuda
+            and not getattr(model, "requires_grad", False)
+            and thread.element_count <= 128
+            and total_elements * thread.element_count <= 131_072
+            else None
+        )
         outer = total_elements if self.obstacle_distance is not None else 0
         self.obstacle_xi, self.obstacle_point = zeros(outer), zeros(outer, wp.vec3d)
         self.obstacle_normal, self.obstacle_force = zeros(outer, wp.vec3d), zeros(outer, wp.vec3d)
@@ -315,8 +340,25 @@ class SolverThread(SolverBase):
         # line search. The empty list preserves the existing obstacle API.
         self.element_contacts = []
 
+    def _inertia_scale(self):
+        """One ``float64`` on the device: the displacement coefficient of the consistent mass.
+
+        Inertia M / dt² and damping c M / dt give 1 / dt² + c / dt, which the host forms
+        from the time step and ``mass_damping`` as before; ``step_time`` keeps it current
+        when the time step changes. The solver has one such array. A changed
+        ``mass_damping`` refills it at the next step, outside capture; a step captured
+        earlier holds the old ``mass_damping`` as a launch argument and must be
+        captured again, as before.
+        """
+        damping = self.mass_damping
+        return self.step_time.derived(
+            "thread inertia scale", lambda dt: 1.0 / (dt * dt) + damping / dt, wp.float64, parameters=damping
+        )
+
     def _newton_pass(self, dt: float) -> None:
         """Test every unfinished chain at its current coordinates and update the ones that have not converged."""
+        # A comparison after step(); a different time step inside a capture raises.
+        self.step_time.set(dt)
         thread, device = self.thread, self.thread.device
         nodes = self.n_envs * thread.node_count
         elements = self.n_envs * thread.element_count
@@ -344,7 +386,8 @@ class SolverThread(SolverBase):
         masses = [thread.mass_diagonal, thread.mass_coupling]
         material = [thread.lengths, thread.axial_stiffness, thread.bending_stiffness, thread.rest_q]
         # Displacement coefficient of the consistent mass: inertia M / dt² and damping c M / dt.
-        inertia_scale = 1.0 / (dt * dt) + self.mass_damping / dt
+        inertia_scale = self._inertia_scale()
+        seconds = self.step_time.seconds_f64
         pose = [self.head_center, self.head_arm, self.head_slope]
 
         def linearize(tangent_blocks: bool) -> None:
@@ -394,7 +437,7 @@ class SolverThread(SolverBase):
                     self._status,
                     tangent_blocks,
                     self.gravity,
-                    dt,
+                    seconds,
                     self.mass_damping,
                     inertia_scale,
                     *contact,
@@ -533,7 +576,7 @@ class SolverThread(SolverBase):
                 self.qd,
                 *masses,
                 self.gravity,
-                dt,
+                seconds,
                 self.mass_damping,
                 *contact,
                 nodes,
@@ -577,7 +620,13 @@ class SolverThread(SolverBase):
         The Newton state, control and contact arguments are unused; set
         ``boundary_q``, with a rigid head the head arrays, and any contact
         planes and eyelet targets on the solver before the call.
+
+        The kernels read ``dt`` from ``step_time``. This call writes a changed
+        ``dt`` there; inside a CUDA graph capture it only checks that the arrays
+        hold ``dt``, and raises if they do not.
         """
+        self.step_time.set(dt)
+        self._inertia_scale()
         thread, device = self.thread, self.thread.device
         nodes = self.n_envs * thread.node_count
         eyelets = [self.eyelet_target, self.eyelet_element, self.eyelet_xi, self._eyelet_tangent]
@@ -612,25 +661,29 @@ class SolverThread(SolverBase):
         ]
         elements = self.n_envs * thread.element_count
         if self.self_contact:
-            wp.launch(
-                kernels.find_self_contacts,
-                dim=elements,
-                inputs=[
-                    self.q,
-                    thread.node_count,
-                    # Ten smoothing widths beyond touching, the smooth onset of the penalty has died away.
-                    2.0 * (self.contact_distance + 10.0 * self.contact_smoothing),
-                    # Elements closer than three apart along the chain meet only in a bend tighter than the thread.
-                    2,
-                ],
-                outputs=[self._self_xi, self._self_point, self._self_normal],
-                device=device,
-                block_dim=1 if device.is_cuda and elements <= 128 else 256,
-            )
+            # Ten smoothing widths beyond touching, the smooth onset of the
+            # penalty has died away. Elements at most two apart are excluded.
+            reach = 2.0 * (self.contact_distance + 10.0 * self.contact_smoothing)
+            if (
+                self._self_pairs is not None
+                and kernels.find_self_contacts is _ORIGINAL_SELF_CONTACTS
+                and active_tape() is None
+                and not any(a.requires_grad for a in (self.q, self._self_xi, self._self_point, self._self_normal))
+            ):
+                self._self_pairs.find(self.q, reach, 2, self._self_xi, self._self_point, self._self_normal)
+            else:
+                wp.launch(
+                    kernels.find_self_contacts,
+                    dim=elements,
+                    inputs=[self.q, thread.node_count, reach, 2],
+                    outputs=[self._self_xi, self._self_point, self._self_normal],
+                    device=device,
+                    block_dim=1 if device.is_cuda and elements <= 128 else 256,
+                )
         wp.launch(
             kernels.predict,
             dim=6 * nodes,
-            inputs=[self.q, self.qd, self.boundary_q, self._fixed, dt],
+            inputs=[self.q, self.qd, self.boundary_q, self._fixed, self.step_time.seconds_f64],
             outputs=[self._predicted_q],
             device=device,
         )
@@ -650,7 +703,11 @@ class SolverThread(SolverBase):
         )
         wp.capture_while(self._active, self._newton_pass, dt=dt)
         wp.launch(
-            kernels.finish, dim=6 * nodes, inputs=[self.q, self._predicted_q, dt], outputs=[self.qd], device=device
+            kernels.finish,
+            dim=6 * nodes,
+            inputs=[self.q, self._predicted_q, self.step_time.seconds_f64],
+            outputs=[self.qd],
+            device=device,
         )
         if self._contact:
             wp.launch(

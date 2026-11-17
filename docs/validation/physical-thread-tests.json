@@ -1,0 +1,63 @@
+{
+  "date": "2026-11-12",
+  "scope": "Focused physical thread contact and worker integration tests; not a completed suture or full project suite",
+  "device": "NVIDIA GB10 cuda:0",
+  "cuda": {
+    "modules": [
+      "test_thread_rigid_contact",
+      "test_worker_thread"
+    ],
+    "tests_run": 10,
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0,
+    "unittest_wall_s": 3.696,
+    "process_wall_s": 5.607200852,
+    "command": "PYTHONPATH=tests NEWTON_TEST_DEVICE=cuda:0 uv run --locked python -m unittest test_thread_rigid_contact test_worker_thread -v",
+    "command_note": "Equivalent public command. Executed via unittest discovery harness with Warp kernel cache redirected to /tmp/suturebot_thread_rigid_cuda_cache and OPENBLAS_NUM_THREADS=OMP_NUM_THREADS=1."
+  },
+  "cpu_regression": {
+    "modules": [
+      "test_thread_contact",
+      "test_thread_solver",
+      "test_thread_tissue",
+      "test_suture_stitches",
+      "test_thread_rigid_contact",
+      "test_worker_thread"
+    ],
+    "tests_run": 96,
+    "skipped": 2,
+    "expected_failures": 5,
+    "unexpected_failures": 0,
+    "unittest_wall_s": 48.755,
+    "process_wall_s": 51.123286015,
+    "command": "PYTHONPATH=tests NEWTON_TEST_DEVICE=cpu uv run --locked python -m unittest test_thread_contact test_thread_solver test_thread_tissue test_suture_stitches test_thread_rigid_contact test_worker_thread -v",
+    "command_note": "Equivalent public command. Executed via unittest discovery harness with CUDA_VISIBLE_DEVICES empty, cache in /tmp/suturebot_thread_rigid_cpu_cache and BLAS/OMP threads1."
+  },
+  "checks": [
+    "Two distinct jaws retain simultaneous contact planes",
+    "Actual ANCF solve recovers a specified initially penetrating fixture without projection",
+    "Moving and rotating body friction anchors",
+    "Lagged Coulomb bound",
+    "Fresh equal/opposite force and common-origin torque",
+    "Finite-difference energy/gradient consistency",
+    "Complete friction/reaction state rollback",
+    "Body-specific head exclusion",
+    "Worker force feedback and independent state",
+    "Renderer-like position reads and add_forces do not advance thread history"
+  ],
+  "limitations": [
+    "Compliant discrete chord/capsule contacts, not continuous collision detection or exact nonpenetration",
+    "One contact per element and body/radius group",
+    "Coulomb bound and applied reaction loads are lagged",
+    "No worker eyelets, insertion passage or completed suturing certified"
+  ],
+  "source_sha256_at_archive": {
+    "src/newton_solver_suturebot/_src/thread_rigid_contact.py": "9fe83e13a3cdc3800057cfa2a0c59811fbec301c8be43e9be7f5510df9f35297",
+    "src/newton_solver_suturebot/_src/worker_thread.py": "4961d6d6ed0f4268c3fa982d6a7593f3a96cc9e8f54283208b639be3df89cb2e",
+    "src/newton_solver_suturebot/_src/thread_initialization.py": "46e3b9d133b94d8fa8212fccab0c77c99fd024f32e7def01ede60cc6d224de28",
+    "src/newton_solver_suturebot/_src/solvers/thread/solver.py": "8123c33b7965292563c154ba1d703a9ae9f58953394bf27e622e358fde2e060c",
+    "tests/test_thread_rigid_contact.py": "9f865cdebb08da74528c578d9909a93028c5b55508a66c581cc125017c0a5ec6",
+    "tests/test_worker_thread.py": "30974c2b88a747e40b0964e428d04b1d727183fc83eff92021e982e9b94f6cc6"
+  }
+}

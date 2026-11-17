@@ -17,6 +17,8 @@ import math
 
 import warp as wp
 
+from ..utils.step_time import StepTime
+
 
 @wp.kernel(enable_backward=False)
 def _copy_surface_topology(
@@ -258,7 +260,7 @@ def _contact_bounds(
     gaps: wp.array[float],
     inverse_mass: wp.array[float],
     velocity: wp.array[wp.vec3],
-    dt: float,
+    dt: wp.array[float],
     damping_ratio: float,
     stiffness: wp.array[float],
     damping: wp.array[float],
@@ -266,6 +268,7 @@ def _contact_bounds(
     node_stiffness: wp.array[float],
     node_damping: wp.array[float],
 ):
+    # dt holds the timestep [s] in its one element (StepTime.seconds).
     row = wp.tid()
     k = stiffness[row]
     damping[row] = 0.0
@@ -275,7 +278,7 @@ def _contact_bounds(
             index, w = int(indices[row, i]), float(coefficients[row, i])
             rate += w * wp.dot(normals[row], velocity[index])
             weight_sum += wp.abs(w)
-        if wp.min(gaps[row], gaps[row] + dt * rate) >= 0.0:
+        if wp.min(gaps[row], gaps[row] + dt[0] * rate) >= 0.0:
             stiffness[row] = 0.0
             return
         for i in range(24):
@@ -315,11 +318,12 @@ def _scatter_contacts(
     normal_velocity: wp.array[float],
     node_stiffness: wp.array[float],
     node_damping: wp.array[float],
-    dt: float,
+    dt: wp.array[float],
     piece_row_offset: int,
     active_rows: wp.array[int],
     force: wp.array[wp.vec3],
 ):
+    # dt holds the timestep [s] in its one element (StepTime.seconds).
     row = wp.tid()
     if stiffness[row] > 0.0:
         stiffness_bound, damping_bound = float(0.0), float(0.0)
@@ -329,8 +333,8 @@ def _scatter_contacts(
                 stiffness_bound = wp.max(stiffness_bound, inverse_mass[index] * node_stiffness[index])
                 damping_bound = wp.max(damping_bound, inverse_mass[index] * node_damping[index])
         rate = normal_velocity[row]
-        magnitude = wp.max(0.0, -stiffness[row] * (gaps[row] + dt * rate) - damping[row] * rate)
-        magnitude /= 1.0 + dt * dt * stiffness_bound + dt * damping_bound
+        magnitude = wp.max(0.0, -stiffness[row] * (gaps[row] + dt[0] * rate) - damping[row] * rate)
+        magnitude /= 1.0 + dt[0] * dt[0] * stiffness_bound + dt[0] * damping_bound
         if magnitude > 0.0:
             wp.atomic_add(active_rows, int(row >= piece_row_offset), 1)
         value = magnitude * normals[row]
@@ -345,6 +349,12 @@ class CutSurfaceContact:
     Recreate this helper when surface or particle capacity changes. The surface
     count and mappings can change in place between captured steps. ``evaluate``
     returns forces; it does not modify positions or the integrator's state.
+
+    The kernels read the timestep from ``step_time`` (:class:`StepTime`), which
+    ``evaluate`` writes; inside a CUDA graph capture it must already hold its
+    ``dt``. Pass the ``step_time`` of the solver that consumes the forces, so
+    that the whole step reads one time step. Without it the contact keeps one
+    of its own.
     """
 
     def __init__(
@@ -358,6 +368,7 @@ class CutSurfaceContact:
         piece_stiffness: float = 2.0e7,
         damping_ratio: float = 0.5,
         search_radius: float = 0.03,
+        step_time: StepTime | None = None,
     ):
         for name, value in (
             ("ground_stiffness", ground_stiffness),
@@ -369,6 +380,7 @@ class CutSurfaceContact:
         if not math.isfinite(ground_height) or not math.isfinite(search_radius) or search_radius <= 0.0:
             raise ValueError("ground height must be finite and search radius finite and positive")
         self.surface, self.device = surface, particle_q.device
+        self.step_time = StepTime(self.device) if step_time is None else step_time
         self.inverse_mass = particle_inv_mass
         self.ground_height, self.ground_stiffness = float(ground_height), float(ground_stiffness)
         self.piece_stiffness, self.damping_ratio = float(piece_stiffness), float(damping_ratio)
@@ -476,6 +488,7 @@ class CutSurfaceContact:
         """
         if not math.isfinite(dt) or dt <= 0.0:
             raise ValueError("contact timestep must be finite and positive")
+        self.step_time.set(dt)
         self.forces.zero_()
         self.active_rows.zero_()
         if not self.capacity:
@@ -540,7 +553,7 @@ class CutSurfaceContact:
                 self.gaps,
                 self.inverse_mass,
                 qd,
-                dt,
+                self.step_time.seconds,
                 self.damping_ratio,
                 self.stiffness,
                 self.damping,
@@ -564,7 +577,7 @@ class CutSurfaceContact:
                 self.normal_velocity,
                 self.node_stiffness,
                 self.node_damping,
-                dt,
+                self.step_time.seconds,
                 3 * self.capacity,
                 self.active_rows,
                 self.forces,

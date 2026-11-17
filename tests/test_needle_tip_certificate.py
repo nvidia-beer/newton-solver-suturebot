@@ -10,8 +10,9 @@ import warp as wp
 
 from newton_solver_suturebot import boundary_faces
 from newton_solver_suturebot._src.geometry.needle_queries import NeedleQueryGeometry, _conservative_box
-from newton_solver_suturebot._src.insertion import _surface_crossings
-from newton_solver_suturebot._src.needle_trial_forces import (
+from newton_solver_suturebot._src.solvers.coupled.interface.insertion import _surface_crossings
+from newton_solver_suturebot._src.solvers.coupled.interface.needle_trial_forces import (
+    FALLBACK_REASONS,
     located,
     tip_boundary_certificate,
     tip_location,
@@ -110,7 +111,9 @@ class NeedleTipCertificateTests(unittest.TestCase):
         self.cell = wp.empty(1, dtype=int, device=self.device)
         self.bary = wp.empty(1, dtype=wp.vec4d, device=self.device)
         self.mask = wp.empty(1, dtype=int, device=self.device)
-        self.fallback = wp.zeros(1, dtype=int, device=self.device)
+        # The certificates record the reason of a request beside the request itself.
+        self.fallback = wp.zeros(len(FALLBACK_REASONS), dtype=int, device=self.device)
+        self.retained_opening = wp.zeros(1, dtype=int, device=self.device)
 
     def compare(
         self,
@@ -155,6 +158,7 @@ class NeedleTipCertificateTests(unittest.TestCase):
                         g.tetrahedra,
                         self.fixed,
                         self.flags,
+                        self.retained_opening,
                         spacing,
                         0.00056,
                         self.mask,

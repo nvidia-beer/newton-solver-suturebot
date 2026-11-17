@@ -11,7 +11,7 @@ import numpy as np
 import warp as wp
 
 from newton_solver_suturebot import NeedleTissueInteraction, boundary_faces
-from newton_solver_suturebot._src.insertion import _surface_crossings
+from newton_solver_suturebot._src.solvers.coupled.interface.insertion import _surface_crossings
 
 
 # Keep the original sample-by-sample contraction and norms as the reference.
@@ -47,7 +47,7 @@ def _scalar_visited_sample_mask(self, state, body, q):
     fractions = fractions[np.arange(self.track_count), segments]
     arc = self._sample_arc[segments] + np.clip(fractions, 0, 1) * lengths[segments]
     covered = ~(((segments == 0) & (fractions < 0)) | ((segments == len(lengths) - 1) & (fractions > 1)))
-    engaged = (self._track_engaged.numpy() != 0) & covered
+    engaged = (self._track_engaged.numpy()[: self.track_count] != 0) & covered
     for i in range(1, len(samples)):
         distances = np.linalg.norm(track - samples[i], axis=1)
         near = distances <= capture

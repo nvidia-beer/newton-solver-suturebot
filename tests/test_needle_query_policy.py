@@ -9,15 +9,14 @@ import warp as wp
 from test_needle_insertion_example import _example
 from test_needle_shaft_preconditioner import setup
 
-from newton_solver_suturebot import NeedleTissueCoupler, SolverMuJoCoFEM
-from newton_solver_suturebot._src import coupling_graph
-from newton_solver_suturebot._src.needle_trial_forces import _NeedleTrialForces
-from newton_solver_suturebot._src.solvers.mujoco_fem import trials
+from newton_solver_suturebot import NeedleTissueCoupler
+from newton_solver_suturebot._src.solvers.coupled import coupling_graph
+from newton_solver_suturebot._src.solvers.coupled.interface.needle_trial_forces import _NeedleTrialForces
 
 
 class NeedleQueryPolicyTests(unittest.TestCase):
     def test_actual_force_launches_use_small_defaults_and_preserve_explicit_overrides(self):
-        with _example(needle_solver="partitioned") as example:
+        with _example() as example:
             setup(example, 0.0005, 1500)
             interaction = example.interaction
             outputs = []
@@ -50,35 +49,24 @@ class NeedleQueryPolicyTests(unittest.TestCase):
                 # saved actual-pad GPU audit supplies exact stationary parity.
                 np.testing.assert_allclose(changed, original, rtol=1e-6, atol=1e-12)
 
-    def test_both_joint_graph_paths_inherit_defaults_and_explicit_overrides(self):
-        for name, cls in (
-            ("partitioned", NeedleTissueCoupler),
-            ("mujoco-fem", SolverMuJoCoFEM),
-        ):
-            with self.subTest(solver=name), _example(needle_solver=name) as example:
-                setup(example, 0.0005, 1500)
-                self.assertIsInstance(example.coupler, cls)
+    def test_captured_trials_inherit_defaults_and_explicit_overrides(self):
+        with _example() as example:
+            setup(example, 0.0005, 1500)
+            self.assertIsInstance(example.coupler, NeedleTissueCoupler)
 
-                def check_graph_policy(expected, solver_name=name):
-                    # Only the CUDA-specific rigid backend is replaced. Construct
-                    # real permission buffers through each production constructor.
-                    with patch.object(coupling_graph, "MuJoCoFreeBodyGPU"):
-                        fallback = coupling_graph._CapturedNeedleTrials(example.coupler)
-                    self.assertEqual(
-                        (fallback.permissions.shaft_block_dim, fallback.permissions.surface_block_dim), expected
-                    )
-                    if solver_name == "mujoco-fem":
-                        with patch.object(trials, "MuJoCoFreeBodyGPU"):
-                            joint = trials._SimultaneousTrials(example.coupler)
-                        self.assertEqual(
-                            (joint.permissions.shaft_block_dim, joint.permissions.surface_block_dim), expected
-                        )
+            def check_graph_policy(expected):
+                # Only the CUDA-specific rigid backend is replaced. Construct
+                # real permission buffers through the production constructor.
+                with patch.object(coupling_graph, "MuJoCoFreeBodyGPU"):
+                    captured = coupling_graph._CapturedNeedleTrials(example.coupler)
+                self.assertEqual(
+                    (captured.permissions.shaft_block_dim, captured.permissions.surface_block_dim), expected
+                )
 
-                check_graph_policy((1, 1))
-                with patch.object(example.coupler, "_needle_query_block_dim", 64, create=True):
-                    check_graph_policy((64, 64))
-                if name == "partitioned":
-                    self.assertFalse(hasattr(example.coupler, "_needle_query_block_dim"))
+            check_graph_policy((1, 1))
+            with patch.object(example.coupler, "_needle_query_block_dim", 64, create=True):
+                check_graph_policy((64, 64))
+            self.assertFalse(hasattr(example.coupler, "_needle_query_block_dim"))
 
     def test_each_actual_launch_size_invalidates_the_capture_signature(self):
         with _example() as example:

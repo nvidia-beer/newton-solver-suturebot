@@ -231,6 +231,24 @@ class NeedleStepResolutionTests(unittest.TestCase):
         self.assertEqual(interaction.status, status)
         self.assertEqual((interaction.puncture_count, interaction.track_count), (0, 0))
 
+    def test_accept_tests_its_own_step_after_a_preflight_of_another_candidate(self):
+        fixture = guards.TestNeedleInsertionContactGuards()
+        interaction, start, forces = fixture.thin_layers(second_layer=False, puncture_force=1.0)
+        fixture.forces(interaction, start, forces)
+        below = _copy_state(start)
+        below.body_q.assign(np.array([[0.002, 0.002, -0.00004, 0, 0, 0, 1]], np.float32))
+        # This candidate stays below the layer: the preflight passes without a crossing.
+        interaction.check_step_resolution(start, below, 0)
+        # The accepted step starts from the same state and ends above the layer. Only its tip
+        # differs from the candidate of the preflight, and its two crossings are its own.
+        above = _copy_state(start)
+        above.body_q.assign(np.array([[0.002, 0.002, 0.0001, 0, 0, 0, 1]], np.float32))
+        interaction.accept(above, 0)
+        self.assertEqual(interaction.status, "failed")
+        self.assertIn("surface crossings", interaction.reason)
+        self.assertFalse(interaction.punctured)
+        self.assertEqual(interaction.track_count, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

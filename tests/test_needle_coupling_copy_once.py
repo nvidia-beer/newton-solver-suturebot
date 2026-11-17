@@ -49,7 +49,9 @@ class NeedleCouplingCopyOnceTests(unittest.TestCase):
                         else:
                             example.state_0, example.state_1 = example.state_1, example.state_0
                 self.assertEqual(captured.coupler.coupling_graph_launches, 4)
-                self.assertEqual(captured.coupler.coupling_graph_captures, 3)
+                # One capture per state buffer. The halved last step replays the graph of its
+                # buffer: the time step and the drive damping scaled by it are device data.
+                self.assertEqual(captured.coupler.coupling_graph_captures, 2)
 
     def test_poisoned_rejected_attempts_do_not_escape_then_retry_commits_once(self):
         with graph_tests._pair("alm") as (reference, captured):

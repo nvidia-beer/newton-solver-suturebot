@@ -12,15 +12,15 @@ from pathlib import Path
 import numpy as np
 
 from newton_solver_suturebot import MeshRegion, RegionMesh, boundary_faces, load_mesh_regions
-from newton_solver_suturebot.examples._needle_insertion_geometry import (
+from newton_solver_suturebot.examples.needle._needle_insertion_geometry import (
     InsertionPlan,
     MaterialPoint,
     NeedleGeometry,
     TetLocator,
     pick_material_point,
 )
-from newton_solver_suturebot.examples._region_map import RegionMap
-from newton_solver_suturebot.examples.example_fem_phantom_regions import underside_vertices
+from newton_solver_suturebot.examples.phantom._region_map import RegionMap
+from newton_solver_suturebot.examples.phantom.example_fem_phantom_regions import underside_vertices
 
 
 def _boxes(bounds, labels=None):

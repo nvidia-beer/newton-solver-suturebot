@@ -1,0 +1,32 @@
+[
+  {
+    "cone": "elliptic",
+    "impedance": 0.9999,
+    "substeps": 4,
+    "relative_displacement_m": 1.812740967790854e-05,
+    "relative_rotation_rad": 0.005605276747601201,
+    "minimum_normal_N": 0.374903836181538,
+    "zero_contact_steps": 0,
+    "wall": 0.3409493829822168
+  },
+  {
+    "cone": "elliptic",
+    "impedance": 0.9999,
+    "substeps": 16,
+    "relative_displacement_m": 1.4669502284587234e-05,
+    "relative_rotation_rad": 0.005377522092511749,
+    "minimum_normal_N": 0.38082722260052687,
+    "zero_contact_steps": 0,
+    "wall": 1.3551667940046173
+  },
+  {
+    "cone": "elliptic",
+    "impedance": 0.995,
+    "substeps": 4,
+    "relative_displacement_m": 0.00015068715723513338,
+    "relative_rotation_rad": 0.048623573635574804,
+    "minimum_normal_N": 0.15758236421529226,
+    "zero_contact_steps": 0,
+    "wall": 0.3423457930039149
+  }
+]

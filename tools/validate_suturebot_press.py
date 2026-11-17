@@ -20,7 +20,7 @@ from pathlib import Path
 import warp as wp
 from newton.viewer import ViewerNull
 
-from newton_solver_suturebot.examples._suturebot_contact_demo import Example
+from newton_solver_suturebot.examples.recording._suturebot_contact_demo import Example
 
 
 def press_and_release(example):

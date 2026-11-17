@@ -10,8 +10,8 @@ import numpy as np
 import warp as wp
 from pxr import Usd, UsdShade
 
-from newton_solver_suturebot.examples._suturebot_recording import Recording, bundled_recordings
-from newton_solver_suturebot.examples.example_fem_versius import DEFAULT_RECORDING as VERSIUS_RECORDING
+from newton_solver_suturebot.examples.recording._suturebot_recording import Recording, bundled_recordings
+from newton_solver_suturebot.examples.recording.example_fem_versius import DEFAULT_RECORDING as VERSIUS_RECORDING
 
 
 def _material_values(material):

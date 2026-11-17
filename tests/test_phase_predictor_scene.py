@@ -9,8 +9,8 @@ from unittest.mock import patch
 import numpy as np
 import warp as wp
 
-from newton_solver_suturebot.examples.example_fem_needle_insertion import Example
-from newton_solver_suturebot.grasp_scene import GraspScene
+from newton_solver_suturebot.examples.grasp._grasp_scene import GraspScene
+from newton_solver_suturebot.examples.needle.example_fem_needle_insertion import Example
 
 
 class PhasePredictorSceneTests(unittest.TestCase):
@@ -20,6 +20,7 @@ class PhasePredictorSceneTests(unittest.TestCase):
         self.scene = object.__new__(GraspScene)
         self.scene.running = True
         self.scene.worker_config = SimpleNamespace(control_mode="physical_grasp")
+        self.scene.rigid_solver = None  # not a GPU rigid backend
         self.scene.coupler = SimpleNamespace(_phase_load_predictor=None, _load=wp.zeros(6, dtype=wp.float64))
         self.scene.frame_dt, self.scene.sim_dt, self.scene.elapsed = 0.04, 0.01, 0.0
         self.scene.cartesian_target = np.array([0, 0, 0, 0, 0, 0, 1.0])
@@ -57,6 +58,30 @@ class PhasePredictorSceneTests(unittest.TestCase):
         for phase, guess in enumerate(self.guesses[4:]):
             np.testing.assert_allclose(guess, 1.0 + 0.4 * phase)
         self.assertFalse(predictor.frame_open)
+
+    def test_only_the_device_anderson_gpu_coupling_selects_the_frame_periodic_increment_guess(self):
+        self.scene._gpu_pose_ik_active = True
+        with patch.object(Example, "step", lambda scene: self.advance(scene)):
+            for gpu, policy, expected in (
+                (False, None, False),
+                (False, "device-anderson", False),
+                (True, None, False),
+                (True, "current", False),
+                (True, "device-aitken", False),
+                (True, "device-anderson", True),
+            ):
+                with self.subTest(gpu=gpu, policy=policy):
+                    self.scene.coupler._phase_load_predictor = None
+                    self.scene.elapsed = 0.0
+                    if policy is None:
+                        vars(self.scene.coupler).pop("_gpu_trial_policy", None)
+                    else:
+                        self.scene.coupler._gpu_trial_policy = policy
+                    with patch("newton_solver_suturebot.examples.grasp._grasp_scene.is_gpu_backend", return_value=gpu):
+                        self.scene.step()
+                    predictor = self.scene.coupler._phase_load_predictor
+                    self.assertEqual(predictor.increments, expected)
+                    self.assertEqual((predictor.depth, predictor.commits), (1, 4))
 
     def test_direct_manual_caller_without_worker_fields_keeps_original_step(self):
         for missing in (

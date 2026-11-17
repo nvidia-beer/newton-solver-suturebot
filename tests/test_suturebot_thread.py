@@ -15,9 +15,13 @@ import numpy as np
 import warp as wp
 from pxr import Gf, Sdf, Usd, UsdGeom, UsdPhysics
 
-from newton_solver_suturebot.examples._suturebot_needle import NeedleReplay, add_needle_to_builder, pose_matrix
-from newton_solver_suturebot.examples._suturebot_recording import CAMERAS, Recording
-from newton_solver_suturebot.examples._suturebot_thread import ThreadReference
+from newton_solver_suturebot.examples.recording._suturebot_needle import (
+    NeedleReplay,
+    add_needle_to_builder,
+    pose_matrix,
+)
+from newton_solver_suturebot.examples.recording._suturebot_recording import CAMERAS, Recording
+from newton_solver_suturebot.examples.recording._suturebot_thread import ThreadReference
 
 
 class ThreadReferenceTests(unittest.TestCase):

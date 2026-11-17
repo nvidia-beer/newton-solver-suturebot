@@ -5,6 +5,7 @@
 import os
 import unittest
 import warnings
+from contextlib import contextmanager
 from unittest.mock import patch
 
 import mujoco
@@ -87,9 +88,20 @@ class NeedleTissueCouplerTests(unittest.TestCase):
                 (1, 0.5, 40, False, False),
                 (1, 0.5, 40, False, True),
                 (1, 0.5, 40, False, False),
+                # From here on only the time step and the buffer change. The time step is
+                # device data of the captured step: the graph of a buffer, captured at one
+                # time step, replays at every other. Buffer 0 lost its graph to the
+                # invalidation above and is captured once more, at the halved step.
+                (1, 1.0, 40, False, False),
+                (1, 0.25, 40, False, False),
+                (0, 0.5, 40, False, False),
+                (0, 1.0, 40, False, False),
+                (0, 1.0 / 3.0, 40, False, False),
             )
+            replays_at_another_timestep = {11, 12, 14, 15}
             for index, (buffer, scale, budget, refresh, invalidate) in enumerate(cases):
                 with self.subTest(index=index):
+                    captures, launches = coupler.fem_graph_captures, coupler.fem_graph_launches
                     state = (example.state_0, example.state_1)[buffer]
                     positions = example.selection.vertices.copy()
                     positions[:, 0] += index * 1e-7 * np.arange(len(positions))
@@ -127,6 +139,10 @@ class NeedleTissueCouplerTests(unittest.TestCase):
                     )
                     self.assertEqual(solver.linear_solver_maxiter, budget)
                     self.assertEqual(solver.linear_solver_check_every, 0)
+                    if index in replays_at_another_timestep:
+                        self.assertEqual(coupler.fem_graph_captures, captures)
+                        self.assertEqual(coupler.fem_graph_launches, launches + 1)
+                        np.testing.assert_array_equal(coupler.step_time.seconds.numpy(), [np.float32(dt)])
             self.assertGreaterEqual(coupler.fem_graph_captures, 5)
             self.assertGreater(coupler.fem_graph_launches, coupler.fem_graph_captures)
 
@@ -633,6 +649,133 @@ class NeedleTissueCouplerTests(unittest.TestCase):
             np.testing.assert_allclose(interaction.interface_force, 0, atol=2e-8)
             np.testing.assert_allclose(example.state_1.particle_q.numpy(), positions, atol=1e-9)
             self.assertEqual((interaction.entry_count, interaction.exit_count, interaction.puncture_count), (1, 0, 1))
+
+
+class StartupFEMGraphTests(unittest.TestCase):
+    """The FEM step of the host-controlled trials, captured ahead for every inner tolerance and state buffer."""
+
+    def setUp(self):
+        device = wp.get_device(os.environ.get("NEWTON_TEST_DEVICE", "cpu"))
+        if not device.is_cuda or not wp.is_conditional_graph_supported():
+            self.skipTest("The FEM step is captured on CUDA with conditional graphs")
+
+    def test_host_trials_replay_the_graphs_of_start_up_at_every_level_on_both_buffers(self):
+        # A host-controlled interval tightens the inner tolerance through the solver's levels and
+        # alternates between two accepted-state buffers. NeedleTissueCoupler.warm_fem captures the
+        # FEM step of each (level, buffer) inside a start-up attempt. A host trial of a later
+        # attempt then finds its graph, whatever the trial graph prepared in between.
+        from test_mjw_device_trials import DT, _pair
+
+        from newton_solver_suturebot._src.solvers.coupled import coupling as coupling_module
+
+        def bits(array):
+            return array.numpy().tobytes()
+
+        with _pair() as (_, scene):
+            coupler, solver, control = scene.coupler, scene.solver, scene.control
+            scene.state_1.assign(scene.state_0)
+            buffers = (scene.state_0, scene.state_1)
+            configured = solver.linear_solver_tolerance
+            levels = solver.tolerance_levels()
+            self.assertEqual(len(levels), 5)
+
+            @contextmanager
+            def attempt(state, *, startup):
+                opened = coupler._open_attempt(state, control, DT, None)
+                opened.predictor = None
+                try:
+                    coupler._begin_attempt(opened, startup=startup)
+                    yield opened
+                finally:
+                    coupler._close_attempt(opened, state, False)
+
+            self.assertEqual((coupler.fem_graph_captures, len(coupler._fem_graphs)), (0, 0))
+            for state in buffers:
+                with attempt(state, startup=True):
+                    kept = (bits(solver.velocity_increment), bits(state.particle_f))
+                    launches = coupler.fem_graph_launches
+                    self.assertEqual(coupler.warm_fem(state, control, DT), len(levels))
+                    # What the steps wrote beside scratch is back, and each graph was launched once.
+                    self.assertEqual((bits(solver.velocity_increment), bits(state.particle_f)), kept)
+                    self.assertEqual(solver.linear_solver_tolerance, configured)
+                    self.assertEqual(coupler.fem_graph_launches - launches, len(levels))
+                    # The buffer has its graphs: a second call captures none.
+                    self.assertEqual(coupler.warm_fem(state, control, DT), 0)
+            self.assertEqual((coupler.fem_graph_captures, len(coupler._fem_graphs)), (2 * len(levels), 2 * len(levels)))
+            self.assertEqual([entry[0].graph_exec is None for entry in coupler._fem_graphs.values()], [False] * 10)
+            keys = {key for key, _ in coupler._fem_graphs}
+            # One key per level, shared by the two buffers; the held start stands in both of its decisions.
+            self.assertEqual(sorted(key[1] for key in keys), sorted(levels))
+            for key in keys:
+                self.assertEqual(key[-1][1], (True, True))
+            workspaces = {key[1]: entry[2] for (key, _), entry in coupler._fem_graphs.items()}
+
+            expected = scene.model.state()
+            rng = np.random.default_rng(91)
+            shape = (scene.model.particle_count, 3)
+            trials_run = 0
+            with patch.object(coupling_module, "ScopedCapture", side_effect=AssertionError("capture of a FEM step")):
+                for repeat in range(2):
+                    for buffer, state in enumerate(buffers):
+                        with attempt(state, startup=False):
+                            trials = coupler._bound_device_trials(state, control, DT)
+                            self.assertIsNotNone(trials, coupler.coupling_graph_status)
+                            for level, tolerance in enumerate(levels):
+                                with self.subTest(repeat=repeat, buffer=buffer, level=level):
+                                    # The preparation of the device trials, as at the start of an
+                                    # attempt: at the configured tolerance. Every other time its
+                                    # graphs are dropped first, so it warms, fetches and selects again.
+                                    solver.linear_solver_tolerance = configured
+                                    dropped = bool((repeat + buffer + level) % 2)
+                                    if dropped:
+                                        trials.invalidate()
+                                    trials.prepare(state, control, DT)
+                                    # Whatever the preparation did, a level workspace is selected; a
+                                    # preparation that had to bind again selects the first level.
+                                    self.assertTrue(any(solver._lin_solver is each for each in workspaces.values()))
+                                    if dropped:
+                                        self.assertIs(solver._lin_solver, workspaces[levels[0]])
+                                    # The trial as the solver issues it as written.
+                                    solver.linear_solver_tolerance = tolerance
+                                    coupler._forces.assign(rng.normal(0, 1e-5, shape).astype(np.float32))
+                                    warmstart = rng.normal(0, 1e-8, shape).astype(np.float32)
+                                    solver.velocity_increment.assign(warmstart)
+                                    solver.step(state, expected, control, None, DT, external_forces=coupler._forces)
+                                    self.assertIs(solver._lin_solver, workspaces[tolerance])
+                                    increment = solver.velocity_increment.numpy().copy()
+                                    # The same trial as the host-controlled loop issues it.
+                                    solver.velocity_increment.assign(warmstart)
+                                    coupler._candidate.assign(state)
+                                    coupler._step_fem(state, control, DT)
+                                    trials_run += 1
+                                    self.assertEqual(coupler.fem_graph_status, "replaying")
+                                    self.assertIn(coupler._fem_graph_signature, keys)
+                                    self.assertIs(solver._lin_solver, workspaces[tolerance])
+                                    for name in ("particle_q", "particle_qd"):
+                                        np.testing.assert_array_equal(
+                                            getattr(coupler._candidate, name).numpy().view(np.uint32),
+                                            getattr(expected, name).numpy().view(np.uint32),
+                                            err_msg=name,
+                                        )
+                                    np.testing.assert_array_equal(
+                                        solver.velocity_increment.numpy().view(np.uint32), increment.view(np.uint32)
+                                    )
+                            solver.linear_solver_tolerance = configured
+            self.assertEqual(trials_run, 2 * 2 * len(levels))
+            self.assertEqual((coupler.fem_graph_captures, len(coupler._fem_graphs)), (2 * len(levels), 2 * len(levels)))
+
+    def test_capture_inside_a_capture_is_refused(self):
+        from test_mjw_device_trials import DT, _pair
+
+        from newton_solver_suturebot._src.utils.capture import ScopedCapture
+
+        with _pair() as (_, scene):
+            coupler = scene.coupler
+            with ScopedCapture(device=scene.model.device):
+                coupler._forces.zero_()
+                with self.assertRaisesRegex(RuntimeError, "outside CUDA graph capture"):
+                    coupler.warm_fem(scene.state_0, scene.control, DT)
+            self.assertEqual(coupler.fem_graph_captures, 0)
 
 
 if __name__ == "__main__":

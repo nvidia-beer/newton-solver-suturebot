@@ -11,7 +11,7 @@ import warp as wp
 from test_needle_coupling_graph import _DT, _pair, _snapshot
 
 from newton_solver_suturebot import NeedleStepTooLarge, NeedleTissueCoupler, NeedleTissueInteraction
-from newton_solver_suturebot._src.coupling import _compare_rigid_endpoint, _snapshot_rigid_endpoint
+from newton_solver_suturebot._src.solvers.coupled.coupling import _compare_rigid_endpoint, _snapshot_rigid_endpoint
 
 
 class EndpointAuditTests(unittest.TestCase):

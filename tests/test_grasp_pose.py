@@ -8,7 +8,7 @@ import numpy as np
 import warp as wp
 
 from newton_solver_suturebot._src.geometry.needle import NeedleGeometry
-from newton_solver_suturebot._src.grasp import needle_to_gripper_pose
+from newton_solver_suturebot.examples.grasp._dvrk_grasper import needle_to_gripper_pose
 
 
 def _axes(pose):
@@ -86,6 +86,35 @@ class GraspPoseTests(unittest.TestCase):
         root_three = np.sqrt(3) / 2
         np.testing.assert_allclose(_axes(pose), [[0, root_three, -0.5], [-1, 0, 0], [0, 0.5, root_three]], atol=3e-7)
         np.testing.assert_allclose(pose[:3], [-0.006 * root_three, 0, 0.005], atol=2e-9)
+
+    def test_exchanged_jaws_turn_the_tool_half_a_turn_about_its_jaw_axis(self):
+        geometry = SimpleNamespace(centerline=[[0, 0, 0], [0, 0, 0.01]], arc_normal=[1, 0, 0])
+        # Straight wire along Z, closing axis X: the tool stands 6 mm back along -Y of the bite at
+        # (0, 0, 8 mm). Exchanged, it stands at the same place with its X and Z axes reversed.
+        default = needle_to_gripper_pose(geometry)
+        np.testing.assert_array_equal(needle_to_gripper_pose(geometry, jaws_exchanged=False), default)
+        exchanged = needle_to_gripper_pose(geometry, jaws_exchanged=True)
+        np.testing.assert_allclose(exchanged[:3], [0, -0.006, 0.008], atol=1e-12)
+        np.testing.assert_allclose(_axes(exchanged), [[-1, 0, 0], [0, 1, 0], [0, 0, -1]], atol=2e-7)
+        # With the twist and the bite of the grasp that pulls (-60 and 30 degrees) on the source needle:
+        # the same bite point and the same jaw axis, the closing axis and the third axis reversed, which
+        # is the tool turned by pi about its own Y axis through its own origin.
+        source = NeedleGeometry.load()
+        for arc_fraction in (0.1, 0.5):
+            options = dict(arc_fraction=arc_fraction, tangent_roll_rad=-np.pi / 3, bite_angle_rad=np.pi / 6)
+            plain = needle_to_gripper_pose(source, **options)
+            np.testing.assert_array_equal(needle_to_gripper_pose(source, jaws_exchanged=False, **options), plain)
+            turned = needle_to_gripper_pose(source, jaws_exchanged=True, **options)
+            axes, original = _axes(turned), _axes(plain)
+            np.testing.assert_allclose(turned[:3], plain[:3], atol=1e-12)
+            np.testing.assert_allclose(turned[:3] + 0.006 * axes[:, 1], plain[:3] + 0.006 * original[:, 1], atol=3e-9)
+            np.testing.assert_allclose(axes[:, 1], original[:, 1], atol=3e-7)
+            np.testing.assert_allclose(axes[:, [0, 2]], -original[:, [0, 2]], atol=3e-7)
+            half_turn = wp.transform((0.0, 0.0, 0.0), wp.quat_from_axis_angle(wp.vec3(0.0, 1.0, 0.0), np.pi))
+            composed = np.asarray(wp.transform_multiply(wp.transform(*plain), half_turn), dtype=float)
+            np.testing.assert_allclose(turned[:3], composed[:3], atol=1e-9)
+            self.assertAlmostEqual(abs(turned[3:] @ composed[3:]), 1.0, delta=1e-6)
+            self.assertAlmostEqual(np.linalg.det(axes), 1, delta=1e-6)
 
     def test_invalid_bite_angles_are_rejected(self):
         geometry = SimpleNamespace(centerline=[[0, 0, 0], [0, 0, 0.01]], arc_normal=[1, 0, 0])

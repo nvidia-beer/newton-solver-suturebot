@@ -12,7 +12,7 @@ import numpy as np
 import warp as wp
 
 from newton_solver_suturebot import SolverThread, ThreadModel
-from newton_solver_suturebot._src.thread_rigid_contact import ThreadRigidCapsuleContact
+from newton_solver_suturebot._src.solvers.thread.thread_rigid_contact import ThreadRigidCapsuleContact
 
 DEVICE = os.environ.get("NEWTON_TEST_DEVICE", "cpu")
 RADIUS = 0.00015

@@ -115,16 +115,19 @@ PARTICLE_FLAG_ACTIVE = int(ParticleFlags.ACTIVE)
 @wp.kernel
 def update_state(
     dv: wp.array[wp.vec3],
-    dt: wp.float32,
+    dt: wp.array[wp.float32],
     positions_in: wp.array[wp.vec3],
     velocities_in: wp.array[wp.vec3],
     positions_out: wp.array[wp.vec3],
     velocities_out: wp.array[wp.vec3],
 ):
-    """Integrate the BE solution: ``v_{n+1} = v_n + Δv``, ``x_{n+1} = x_n + h·v_{n+1}``."""
+    """Integrate the BE solution: ``v_{n+1} = v_n + Δv``, ``x_{n+1} = x_n + h·v_{n+1}``.
+
+    ``dt`` holds the timestep ``h`` [s] in its one element (``StepTime.seconds``).
+    """
     tid = wp.tid()
     vel = velocities_in[tid] + dv[tid]
-    positions_out[tid] = positions_in[tid] + vel * dt
+    positions_out[tid] = positions_in[tid] + vel * dt[0]
     velocities_out[tid] = vel
 
 
@@ -682,7 +685,7 @@ def build_system_matrix_tet_kernel(
     materials: wp.array2d[float],
     min_stretch: float,
     max_stretch: float,
-    dt: wp.float32,
+    dt: wp.array[wp.float32],
     block_offset: wp.int32,
     rows: wp.array[wp.int32],
     cols: wp.array[wp.int32],
@@ -714,6 +717,8 @@ def build_system_matrix_tet_kernel(
 
     Degenerate / inverted rest poses (``inv_rest_volume ≤ 0``) write zero
     blocks instead of NaN-propagating.
+
+    ``dt`` holds the timestep ``h`` [s] in its one element (``StepTime.seconds``).
 
     ``dirty[tid] == 0`` means the deformation gradient has not changed
     enough since the last frame; the kernel returns early, leaving the
@@ -831,7 +836,7 @@ def build_system_matrix_tet_kernel(
     # Per-tet rest volume is already folded into k_mu / k_lambda above, so
     # the global scale is just +h². Sign is + because we want to add
     # ``+h²·H_pot`` to ``A``.
-    scale = dt * dt
+    scale = dt[0] * dt[0]
 
     # The geometric stiffness λ(J−α)·d²J/∂xₐ∂x_b = geo·skew3(w_ab) is dropped.
     # skew3 is antisymmetric, so those off-diagonal blocks break the PSD property
@@ -1536,7 +1541,7 @@ def build_system_matrix_hex_kernel(
     materials: wp.array2d[wp.float32],
     min_stretch: float,
     max_stretch: float,
-    dt: wp.float32,
+    dt: wp.array[wp.float32],
     block_offset: wp.int32,
     rows: wp.array[wp.int32],
     cols: wp.array[wp.int32],
@@ -1564,6 +1569,8 @@ def build_system_matrix_hex_kernel(
 
     where ψ_b'' is the compression-barrier stiffening (zero at and above
     ``J_BARRIER``; see the module-level derivation).
+
+    ``dt`` holds the timestep ``h`` [s] in its one element (``StepTime.seconds``).
 
     ``dirty[eid] == 0`` skips assembly (stale-but-correct triplets remain).
     """
@@ -1672,7 +1679,7 @@ def build_system_matrix_hex_kernel(
         K_vol = wp.outer(dJ_a, dJ_b) * k_vol
         Kab = Kab + (K_dev + K_vol) * det_J0_g
 
-    scale = dt * dt
+    scale = dt[0] * dt[0]
     blk = block_offset + tid
     rows[blk] = na
     cols[blk] = nb

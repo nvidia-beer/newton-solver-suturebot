@@ -17,9 +17,13 @@ import warp as wp
 from newton.viewer import ViewerNull
 from pxr import Usd, UsdGeom, UsdPhysics, UsdUtils
 
-from newton_solver_suturebot.examples import _suturebot_cli as cli
-from newton_solver_suturebot.examples._suturebot_recording import Recording
-from newton_solver_suturebot.examples.example_fem_versius import DEFAULT_RECORDING, Example, bundled_recordings
+from newton_solver_suturebot.examples.recording import _suturebot_cli as cli
+from newton_solver_suturebot.examples.recording._suturebot_recording import Recording
+from newton_solver_suturebot.examples.recording.example_fem_versius import (
+    DEFAULT_RECORDING,
+    Example,
+    bundled_recordings,
+)
 
 
 class VersiusRecordingTests(unittest.TestCase):

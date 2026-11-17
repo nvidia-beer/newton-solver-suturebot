@@ -11,7 +11,7 @@ import warp as wp
 from newton.viewer import ViewerNull
 
 import newton_solver_suturebot
-from newton_solver_suturebot.examples.example_fem_needle_insertion import Example
+from newton_solver_suturebot.examples.needle.example_fem_needle_insertion import Example
 
 REFINEMENT_CASES = ("timestep", "spacing")
 ROBUSTNESS_SCENARIOS = ("continuous", "gap", "lift", "lower", "abrupt-up", "abrupt-down", "region2", "region3")

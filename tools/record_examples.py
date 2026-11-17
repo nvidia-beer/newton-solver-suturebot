@@ -141,6 +141,11 @@ def record(name, options):
                     window.dispatch_events()
                     window.set_size(options.width, options.height)
                     window.dispatch_events()
+                # The clip is read back with a Warp kernel of Newton's viewer. Launch it once
+                # here, before the example is built: an example's self-test counts a kernel
+                # module that loads after its start-up as a failure, and this one is the
+                # recorder's, not the example's.
+                self.get_frame(render_ui=profile.get("show_ui", False))
 
         def capture_run(example, args):
             nonlocal scenario_metadata

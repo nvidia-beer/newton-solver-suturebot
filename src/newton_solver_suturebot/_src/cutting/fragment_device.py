@@ -11,10 +11,7 @@ fragment or face may be silently truncated to fit a reserved allocation.
 import numpy as np
 import warp as wp
 
-from .knife import (
-    FragmentFace,
-    TetrahedralFragment,
-)
+from .knife import FragmentFace, TetrahedralFragment
 
 
 @wp.struct

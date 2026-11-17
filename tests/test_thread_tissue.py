@@ -797,6 +797,53 @@ class FrictionTests(unittest.TestCase):
         )
 
 
+# Elements of the thread that hang over the end of the long block.
+HANGING = 6
+
+
+def _over_the_edge():
+    """A thread along x on the top of the long block whose last elements hang over the block's end face.
+
+    Node RESTING - 1 is the last on the top, 1 mm from the edge; the next one is a thread radius off the end
+    face, one element from it, and the rest hang straight down.
+    """
+    edge = 12 * EDGE
+    top = _line((edge - 0.001 - ELEMENT * (RESTING - 1), 0.0013, _rest_height(NODE_WEIGHT)), RESTING)
+    beside = edge + THREAD_RADIUS
+    drop = math.sqrt(ELEMENT**2 - (beside - top[-1, 0]) ** 2)
+    down = _line((beside, 0.0013, top[-1, 2] - drop), HANGING, direction=(0.0, 0.0, -1.0))
+    return _Scene(np.vstack((top, down)))
+
+
+class EdgeTests(unittest.TestCase):
+    # Defect: only nodes have contact, each with the plane of the face of its nearest surface point. A node
+    # that is drawn back to an edge from beyond it is stopped by the plane of the face beside the edge.
+    @unittest.expectedFailure
+    def test_thread_that_hangs_over_an_edge_is_drawn_back_over_it(self):
+        """Fails while the node beside the end face is held by that face's plane when the thread is drawn back."""
+        scene = _over_the_edge()
+        scene.hold_start(scene.nodes()[0, :3])
+        scene.step(60)
+        start = scene.nodes()[0, :3].copy()
+        steps = 120
+        for step in range(1, steps + 1):
+            scene.hold_start(start - np.array([ELEMENT * step / steps, 0.0, 0.0]))
+            scene.advance()
+        scene.step(60)
+        # A thread slides over the edge: what it carries on the top is the weight that hangs, raised by the
+        # friction round a quarter turn, and the friction of what lies on the top. Twice that is allowed.
+        hanging = HANGING * NODE_WEIGHT
+        carried = hanging * math.exp(0.5 * math.pi * FRICTION) + FRICTION * RESTING * NODE_WEIGHT
+        # Measured: 4.2 mN, 440 times the hanging weight, after the thread is drawn back by one element.
+        # Node RESTING sits 0.11 mm off the end face and 0.14 mm below the top; its plane is the end face's
+        # (normal +x), which holds it with 4.1 mN against the pull and with 0.6 mN of friction against the
+        # rise. The pull has no part along that plane until the node is level with its neighbour on the
+        # top, and the element between the two passes through the block's corner. Without friction the
+        # node rises above the top and is still held: its nearest surface point is then on the edge, and
+        # the plane is still the end face's.
+        self.assertLess(scene.tension(5), 2.0 * carried)
+
+
 def _dragged():
     """A thread on the block whose node 0 is drawn along it while the block moves across: it rides and slides."""
     scene = _resting(x=0.0071, y=-0.0023, eyelets=2)
@@ -808,6 +855,285 @@ def _dragged():
         scene.hold_start(start - np.array([0.004 * DT * step, 0.0, 0.0]))
 
     return scene, inputs
+
+
+def _uneven(index):
+    """Four barycentric weights that differ from eyelet to eyelet and from corner to corner."""
+    weights = np.array([0.1, 0.2, 0.3, 0.4]) + 0.01 * index * np.array([1.0, -1.0, 2.0, -2.0])
+    return weights / weights.sum()
+
+
+class TrackPointTests(unittest.TestCase):
+    HOST = ("_tetrahedron", "_barycentric", "_group", "_group_size")
+    DEVICE_ARRAYS = ("_tetrahedron_device", "_barycentric_device", "_group_device", "_group_size_device")
+
+    def test_a_track_built_point_by_point_equals_add_track_in_every_host_and_device_array(self):
+        """Fails if add_track_point writes another row, another array or another value than add_track does."""
+        whole = _Scene(_line((0.0031, 0.0013, 0.001), RESTING + 1), eyelets=7, max_tracks=3)
+        grown = _Scene(_line((0.0031, 0.0013, 0.001), RESTING + 1), eyelets=7, max_tracks=3)
+        tetrahedra = [[11, 3, 40], [7, 25]]
+        weights = [[_uneven(0), _uneven(1), _uneven(2)], [_uneven(3), _uneven(4)]]
+        slots = [
+            whole.coupling.add_track(group, group_weights)
+            for group, group_weights in zip(tetrahedra, weights, strict=True)
+        ]
+        made = []
+        for track, (group, group_weights) in enumerate(zip(tetrahedra, weights, strict=True)):
+            for tetrahedron, weight in zip(group, group_weights, strict=True):
+                made.append(grown.coupling.add_track_point(track, tetrahedron, weight))
+                # After every point: the track count, and the eyelets so far, are those of the host copies.
+                self.assertEqual(grown.coupling.track_count, track + 1)
+                self.assertEqual(grown.coupling.point_count, len(made))
+        self.assertEqual(made, [int(slot) for group in slots for slot in group])
+        self.assertEqual((grown.coupling.track_count, grown.coupling.point_count), (2, 5))
+        self.assertEqual((whole.coupling.track_count, whole.coupling.point_count), (2, 5))
+        for name in self.HOST:
+            np.testing.assert_array_equal(getattr(grown.coupling, name), getattr(whole.coupling, name), err_msg=name)
+        for name in self.DEVICE_ARRAYS:
+            np.testing.assert_array_equal(
+                getattr(grown.coupling, name).numpy(), getattr(whole.coupling, name).numpy(), err_msg=name
+            )
+        # The device holds the host copies, and no array was replaced: the rows were written in place.
+        for host, device in zip(self.HOST, self.DEVICE_ARRAYS, strict=True):
+            np.testing.assert_array_equal(getattr(grown.coupling, device).numpy(), getattr(grown.coupling, host))
+        fresh = _Scene(_line((0.0031, 0.0013, 0.001), RESTING + 1), eyelets=7, max_tracks=3)
+        pointers = [getattr(fresh.coupling, name).ptr for name in self.DEVICE_ARRAYS]
+        fresh.coupling.add_track_point(0, 5, _uneven(0))
+        fresh.coupling.add_track_point(1, 6, _uneven(1))
+        self.assertEqual([getattr(fresh.coupling, name).ptr for name in self.DEVICE_ARRAYS], pointers)
+        # Made, not threaded; the eyelets sit at the same material points either way.
+        np.testing.assert_array_equal(grown.thread.eyelet_element.numpy(), -1)
+        whole.coupling.update(whole.particle_q)
+        grown.coupling.update(grown.particle_q)
+        np.testing.assert_array_equal(grown.thread.eyelet_target.numpy(), whole.thread.eyelet_target.numpy())
+        # A point may be added to an earlier track after a later one was begun: it takes the next free slot.
+        self.assertEqual(grown.coupling.add_track_point(0, 9, _uneven(5)), 5)
+        np.testing.assert_array_equal(grown.coupling._group_device.numpy()[:6], [0, 0, 0, 1, 1, 0])
+        np.testing.assert_array_equal(grown.coupling._group_size_device.numpy(), [4, 2, 0])
+
+    def test_a_used_up_reserve_refuses_a_point_and_counts_it(self):
+        """Fails if a point beyond the eyelet slots or the tracks is made, grows an array, or goes uncounted."""
+        scene = _Scene(_line((0.0031, 0.0013, 0.001), RESTING + 1), eyelets=3, max_tracks=2)
+        coupling = scene.coupling
+        self.assertEqual(
+            [coupling.add_track_point(0, 1, _uneven(0)), coupling.add_track_point(0, 2, _uneven(1))], [0, 1]
+        )
+        self.assertEqual(coupling.refused_points, 0)
+        # A point can only join a track that exists or open the next one.
+        with self.assertRaises(ValueError):
+            coupling.add_track_point(2, 3, _uneven(2))
+        with self.assertRaises(ValueError):
+            coupling.add_track_point(-1, 3, _uneven(2))
+        with self.assertRaises(ValueError):
+            coupling.add_track_point(0, len(scene.tetrahedra), _uneven(2))  # no such tetrahedron
+        with self.assertRaises(ValueError):
+            coupling.add_track_point(0, 3, [0.5, 0.5])
+        self.assertEqual((coupling.refused_points, coupling.point_count), (0, 2))
+        self.assertEqual(coupling.add_track_point(1, 3, _uneven(2)), 2)
+        before = [getattr(coupling, name).numpy().copy() for name in self.DEVICE_ARRAYS]
+        host = [getattr(coupling, name).copy() for name in self.HOST]
+        # No slot is left: refused and counted, twice.
+        self.assertEqual(coupling.add_track_point(1, 4, _uneven(3)), -1)
+        self.assertEqual(coupling.add_track_point(0, 4, _uneven(3)), -1)
+        self.assertEqual((coupling.refused_points, coupling.point_count, coupling.track_count), (2, 3, 2))
+        for name, values in zip(self.DEVICE_ARRAYS, before, strict=True):
+            np.testing.assert_array_equal(getattr(coupling, name).numpy(), values, err_msg=name)
+            self.assertEqual(len(getattr(coupling, name)), len(values))
+        for name, values in zip(self.HOST, host, strict=True):
+            np.testing.assert_array_equal(getattr(coupling, name), values, err_msg=name)
+        # No track is left, though slots are: refused and counted as well.
+        roomy = _Scene(_line((0.0031, 0.0013, 0.001), RESTING + 1), eyelets=6, max_tracks=2).coupling
+        self.assertEqual([roomy.add_track_point(0, 1, _uneven(0)), roomy.add_track_point(1, 2, _uneven(1))], [0, 1])
+        self.assertEqual(roomy.add_track_point(2, 3, _uneven(2)), -1)
+        self.assertEqual((roomy.refused_points, roomy.point_count, roomy.track_count), (1, 2, 2))
+        np.testing.assert_array_equal(roomy._group_size_device.numpy(), [1, 1])
+
+
+# The tail of the tests: a point of a rigid body that moves along x through a row of eyelets inside the
+# block, with the thread leaving it backwards. Reach of the rule along and across, as the worker thread sets them.
+ALONG = 0.0015  # [m], one eyelet spacing
+LATERAL = 0.00056  # [m], two wire radii of the needle
+TAIL_Y, TAIL_Z = 0.0013, -0.0021  # [m]
+TAIL_EYELETS = np.array([0.0102, 0.0117, 0.0132, 0.0147])  # [m] along x, one spacing apart
+
+
+class _Tailed(_Scene):
+    """A thread over the long block, a track of four unthreaded eyelets inside it and one rigid body to follow."""
+
+    def __init__(self, *, point=(0.0, 0.0, 0.0), outward=(-1.0, 0.0, 0.0), follow=True):
+        super().__init__(_line((0.0031, 0.0013, 0.001), RESTING + 1), eyelets=6, max_tracks=2)
+        self.points = np.column_stack(
+            (TAIL_EYELETS, np.full(len(TAIL_EYELETS), TAIL_Y), np.full(len(TAIL_EYELETS), TAIL_Z))
+        )
+        self.slots = []
+        for point_ in self.points:
+            tetrahedron, weights = _material_point(self.vertices, self.tetrahedra, point_)
+            self.slots.append(self.coupling.add_track_point(0, tetrahedron, weights))
+        self.body_q = wp.array([wp.transform_identity()] * 2, dtype=wp.transform, device=DEVICE)
+        if follow:
+            self.coupling.follow_tail(1, point, outward, ALONG, LATERAL)
+
+    def tail_at(self, position, rotation=None):
+        """Put the followed body (index 1) at ``position`` [m] with an optional rotation; body 0 stays elsewhere."""
+        rotation = wp.quat_identity() if rotation is None else rotation
+        self.body_q.assign(
+            [wp.transform(wp.vec3(0.5, 0.5, 0.5), wp.quat_identity()), wp.transform(wp.vec3(*position), rotation)]
+        )
+        self.coupling.update(self.particle_q, self.body_q)
+        return [slot for slot in self.slots if self.thread.eyelet_element.numpy()[slot] >= 0]
+
+
+class TailTests(unittest.TestCase):
+    def test_the_tail_threads_an_eyelet_when_it_has_passed_it_and_not_before_in_track_order(self):
+        """Fails if an eyelet ahead of the tail is threaded, one behind it is not, or the order is not the track's."""
+        scene = _Tailed()
+        order, when = [], {}
+        # The tail comes along the track from before its first eyelet, a quarter millimetre per step.
+        for x in np.arange(0.0090, 0.0160, 0.00025):
+            threaded = scene.tail_at((x, TAIL_Y, TAIL_Z))
+            for slot in threaded:
+                if slot not in order:
+                    order.append(slot)
+                    when[slot] = x
+            # Nothing ahead of the tail is threaded: every threaded eyelet lies behind it.
+            for slot in threaded:
+                self.assertLessEqual(scene.points[slot][0], x + 1e-7)
+            # Everything the tail has passed is threaded.
+            for slot in scene.slots:
+                if scene.points[slot][0] <= x - 1e-6:
+                    self.assertIn(slot, threaded)
+        self.assertEqual(order, scene.slots)
+        # Each in the first step in which the tail was at or past it: within one step of 0.25 mm.
+        for slot in scene.slots:
+            self.assertGreaterEqual(when[slot], scene.points[slot][0] - 1e-7)
+            self.assertLess(when[slot], scene.points[slot][0] + 0.00025 + 1e-7)
+        # Threaded at the thread's first node.
+        np.testing.assert_array_equal(scene.thread.eyelet_element.numpy()[scene.slots], 0)
+        np.testing.assert_array_equal(scene.thread.eyelet_xi.numpy()[scene.slots], 0.0)
+        # The slots without a material point stay unthreaded, also when the tail goes past where their
+        # unwritten position is (the origin) as it would go past an eyelet.
+        np.testing.assert_array_equal(scene.thread.eyelet_target.numpy()[4:], 0.0)
+        scene.tail_at((0.0005, 0.0, 0.0))
+        np.testing.assert_array_equal(scene.thread.eyelet_element.numpy()[4:], -1)
+
+    def test_the_tail_threads_nothing_from_ahead_of_an_eyelet_from_a_millimetre_beside_it_or_from_far_past_it(self):
+        """Fails if the rule reaches further than one spacing back or two wire radii across."""
+        # Ahead of every eyelet by a hair: nothing.
+        scene = _Tailed()
+        self.assertEqual(scene.tail_at((TAIL_EYELETS[0] - 2e-6, TAIL_Y, TAIL_Z)), [])
+        # The whole way a millimetre beside the track (across it, and below it): nothing.
+        for offset in ((0.0, 0.001, 0.0), (0.0, 0.0, -0.001), (0.0, -0.0007, 0.0007)):
+            scene = _Tailed()
+            for x in np.arange(0.0090, 0.0165, 0.00025):
+                self.assertEqual(scene.tail_at(np.array([x, TAIL_Y, TAIL_Z]) + offset), [], msg=str(offset))
+        # Just inside and just outside the reach across (0.56 mm), with the tail level with the first eyelet.
+        inside, outside = _Tailed(), _Tailed()
+        self.assertEqual(inside.tail_at((TAIL_EYELETS[0] + 1e-5, TAIL_Y + LATERAL - 2e-5, TAIL_Z)), inside.slots[:1])
+        self.assertEqual(outside.tail_at((TAIL_EYELETS[0] + 1e-5, TAIL_Y + LATERAL + 2e-5, TAIL_Z)), [])
+        # Far past: a tail that appears 1.52 mm behind the last eyelet threads nothing; 1.48 mm behind, that one.
+        far, near = _Tailed(), _Tailed()
+        self.assertEqual(far.tail_at((TAIL_EYELETS[-1] + ALONG + 2e-5, TAIL_Y, TAIL_Z)), [])
+        self.assertEqual(near.tail_at((TAIL_EYELETS[-1] + ALONG - 2e-5, TAIL_Y, TAIL_Z)), near.slots[-1:])
+        # A threaded eyelet stays as the thread solver has it: the kernel does not thread it again.
+        near.coupling.thread_eyelet(near.slots[-1], 7, 0.25)
+        near.tail_at((TAIL_EYELETS[-1] + 1e-5, TAIL_Y, TAIL_Z))
+        self.assertEqual(float(near.tracked()[near.slots[-1]]), 7.25)
+
+    def test_the_followed_point_and_its_direction_turn_and_move_with_the_body(self):
+        """Fails if the point or the outward direction are taken in world axes instead of the body's."""
+        # The body is turned a quarter turn about z: its local y is the world's -x. The followed point is
+        # 2 mm along local y, and the thread leaves it along local y as well (given with a length of 3).
+        turn = wp.quat_from_axis_angle(wp.vec3(0.0, 0.0, 1.0), 0.5 * math.pi)
+        scene = _Tailed(point=(0.0, 0.002, 0.0), outward=(0.0, 3.0, 0.0))
+        # World point = body + R (0, 2 mm, 0) = body + (-2 mm, 0, 0); outward = R (0, 1, 0) = (-1, 0, 0).
+        # The point is 1 mm past the second eyelet (further than the reach across, nearer than the reach
+        # along) and 2.5 mm past the first: the second only, and only with the direction turned as the body is.
+        body = np.array([TAIL_EYELETS[1] + 0.001 + 0.002, TAIL_Y, TAIL_Z])
+        self.assertEqual(scene.tail_at(body, turn), scene.slots[1:2])
+        # Unturned, the same body has its point elsewhere and its thread leaving along +y: nothing.
+        scene = _Tailed(point=(0.0, 0.002, 0.0), outward=(0.0, 3.0, 0.0))
+        self.assertEqual(scene.tail_at(body), [])
+
+    def test_following_needs_the_body_poses_and_a_coupling_that_follows_nothing_threads_nothing(self):
+        """Fails if update() threads without follow_tail, or follows without being given the bodies."""
+        scene = _Tailed(follow=False)
+        for x in np.arange(0.0090, 0.0165, 0.0005):
+            self.assertEqual(scene.tail_at((x, TAIL_Y, TAIL_Z)), [])
+        scene.coupling.update(scene.particle_q)  # as before: one argument
+        scene = _Tailed()
+        with self.assertRaisesRegex(ValueError, "body poses"):
+            scene.coupling.update(scene.particle_q)
+        for arguments in (
+            (1, (0.0, 0.0), (1.0, 0.0, 0.0), ALONG, LATERAL),
+            (1, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), ALONG, LATERAL),
+            (1, (0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 0.0, LATERAL),
+            (1, (0.0, 0.0, 0.0), (1.0, 0.0, 0.0), ALONG, -1.0),
+            (1, (0.0, 0.0, 0.0), (1.0, 0.0, float("nan")), ALONG, LATERAL),
+        ):
+            with self.assertRaises(ValueError):
+                scene.coupling.follow_tail(*arguments)
+        # The state of the coupling is what it was: the eyelet arrays are written from the host only.
+        self.assertEqual(len(scene.coupling.state), 3)
+
+    def test_a_thread_whose_tail_goes_along_a_curved_track_is_left_on_it(self):
+        """Fails if the eyelets that the tail kernel threads do not hold the thread on the track behind the tail."""
+        # Deep in the block, more than the contact margin from every face, so that no node has a contact plane
+        # and only the eyelets act. The track is an arc of a needle's radius, 9.45 mm, in the plane z = -4 mm,
+        # with five eyelets a spacing apart. The tail (the thread's first node, with the body) moves along
+        # that arc, 0.125 mm per step, and turns with it; the thread starts straight behind it.
+        radius, depth = 0.00945, -0.004
+        centre = np.array([0.016, 0.0022 - radius, depth])
+
+        def on_arc(length):
+            angle = length / radius
+            point = centre + radius * np.array([math.sin(angle), math.cos(angle), 0.0])
+            return point, np.array([math.cos(angle), -math.sin(angle), 0.0]), angle
+
+        scene = _Scene(
+            _line(on_arc(0.0)[0], 7, direction=(-1.0, 0.0, 0.0)),
+            gravity=0.0,
+            eyelets=6,
+            max_tracks=2,
+        )
+        stations = 0.001 + ALONG * np.arange(5)
+        points = np.array([on_arc(station)[0] for station in stations])
+        slots = [
+            scene.coupling.add_track_point(0, *_material_point(scene.vertices, scene.tetrahedra, point))
+            for point in points
+        ]
+        scene.coupling.follow_tail(0, (0.0, 0.0, 0.0), (-1.0, 0.0, 0.0), ALONG, LATERAL)
+        body_q = wp.array([wp.transform_identity()], dtype=wp.transform, device=DEVICE)
+        order, travel = [], 0.0
+        while travel < 0.00945:
+            travel += 0.000125
+            point, tangent, angle = on_arc(travel)
+            # The thread leaves its first node against the tail's direction of travel.
+            scene._boundary[:3], scene._boundary[3:6] = point, -tangent
+            scene.thread.boundary_q.assign(scene._boundary)
+            turn = wp.quat_from_axis_angle(wp.vec3(0.0, 0.0, 1.0), -angle)
+            body_q.assign([wp.transform(wp.vec3(*point), turn)])
+            scene.coupling.update(scene.particle_q, body_q)
+            scene.thread.step(None, None, None, None, DT)
+            for slot in slots:
+                if scene.thread.eyelet_element.numpy()[slot] >= 0 and slot not in order:
+                    order.append(slot)
+        # No node had a contact plane: the block's faces are beyond the margin.
+        np.testing.assert_array_equal(scene.thread.contact_normal.numpy(), 0.0)
+        self.assertEqual(order, slots)
+        tracked = scene.tracked()[slots]
+        # The first-passed eyelet is furthest along the thread, neighbours one spacing (0.75 element) apart,
+        # and the last one as far behind the tail as the tail has gone past it.
+        np.testing.assert_allclose(np.diff(tracked), -ALONG / ELEMENT, atol=0.05)
+        self.assertAlmostEqual(tracked[-1], (travel - stations[-1]) / ELEMENT, delta=0.1)
+        # The thread passes within a thread radius of every eyelet ...
+        offsets = np.linalg.norm(scene.thread.eyelet_point.numpy()[slots] - points, axis=1)
+        self.assertLess(offsets.max(), THREAD_RADIUS)
+        # ... and its nodes between the tail and the first eyelet lie on the arc, where a straight thread
+        # from the tail to that eyelet would be 0.9 mm inside it (chord of 8.4 mm on the 9.45 mm circle).
+        nodes = scene.nodes()[: int(tracked[0]) + 1, :3]
+        from_arc = np.abs(np.linalg.norm(nodes - centre, axis=1) - radius)
+        self.assertLess(from_arc.max(), THREAD_RADIUS)
+        self.assertGreaterEqual(len(nodes), 5)
 
 
 # How closely a repeated CUDA run agrees: positions to a thousandth of the contact's smoothing width, below

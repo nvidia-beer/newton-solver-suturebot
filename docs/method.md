@@ -82,8 +82,8 @@ and after integration; tangent/topology reassembly also restores fixed positions
 This option currently excludes differentiable stepping,
 streaming topology and component scaling; no gradient support is claimed for it.
 
-On CUDA, a separate sparse value buffer stores $PAP+I-P$ for Warp's native
-sparse multiply. Its values refresh once per solve, including captured solves;
+On CUDA, a separate sparse value buffer stores $PAP+I-P$ for the
+guarded sparse multiply described below. Its values refresh once per solve, including captured solves;
 changed sparse storage rebuilds the cached operator. The original $A$ remains
 available to the predictor. The region-1 needle example adds about 3.2 MB of
 matrix values while sharing index buffers. CPU and unsupported sparse layouts
@@ -107,6 +107,30 @@ is $b/256$; the needle example retains degree four. This changes only the
 preconditioner coefficients. The sparse physical operator, load, warm start,
 CG relative tolerance, maximum iterations and coupling acceptance checks stay
 unchanged. No unconstrained power/Ritz estimate substitutes for an upper bound.
+
+For supported non-differentiable CUDA `mat33`/`vec3` fixed-particle
+operators, [packed_bsr.py](../src/newton_solver_suturebot/_src/solvers/fem/packed_bsr.py)
+uses 16 cooperating threads per block row, with several rows packed into a
+256-thread block. Each thread accumulates its assigned sparse blocks; subgroup
+shuffles reduce the three result components. Padded threads participate in all
+shuffles. Matrix values, row counts, constrained-node handling and the affine
+`alpha*A*x + beta*y` contract are unchanged. Persistent snapshots preserve
+supported input/output aliasing during capture. The reduction order differs
+from Warp's original implementation, so numerical equality of operators does
+not establish bitwise trajectory equivalence. CPU, unsupported layouts,
+gradient-enabled operands and active Tape execution use the original operator.
+
+On the exact free-node compact operator only,
+[fused_chebyshev.py](../src/newton_solver_suturebot/_src/solvers/fem/fused_chebyshev.py)
+fuses each sparse multiply with the following Jacobi recurrence. The original
+first step, degree, coefficients and full-indexed spectral-bound calculation
+remain unchanged. Two disjoint iterate buffers alternate; their initial parity
+places the final result in the requested output without an extra copy. No
+thread overwrites a neighbor's input during a launch. Matrix and scratch owners
+remain alive with the cached preconditioner. Full/projected or unknown indexing
+mappings, alias conflicts and differentiable execution retain the original
+Chebyshev implementation. This reduces launches without changing the Krylov
+residual checks, iteration limits, physical tangent or accepted boundary state.
 
 ### Prepared FEM mechanics
 
@@ -158,7 +182,7 @@ its virtual passage is not this cutting model.
 ## Differentiation contract
 
 The copied FEM core retains its fixed-matrix differentiation API. The physical
-needle interaction, fixed-boundary option, simultaneous solver and thread
+needle interaction, fixed-boundary option and thread
 solver are not differentiable. Material-hold helpers support the tissue viewers. Cut topology
 changes are discrete and are not differentiated.
 
@@ -182,7 +206,7 @@ stepping allocates no adjoint/trajectory storage. `SolverLinearFEM` is an alias.
 ## Needle insertion interaction
 
 The public `NeedleTissueInteraction` class in
-[insertion.py](../src/newton_solver_suturebot/_src/insertion.py) adds an illustrative,
+[insertion.py](../src/newton_solver_suturebot/_src/solvers/coupled/interface/insertion.py) adds an illustrative,
 non-differentiable contact/track model to unchanged Tet4 material. Its force kernels
 use Warp; host queries locate accepted tip positions in current tetrahedra.
 The [example guide](needle-insertion.md) records geometry, defaults and limits.
@@ -477,7 +501,7 @@ tolerance; its balance is a separate quantity, checked in
 recorded for every full-pad substep.
 
 The public `NeedleTissueCoupler` in
-[coupling.py](../src/newton_solver_suturebot/_src/coupling.py) solves an implicit
+[coupling.py](../src/newton_solver_suturebot/_src/solvers/coupled/coupling.py) solves an implicit
 partitioned interface problem. Let $L$ contain every nodal interface force,
 the needle force and needle torque divided by a length $R$ (the example uses
 the needle's curve radius). Let $S_h(y_n,L)$ advance both solvers from the same
@@ -522,6 +546,20 @@ removes the second statistics readback used only for mixing; it changes neither
 the physical force equation nor stopping tolerances. CPU, unpreconditioned,
 gradient and Tape paths retain host scalar updates.
 
+For eligible CUDA host-loop trials, [DeviceSurfaceAnderson](../src/newton_solver_suturebot/_src/solvers/coupled/acceleration/surface_anderson_device.py)
+retains the load, raw residual and search-direction histories in device memory.
+One packet contains the exact union of rows that are nonzero in any retained
+history, current input or pending recovery vector; subnormal and nonfinite
+values are never discarded by a threshold. Original row order is restored on
+the CPU before the same thin-SVD calculation. Cached full-vector residual norms
+preserve the existing safeguard reductions. The default packet holds 128 rows;
+overflow grows its retained capacity to cover the complete union and repeats
+transport before committing a proposal or history. Dense data can grow to the
+full interface size. History resets retain this allocation but discard all
+secants and recovery metadata. CPU and gradient/Tape configurations retain the
+ordinary host implementation. This changes transport and storage only: each
+proposal still needs the original physical evaluation and acceptance tests.
+
 For unpunctured surface contact in the non-differentiable, unpreconditioned
 subcycled-MuJoCo path, a bounded Anderson proposal supplements Aitken once the
 adaptive FEM tolerance reaches `min(configured_tolerance, 1e-6)`. Gradient-enabled
@@ -552,6 +590,34 @@ preserve load balance. New intervals, tighter inner tolerances, dual updates
 and host-force fallback start fresh numerical histories. This changes numerical
 force guesses, not contact laws, accepted material history or physical tolerances.
 
+The separate `preconditioned_anderson=True` constructor option extends this
+mixing to supported native shaft/contact directions. It defaults off in
+`NeedleTissueCoupler`; the physical `GraspScene` explicitly enables it. Let
+$d_i$ be the preconditioned search direction and let a star mark the best raw
+residual in the current history. With $\Delta L_i=L_i-L_*$,
+$\Delta r_i=r_i-r_*$ and $\Delta d_i=d_i-d_*$, the same filtered, regularized
+least-squares problem minimizes the **raw** force residual
+$\|r_*+\Delta R\gamma\|_2$. Its proposal is
+
+$$
+L^+=L_*+d_*+(\Delta L+\Delta D)\gamma.
+$$
+
+Thus the residual chooses the affine coefficients while the search directions
+supply the iterate images. Every trust ratio and infinity guard still uses the
+raw force residual; a small preconditioned direction cannot certify physical
+convergence. Recovery uses $L_*+\omega_0 d_*$, saved with the proposal. Without
+an accelerated proposal, this opt-in branch uses the configured relaxed
+direction. It begins at the configured inner FEM accuracy and clears history
+whenever that accuracy tightens; it does not reuse secants from a different
+approximate force map. Surface-metric validity switches, ALM dual updates,
+new intervals and transactional fallback also clear history. Invalid/nonfinite
+vectors discard pending recovery, and an interface-size change starts a new
+history. Direction-only nonzero rows remain in the affine reconstruction.
+This is a numerical search extension, not a derivative or a convergence
+guarantee for changing contact sets; the original force and ALM acceptance,
+adaptive retries and shared trial budget remain authoritative.
+
 The optional `shaft_preconditioner=True` accelerates this iteration for
 supported projected FEM configurations with a free needle, including the
 subcycled articulated grasper described below. With generalized
@@ -573,14 +639,21 @@ $$
 d=r-hJ_{\rm all}^TDJ_fz,\qquad L^+=L+\omega d.
 $$
 
-The ALM branch uses the radial derivative described above and a positive
-approximation of its projected tangential update. An auxiliary block-Jacobi
-CG solve uses an 80-iteration cap, with relative tolerance $10^{-2}$ for
+The ALM branch uses the radial derivative described above and, on the
+sticking branch, a positive approximation of its projected tangential update.
+On the sliding branch the drag is the Coulomb bound of the wall reaction of
+the trial, $\pm\mu\|R_i\|$ along $t_i$, so a change of that reaction changes
+the anchor force through the shear $S_i=\pm\mu\,t_i d_i^T$, with $d_i$ the
+unit direction of $R_i$: the anchor acts as $(I+S_i)D_i$ in the operator and
+in the correction, and the operator is not symmetric. An auxiliary
+block-Jacobi Krylov solve (CG; BiCGSTAB while a track that follows the tunnel
+ALM has samples) uses an 80-iteration cap, with relative tolerance $10^{-2}$ for
 finite-compliance ALM and $10^{-3}$ for penalty or hard-wall modes. Aitken
 relaxation then operates on $d$. The full transpose
 preserves reaction balance even for an approximate auxiliary solve. This is
-a frozen shaft/friction approximation, not the full contact Jacobian: surface
-contact and nonsymmetric derivatives are omitted. In the penalty expression
+a frozen shaft/friction approximation, not the full contact Jacobian:
+apart from that shear, nonsymmetric derivatives are omitted. Surface curvature is added only when
+the independent surface option below supplies a valid recording. In the penalty expression
 above, the tangential term equals
 the frozen-normal sticking slope and continues as a positive approximation
 decaying with squared slip speed in saturated sliding. It is not a quadratic
@@ -591,10 +664,63 @@ a declared 2 µm fast-handling trajectory-equivalence gate (12.46 µm maximum
 nodal difference); it is not an identical-history guarantee. Unsupported configurations
 retain unpreconditioned Aitken; no coupled derivatives are provided.
 
+BiCGSTAB can break down: the stock solver divides by a product that may
+vanish, and the correction is then nonfinite. The solve does not test for
+this and the correction is applied as it is. The trial that applies it is
+rejected by a test the trial loop already has. In the captured device loop
+of the free needle that is the finiteness test of the candidate, and the
+step ends as a nonfinite interface state. In the captured device loop of
+the articulated tools (the grasp scene) the tissue solve of that trial also
+fails its linear-residual certificate, and the step ends with that reason:
+the host asks the certificate before it names a nonfinite state. In the host
+loop it is the acceleration warning of the guarded native rigid adapter. The
+host loop of the free-needle example with the plain MuJoCo solver tests the
+evaluated interface force, not the load it applies; there such a step ends at
+the trial cap of the loop or at the step-resolution test. In every case the
+step is rejected as a whole and the accepted state stands.
+
+The anchors of this correction (tangent $D_i$, lever, shear $S_i$) are
+stored with one row for every row of the interaction's track reserve. The
+kernels over them are launched over the reserve and read the number of track
+samples from the interaction's live counts on the device; a row beyond it is
+neither read nor written. Where a solve of the tunnel ALM is captured, the
+device takes its solver by that count in every launch: CG while the track has
+no sample, BiCGSTAB from the first sample on. Outside a capture the host
+makes the same choice from its own count. Both solvers exist from the
+construction of the correction. The number of track samples is therefore no
+part of a graph key of the correction; the storage of its anchors is, and it
+changes only when a reserve that was too small has grown.
+
+Whether the track transmits a shaft interaction in a step, which is a shaft
+law together with a nonzero engaged length, decides if host-controlled trials
+and the captured loop of the free needle apply this correction or relax the
+residual themselves. The value is evaluated by its first reader in a step and
+held for the trials of that step, whose history does not change. The
+evaluation reads the engaged length from the device, unless the acceptance
+before it has read it on request. Trials that evaluate the value in every
+step, which are the host-controlled trials of a coupler without device trials
+and the captured loop of the free needle, make that request for the step
+after them: each of their steps is answered from the read of the acceptance
+before it. The captured loop of the articulated tools with the surface
+metric applies the combined correction in every trial, and its launches over
+the track read the live count, so its graph is the same for both values.
+There the value is no part of the graph key and is not evaluated: such a step
+reads no engaged length, and a track that starts or stops transmitting
+captures nothing. When a step of that loop is handed to host-controlled
+trials, they evaluate the value where they first run, without the request:
+that step reads the engaged length once, its acceptance reads nothing, and a
+restart of its trials keeps the value. The interaction keeps the length that
+was read until the engagement is written, so a step that is rejected and
+tried again at a shorter interval reads once as well. A query of the engaged
+length between steps, as the scene report makes once per frame, reads the
+device while no acceptance has kept it.
+
 The independent `surface_preconditioner=True` option accelerates native
-subcycled-MuJoCo contact before the first accepted track. It defaults off in
+subcycled-MuJoCo contact. Before the first accepted track it acts alone; when
+both options are enabled and shaft support is active, the two curvatures share
+one solve. It defaults off in
 the public coupler and free-needle examples; the physical-grasper worker enables
-it. The optional [surface recorder](../src/newton_solver_suturebot/_src/surface_contact_forces.py)
+it. The optional [surface recorder](../src/newton_solver_suturebot/_src/solvers/coupled/interface/surface_contact_forces.py)
 retains the original force evaluation and records every contributing
 needle-sample/surface-facet pair during its final pass. It does not repeat the
 nearest-surface query. The original default kernel remains available, and a
@@ -630,7 +756,7 @@ adapted from its tanh regularization to this solver's clipped-linear law.
 No ANCF package is imported. The bound assumes frozen normal load and geometry;
 it does not establish global convergence of changing contact configurations.
 
-The [surface preconditioner](../src/newton_solver_suturebot/_src/surface_preconditioner.py)
+The [surface preconditioner](../src/newton_solver_suturebot/_src/solvers/coupled/acceleration/surface_preconditioner.py)
 uses the same $H$, auxiliary CG budgets and balanced correction as the shaft
 preconditioner above, replacing its anchor map by triangle barycentric
 interpolation. The inner $h$ in $D$ approximates endpoint displacement from
@@ -648,8 +774,24 @@ directions clears Anderson and Aitken history. Recorder count/validity are
 packed into the existing statistics readback. Fixed recording storage and
 auxiliary CG workspaces support CUDA capture without a new per-trial fence.
 The path requires unmodified supported native/FEM/contact methods and disables
-itself for differentiable arrays or active Tape execution. Accepted tracks
-continue using the separate shaft preconditioner.
+itself for differentiable arrays or active Tape execution.
+
+With both contact options enabled, accepted shaft tracks and valid surface
+facets contribute to one operator,
+
+$$
+H+hJ_{s,f}^TD_sJ_{s,f}+hJ_{c,f}^TD_cJ_{c,f}.
+$$
+
+The block diagonal and final balanced correction include the same two terms;
+applying two sequential inverse corrections would be a different operator.
+[CombinedContactPreconditioner](../src/newton_solver_suturebot/_src/solvers/coupled/acceleration/combined_contact_preconditioner.py)
+retains the existing shaft mass metric, auxiliary solve budgets and reaction
+scatter. The surface recorder covers postpuncture contact as well, without
+changing the physical surface force. Invalid or empty surface records reduce
+the augmented action exactly to the shaft-only search. Recorder storage,
+validity and count are part of capture bindings; replacing those arrays
+invalidates cached graphs while retained owners keep older graphs valid.
 
 Each trial restores MuJoCo's full `mjSTATE_INTEGRATION` state and restarts FEM
 from the same physical state $y_n$. Only the numerical CG velocity-increment
@@ -673,7 +815,9 @@ and the frame's material linearization. `refresh_tangent(q, h)` rebuilds all
 timestep-dependent matrix terms when the non-differentiable timestep changes;
 it also clears the numerical velocity-increment guess to avoid cancellation
 from a guess for another timestep. Physical positions and velocities are
-unchanged by this reset. Captured step graphs are rebuilt for that duration.
+unchanged by this reset. Captured step graphs are not rebuilt for that
+duration: they read $h$ from device data and replay unchanged (see the device
+time step below).
 After two consecutive accepted intervals needing at most four interface trials,
 the example may double the interval, capped by the nominal duration and the
 frame's remaining time. Rejection clears this growth counter. Every enlarged
@@ -730,18 +874,69 @@ integration, Aitken updates, endpoint forces and accepted events stay outside
 the graph. Unsupported configurations, gradient-enabled execution and host
 residual checks use eager FEM execution. The host-controlled path retains
 bounded caches of Krylov workspaces and FEM graphs for recurring solver
-tolerances, exact timesteps and state buffers. The existing tightening schedule
+tolerances and state buffers; the time step is no part of a graph's key (see
+the device time step below). The device trials fetch the workspaces of their
+tolerance levels from the same registry and pin them while a trial graph
+binds them; the registry keeps at most eight workspaces that no graph owner
+has pinned, and the oldest of the others leave where a step registers a
+workspace or an owner releases one. The existing tightening schedule
 still runs; returning to an earlier tolerance reuses its storage instead of
 allocating a new solver and recapturing every interval. Rebuilt projections and
 changed matrix storage invalidate the associated resources. Active
-differentiation retains its original execution path. No discarded physical
-integration is used to warm these caches. Geometry caching and batched
+differentiation retains its original execution path. A step uses no discarded
+physical integration to warm these caches: a workspace or a graph is made
+where a trial first needs it. A scene may ask for them ahead of its first step
+instead. `NeedleTissueCoupler.capture_graphs`, which the grasp scene on the
+MuJoCo Warp rigid backend calls at the end of a reset, captures and launches
+the FEM step of the host-controlled trials at every inner tolerance, the
+held-start preparation and the trial graph of the device trials for both
+accepted-state buffers, inside attempts that end like a rejected step, and makes
+the storage of the response-basis predictor and its column engine there; in the
+attempt of the first buffer it also builds the device helper of the host sample
+mask and captures and launches the force graphs of the host-controlled trials,
+one for each of their eight variants (`capture_host_force_graphs`), and in the
+attempt of the last buffer it captures and launches the contact preparation and
+the solves of the shaft and the surface correction and makes the device
+workspace of the host Anderson mixing (`capture_contact_graphs`), whose owners
+give back the work they counted; these
+launches are discarded work, and every accepted array and work counter is
+given back. With a trial budget the call also allocates the best load of a
+host-controlled loop, so that the first such loop of a run does not. The grasp
+scene then makes the phase load predictor of its control frames with the
+storage of its three frames and of the engagement snapshot of every phase
+(`PhaseLoadPredictor.reserve`), so that neither the first frame nor a coupled
+step of the run allocates them. Geometry
+caching and batched
 broad-phase queries preserve the original bounds arithmetic and ordering.
 On CUDA, conservative Warp BVHs return sorted tetrahedron/facet candidates;
 the original float64 NumPy containment and cubic swept-crossing tests still
 decide material membership and crossings. Candidate overflow falls back to
-the complete CPU query. Accepted material history remains host-owned, and
-cached endpoint geometry is reused only for matching nodal positions.
+the complete CPU query. The swept facet query pads the box of the tip's path
+by the largest motion of the tissue, on each axis, from the accepted positions
+that the interaction committed to the query. A step may start from other
+positions: a contact that places nodes moves them in the accepted state after
+the acceptance. The box is then grown further by the largest difference of a
+coordinate between the start positions and the committed copy, measured for
+that step, and the exact test reads the actual start positions. Every facet
+whose swept bounds reach the tip's box has end bounds within that growth and
+motion of it, so the candidates still hold all facets the exact test needs.
+The complete CPU query is kept without a committed copy, when the query
+measured its motion from an earlier accepted state, for another particle
+count, for a difference that is not finite, and on overflow. The interaction
+counts both per test of one surface (`shifted_start_candidate_tests`,
+`shifted_start_host_tests` by reason) and keeps the largest growth
+(`shifted_start_largest_growth`). Accepted material history remains
+host-owned, and cached endpoint geometry is reused only for matching nodal
+positions.
+The allocation-free CUDA mesh refit retains Warp's triangle-bound arithmetic
+and bottom-up BVH updates. Its float32 per-triangle edge sums are accumulated
+in float64 by one complete warp per 256-face chunk, followed by a complete-warp
+float64 total and the existing float32 mean conversion. This changes only the
+deterministic reduction order. General wide-range inputs have the usual
+float64 summation-roundoff bound; equality to the earlier serial double sum is
+not promised for every range, nor is bitwise equality to native float32 CUB
+scan. The original serial reduction remains on CPU. No bounds or edge values
+are retained across a move unless the existing static-vertex mask permits it.
 Contact checks distance/side, footprint weight and force contribution before
 material visibility, keeping the original facet order and positive-weight
 nonpenetrating blocking facets in normalization. For verified local passages,
@@ -753,7 +948,7 @@ changes scheduling, not the contact equations. These optimizations add no
 gradient, force-history convergence or material-accuracy guarantees.
 
 `capture_coupling=True` additionally captures the repeated established-tunnel
-solve in [coupling_graph.py](../src/newton_solver_suturebot/_src/coupling_graph.py).
+solve in [coupling_graph.py](../src/newton_solver_suturebot/_src/solvers/coupled/coupling_graph.py).
 FEM, rigid integration, geometry updates, force evaluation, Aitken relaxation,
 adaptive inner tolerances and ALM dual decisions run inside a conditional CUDA
 loop. Their budgets and acceptance criteria are unchanged. A finite-state
@@ -764,7 +959,98 @@ Anchor/segment projections run in parallel with the original double-precision
 arithmetic, followed by the same ascending first-minimum selection. Candidate
 material masks are recomputed for every trial; only allocations and accepted
 topology are reused. Krylov workspaces for the existing tolerance levels are
-allocated once and retained across timestep/track recaptures.
+allocated once and retained across track recaptures.
+
+Whether the accepted track transmits a shaft interaction selects the
+correction of a trial: with an engaged track the residual is corrected by the
+shaft metric, without one it is relaxed as it is. For the free needle on
+native MuJoCo this flag is device data as well. The trial graph issues both
+corrections behind one device flag, each with the launches, and in the
+order, of a graph that holds that correction alone, and the host writes the
+flag before a launch when its value has changed. An entry or an exit of the
+needle therefore neither drops nor captures a graph; before, the flag was an
+entry of the trial signature, and the graphs of both state buffers were
+captured again at every flip. The corrected branch is the device part of the
+correction, the anchor and diagonal preparation and the Krylov solve: its
+launches over the track have the size of the track reserve and read the live
+count, so the branch can be captured before the track has a sample. With a
+response-basis start guess, whose binding is host work of every correction,
+the flag stays an entry of the signature. So it does in the captured loop of
+the articulated tools on MuJoCo Warp without a surface metric, whose rigid
+adapter applies the correction itself: there a flip captures the graphs of
+the other value. With a surface metric the flag is not evaluated. All three
+are as before.
+
+`NeedleTissueCoupler.capture_graphs(native=True)` is the start-up entry
+described above for that backend. `fem_needle_insertion` and
+`fem_needle_suture` call it when they are run as examples; a caller that
+does not ask is declined, as before. There is no rigid interval to capture:
+it is the native step behind the compact bridge. The trial graph is captured
+and launched with an empty track, a state that the device trials of a run
+never start from: the one trial of that launch asks for the host path and
+the loop ends. The contact preparation and the solve of the host-controlled
+correction are captured and launched with a zero residual
+(`capture_contact_graphs(native=True)`), and the kernel modules and the
+buffers that only eager code of such a step uses are loaded and allocated
+first. The attempts step neither MuJoCo nor an accepted state, and end like
+a rejected step.
+Measured on cuda:0 on 2026-11-17: the flag flips six times in the whole demo
+of `fem_needle_suture` and six times in the self-test of
+`fem_needle_insertion` followed by a slider session, with no capture (before,
+both buffer graphs were captured again at every flip).
+`tests/test_needle_coupling_graph.py` compares the steps on both sides of a
+flip with host-controlled trials and holds the rule of where the graph
+branches, `tests/test_mjw_device_trials.py` pins the signature entry and the
+captures of the MuJoCo Warp loop without a surface metric and a response
+basis, and `tests/test_needle_startup.py` checks
+that the start-up call leaves the accepted states, the native integration
+state and the work counters as they were and that every graph it captured has
+been launched.
+
+The time step is device data for these trials. One `StepTime`
+([step_time.py](../src/newton_solver_suturebot/_src/utils/step_time.py)),
+owned by the FEM solver and shared by the coupler with the interaction, the
+contact preconditioner and the rigid interval, holds $h$ as one `float32`
+and one `float64` and the rigid microstep $h/n$ ($n=4$ microsteps in the
+grasp scene) as one `float32`. The host
+forms each value in double precision, as it did when the value was a launch
+argument, and writes it only when $h$ changes and never during a capture; the
+kernels read element 0 and their arithmetic is unchanged. A retried shorter
+interval therefore replays the captured trial graph: $h$ is not part of its
+signature. The free needle's native damping, which its drive scales with $h$,
+is read from device arrays in the same way. The tangent refresh runs outside
+the graph in `refresh_tangent`. Its tetrahedral and hexahedral kernels read
+$h$ from the same arrays; the mass, spring and triangle blocks, which take
+$h$ as a launch argument, are assembled only at construction, on a changed
+$h$ and on a topology refresh, and that assembly raises during a capture.
+
+The other graphs of a coupled step read the same arrays, and none is keyed on
+$h$: the FEM step of the host-controlled trials, the rigid solver's own
+interval, the force graphs of the host-controlled trials, the preparation of
+the contact preconditioner and the held FEM start. The code that launches one
+of them writes $h$ first, outside the capture. A graph is captured for a
+state buffer, a solver level or array storage, and replays at every $h$.
+The worker thread owns a second `StepTime` for its accepted interval, with
+$1/h^2+c/h$ of its consistent mass held as one `float64` that the host forms
+and refills when $h$ or the mass damping $c$ changes.
+A write of another $h$ while a graph is being captured raises. If a value
+that the host derives from $h$ cannot be formed, as for $h=0$, nothing is
+written and the arrays keep the previous $h$.
+
+A graph that a caller captures itself reads the same arrays. `SolverFEM.step`,
+the tangent refresh of `refresh_tangent`, the thread step and the cutting
+helpers (`MaterialHolds`, `CutSurfaceContact`, `CutVolumeGuard`, which take
+the solver's `step_time`) hold no $h$ by value, so such a graph uses the $h$
+that the arrays hold when it is launched: call `solver.step_time.set(h)`
+before the launch, after `refresh_tangent(q, h)` outside capture when $h$
+differs from the assembled one. A constant $h$ remains in three places, none
+of which changes during a run: the frame graph of `needle_thread`, captured
+before the run, in which stock Newton's `SolverMuJoCo.step` fills MuJoCo's
+time step and the hold gains are formed from the step at construction; the
+relaxation factor of `ThreadCapsuleContact`, formed once from the nominal
+step and used by eager and captured steps of every size; and the force sum of
+a captured differentiable FEM step, whose solver accepts its construction
+step only.
 
 The captured attempt copies the complete incoming state once at graph entry.
 FEM and rigid integration overwrite the evolving particle/body/joint coordinates
@@ -800,220 +1086,13 @@ this is a device-resident repeated solve, not fully device-resident history
 management. CPU execution and unsupported configurations retain the original
 solver. Differentiation through this history-dependent path is unsupported.
 
-### Simultaneous MuJoCo/FEM momentum and friction
+### Needle query launch sizes
 
-The public `SolverMuJoCoFEM` in
-[solvers/mujoco_fem/solver.py](../src/newton_solver_suturebot/_src/solvers/mujoco_fem/solver.py)
-uses a joint solve for eligible finite-compliance tunnel steps. It retains the
-prepared affine FEM mechanics, native rigid integrator and physical contact law
-above. It does not solve a fully nonlinear FEM equilibrium or replace the
-material, passage or event model.
-
-For $N$ tissue nodes and $K$ accepted track anchors, the unknowns are
-
-$$
-U=(\Delta v_1,\ldots,\Delta v_N,\Delta v_r,\,
- L R_n\Delta\omega_{\rm local},\,\zeta_1,\ldots,\zeta_K),
-\qquad \zeta_i=\frac{\tau_i}{\rho h}.
-$$
-
-$L$ is the torque scaling length, $R_n$ is the accepted rigid orientation,
-and $\tau_i$ is axial friction density in N/m. Each scalar $\zeta_i$ occupies
-one lane of a three-component device row; the other lanes are identity
-equations. Motion increments and $\zeta$ have velocity units. Fixed tissue
-increments are prescribed as zero. At the reconstructed endpoint, material
-point $x_i$, closest shaft point $y_i$, tangent $t_i$ and quadrature length
-$\ell_i$ define
-
-$$
-d_i=(I-t_it_i^T)(y_i-x_i),\quad
-n_i=\frac{(1-c/\|d_i\|)_+}{\alpha}d_i,\quad
-s_i=t_i^T\!\left(v_r+\omega\times(x_i-c_r)-\sum_j w_{ij}v_j\right),
-$$
-
-$$
-p_i=\operatorname{clip}(\tau_i+\rho h s_i,-\mu\|n_i\|,\mu\|n_i\|),
-\qquad R_{\tau,i}=\ell_i(\tau_i-p_i).
-$$
-
-Here $c_r$ is the rigid COM, $w_{ij}$ are material barycentric weights,
-and $\alpha>0$ is physical normal compliance; $n_i=0$ inside clearance.
-The normal reaction is eliminated analytically, while friction density and
-motion are solved together. The needle receives
-$-\ell_i(n_i+p_i t_i)$, with the opposite barycentric tissue force and the
-moment at $x_i$. The free tissue momentum equation is
-$A_D\Delta v=b(f_{\rm ext}+f_{\rm law})$; rigid momentum uses the
-`implicitfast` blocks above, including its gyroscopic angular term.
-Momentum residuals are divided by $h$, and rigid torque rows by $L$.
-Together with $R_\tau$, active rows therefore have force units.
-Using the projected $p_i$ in momentum has the same roots as using $\tau_i$:
-their momentum rows differ by the contact scatter of $R_{\tau,i}$.
-Inactive or zero-length anchor rows reduce to identity equations.
-
-[kernels.py](../src/newton_solver_suturebot/_src/solvers/mujoco_fem/kernels.py)
-constructs a nonsymmetric quasi-Newton action. Outside clearance its normal
-derivative is
-
-$$
-K_{n,i}=\alpha^{-1}\left[(1-c/r_i)(I-t_it_i^T)
- +(c/r_i)e_ie_i^T\right],\qquad r_i=\|d_i\|,\quad e_i=d_i/r_i.
-$$
-
-Let $\chi_i=1$ when $|\tau_i+\rho h s_i|<\mu\|n_i\|$ with positive capacity,
-and zero otherwise, and let $\sigma_i$ be the sign of that projection
-argument. With $b_i=\ell_i\rho h$, the search action uses
-
-$$
-\delta f_{n,i}=\ell_i h K_{n,i}J_{g,i}\delta u,\qquad
-\delta f_{t,i}=\chi_i b_i(t_i^TJ_i\delta u+\delta\zeta_i)
- +(1-\chi_i)\mu\sigma_i e_i^T\delta f_{n,i}.
-$$
-
-$J_i$ gathers relative motion at the material force point; $J_{g,i}$ uses
-the closest shaft point for the geometric angular lever. The force correction
-scatters through $J_i^T$, and the friction row is
-$b_i\delta\zeta_i-\delta f_{t,i}$.
-Closest features, tangent and rotation derivatives are frozen for this search
-action; actual geometry is reevaluated for every residual. Surface forces are
-included in that residual, but their derivative is currently omitted.
-The normal-dependent sliding bound and rigid gyroscopic block make the full
-action nonsymmetric. Frozen geometry and the omitted derivative prevent a
-claim of an exact full Newton Jacobian or general superlinear convergence.
-
-[trials.py](../src/newton_solver_suturebot/_src/solvers/mujoco_fem/trials.py)
-uses restarted GMRES (restart 16, maximum 128 iterations, relative search
-tolerance 0.02) with an approximate block motion/constraint preconditioner.
-Its local friction Schur denominator is
-$S_i=(1-\chi_i+\epsilon\chi_i)b_i+\chi_i b_i^2m_i$,
-where $m_i=t_i^TJ_iH_0^{-1}J_i^Tt_i$ uses the block motion inverse.
-Invalid or unsupported sticking mobility fails the search.
-The $\epsilon=0.01$ term also adds
-$\epsilon\chi_i b_i\delta\zeta_i$ to the search friction row, limiting
-underdetermined sticking corrections. It changes neither the evaluated
-friction residual nor physical compliance. The free-motion initializer puts
-nonquiet sliding guesses on the current Coulomb bound; its
-$10^{-6}$ m/s cutoff is only a predictor deadband. Quiet history is clipped
-to current capacity. Accepted multipliers are not changed by initialization.
-
-[control.py](../src/newton_solver_suturebot/_src/solvers/mujoco_fem/control.py)
-backtracks on a block-weighted squared residual norm. At the start of each
-Newton line search, it freezes the scales
-
-$$
-\sigma_F=\eta\|b_0\|_2/h,\qquad
-\sigma_R=\epsilon_a+\epsilon_r F_0,\qquad
-\sigma_T=\epsilon_a+\epsilon_r S_0,
-$$
-
-where $F_0$ is the current maximum scaled interface-force component and $S_0$
-is the ALM force-density/length scale used by its dual criterion. It then
-compares the base and every backtracking proposal using the same merit
-
-$$
-\phi=\|r_F\|_2^2/\sigma_F^2+
-\|r_R\|_2^2/\sigma_R^2+\|R_\tau\|_2^2/\sigma_T^2.
-$$
-
-The tissue and rigid residuals have force units, with rigid torque divided by
-$L$. This weights tissue momentum progress against the configured FEM accuracy
-instead of allowing larger rigid or friction blocks to dominate the search. Growing a proposal's RHS or
-force scale cannot reduce the merit by changing its denominator. Zero RHS
-uses $\sigma_F=\epsilon_a$ only to define a finite search objective; it does
-not change the exact-zero FEM acceptance rule below. Friction L2 is a search
-surrogate, while the aggregate L1 dual criterion remains authoritative.
-The Armijo coefficient is $10^{-4}$, with at most 24 search evaluations and
-the same shared force-evaluation budget. Passing all physical residual gates
-also permits a search point to request final certification. The inexact quasi-Newton direction
-is not guaranteed to descend in this merit; failure still rejects the step.
-Neither search weighting, regularization nor a successful linear solve
-replaces the physical or FEM accuracy gates.
-
-The Newton proposal checks the original force, normal and aggregate friction
-criteria. It also assembles the exact prepared RHS for its current loads and
-records the true FEM residual, preserving the ordinary load-before-predictor
-floating-point order. Relative FEM accuracy is enforced at the corrected
-endpoint, rather than requiring every proposed fresh law to meet that
-additional relative criterion before correction.
-
-Final certification copies the balanced current contact law into applied load
-$F_a$. It warm-starts one prepared affine FEM Krylov solve from the joint tissue
-increment under $f_{\rm ext}+F_a$, using the configured FEM tolerance and budget.
-This solve reconstructs tissue from the same accepted incoming state; it does
-not integrate forward from the Newton proposal. The canonical device rigid
-integrator advances under the same applied load, then the contact law is
-reevaluated as $F_b$. No FEM solve runs inside ordinary Newton or line-search
-residual evaluations.
-
-The directly recomputed applied-load FEM certificate requires
-
-$$
-\|A_D\Delta v-b(f_{\rm ext}+F_a)\|_2^2
-\leq\eta^2\|b(f_{\rm ext}+F_a)\|_2^2,
-\qquad \eta=\texttt{linear\_solver\_tolerance},
-$$
-
-over free tissue rows. Both sides have squared impulse units
-$(\mathrm{N\,s})^2$. A componentwise force tolerance alone cannot enforce this
-relative accuracy when the RHS is small or many nodal defects accumulate.
-No guessed absolute or roundoff floor relaxes this check: zero RHS requires
-zero measured residual. Very tight requested tolerances can be unattainable
-with the float32 sparse action, in which case the step rejects within its
-budget. This true residual check can be stricter than the original CG solver's
-recursive stopping estimate; a normally returning CG solve cannot override it.
-
-The certificate also retains both free-node momentum force defects
-
-$$
-r_a=\frac{A_D\Delta v-b(f_{\rm ext}+F_a)}h,\qquad
-r_b=\frac{A_D\Delta v-b(f_{\rm ext}+F_b)}h.
-$$
-
-The maximum of their component magnitudes and the original interface-load
-defect must meet the force criterion, alongside the normal and aggregate
-friction consistency criteria. Fresh-law relative FEM L2 accuracy is recorded
-but is not a separate acceptance gate. The partitioned contract solves under
-$F_a$ and permits a bounded difference $F_b-F_a$; since the impulse residuals
-satisfy $h r_b=h r_a-[b(f_{\rm ext}+F_b)-b(f_{\rm ext}+F_a)]$, requiring the same
-relative L2 tolerance for both loads can impose a much smaller contact-force
-accuracy than the configured interface criterion. The retained true applied
-L2 and two momentum force checks are additional safeguards, not a claim of
-bitwise equivalence to partitioned iterations.
-
-Subtraction, division and reductions use float64; sparse action and RHS
-storage remain float32. These are directly recomputed discrete residuals,
-not exact arithmetic or a forward-error bound. Residual defects are not
-relabelled as physical applied forces. Fixed contact reactions remain
-separate from prescribed-motion rows and total structural support reactions.
-Fresh-law scatter balance and finite-tolerance applied-load world-moment
-balance remain distinct diagnostics.
-
-A failed finite certificate can continue from its corrected tissue increment,
-canonical rigid increment and unchanged working friction unknown. Every new
-force evaluation still consumes the shared budget. Thus there is one affine
-FEM solve **per certification**, potentially several certifications per accepted
-step. The device `final_corrections` counter resets per physical attempt and
-records these solves, including rejected attempts; it is diagnostic only.
-
-The host then advances native MuJoCo once under the same applied wrench and
-requires the canonical joint/body endpoint to match bit for bit. Motion and
-event checks precede the single history commit; rejection restores native
-state, FEM numerical guess and multipliers. A failed certificate may resume
-the joint solve within its remaining budget. Conservative permission failure
-returns to the established event path. This specialization requires the
-validated single zero-COM `implicitfast` free body, supported CUDA capture,
-assembled non-differentiable FEM and positive tunnel compliance. Penalty,
-hard-wall and unsupported configurations retain the established integration
-path; there is no articulated-body, cable or coupled-gradient implementation
-in this solver. The equations and local reference tests do not establish trajectory
-equivalence, unconditional stability, physiological accuracy or a frame rate.
-Primary-method inspiration and implementation boundaries are mapped in
-[papers](papers.md#simultaneous-momentumfriction-solve).
-
-Both solvers launch the small, branch-heavy shaft and surface query batches
+The coupling launches the small, branch-heavy shaft and surface query batches
 with one sample per GPU block, including captured fallback paths. Explicit
-query launch overrides are honored by both graph constructors and included
+query launch overrides are honored by the graph constructor and included
 in the capture signature. This changes scheduling only; the query kernels,
-force laws and acceptance checks are shared. Different atomic accumulation order can still
+force laws and acceptance checks are unchanged. Different atomic accumulation order can still
 change later engagement or retry decisions, so stationary force agreement
 does not establish trajectory equivalence. This tuning targets the single
 needle example; throughput for batches of independent scenes is unqualified.
@@ -1060,6 +1139,78 @@ counterpart uses the shortest quaternion rotation error. Damping is estimated
 from mass and the largest inertia eigenvalue. Desired pose is never substituted
 for actual state during stepping. Timestep and track-spacing refinement remain
 necessary for any particular parameter/geometry choice.
+
+An entry or an exit is a passage of the tip, so `accept` also looks at the
+tip's own motion. An accepted step that is not converged beside an opening (a
+trial loop kept at the trial budget, or a step within the relative tolerance
+of a large load) can leave the tissue surface on the other side of the tip for
+that one step, while the tip keeps moving the same way; the surface falls back
+in the next step. The point-in-tetrahedron test alone counts that as an entry
+and an exit of a needle that never came back. For a change of side `accept`
+therefore takes the face of the event, its outward unit normal $n$ at the
+accepted state, and the tip's displacement over the step,
+$d=(x_{\rm tip}-x_{\rm start})\cdot n$. The face of the event is the face of
+the swept crossing in the direction of the change; else the face at which the
+last accepted step held this change, while that face stands; else the face
+nearest the tip. A kept face stands while the tip is still past its plane and,
+for an exit, while the exit branch would take it: the tip not more than two
+needle radii $r$ from that triangle, and the triangle's point nearest the tip
+not in supported or inactive tissue. These are the exit branch's own tests of
+its face, read by the same lines, so that branch never refuses a kept face. In
+the steps after a held one no surface crosses the tip, and the nearest face
+can be another one: the far face of tissue thinner than twice the tip's depth,
+or another wall across a gap. Its normal reads the tip's motion with the other
+sign, so the face of the hold is kept until the next accepted step. An entry
+with $d>\epsilon$ and an exit with $d<-\epsilon$ are held: no event, no
+counter, no opening, no track section and no failure check of that branch. The
+tip keeps its side, a staged reuse of an opening is committed as before, and
+the next accepted step asks again. $\epsilon$ is 16 units in the last place of
+the tip's largest `float32` coordinate (about 60 nm at 0.04 m), the resolution
+of the stored pose, so tissue that closes over a needle at rest still commits
+its entry. A change of side is held only while the tip is at most one resolved
+step (`step_resolution`) past that face. A change of side that the tissue
+makes against a moving needle is therefore committed once the tip is more than
+one resolved step past the face, or once the tip no longer moves the other way
+by more than $\epsilon$. It is committed at the face it was held at, or at the
+nearest face when that one no longer stands: a tip that slid along the surface
+during the hold, more than $2r$ from the triangle it was held at or to where
+that triangle's nearest point is supported, leaves by the triangle it is then
+over. Otherwise the exit and its opening stay at the triangle of the hold, at
+its point nearest the tip: in the fixture 0.46 mm from a tip that slid that
+far onto the next triangle of the same plane. If the tip is back on its side
+first, nothing is committed, however many steps that takes: a hold has no
+limit in time. In the one-tetrahedron fixture, tissue that comes 290 µm over a
+tip that withdraws 2 µm per step (one resolved step there: 303 µm) is held for
+142 accepted steps, until the tip is out again, with no entry and no exit.
+Back on its side need not be back through the same face: after a held entry, a
+needle that reverses and leaves by another face within the next accepted step
+commits no entry and no exit. That needs tissue thinner than the tip's travel
+in one step, about 11 µm in the demo. While an exit is held the tip counts as
+in the material, so a second wall that closes over it is ordinary travel: a
+track sample and a visited tetrahedron in that wall, no entry, and the exit is
+later committed at the wall's face. A commit after a hold runs the checks of
+its branch at the positions of that later step, and can end in status `failed`
+where a commit in the first step passed: the exit is refused when the tip is
+by then more than $2r$ from the surface or over supported or inactive tissue,
+the entry when it is more than $2r$ from its opening. For the exit of a tip
+that is over the triangle of the hold, or over a neighbour in its plane, the
+tip was at most one resolved step from the surface when held, so the first
+needs the tip and the surface to move apart by more than
+$2r-{\tt step\_resolution}$ in the step of the commit: 0.3075 mm in the needle
+scenes ($r$ = 0.28 mm, resolved step 0.2525 mm). The needle's own motion in
+that step is part of it. With a needle at the resolved step the surface need
+only move 55 µm; at the demo's 11 µm per step it must move about 296 µm, where
+the largest single-step move measured is 0.17 mm. For the entry the hold gives
+no such bound: the tip can be anywhere within $2r$ of its opening when the
+surface passes over it. In the fixture ($r$ = 0.5 mm) an exit held 8 µm past
+the face is committed after the tissue retracts 0.9 mm more in one step, and
+fails after 1.2 mm. The entry is also refused, as it was before this rule,
+when the opening that the held step's trial staged is not the one of the face
+of the event: in tissue so thin that the held tip is nearer the far face. That
+is the authorization of entries, which this rule leaves as it is. This is host
+arithmetic in `accept` on the steps with a change of side: no kernel, no
+device read, nothing in a captured graph. It does not make the unconverged
+step converge.
 
 For the example's zero-COM-offset free joint, the velocity-dependent damping
 is supplied as MuJoCo joint damping and integrated by `implicitfast`.
@@ -1309,6 +1460,16 @@ The friction anchor of a node that has grip is kept as a point of the surface
 triangle under it and moves with the surface, so a thread that sticks rides
 on the tissue.
 
+Small CUDA thread batches evaluate every ordered chord pair in parallel before
+selecting the nearest self-contact in the original ascending element order.
+The original segment arithmetic, reach, adjacent-element exclusion, strict
+positive-distance test and first equal-distance tie are preserved. Scratch is
+bounded to 131072 ordered pairs with at most 128 elements per chain. CPU,
+differentiable/taped, custom-query and larger cases retain the serial query.
+This changes scheduling only: the contact planes, all tissue/tool contacts,
+Newton stopping rule, update budget and potential-based line search are
+unchanged. Thread state advances only after accepted rigid/FEM intervals.
+
 After the thread's step the contact force of a node, normal and friction,
 with the opposite sign, is spread over the tissue particles among the three
 vertices of its triangle, and the force on an eyelet over the four vertices
@@ -1338,6 +1499,60 @@ angle $\varphi$ becomes an eyelet once the tip angle exceeds $\varphi$ plus the
 needle's angular span, that is when the tail has passed it. The thread is
 stepped once per accepted step of the needle and the tissue, with that step's
 size, and the relaxed loads enter the next step as external forces.
+
+In the grasp scenes nothing is planned: the thread follows the track that the
+needle has cut (`WorkerThread` with `thread_tracks`, the default of the grasp
+scene). The needle/tissue interaction records that track as material points a
+quarter millimetre apart, in sections, one per entry of the tip into material
+(a passage). `NeedleTrackEyelets` reads those rows from the interaction's host
+lists after every accepted step, nothing from the device, and makes eyelets of
+them while the needle goes in: the first row of a section, every later row
+whose rest position is at least the spacing $s_e$ from the last eyelet of its
+section, and at an exit of the tip the last row of the section unless it is
+nearer than $s_e/2$ to the last eyelet. The eyelets of a section are one
+group. An eyelet is written in place into a reserve that is fixed at
+construction (`ThreadTissueCoupling.add_track_point`): with $p$ planned
+passages per bite, a needle of length $L$ and a track no longer than the
+needle, a bite makes at most $\lfloor L/s_e\rfloor+2p$ eyelets in $p$ groups;
+the reserve holds two bites, 36 eyelets and 4 groups for the default stitch
+($L=22.4$ mm, $s_e=1.5$ mm, $p=2$). An eyelet beyond the reserve is not made
+and is counted. The spacing is the suture example's, a choice between the
+mean tissue edge (1.31 mm; closer eyelets load the same nodes) and
+$\sqrt{8Rr}=3.4$ mm, beyond which the chord between two eyelets leaves the
+needle's circle of radius $R$ by more than the thread's radius $r$.
+
+The tail threads the eyelets. In the tissue update of the thread's accepted
+step, after the eyelet positions and before the groups' spans, one kernel over
+the reserve takes the tail $\mathbf x_t$ of the needle and the unit direction
+$\mathbf o$ in which the thread leaves it, from the accepted pose, and threads
+an unthreaded eyelet at $\mathbf x$ at the thread's first node when
+
+$$
+0\le a\le s_e ,\qquad |\mathbf d-a\,\mathbf o|\le 2\,r_w ,\qquad
+\mathbf d=\mathbf x-\mathbf x_t,\quad a=\mathbf d\cdot\mathbf o ,
+$$
+
+that is when the eyelet lies behind the tail by at most one spacing, so that
+the eyelet behind the one being passed is out of reach, and beside the
+thread's line by at most two wire radii $r_w$, the radius within which the
+needle/tissue interaction takes a point for the needle's track. A tail that
+passes a millimetre beside a track threads nothing. The eyelet spring is the
+contact spring $k=Eh$, so the relaxation above is unchanged, and a scene whose
+tail never enters the tissue steps bit for bit as without the reserve on the
+CPU (the thread alone, and the coupled grasp scene over its first entry and
+exit, with and without the swept tool/tissue contact). The step graph of the
+thread is captured at start-up with these kernels in it, each launched over
+the whole reserve; an eyelet that appears later is four rows written from the
+host, and no graph, array or kernel module is made after start-up.
+
+The suturing example defaults to four physical substeps per 60 Hz frame
+(240 Hz). A default three-stitch CUDA run at the insertion example's single
+substep inverted tissue during the second stitch at 22.867 s. Four substeps
+completed the same row, closure and drop with the same material, mesh, forces
+and commanded speed. The force relaxation fraction is per physical step, so
+reducing the timestep also shortens its delay in seconds; it is not a
+timestep-independent constitutive law. The coupled Tet4 motion check above
+remains active at every substep.
 
 Between two stitches of the planned row, which are copies of each other, the
 needle makes the rest of its full turn while its circle's centre moves on.
@@ -1442,7 +1657,7 @@ and additional CUDA contexts can substantially change throughput.
 ## Physical distal grasp and worker-owned thread
 
 The optional `SutureSceneConfig(control_mode="physical_grasp")` selects
-[GraspScene](../src/newton_solver_suturebot/grasp_scene.py). The needle remains
+[GraspScene](../src/newton_solver_suturebot/examples/grasp/_grasp_scene.py). The needle remains
 an independent free rigid body in native MuJoCo. Each tool has two fixed-trocar
 RCM hinges, an axial insertion slide, shaft roll, two wrist joints and two
 independently actuated revolute jaws. Finite native joint-position actuators
@@ -1454,7 +1669,7 @@ holds a parked pose with its own actuators and open jaws. Full robot arm
 hardware, transmissions and calibrated actuator dynamics are outside this
 reduced articulated model.
 
-[rcm_grasp.py](../src/newton_solver_suturebot/_src/rcm_grasp.py) attaches the first
+[_dvrk_rcm_grasper.py](../src/newton_solver_suturebot/examples/grasp/_dvrk_rcm_grasper.py) attaches the first
 hinge to world. Its intersecting yaw/pitch axes and downstream axial slide
 enforce a shaft line through a fixed trocar. `GraspScene` uses the registered
 port frames in the bundled
@@ -1510,7 +1725,7 @@ Those low-level defaults and reset helper are distinct from `GraspScene`'s
 registered fixed-port configuration. Both retain the source shaft radius and
 distal joint dimensions.
 
-[NativePoseIK](../src/newton_solver_suturebot/_src/pose_ik.py) fits the commanded
+[NativePoseIK](../src/newton_solver_suturebot/_src/sim/ik/pose_ik.py) fits the commanded
 wrist pose within those six joint limits using independent native scratch
 kinematics. Its solution supplies actuator targets only; it never copies a
 kinematic solution into live joint/body state. Failure to meet pose tolerances
@@ -1520,37 +1735,576 @@ its full gravitational load.
 
 The right-hand PSM1 uses the Large Needle Driver visual, and left-hand PSM2
 uses the photo-estimated DeBakey forceps visual. The LND retains source CAD;
-the DeBakey is not manufacturer CAD. Both physical assemblies currently use
-the same simplified jaw capsule dimensions, rather than separately calibrated
-instrument contact geometry.
+the DeBakey is not manufacturer CAD. Each physical assembly carries the
+collision capsules of its own instrument, fitted to that CAD; they are not
+separately calibrated instrument contact geometry.
 
-[grasp.py](../src/newton_solver_suturebot/_src/grasp.py) retains the bundled
-PSM jaw hinge frames and capsule dimensions: hinge axes are local Z, jaw length
-is local +Y, and the two jaws close across X. Their opposing capsule surfaces
-are 0.20 mm apart at zero opening; the needle collision diameter is 0.56 mm.
-The real contact solve therefore stops the closing jaws before zero angle.
-The original CAD section at the 6 mm bite has a narrower approximately
-0.065 mm gap; capsules approximate that surface and do not resolve serrations.
-The CAD and contact capsules attach separately to the articulated shaft, wrist
-and jaw bodies. Link inertias, contact friction, force limits and servo gains
-are explicit demonstration assumptions. They are not identified dVRK hardware
-parameters. No equality constraint fixes the needle to a tool.
+#### The collision capsules of a tool
 
-The wrist capsule deliberately overlaps its own two jaw capsules around the
-articulation. Those two native proxy pairs per tool are excluded from
-self-contact, preventing artificial internal loads from the coarse geometry.
-Needle, thread, shaft, opposing-jaw and inter-tool contact handling is retained.
+[_dvrk_grasper.py](../src/newton_solver_suturebot/examples/grasp/_dvrk_grasper.py) retains the bundled
+PSM jaw hinge frames: hinge axes are local Z, jaw length is local +Y, and the
+two jaws close across X. The collision capsules are not typed in. A tool has
+one capsule set, fitted to the CAD mesh that is drawn on the same body
+([_dvrk_capsules.py](../src/newton_solver_suturebot/examples/grasp/_dvrk_capsules.py),
+`dvrk_tool_capsules`), and its model publishes it (`capsule_bodies`,
+`capsule_endpoints`, `capsule_radii`, `capsule_parts`, `capsule_bounds`). The
+rigid collision shapes of the MuJoCo model, the tool/tissue contact (either
+law), the thread's contact with the tools, the measurements of
+`fem_tool_tissue` and the collision shapes that the viewer's "Show Collision"
+option draws all read these rows, in `fem_needle_grasp`, in `fem_tool_tissue`
+and in every scene built with `add_rcm_grasper` or `add_grasper`. No reader
+has radii of its own.
 
-The FEM coupling currently acts on the needle and thread. Tool/shaft capsules
+The rule. The surface of a drawn part is divided into cells: along the part by
+planes across its axis, and across it into rows side by side. Each cell gets
+the smallest capsule about its centre line that contains the surface of the
+cell: seen along the centre line, the axis goes through the centre of the
+smallest circle around the cell, and along it the capsule is as short as its
+round caps allow. A cell reaches one sampling distance (1/64 of the smallest
+extent of the part) beyond the planes that bound it, so every point of the
+surface lies between three sampled points of its own cell and nothing is left
+out between two cells. A round capsule cannot follow a right-angled edge: with
+the edge on its surface it reaches $(1 - 1/\sqrt 2)\,r$ beyond both faces of
+the edge. The capsule of a part with edges is therefore drawn in until the
+edge is as far outside it as it is outside the faces; both are then
+
+$$b = \frac{\sqrt 2 - 1}{\sqrt 2 + 1}\, r = 0.172\, r .$$
+
+That is the bound of the set: no point of a drawn part is further outside the
+set than 0.172 times the radius of the capsule of its cell, and nothing of the
+round shaft is outside its capsule. A test measures it on both instruments on
+surface points twice as close as those of the fit.
+
+The layout follows the drawn shape of each part (18 capsules per tool):
+
+| Part | Drawn shape | Capsules | Radii [mm] (needle driver; forceps) | Bound [mm] |
+| --- | --- | --- | --- | --- |
+| Shaft | tube of 4.18 mm radius with a ring and a fork at its distal end | 1 | 4.37 | 0 |
+| Wrist | square in section, 6.3 by 6.0 mm, corners at 3.8 to 4.3 mm | 1 | 3.63 | 0.62 |
+| Jaw root | the hub about the hinge (2.41 mm radius, 2 mm thick along the hinge axis) and the block between hub and blade, as far as the jaw is thicker across its closing direction than the hub's radius | 2 side by side across the closing direction | 1.26, 1.28; 1.27, 1.27 | 0.22 |
+| Jaw blade | flat (needle driver 1.5 by 2.0 mm at its root, a D in section; forceps 1.3 by 2.1 mm, a rectangle) and tapered to 1.0 by 1.3 mm and 0.6 by 1.0 mm at the tip | a chain of 3 pieces, each 2 side by side across the hinge axis | 0.85/0.80, 0.75/0.74, 0.65/0.65; 0.77/0.82, 0.71/0.71, 0.54/0.54 | 0.15, 0.13, 0.11; 0.14, 0.12, 0.09 |
+
+Measured against the CAD (`capsule_cover`): no point of a drawn jaw is more
+than 0.22 mm outside the set (its root; 0.10 to 0.15 mm along the blade),
+where the four capsules that the tools had before left the hub 3.3 mm, the
+block behind the blade 1.5 mm, the blade 0.14 to 0.43 mm and the last 3 mm of
+the forceps 2.1 mm outside the radius that the tissue contact used. The set
+reaches at most 0.21 to 0.37 mm beyond a drawn blade (0.63 to 0.72 mm before),
+0.7 to 1.1 mm beyond a root where the fork of the wrist is, and 1.4 mm beyond
+the wrist at its ends.
+
+The capsules of a blade reach across the plane in which the closed jaws meet by
+0.05 to 0.17 mm, the share of the edges of its gripping face; the drawn teeth
+reach across it by 0.06 mm. At the 6 mm bite the capsules stand 0.05 mm across
+that plane: a needle (collision diameter 0.56 mm) that the jaws hold lies on
+the tips of the drawn teeth to within 0.05 mm, where the drawn jaws were
+0.15 to 0.20 mm inside it with the capsules of before. The capsules of the two
+jaws of a tool therefore overlap when the jaws are closed, their roots lie
+side by side along the hinge axis and overlap, and both overlap the wrist
+capsule in its fork. The hinge limits keep each jaw on its side of the closing
+plane, so the pairs among the wrist and the two jaws of one tool are excluded
+from the collision; needle, thread, shaft/jaw and inter-tool contacts are
+retained. The rigid model on the device gets the constraint rows that the set
+can need (`tool_constraint_rows`: 118, where 64 were enough for one capsule
+per jaw).
+
+Two numbers of the grasp follow from the set and are not typed in. A
+reset seats each jaw on the needle in its bite (`jaw_opening_on_needle`). For
+every capsule of the jaw, the hinge angle at which it touches the wire follows
+from its row and the radius of the wire (bisection between the closed jaw and
+the largest opening). The capsule with the largest angle meets the wire first
+as the jaw closes. The jaw is placed where the capsule beside that one, the
+other of the two that stand side by side on that piece of the blade, touches
+the wire too: 0.0539 and 0.0511 rad in the default scene, 1.7 and 2.1 mrad
+further closed than the first touch, with the first capsule 10 and 12
+micrometres inside the wire (with the capsules of before the configured
+0.03 rad was the angle of the first touch). The reset is seated, not at the
+first touch, because at the first touch each jaw has exactly one of its two
+capsules on the wire, at zero gap. Measured 2026-11-17: on the device the
+jaws at first touch close by 7 and 9 mrad in the first frame and the jaw
+forces go from 0.64 and 0.83 N to 0.88 and 1.14 N in the second frame before
+they settle; seated jaws move by 0.3 and 0.5 mrad and their forces go from
+0.73 and 0.88 N to 0.72 and 0.74 N at frame 30 without a peak. On the host,
+the trial loop of the coupled step without the surface metric alternates
+between the contact sets of jaws at first touch and uses up its 160 trials on
+a needle pressed on the tissue; on seated jaws it converges in 3. From the
+settled grasp on, the two resets give the same demo (jaw angles 0.052 rad,
+smallest jaw force of a holding frame 0.602 N, self-test passed in 3 of 3 and
+2 of 2 runs).
+The regrasp at the needle's tip is planned with the same capsules
+([usage](usage.md#the-grasp-at-the-needle-tip)): they stay out of the tissue,
+and the open jaws are clear of the wire, by the bound of every capsule, when
+they come onto it (`wire_clearance`; 3.5 mm from the tip, where that grasp was
+fixed before, the tip is 0.28 mm inside the root capsule of one jaw, 0.26 mm
+from the drawn root). Since 2026-11-17 the way from the release to that grasp
+keeps every capsule of the set clear of the tissue at rest and of the wire,
+and the default procedure takes the tip with a grasp from which the tool
+pulls the needle on along its curve
+([usage](usage.md#the-way-to-the-tip-and-the-pull)): the plan takes only
+points whose descent, closing and pull-out arc the tool reaches with every
+joint 0.024 rad (the slide 0.31 mm) inside its limits, by the joints of the
+fixed-trocar tool in closed form (`arm_joint_positions`); the way back from
+the needle, each step of the rise, the way over and the way down are asked
+the same. A limit: after the pregrasp the needle is not looked at again, so
+the jaws close on the needle where the plan had it. The pull turns
+the needle about its own centre of curvature until the tissue holds no part of
+its track and its tail is one thread element past the exit, with the thread
+following through the track (above); in a scene without thread tracks until
+its tail arrives at the hole of its entry. In eleven self-tests of the pull
+through the tissue (seven without the tool/tissue contact, four with
+`--tool-tissue-contact swept`) every run completes with 2 entries and 2 exits, all 8 eyelets threaded, the
+tail 1.81 to 2.01 mm above the deformed tissue, no jaw off the needle while
+it is held or pulled (smallest jaw force in the pull 0.67 N), and
+the joint targets 0.39 rad from a limit from the closing to
+the end of the pull. In the nine runs of the pull to the entry (three
+self-tests without the tool/tissue contact, three with the swept contact,
+three more with that contact and records per physics interval) the smallest jaw force in the pull was 0.57 N
+and the joint targets stayed 0.36 rad from a limit.
+Link inertias, contact friction, force limits
+and servo gains are explicit demonstration assumptions. They are not
+identified dVRK hardware parameters. No equality constraint fixes the needle
+to a tool.
+
+Measured on one DGX Spark (GB10), MuJoCo Warp backend, 2026-11-17,
+self-test of `fem_needle_grasp` without the tool/tissue contact (2400 frames;
+the contact is switched off today with `--no-tool-tissue-contact`), three
+groups of three runs: with the four capsules per tool of before (regrasp fixed
+3.5 mm from the needle's tip); with the set in its first form (jaws at first
+touch at the reset, regrasp 2.1 mm from the tip, taken before the regrasp was
+planned against the tissue); and with the set as it is now (jaws seated at the
+reset, regrasp planned). The three runs of the last group shared the GPU, so
+its frame times are those of a fourth run, which had the GPU alone while other
+work used the CPU, and which passed as well.
+
+| | Before | With the fitted set, first form | With the fitted set as it is now |
+| --- | --- | --- | --- |
+| Self-test | passes, 3 of 3 | passes, 3 of 3 | passes, 3 of 3 |
+| Entries and exits of the needle | 3 and 3: frames 83, 213, 662 and 178, 316, 725 | 2 and 2: frames 83, 212 and 176, 313 | 2 and 2: frames 83, 211 and 176, 312 |
+| Lifts completed | 2 | 2 | 2 |
+| Regrasp, from the needle's tip | 3.5 mm (fixed) | 2.1 mm (fixed) | 1.84, 1.85, 1.86 mm (planned) |
+| Normal force of a jaw on the needle, settled grasp (smaller of the two) | 0.377 N | 0.690 N | 0.691 N |
+| The same after the regrasp at the tip | 0.373 N | 0.90 N | 0.87 N |
+| Smallest force of a jaw in a frame in which the needle is held | 0.33 N, and 0 in one frame of one run | 0.602 N | 0.602 N; no frame with a jaw off the needle |
+| Contacts of a jaw with the needle | 1 (2 in the lifts) | 3 (2 to 4) | 3 (2 to 5) |
+| Jaw angle on the needle | 0.029 rad | 0.052 rad | 0.052 rad |
+| Roll joint of the needle driver at the regrasp, from its limit | not recorded | not recorded | 0.008 to 0.009 rad (0.45 to 0.49 degrees) |
+| Drawn jaws inside the needle wire (frames 60 and 300) | 0.15 to 0.20 mm | 0.03 to 0.05 mm (the tips of the teeth) | not measured again |
+| Median frame | 25.2, 25.2, 25.0 ms | 24.6, 24.7, 24.7 ms | 27.8 ms (one run alone) |
+| Frames over 66.7 ms | 17, 16, 14 (8 to 9 in the first lift, 7 in the release, longest 227 to 255 ms) | 6, 5, 5 (3 in the release, 2 as the jaws close on the tip, longest 98 to 104 ms) | 7 (3 in the release, 2 while the regrasp is planned, 1 as the jaws close on the tip, 1 in the last lowering, longest 115 ms; one run alone) |
+| Graph captures and kernel module loads after start-up | 0 and 0 | 0 and 0 | 0 and 0 |
+
+With the tool/tissue contact on (`--tool-tissue-contact swept`) three whole
+runs of the set as it is now complete the procedure (2 entries, 2 exits, both
+lifts; regrasp 1.78, 1.87 and 1.95 mm from the tip; 11, 7 and 10 rejected
+steps, each taken again at a shorter step; no jaw leaves the needle while it
+is held, smallest jaw force 0.66 N; nothing captured or loaded after
+start-up). That contact is the default of `fem_needle_grasp` since the same
+day: 11 of 11 runs with it completed the procedure with the pull to the
+entry in one round, and 8 of 8 the procedure with the pull through the
+tissue (five with the option written out, three of the default)
+([usage](usage.md#tooltissue-contact)).
+
+The demo therefore ends with 2 entries and 2 exits of the needle, where it
+had 3 and 3 with the capsules of before. The third pair of before came in the
+lowering of the first lift (frames 662 and 725). Measured frame by frame in
+one run of each kind: in the bite the wire lies across the jaws, along their
+hinge axis. While the tissue is lifted it pulls on the wire, and the needle
+rocks in the jaws: the axis of its turn lies in the plane in which the jaws
+meet (within 3 degrees), 27 to 31 degrees from the long axis of the jaws and
+80 to 86 degrees from the wire at the bite. On one capsule per jaw it rocked
+by 35.2 degrees up to the top
+of the lift and on to 38.6 degrees in the lowering; on two capsules side by
+side, which carry the wire at two places across each jaw, it rocks by 26.4
+degrees. The wire at the bite moves by 0.1 to 0.2 mm in the jaws in both; the
+tip, 15.5 mm from the bite, moves by 9.4 mm and by 7.2 mm. So the tip of
+before stood 1.4 mm above the level of the tissue surface at rest at the top
+of the lift, entered the lifted tissue at frame 662, was below the rest level
+from frame 683 to 723 (0.52 mm at frame 710) and came out at frame 725. With
+the set the tip stands 3.7 mm above the rest level at the top of the lift and
+comes no nearer than 2.19 mm to it (frame 720) and 2.60 mm to the deformed
+surface (frame 713). The frames of that lowering no longer run over 66.7 ms.
+The needle's tip is within
+0.39 mm of its path of before during the insertion (median 0.15 mm), 2.3 mm
+from it during the first lift, 0.6 mm during the lift at the tip and 0.3 mm
+at the end (medians).
+
+The FEM coupling acts on the needle and thread. Tool/shaft capsules
 participate in native rigid-body collisions and in the thread's capsule
-contacts, but there is no direct grasper–FEM contact solver. Tool geometry can
-therefore intersect the tissue without a corresponding tool/tissue response.
-Full-arm collision geometry and dynamics are also absent. Visible CAD does not
-extend this physical interaction scope.
+contacts. In a scene that does not ask for it there is no grasper–FEM force
+of any kind: tool geometry
+intersects the tissue without a tool/tissue response, and visible CAD does not
+extend the physical interaction scope. A contact of the tool capsules with the
+tissue surface is an option of the scene ([below](#tooltissue-contact)), with
+a first-version law that carries light touches only and a law on the sweep of
+the capsules. The scene (`GraspScene`), `SutureSceneConfig` and the rig
+`fem_tool_tissue` keep it off; the example `fem_needle_grasp` runs the law on
+the sweep of the capsules by default
+([usage](usage.md#tooltissue-contact)). Full-arm collision
+geometry and dynamics are absent in every case.
 
-The native contact configuration uses `implicitfast`, elliptic friction
-cones, `impratio=10`, tolerance $10^{-12}$, at most 200 Newton iterations and
-50 line-search iterations. Its contact parameters are:
+### Tool/tissue contact
+
+The scene's argument `--tool-tissue-contact` selects one of two laws; both are
+outside the trial loop of the needle/tissue coupling: the iterated load, the
+residual, the corrections and the trial graph are those of a scene without
+them. This section states the first-version law,
+[ToolTissueContact](../src/newton_solver_suturebot/_src/solvers/coupled/interface/tool_tissue_contact.py),
+built by `WorkerThread(scene, config, tool_tissue=True)` (the argument without
+a value, or `first`).
+
+The law on the sweep of the capsules (`--tool-tissue-contact swept`,
+[SweptToolTissueContact](../src/newton_solver_suturebot/_src/solvers/coupled/interface/swept_tool_tissue_contact.py),
+whose module text states it) is built by `WorkerThread(scene, config,
+tool_tissue="swept", tool_effective_mass=m)` with the constants of the scene:
+the full interval as its sweep horizon, $K_c = m/h^2$ with the smallest
+effective mass $m = 1/\lambda_{\max}(J M^{-1} J^\top)$ of each tool at an end
+of one of its drawn capsules on the rigid model at the reset state (23.12 g
+and 1,331.6 N/m for the needle driver, 20.46 g and 1,178.7 N/m for the parked
+forceps), the thickness of the pad as the reach of its surface search and the
+stretch limit of the tissue solver. Its calls sit where
+the first-version law's do. The update is the last launch of the thread's
+accepted step, in the thread's step graph: it reads the accepted state and the
+pad surface that the thread's tissue coupling has refitted, places the nodes
+that are held through the next interval (positions and velocities of the
+accepted state), writes their holds into the tissue matrix
+([node_holds.py](../src/newton_solver_suturebot/_src/solvers/fem/node_holds.py))
+and stores the reaction on the tools. Before every attempt the worker adds
+that reaction to the body forces and the balancing forces of the held nodes to
+the nodal forces of the tissue solve. A graph of the thread is therefore bound
+to the particle velocities of its buffer as well, and the start-up capture
+puts back the tissue of both buffers and the holds.
+
+**Tissue between the jaws of a tool: the pinch.** The swept law has no friction: it
+holds a node along its push direction and lets tissue slide across it. With that law the
+exchange also builds
+[JawTissuePinch](../src/newton_solver_suturebot/_src/solvers/coupled/interface/jaw_tissue_pinch.py)
+for every tool whose model names two jaws and a friction coefficient with the tissue
+(`GrasperConfig.tissue_friction`, 0.83). It is part of `ToolTissueExchange.update` in every
+scene, after the law's update and on what that update published; no scene asks for it and
+`fem_needle_grasp` has no command for it. Its rules, per pair of jaws A and B:
+
+- P1 Catch. The closing direction `c` of a node is the unit vector from its foot on the
+  axis of the nearest capsule of its own jaw to its foot on the nearest capsule of the
+  other jaw, at the poses the law predicted. A free surface node that the law holds on a
+  capsule of A with `push . c > 0` is *carried* by A until it leaves the pinch. A carried
+  node that the law holds is *clamped* from the first interval in which it pushed back,
+  `push . c >= 1 / sqrt(1 + mu^2)` (a face tilted more than the friction angle pushes the
+  tissue out), the foot on the other jaw is not at a free end of its capsule set, and the
+  two faces are apart there. Closed jaws, whose capsules reach across the plane in which
+  they meet, therefore never clamp, and tissue in the groove under jaws that hold a needle
+  is carried at most.
+- P2 Squeeze and pull. `N_A = max(0, -F_A . c_A)` with `F_A` the force of the law's wrench
+  on A; `S = min(N_A, N_B)`; `T` is the size of the sum of the carried nodes' elastic
+  forces across the closing direction of their jaws. The pair clamps when both jaws have a
+  clamped node and the squeeze is above what rounding can make of none,
+  `S > u (K_c + n K_node)`: `u` is the float32 spacing of a tissue coordinate (at the
+  largest coordinate of the tissue at rest), `K_c` the held-tissue stiffness of the tool
+  (all its touching pieces together turn a depth into force with it), `n` the larger
+  number of carried nodes of the two jaws and `K_node` the largest stiffness of a free
+  surface node against a move of its own (over those nodes, the sum over its tetrahedra of
+  `(lambda + 2 mu_L) V |grad N|^2`). `S` is a sum of forces that are stiffnesses times
+  differences of stored positions, and a position is stored to one spacing: a squeeze
+  below that sum cannot be told from none. It is a resolution, not a proven bound of the
+  rounding error. In `fem_tool_tissue` it is 7.45 nm x (1273 N/m + 14 x 289 N/m) = 40 uN.
+  A clamping pair sticks while `T <= 2 mu S` and slips otherwise.
+- P3 Stick. Tissue between two faces goes where the faces go. A carried node gets the
+  velocity that takes it, in one full interval, to its place in the frame of its jaw at
+  the jaw's predicted pose: across the closing direction `c_J` of the jaw, and along `c_J`
+  by what both jaws travel alike, `s = minmod(u_J . c_J, u_O . c_J)` with `u_J`, `u_O` the
+  travel of the node's own jaw and of the other jaw at the node over the next interval
+  (zero where the two differ in sign, else the smaller in size). The node is not moved
+  here. It is held (by the law, or by the pinch for a node that the law has let go: its
+  flag in the law's hold set and the balancing force), and a held node keeps the velocity
+  it is given (the hold leaves 1/4096 of what a free node would change of it), so the
+  tissue step takes it there together with its free neighbours and the guard of the
+  interval checks that motion like any other: an interval that an element cannot follow
+  is rejected and repeated at half its length. A motion that both jaws make alike moves
+  the clamped tissue with them whatever the closing direction is, and no depth of the
+  contact changes. Where the jaws close, open, or only one of them moves, `s = 0` and
+  along `c_J` the node is the law's, with the law's bound on how far tissue can be pushed.
+- P4 Slip. No node is carried; nodes that the law holds stay marked, the others leave; the
+  travel of the jaws over the tissue is added to the slip length.
+- P5 Not clamping. Nothing is written.
+- P6 Reaction. A carried node gives its jaw its elastic force less what the law returned
+  of it, across `c_J` (times `2 mu S / T` in a slip). The part along `c_J` goes to that
+  jaw if the law holds the node, and half to each of the two jaws if only the pinch holds
+  it: the two jaws together are then paid all of that part's work in a travel that they
+  share and none in a closing in which they travel alike in opposite senses. It acts at
+  the node through the next interval, in a wrench array of the pinch that the exchange
+  adds beside the law's.
+- P7 Letting go. A node that leaves while the law holds it is the law's. A node of a pair
+  that clamped while it was carried, that the law does not hold and that carries a force
+  is let down. Per interval its own step is taken, that of one block-Jacobi iteration of
+  the tissue step for this node alone (`h^2 A_ii^-1 f`, with its block of the tissue
+  matrix without a hold), and the largest share `q` of the volume of one of its
+  tetrahedra that this step takes (exact: the volume is linear in the place of one node).
+  While `q` is above `MOVE_FRACTION` = 1/8 the node is held and gets the velocity of the
+  step shortened to that share; with `q` within the share it is free, as it is when the
+  law takes it or it is carried again. A node of a pair that never clamped is free as the
+  law leaves it.
+- P8 Reports and holds. Per tool, two running maxima over the intervals in which the pair
+  stuck (since a reset or `clear_reports`): how far a carried node was from its place on
+  its jaw when an interval ended, across `c_J`, and how far such a place travels in one
+  interval. Nothing in a step reads them. The law's holds are applied once more after the
+  pinch.
+
+Invariants, each a test of `tests/test_jaw_tissue_pinch.py`: a scene in which no pair has
+clamped keeps every bit (no particle, flag, balance force or body force is written, no node
+is kept or let down); storage is fixed and the update reads nothing back; the pinch writes
+velocities of tissue nodes and never a position, and two arrays of the law only, `held`
+and `balance`, for nodes that the law has let go. The gate for this was measured: with the
+cone of P1 the seven closed-jaw phases of `fem_tool_tissue` and a whole run of
+`fem_needle_grasp --tool-tissue-contact swept` have no interval in which a pair clamps,
+and their accepted states are bit-identical on the CPU with and without the pinch, and
+before and after the rules P3, P6 and P7 were changed on 2026-11-17 (784 + 127 frames of
+the rig, 40 + 40 of the grasp scene).
+
+The grip is the law's stored force: `S` is what the law presses on the jaws, mostly the
+stand-off force of tissue that cannot follow (rule 5 of the law), so a change of that rule
+changes the limit `2 mu S`. Limits: at the lower end of the cited friction range (0.11) no
+face is inside the friction cone and nothing clamps; a lift beyond the friction limit of a
+grip ends in a slip that the rules above do not bring to rest (below).
+
+**How far carried tissue is from moving jaws.** The carry (P3) is a step at constant
+velocity to the place that the law predicts for the next interval. When that interval has
+ended a carried node is off its place by the error of the prediction (the change of the
+jaw's travel from one interval to the next: at most one interval's travel while the jaws
+do not turn back within an interval) and by what the hold left of the move (at most
+3/4096 of it: the hold adds 4096 times the mean diagonal entry of the node's block of the
+tissue matrix, and the largest eigenvalue of that block is at most its trace). So, while
+both jaws travel alike,
+
+    distance from the place at the end of an interval  <=  (1 + 3/4096) x travel of the place in one interval.
+
+A carry that is slow by a share of the travel adds that share in every interval and is
+outside after as many intervals as the inverse of the share. While the jaws close or open
+the law itself moves the nodes on the faces, across `c_J` too, and the distance holds that
+move: 23.9 um against a travel of 15.4 um while the jaws of `fem_tool_tissue` close
+(printed with the row, not judged).
+
+Measured in the default pinch of `fem_tool_tissue` (close 0.42, lift 5 mm; CPU, the phase
+from its restart, run `f_default`, 2026-11-17): from the end of the squeeze hold to the
+end of the lower hold the largest distance is 4.55 um against a travel of 13.70 um; at the
+end of the lift the 27 carried nodes are 0.2 um above their places in the mean, the
+farthest 18.3 um; at the end of the lift hold none is more than the tracking tolerance of
+the tool (39.5 um) from its place (farthest 19.2 um), at the end of the lower hold none
+(farthest 34.7 um). With the rule before (the node moved by a step that the stretch of
+its elements bounded) the same rows read, at a lift of 3 mm (run `s3_pinch_test`): 1644 um
+at the end of an interval, one node 472 um behind at the lift hold, three nodes up to
+223 um off at the lower hold.
+
+What the same grip does beyond that (CPU, same day):
+
+- The squeeze grows with the lift (275 mN at the squeeze hold, 331 mN at the end of a 5 mm
+  lift, 478 mN at 8 mm, 697 mN at 12 mm) and the pull with it (108 N/m of rise). The
+  friction limit over the pull is 1.61 at the end of a 3 mm lift, 1.16 at 5 mm (1.27 at the
+  end of its hold), 1.06 at 8 mm and between 1.04 and 1.09 from there to 12 mm commanded
+  (10.6 mm of rise): with the script's holds of 0.5 s the pair does not slip in a lift up
+  to 12 mm (runs `s7_l3`, `f_default`, `f_l8`, `x_l12`). With the squeeze of the squeeze
+  hold alone the pull would reach the friction limit at `2 mu S_0 / k_T` = 4.2 mm of rise,
+  below the 4.4 mm of rise of the default lift (4.5 mm after its hold): the default lift
+  is held by this growth of the squeeze, which is measured and not derived.
+- The elements are what ends a lift. The smallest stretch of the tetrahedra without a
+  carried node (the tent) is 0.34 at the end of a 5 mm lift and 0.29 at 8 mm, and reaches
+  the stretch limit 0.2 of the material at 9.4 mm of rise (10.6 mm commanded); the smallest
+  volume ratio at the carried nodes is 0.11, 0.08 and, at 12 mm, 0.03.
+- A lift of 8 mm is held, lowered and released without a rejected interval; after the
+  lowering one node is 44 um from its place (row 3a of the self-check is not met). A lift
+  of 12 mm is held and fails while lowering: nine frames in, the squeeze has fallen by a
+  tenth and the pair slips for one interval, which lets go of the 18 nodes that only the
+  pinch held; it sticks again on the 9 that the law holds, the tissue hangs on them while
+  the others are let down, and three frames later a tissue step is rejected to failure
+  (smallest volume ratio 0.017). A slip under load that returns the tissue to rest is not
+  built.
+- No largest lift of the grip is derived. The default lift of 5 mm is a choice of the
+  script, beyond `2 mu S_0 / k_T`; the self-check is met there with the script's holds and
+  not at 3 mm (row 8, below), not at 8 mm (row 3a) and not at 12 mm.
+- The margin of the default lift does not cover a longer hold before it. With holds of 2 s
+  (`--hold-seconds 2.0`) the squeeze at the end of the squeeze hold is larger (324 mN: the
+  law's stored force has grown and one jaw stands 0.025 rad further open) and falls
+  through the lift, to 256 mN at the end of a 5 mm lift: the pair slips for two intervals,
+  the 10 nodes that only the pinch held leave, and the carried tissue ends 0.77 mm behind
+  its places in the mean (3.5 mm up; no interval is rejected and the release leaves the
+  tissue at rest; rows 3a, 3b and 9 of the self-check are not met; run `f10_hold2`). A
+  3 mm lift is held after the same hold (limit over the pull 1.32 at its end, 1.13 after
+  2 s of lift hold, in which the squeeze falls from 230 to 197 mN; run `x_hold2_l3`); a
+  close of 0.36 slips in a 5 mm lift as well (run `x_hold2_c36`).
+- Without the halves of P6 (the force along `c_J` of a node that only the pinch holds
+  reaching no body) the same grip slipped at 6.84 mm of rise in an 8 mm lift and failed in
+  the same way (run `s6_l8`): the halves pull the jaws onto the tissue that pulls on them.
+- A firmer close holds with more to spare and squeezes the elements at the faces thinner.
+  At a close of 0.36 of the ridge width (squeeze 364 mN, 30 carried nodes) the limit over
+  the pull is 1.33 at the end of a 5 mm lift, but the smallest volume ratio is 0.04 and, in
+  an 8 mm lift, 0.02, and after the lowering one node (5 mm) or two (8 mm) are 49 and 67 um
+  from their places (runs `s8c_l5`, `s8c_l8`).
+- Through a lift and a lowering the law's own force on the tool along the lift grows and
+  does not come back (0.38 N at the squeeze hold, 0.65 N at the lift hold, 0.69 N at the
+  lower hold of a 5 mm lift), and one jaw ends 0.03 rad further open than it began. Nodes
+  that only the pinch holds do not follow a jaw that opens alone, so at the lower hold the
+  farthest node is 35 um from its place, of 39.5 um allowed. That number is the height
+  alone, as row 3a takes it. Of the 27 carried nodes the pinch alone holds 3 at the squeeze
+  hold, 13 at the lift hold and 18 at the lower hold, and the points of the jaw bodies that
+  coincided with the carried nodes at the squeeze hold are then up to 0.23 mm and 0.36 mm
+  from them along the closing direction (across it at most 6 um): rows 3a and 3b do not
+  judge that direction (an independent record of every interval, 2026-11-17).
+
+**The work through the carried nodes.** What the tool pays is the force that the carried
+nodes give the jaws (the law's part and the pinch's) along the travel of the jaws at the
+nodes; what the tissue receives is the elastic force on the nodes along their moves. The
+two differ by the one-interval lag of the reaction (through an interval the tool feels the
+force of the state before it: half of the change of the force times the travel, which adds
+up to `T d / 2` over a lift and again over a lowering) and by the work of making up the
+distance `r` of a node from its place (`T r` per stroke):
+
+    | W_tool - W_tissue |  <=  T_max d_max + 2 T_max r_max      over a lift and a lowering, half of it in each,
+
+with `T_max` the largest pull, `d_max` the largest travel of a place in one interval and
+`r_max` the largest distance (the two reports of P8; `r` counts as far as the carry rule
+allows it). Measured from the frame records (`Measurements.work_row`, forces at the two
+ends of each frame), default pinch, run `f_default`: the tool pays 1.1242 mJ and the
+tissue receives 1.1250 mJ in the lift and its hold; the tool gets 1.0702 mJ back for
+1.0734 mJ in the lowering and its hold (differences 0.0008 and 0.0032 mJ, 0.0055 mJ allowed
+in each). The sums over every interval, with the tool's work taken from the wrenches as
+they were applied (run `iw_default`), are 1.1209 mJ paid for 1.1249 mJ and 1.0727 mJ back
+for 1.0732 mJ: the tissue's sums agree with the frame records to 0.0002 mJ, the tool's
+differ from them by the lag that the frame records leave out (0.0033 and 0.0025 mJ; the
+lag term of those intervals is 0.0031 and 0.0024 mJ). With the rule before, the frame
+records read 0.0068 mJ against 0.0063 mJ in the lift of 3 mm, and an independent sum over
+every interval 0.040 mJ over the cycle. At a lift of 3 mm the lowering is 0.0038 mJ off
+against 0.0034 mJ allowed (run `s7_l3`): the row is not met there, by 0.0004 mJ of a
+stroke of 0.40 mJ; no single cause of that remainder was separated. Summed over every
+interval (an independent record, 2026-11-17) the lift with its hold is 0.0041 mJ off at
+3 mm (0.4250 mJ paid for 0.4290 mJ) as it is at 5 mm (1.1209 mJ for 1.1250 mJ), outside
+the 0.0034 mJ allowed at 3 mm: that part does not grow with the pull, as the bound does.
+So the bound is derived from the two terms above and is not a bound of all that is
+measured: it is met at the default lift and not at 3 mm. Not in this balance: the work
+while the jaws close and open (the law's placements, slips, the release) and the law's
+own force on the tool.
+
+The self-check of the pinch in `fem_tool_tissue` holds a run to this
+(`Measurements.pinch_rows`): every carried node at its place at the end of the lift hold
+and of the lower hold (row 3a); the distance bound above from the end of the squeeze hold
+to the end of the last closed segment, and the tissue risen with its places at the end of
+the lift (row 3b); the work bound (row 8); and the grip: no slip while the jaws are closed,
+the friction limit at least the pull at the end of every frame, the tetrahedra around the
+grip above the stretch limit (row 9).
+
+One consequence of placing nodes of the accepted state after the coupled step
+has accepted it: the needle interaction keeps a host copy of the accepted
+tissue positions and answers the swept test of the needle tip from its device
+candidates only while the start positions of the next step equal that copy.
+After a placement they do not, and the test takes bounds over every surface
+triangle of the pad on the host. Its result is that of the actual start
+positions; its cost is 10 ms per interval in which a node was placed
+([usage](usage.md#on-the-sweep-of-the-capsules)).
+
+Samples. Each capsule of the tools carries a chain of spheres on its axis,
+fixed on its body, at most one sphere radius apart and reaching, cap to cap,
+as far as the capsule does. The spheres have the radius of their capsule: the
+contact uses the capsule set of the tools
+([above](#the-collision-capsules-of-a-tool)) and no radii of its own. For the
+registered tools that is 58 spheres on a shaft, 3 on a wrist and 34 (needle
+driver) or 42 (forceps) on each jaw: 274 in the scene.
+
+Law. At the accepted state of an interval every sphere $s$ takes the nearest
+point of the pad surface (one signed query of the bounding volume hierarchy
+that the thread's tissue coupling has just refitted, within the 20 mm
+thickness of the pad), its gap $g_s$ (negative inside the tissue) and the
+outward direction $\mathbf n_s$ there: the normal of the triangle, or over an
+edge or a vertex the direction between the surface point and the centre. A
+sphere is active while it carries a force or is inside the tissue; $n$ is the
+number of active spheres of the scene, counted on the device. Then
+
+$$
+f_s \leftarrow \max\!\left(0,\; f_s - \varphi\,\frac{K}{n}\,g_s\right),\qquad
+\varphi = \min\!\left(1,\tfrac12(\omega h)^2\right).
+$$
+
+$-f_s\mathbf n_s$ is spread over the tissue particles of the triangle by the
+barycentric weights of the surface point (the share of fixed nodes and of
+vertices outside the active region goes to the ground), and $+f_s\mathbf n_s$
+acts on the body of the sphere at the surface point. Both are stored and
+applied through every trial of the next interval, the nodal forces with the
+thread's forces on the tissue and the wrench with the thread's wrenches, so
+the two sides are equal and opposite as applied. $\max(0,\cdot)$ is the
+contact condition (a contact cannot pull); the force has no upper limit, and
+the law has no stiffness, damping or speed constant.
+
+Parameters, none of them tuned:
+
+- $K = \tfrac14 E\bar h$, the stiffness of one tissue node that already relaxes
+  the thread's forces on the tissue: 8.2 N/m for $E = 25$ kPa and the mean
+  tetrahedron edge $\bar h = 1.31$ mm.
+- $\omega = \tfrac{\pi}{2}\sqrt{G/\rho}/H$, the lowest shear frequency of a
+  layer of depth $H$ on a fixed base, with $G = E/(2(1+\nu))$ and $H$ the
+  vertical extent of the active region (11.9 mm): 401 rad/s, so $\varphi = 1$
+  at 1/240 s, 0.35 at 1/480 s and 0.087 at 1/960 s. $h$ is read from the step
+  time on the device; a refined interval needs no other graph.
+- $K$ and $\omega$ are device data.
+
+The step. One update is one projected-gradient iteration of the frictionless
+contact problem of the spheres against the tissue, with the step $K/n$. With
+$W$ the compliance of the tissue between the spheres, it does not overshoot
+while $(K/n)\lambda_{\max}(W)\le 1$ and is stable below 2. $W$ is symmetric
+positive semi-definite, so $\lambda_{\max}(W)\le\operatorname{tr}W\le n/K$ as
+long as no loaded surface point is softer than $K$, for any number and
+placement of contacts. $\varphi$ keeps that margin when a rejected interval is
+halved. The fixed point has zero gap at every loaded sphere, whatever the
+stiffness of the tissue; the price is a delay, with a time constant of the
+stiffness of the touched patch over $K$, in intervals.
+
+Where that argument ends. It takes $W$ as given, that is, loads whose points
+of application stay where they are. Each sphere applies one point load at its
+nearest surface point, and two cases are outside the argument. Both end in
+tetrahedra that the step control rejects (measured, see
+[usage](usage.md#tooltissue-contact)):
+
+- Held tissue. A point on a triangle with fixed vertices, or with vertices
+  outside the active region, hardly yields: a triangle with one free vertex of
+  weight $w$ and nodal stiffness $k$ has the compliance $w^2/k$, and the free
+  node moves by $1/w$ of what the point moves. The force then rises by
+  $K|g|$ per interval until the tool gives way, which takes the stiffness of
+  the tool times the overlap (by an estimate of the tool's static stiffness,
+  not measured, 0.3 to 1 N for 1.5 mm), and the free node takes the share
+  $w f$. In the default procedure the tip of a jaw meets the pad on the border
+  of the active region; the free node beside it is pushed through its
+  tetrahedra at 0.1 N. A scripted chain that does not yield reaches 1.9 N
+  there in 1.2 s.
+- The pit of a point load. Under one load the surface forms a pit, and the
+  nearest point of the sphere moves from the pit to its flank; the load moves
+  with it, the pit recovers and the flank sinks. On the 1.3 mm tetrahedra of
+  the demo a dent of 0.3 mm is carried. From 0.4 mm (nine spheres) or 0.7 mm
+  (one sphere, 11 mN) the nearest triangle alternates between two neighbours
+  from one interval to the next, with a growing amplitude at an almost
+  constant force, until a tetrahedron inverts (first rejection at 0.80 to
+  0.86 mm, 10 to 20 mN on a sphere).
+
+A contact that is to carry a jaw driven into the tissue therefore needs what
+this one leaves out: a load that is spread over the patch under a sphere and
+moves smoothly with the surface, and a treatment of tissue that is held.
+
+Where it runs. The three kernels of the update (clear, nearest points with
+the count, forces) are part of the worker thread's accepted step and of its
+two captured graphs; the sample forces and the stored wrenches are part of
+`WorkerThread.state`, which the start-up capture copies back after its
+discarded steps. The kernel that adds the wrench runs with the thread's loads
+before every attempt. A rejected attempt does not advance the thread, so the
+stored forces are applied again at the shorter interval. Storage is fixed by
+the capsules: one force per sphere, no contact list, nothing that can
+overflow. The step reads nothing back; `ToolTissueContact.diagnostics()` is an
+explicit read for reports and tests. A reset builds a new worker and with it
+a contact without forces.
+
+Limits beyond the two above. No friction. One nearest point per sphere, so in
+a fold narrower than the tool only one side pushes. Spheres on capsule axes,
+not the CAD surface. The contact needs the worker thread and its surface mesh,
+so it exists only in the physical-grasp scene.
+
+The corrected native contact configuration uses `implicitfast`, elliptic
+friction cones, `impratio=10`, tolerance $10^{-12}$, at most 200 Newton
+iterations and 50 line-search iterations. Elliptic cones change the contact
+model, while the tighter tolerance changes numerical solution accuracy. The
+comparison retains the same geometry, masses, gains and friction coefficients:
 sliding coefficient 1, torsional length 0.28 mm, rolling length 20 µm and
 normal impedance 0.9999. This follows MuJoCo's recommendation to combine
 elliptic cones, high impedance ratio and a tight Newton solve when slip is a
@@ -1558,8 +2312,11 @@ problem. Soft contact can still slip under sustained load; it does not impose
 a no-slip constraint. See [MuJoCo's solver guidance](https://mujoco.readthedocs.io/en/3.17.0/modeling.html#solver-settings).
 
 Contact integration resolution matters independently of the iteration cap.
-The physical-grasper schedule uses
-[SubcycledMuJoCo](../src/newton_solver_suturebot/_src/subcycled_mujoco.py):
+The earlier free-palm [contact comparison](validation.md#physical-grasp-contact-correction)
+separates the smooth transport fixture at 1/240 s from stronger incremental
+commands that passed at 1/960 s. Those stress measurements used 16 complete
+rigid/FEM/thread intervals per frame. A subsequent independently measured
+schedule uses [SubcycledMuJoCo](../src/newton_solver_suturebot/_src/solvers/mujoco/subcycled_mujoco.py):
 four native steps inside each of four outer FEM/thread intervals per frame.
 Each native step resolves contacts and finite joint actuators; external world
 wrenches and target commands remain held for the complete outer trial. The
@@ -1571,6 +2328,119 @@ The enclosing partitioned transaction restores the entire native integration
 state on rejection. Thread and material history advance only after an accepted
 outer interval. This finer rigid resolution does not claim a fully implicit
 thread coupling or continuous collision detection.
+
+Each native microstep is checked before its endpoint is exported.
+[NativeMicrostepGuard](../src/newton_solver_suturebot/_src/solvers/mujoco/native_step_guard.py)
+rejects fresh MuJoCo bad-position, bad-velocity or bad-acceleration warnings and
+an unexpected native clock advance. MuJoCo can reset an unstable trial to a
+finite state; endpoint finiteness alone would therefore miss that failure.
+Fresh warning sentinels also detect a reset at time zero or after an earlier
+warning whose counter was already one. Warning records retain their cumulative
+meaning after successful microsteps and roll back with the accepted native
+integration checkpoint after rejection. A separate monotonic rejection counter
+records failed trials. The existing adaptive interval retry handles these
+failures; physical tolerances, contact settings and solver budgets are unchanged.
+This guard detects native integration resets, rather than every possible
+MuJoCo warning such as an invalid control or exhausted contact capacity.
+
+The physical-grasp scene also enables
+[HeldFEMStart](../src/newton_solver_suturebot/_src/solvers/fem/held_start.py) for
+the supported native four-microstep configuration. Within one attempted coupled
+interval, the accepted particle positions, velocities, control and assembled
+FEM tangent are held constant. Their original internal/gravity/damping force
+impulse and elastic predictor are evaluated once into owned arrays. Each trial
+then preserves the original order: restore that impulse, add the current
+interface and external load, subtract the cached predictor, and restore the
+spring damping predictor term. The ordinary full-region compact solve, current
+linear tolerance and physical residual checks remain authoritative.
+
+Cache preparation happens before capture and is repeated for every accepted or
+retried interval, including a reduced timestep. Storage identity, control
+identity, tangent generation and differentiation revision guard reuse; graphs
+retain the arrays they reference. A `finally` block clears the active scope on
+success or failure, and reset also invalidates it. The accepted state and control
+must remain held throughout that scope. Custom FEM force methods, gradient/Tape
+execution, streaming or component-scaled operators, captured tangent refresh,
+and unsupported contact modes use the original force assembly. Other examples
+do not enable this cache by default.
+
+
+For this same supported CUDA native-grasp path, `response_basis_guesses` enables
+[AffineGuessManager](../src/newton_solver_suturebot/_src/solvers/fem/affine_guess.py)
+and [WarpBasisProvider](../src/newton_solver_suturebot/_src/solvers/fem/warp_basis_provider.py).
+They build a numerical response basis on the first compact free-node matrix
+$A_0$: $Z \approx A_0^{-1}E$, where $E$ selects the committed track's free
+scalar degrees of freedom. Warp CG constructs only missing columns when this
+support grows, retaining the original $A_0$. Its setup tolerance is $3\times10^{-4}$
+and its cap is 160 iterations; these control an approximate initial guess and
+never replace or loosen the physical solve's tolerance or budget. Each column
+records its true double-precision residual, including capped solves. No cuDSS,
+SciPy or external solver dependency is needed at runtime.
+
+The provider keeps its columns in fixed storage that is made once with its
+column engine, at the start-up of the scene: one slot per column for up to the
+capacity of the guess, and a second array that receives the columns of a
+request in the order of its support. A request allocates nothing. It reads the
+device once: the residual records of the columns solved since the last
+request, by which the host refuses a nonfinite column before the basis is
+loaded.
+
+**Response columns per step.** The columns are solved in the attempt that
+follows a growth of the track, one per degree of freedom of the nodes that
+carry track samples. A sample in the next tetrahedron adds one node (three
+columns); the first sample of a new section adds the four nodes of its
+tetrahedron (twelve columns, 17 to 20 ms on the GB10 in the step after an
+entry). With `AffineGuessManager(nodes_per_attempt=n)`
+(`--response-basis-nodes n`, off by default) an attempt solves the columns of
+at most `n` nodes into the provider's storage. The others follow in the next
+attempts, and the basis is loaded when the last column is solved. Until then
+the guess is withheld, as before the first track sample. An attempt that only
+solves columns allocates nothing and reads nothing from the device; the
+attempt that loads the basis makes the one read of an unbounded build. Every
+column is the solve of the same unit load on the same reference matrix $A_0$
+as in an unbounded build. That the columns are then the same was compared bit
+for bit for the provider on a small matrix, on the CPU and on CUDA
+(`tests/test_response_basis_bound.py`). In the grasp scene the bounded and the
+unbounded build loaded the same number of bases with the same column counts;
+their column values were not compared there.
+
+For a later trial, the candidate is
+$x_{\rm guess}=x_{\rm previous}+Z E^T(b-b_{\rm previous})$.
+The RHS difference comes from the original assembled physical RHS, preserving
+float32 assembly order. Unknown loads outside $E$ are omitted from this guess.
+The helper checks that the original warm start still matches its stored
+history, then compares both candidates with the **current** full free-node
+operator using double-precision squared residual sums. Nonfinite, differently
+normalized, history-mismatched or non-improving proposals keep the original
+guess. Original current-matrix CG and endpoint reconstruction always follow.
+
+The same columns initialize the shaft contact preconditioner's solve through
+[WoodburyInitialGuess](../src/newton_solver_suturebot/_src/solvers/coupled/acceleration/woodbury_guess.py).
+A small host contact system uses the current rigid metric and shaft blocks,
+with the shear of the sliding anchors of a friction tunnel;
+a device matrix-vector product expands its coefficients into a candidate.
+The candidate omits surface terms and unsupported RHS components, so its
+residual is tested against the complete current operator, including simultaneous
+surface contact. A proposal is retained only when that residual is finite and
+smaller than the zero-start residual. Otherwise the original zero start is
+used. In either case the original preconditioner CG, balanced correction and
+physical coupled acceptance remain unchanged.
+
+Numeric tangent or timestep changes may retain $A_0$ because it is only a
+residual-checked guess. Topology, fixed-node mapping, matrix storage and reset
+invalidate the binding. Capacity is 96 scalar response columns and 32 shaft
+anchors; unsupported cases retain the existing solve. Preparation occurs
+outside capture, and graph caches strongly own referenced basis and scratch
+arrays. Trial history resets on internal retries; a `finally` block disables
+the helper after each attempt. Scene rebuild and worker shutdown close owned
+response graphs. Gradient/Tape, custom solver methods and unsupported solver
+configurations use the original paths. An exception during basis setup, including
+nonfinite column diagnostics, propagates through the ordinary transactional
+rollback rather than silently hiding a CUDA or numerical failure. Track-count
+metadata is committed only after a usable support binds successfully, so an
+oversized or failed support cannot reactivate an older smaller binding on retry.
+No physical position, contact law,
+friction history, material constant or selected FEM region is replaced.
 
 CUDA physical-grasp worker initialization explicitly loads the enabled shaft
 preconditioner, tunnel-ALM and phase-predictor Warp modules. Loading compiles or
@@ -1594,7 +2464,7 @@ contact sample does not establish a sustained dropped needle.
 
 Within a supported coupling transaction, accepted joint coordinates, held
 controls and all body loads except the needle wrench remain constant.
-[RepeatedNativeInput](../src/newton_solver_suturebot/_src/mujoco_repeated_input.py)
+[RepeatedNativeInput](../src/newton_solver_suturebot/_src/solvers/mujoco/mujoco_repeated_input.py)
 performs the complete Newton float32 conversion on the first trial. Subsequent
 trials restore that converted input packet on the CPU and replace only the
 needle's six-component wrench. The original Newton force kernels perform
@@ -1629,6 +2499,24 @@ operations. Native rollback, acceptance and history commits remain outside
 this graph. `trial_prepare_graph_captures` and `trial_prepare_graph_launches`
 report its use separately from force and integration graphs.
 
+Package-owned physical coupling, native transfer and thread graph captures use
+[ScopedCapture](../src/newton_solver_suturebot/_src/utils/capture.py) to defer automatic
+Python cyclic garbage collection until capture has ended. An unreachable old
+solver can own pinned host memory; freeing that memory during a later CUDA
+capture invalidates the graph even though the new solver's arrays remain valid.
+The scope restores the original GC setting on success or exception and accounts
+for nested or overlapping scopes. It performs no collection or synchronization
+by default, and graph replay is unchanged. Explicit resource destruction or an
+external `gc.collect()` still must occur outside capture. Tests retain both the
+general BiCGStab path and an explicitly configured compact-CG capture path.
+
+The GC-only `PauseGC` scope also surrounds project-owned Warp Krylov calls,
+including response-basis setup. Warp can create a conditional graph internally
+during an ordinary CG, BiCGStab or GMRES call, before an application's explicit
+capture. This scope starts no graph and changes no linear stopping rule.
+[NVIDIA's capture guidance](https://docs.nvidia.com/dl-cuda-graph/troubleshooting/capture-failures.html)
+identifies pinned-memory release through `cudaFreeHost` as illegal during capture.
+
 Articulated tools still require native CPU MuJoCo, so the complete conditional
 coupling loop cannot run as one CUDA graph. A separate partial graph captures
 certified geometry queries, needle/tissue force evaluation and residual
@@ -1637,8 +2525,8 @@ Eligibility includes certified free-air motion, external subthreshold
 contact and established-track cases once the previous accepted tip is
 available. External contact requires no swept crossing and the original
 surface kernel's localized tip force strictly below the puncture threshold,
-with a relative `1e-6` guard margin. Existing openings are allowed only when a
-separate double-precision certificate proves that the tip is farther than
+with a relative `1e-6` guard margin. For an unpunctured tip, existing openings
+are allowed only when a separate double-precision certificate proves that the tip is farther than
 `2 * max(needle_radii)` from every opening's current barycentric material
 position, including tip-conversion and arithmetic uncertainty. This checks
 actual deformed openings rather than treating proximity to any tissue face
@@ -1650,6 +2538,24 @@ Final metadata retains the exact CPU tip embedding and publishes `contact`
 when the unchanged kernel reports a positive subthreshold force; it cannot
 stage an opening. These certificates neither change puncture criteria nor
 authorize a new or reused opening.
+
+A separate stable branch preserves an existing puncture authorization after the
+tip has left the tissue. It requires the previous accepted state to be outside
+and already punctured, the candidate tip to remain outside every material cell,
+no swept boundary crossing, and a strict double-precision proof that the tip is
+within `2 * max(needle_radii)` of the **current** opening's deformed barycentric
+position. The distance margin includes FP32 tip conversion and arithmetic
+uncertainty. The eager interaction retains that same opening on this branch and
+does not perform opening reuse while already punctured. The captured outside
+tip mask is explicitly zero, independent of previously visited tetrahedra.
+A fresh retained-opening proof is cleared and recomputed for every candidate;
+its arrays belong to the graph binding, and opening data are refreshed even
+when the opening count is unchanged. Exact host staging independently repeats
+the branch and distance checks before publishing metadata. Near-threshold,
+missing, ambiguous or inconsistent geometry retains the original whole-interval
+fallback. No physical force kernel, puncture criterion, accepted event or solver
+budget is changed by this extension.
+
 Finite-state and conservative swept/material-permission checks precede use of
 the result. Ambiguous permissions restart the transaction through the original
 exact host path; unsupported or gradient-enabled configurations select that
@@ -1720,6 +2626,18 @@ if the residual requires a load correction, the next trial restores native
 state and solves both mechanics again. Accepted history is committed only after
 the unchanged primal and dual convergence checks.
 
+The physical-grasp viewer optionally pauses its insertion arc for a small
+inspection lift. The trigger requires a measured entry, no exit, an inserted
+tip, at least 1 mm of currently engaged shaft and bilateral jaw contact. The
+gripper target moves along the normalized entry-surface normal using
+`h * (3*u**2 - 2*u**3)` over 0.75 s, holds for 0.5 s, then reverses the same
+profile. Its original arc progress is frozen throughout the two-second motion;
+contact loss pauses its motion clock. All targets pass through the existing
+rate limits, trocar-constrained joint IK and finite actuators. No needle or
+tissue state is imposed, and accepted physical steps retain the same residual
+and rollback rules. The generic controller defaults to zero lift so existing
+insertion-only benchmarks keep their trajectory.
+
 The procedural worker can seed the interface load from completed control
 frames at the same substep phase. For phase $p$ of frame $k$, one stored frame
 supplies $f_{k-1,p}$; two supply the candidate $2f_{k-1,p}-f_{k-2,p}$. A device
@@ -1729,6 +2647,14 @@ phase load. The same coefficients apply to the complete tissue-force/rigid-wrenc
 vector, preserving its balance. This is only an initial numerical guess:
 every subsequent force evaluation, convergence criterion, physical acceptance
 check and iteration budget remains unchanged.
+
+With the GPU rigid backend and its device-Anderson policy the guess follows the
+change of the load instead of the load: $f_{k,p-1}+f_{k-1,p}-f_{k-1,p-1}$, the
+last accepted load plus the change accepted over the same phase one frame
+earlier. With $d_1$ and $d_2$ the last two such changes, it is offered only if
+$\lVert d_1-d_2\rVert_\infty<\min(\lVert d_1\rVert_\infty,\lVert d_2\rVert_\infty)$,
+so a single jump is never repeated. Track growth clears this history like any
+other change of the force map.
 
 History becomes reusable only after the whole control frame completes. A
 rejected attempt, incomplete frame, timestep/phase-count change, reset, abrupt
@@ -1750,7 +2676,7 @@ exact derivative of the subcycled transition. Singular or nonfinite metrics
 fall back without accepting a different physical residual. The force laws,
 acceptance tolerances and iteration budgets remain authoritative.
 
-[WorkerThread](../src/newton_solver_suturebot/_src/worker_thread.py) owns the
+[WorkerThread](../src/newton_solver_suturebot/_src/solvers/thread/worker_thread.py) owns the
 physical ANCF thread in each worker. Its default is 90 elements over 180 mm,
 radius 0.15 mm, Young's modulus 2 MPa, density 1140 kg/m³, gravity 9.81 m/s²
 and mass damping 2 s⁻¹. Two Newton updates per accepted interval match the
@@ -1763,8 +2689,9 @@ uncalibrated constitutive and contact choices.
 On supported untaped CUDA execution, the accepted thread update is captured
 as a graph, including its conditional Newton loop, attachment, capsule contact,
 tissue contact and lagged reaction updates. The first real accepted update
-warms resources; subsequent updates replay graphs for the same timestep and
-state storage. Python counters advance once per accepted interval. Rejected
+warms resources; subsequent updates replay the graph of the same state
+storage at every accepted interval, which the kernels read from device data.
+Python counters advance once per accepted interval. Rejected
 rigid/FEM trials never advance the thread or its friction history. CPU and
 gradient-enabled execution retain the eager path.
 
@@ -1775,12 +2702,13 @@ Quadrature points, weights, forces, tangent terms and iteration budgets
 are unchanged. CPU execution, active tapes and gradient-enabled arrays
 retain the original element evaluation.
 
-For CUDA batches of at most 128 query items, tissue contact planes, stored
-friction-anchor projections and thread self-contact searches use one item per
-GPU block. These queries write independent node or element outputs, retaining
-the same arithmetic and search order for each item. CPU and larger batches
-keep the original launch width; the self-contact threshold counts all chains
-in the batch. Force-scatter kernels and the nonlinear solve are unchanged.
+For CUDA batches of at most 128 query items, tissue contact planes and stored
+friction-anchor projections use one item per GPU block. These queries write
+independent node outputs with unchanged arithmetic and search order. The
+original self-contact fallback also uses one item per block up to 128 total
+elements; the bounded pair search above handles eligible small chains. CPU
+and larger fallback batches keep their original launch width. Force-scatter
+kernels and the nonlinear solve are unchanged.
 
 The thread head attaches to the actual needle tail through `ThreadAttachment`
 in lagged mode, using the needle's mass and inertia. It assumes zero support
@@ -1792,7 +2720,7 @@ that difference. Initial loose rows are geometry initialization, not a settled
 state or a certificate that every contact is initially clear.
 
 The multi-body extension
-[ThreadRigidCapsuleContact](../src/newton_solver_suturebot/_src/thread_rigid_contact.py)
+[ThreadRigidCapsuleContact](../src/newton_solver_suturebot/_src/solvers/thread/thread_rigid_contact.py)
 uses the same body IDs, local endpoints and radii that create the MuJoCo
 capsules. Needle capsules and both tools' shaft, wrist and jaw capsules are
 included. Each `(body, radius)` group supplies its nearest capsule to each
@@ -1845,8 +2773,226 @@ This is discrete, compliant contact, not continuous collision detection or an
 exact nonpenetration constraint. It retains one contact per element and
 body/radius group, can miss unresolved curvature or a fast sweep, and uses a
 lagged friction bound. Self-contact remains the existing frictionless chord
-approximation. The worker introduces no scheduled eyelets or puncture-track
-constraints and leaves the far end free. Initial grasp/approach and contact
+approximation. The worker schedules no eyelets: with `thread_tracks` its
+eyelets are the track that the needle has cut, threaded where the needle's
+tail has passed (above), and without it the thread has none. The far end
+stays free. The spare thread is laid on the pad's surface behind the planned
+stitch and along the pad's border away from it (`loose_thread_coordinates`,
+usage). The thread's contact with the pad acts at its nodes only: a thread
+that hangs over an edge of the pad is not drawn back over it, the face
+beside the edge holds its first node there
+(`tests/test_thread_tissue.py`, an expected failure). Initial grasp/approach and contact
 checks do not establish completed suturing, loop retention, wound closure,
 knots, or a learned grasp policy. The implementation has no new backward-mode
 gradient claim.
+
+Contact-preconditioner input assembly and Woodbury packet construction can
+reuse separate CUDA graphs after their first real eager application. These
+graphs launch the original kernels in the original order and read current
+geometry, residuals, matrix coefficients and ALM multipliers from device
+arrays. Host validity checks, native metric construction, small dense solve,
+packet readback, coefficient upload and the existing PCG solve keep their
+previous order. Scalar, storage, gradient or stream changes choose the eager
+path and invalidate the corresponding cached preparation; retired storage
+is retained until its launch stream has completed. Reset, scene close and
+explicit coupler invalidation also retire these owners. An enclosing CUDA
+capture receives the original eager kernel sequence while the helper retains
+its older cache; explicit retirement is rejected during capture, before any
+synchronization or owner release.
+
+
+The supported native physical-grasp configuration additionally checks the
+normalized compact FEM solve against its current raw float32 matrix and RHS,
+using float64 products and reductions. The certificate uses the configured
+relative tolerance on the rounded float32 compact increment, before the usual
+unscale and state update. It does not certify a separately recomputed final
+physical-state linear residual. The original force, ALM, tetrahedral and
+swept-event acceptance tests remain authoritative for physical stepping.
+
+The first CG has a 120-iteration allowance. If its explicit residual does not
+meet the original tolerance, one float32 correction solve has 36 iterations
+and relative target 0.1. That target is only for the numerical correction: the
+result must again satisfy the original-system certificate. Initialization and
+certification bring the maximum primary current-matrix actions to 160; the
+unchanged Chebyshev preconditioner actions are separate. Nonfinite or unmet
+certificates reject the coupled attempt and preserve its original rollback.
+No extra 160-iteration solve or tolerance relaxation is permitted.
+
+`GraspScene.certified_linear_residual` enables this check only for the supported
+untaped native compact-CG path. Each eligible attempt starts uncertified,
+every fresh solve overwrites its status, and both existing force-statistics
+readbacks reject a failed status before physical acceptance. The scope and
+status storage participate in graph/workspace keys; direct, gradient or custom
+solver paths retain the original behavior. Diagnostics report
+`certified_linear_residual_enabled`, `certified_linear_attempts` and
+`certified_linear_rejections`.
+
+
+### One-trial ordered surface facets
+
+For eligible captured CUDA force evaluations, bounded per-sample scratch keeps
+one ordered traversal of the current surface AABB query. Its exact current
+facet barycentrics, closest point, normal, distance, gap and area are reused by
+the original minimum, normalization and force passes. Material permissions are
+computed lazily at the first original use and reused only within that same
+unchanged trial. The nearest signed query, full/active mesh refits, openings,
+track eligibility and force/tangent laws remain current and unchanged.
+
+Collection completes before any physical force or tangent record is written.
+If any sample exceeds its capacity, a device conditional executes the entire
+original surface kernel. Every fresh candidate refills the scratch; an existing
+dual-only primal reuse still follows its original path. CPU, taped/gradient,
+custom-kernel and unsupported block-width calls retain the original kernel.
+Scratch arrays are held by the force-graph owner and included in its binding
+signature. Saving FP32 facet values can affect compiler contraction; parity
+checks cover branch boundaries and the physical outputs rather than assuming
+universal bitwise equality from the source transformation alone.
+
+## GPU trial pipeline
+
+`--rigid-backend mujoco-warp` replaces the native rigid integration of the
+physical grasp by MuJoCo Warp and runs all coupling trials of one interval on
+the device. The equations, tolerances, budgets and acceptance checks of the
+preceding sections are unchanged. This section describes only how the trials
+are executed and how their search is shortened.
+
+**One graph per interval.** The trials of an interval are one conditional CUDA
+graph. A `while` node repeats the trial; `if` nodes select the tissue tolerance
+level, the correction and the dual update. A trial restores the rigid
+checkpoint, applies the interface load, integrates tissue and rigid bodies,
+evaluates the interface forces at the candidate state and compares them with
+the applied load. The host launches the graph once, reads one small result and
+then runs the acceptance checks of the native path. MuJoCo Warp allocates
+scratch arrays in every step, which the body of a graph conditional cannot do;
+the solver's rigid step (`_src/solvers/mujoco/warp_step/`) issues the stages of
+the MuJoCo Warp step itself and serves those arrays from a pool that it keeps
+between steps.
+
+**Concurrent stages.** Work captured on one stream forms a chain, so stages
+that do not depend on each other would still run in sequence. The capture
+replaces the dependencies of the stream instead: the tissue stage (linear
+solve, then the refit of the surface meshes and tetrahedron queries) and the
+rigid stage (four microsteps) both start from the applied load and join before
+the interface forces. Only dependency edges change; a stage must not write
+what the other reads or writes.
+
+**Rigid warm start between trials.** Each microstep starts its constraint solve
+from the solution the same microstep found in the previous trial of the
+interval. The accepted rigid velocities then depend on the trial history
+within the solver tolerance. With stopping scale $1/\operatorname{tr}M$ and
+tolerance $\varepsilon$ the difference of a velocity component $i$ after an
+interval $h$ is bounded by $2h\sqrt{2\varepsilon\operatorname{tr}(M)\,(M^{-1})_{ii}}$.
+
+**First microstep shared between trials.** Every trial of an interval starts
+from the same rigid position, velocity, activation and controls; trials differ
+in the applied wrench. The stages of the first microstep that read only that
+state (frames, inertia, contacts, constraint rows, bias, passive and actuator
+forces) are therefore issued once per launch, before the trial loop, on a
+second MuJoCo Warp `Data` that shares the integration state with the first.
+Each trial issues the rest of that microstep (smooth acceleration, constraint
+solve, integration) and the following microsteps whole. Overflow flags that
+the shared stages raise are carried into every trial.
+
+**Fewer launches per microstep.** A node of a replayed graph has a fixed cost
+and a microstep of a small articulated model is mostly nodes. The solver's
+rigid step runs the tree passes over all levels in one launch and fuses the
+constraint update with the gradient, and the Cholesky step with the product
+$M\,s$ and the termination test, on a solver context that it keeps between
+steps. The arithmetic of each kernel is that of the MuJoCo Warp kernels.
+
+**Contact metric and correction.** After a trial that has not converged, the
+load is corrected along a preconditioned residual. The rigid part of the
+preconditioner is the response of the needle to a wrench with the tool
+contacts active: the $6\times6$ block of $(H+hD)^{-1}$ taken from the kept
+solver context by a tile Cholesky. The Krylov solve of the contact
+preconditioner starts from the response-basis (Woodbury) guess. Its small
+Schur system $(I+hF^\top CF)\,y=F^\top(\dots)$, with $D=FF^\top$ the factored
+anchor tangents, is assembled and solved on the device in every correction. A
+tangent of rank below three leaves zero columns in $F$. Their unknowns are
+zero and couple to no other, so beyond 38 track samples the system is
+factorized on its nonzero columns alone whenever they fit the smaller tile. A
+sliding anchor of a friction tunnel acts as $(I+S_i)D_i$, with the shear of
+the shaft correction. The system of a track that follows such a tunnel is
+$(I+hF^\top C(I+S)F)\,y=F^\top(\dots)$ and its contact weights are $(I+S)Fy$.
+It is not symmetric, so the same Cholesky tile factorizes its normal
+equations, formed with double-precision sums, of whichever system is taken:
+the padded one or the one on the nonzero columns. The host path packs
+$(I+S)D$ and takes the same system with its general dense solve. Every other
+anchor law keeps the symmetric solve. A guess is used only if it lowers the
+residual of the current operator; otherwise the solve starts from zero as
+before.
+
+The guess is one object from the first response basis on, and a captured
+trial loop holds the start of this solve once. Whether a launch may use the
+basis (an active basis of the current FEM structure whose support columns and
+track samples fit the scratch of the guess) and which padded tile factorizes
+its track samples are device flags, which the host writes where they change;
+the map from compact degrees of freedom to basis columns is rewritten in
+place when the support grows. A launch that may not use the basis starts from
+zero inside the same graph, and the first residual of its solve is the
+right-hand side itself, so one operator product is saved and an exact zero
+may differ in sign from the product-based residual. A new track sample or
+support column therefore captures nothing. The factorization kernels of all
+six padded tiles (12, 24, 48, 114, 120 and 144 rows) are created and loaded
+when the scene starts, not when a track first reaches their size.
+
+**Surface events.** Certificates decide in every trial whether the device
+force evaluation is valid: for example, that the swept path of the tip stays
+clear of the moving surface triangles. A request that concerns only the path
+of the tip does not end the trials. They continue to convergence and the host
+oracle of the native path then decides the event, starting from the load they
+reached instead of the last accepted one. If the oracle cannot use that load,
+the interval starts again from the accepted load. Every other request ends
+the device trials at once. By default that includes a contact force at the
+puncture threshold. The accepted state is always one the oracle or a clean
+final device trial has confirmed.
+
+Three options of `NeedleTissueCoupler`, each off by default, change how such
+a step passes from the device trials to the oracle. Every puncture, entry and
+exit is still decided by the host evaluation and committed with the accepted
+step. What was measured with them is in the
+[usage guide](usage.md#surface-events-on-the-device-and-response-columns-per-step-default).
+They do not bring every event step under a frame of 66.7 ms: in the grasp
+example the frame of the second exit (frame 316) and the exit of the lowering
+stay over it, as that section states under "Not fixed by these options".
+
+- `search_past_puncture`: the trials continue past a contact force at the
+  puncture threshold as well. Outside the tissue the trial forces are the
+  same below and above the threshold: the host evaluation only notes the
+  pending opening, the puncture is committed with the accepted step and
+  changes the forces of the step after it. On the CPU the device kernels and
+  the host evaluation give the same nodal forces, wrench, flags and
+  diagnostics bit for bit on both sides of the threshold
+  (`tests/test_needle_event_search.py`); on CUDA the same test passes with
+  a relative tolerance of 2e-6. A trial that only overshoots the threshold
+  then costs no host loop, and a step that converges at or above it is
+  handed to the oracle, which decides the puncture.
+- `oracle_at_device_trial`: the oracle does not repeat the trial it is
+  handed. The candidate state, the rigid backend state and the tunnel
+  multipliers of the last device trial stand, and the first trial of the
+  host-controlled loop is the host evaluation of that state. If the oracle
+  accepts it, the step is that device trial with the oracle's event. If not,
+  the loop corrects the load and continues with complete host trials. If the
+  oracle cannot use the trial, the interval starts again from the accepted
+  load, as without the option. Handing a converged host trial to a second
+  host loop on the CPU gives bit-identical accepted states. On the device
+  the standing trial is the last trial of the device loop where the default
+  path solves that trial a second time on the host: the same load and start
+  state, not the same bits.
+- `step_trial_budget` (it needs a `trial_budget`): the trials of the device
+  search count in the oracle loop, so the trial budget bounds the trials of
+  the step instead of those of each loop. A search that the budget ended is
+  kept at the oracle's evaluation of its kept trial, with the event the
+  oracle decides there and whatever residual that evaluation shows. This
+  option changes which event steps are kept unconverged; the other two do
+  not.
+
+The mask of an opening (the surface faces that share a vertex with the
+punctured face and face its way) is computed from the faces connected to the
+punctured face instead of from the normals of every surface face. It is the
+same mask (`tests/test_needle_event_search.py`).
+
+**Unstable rigid trials.** A trial whose rigid coordinates, velocities or
+accelerations are not finite or exceed MuJoCo's bound is rejected and the
+interval is retried with a smaller step. This is the counterpart of the
+native check for a MuJoCo instability warning. It does not alter a trial.

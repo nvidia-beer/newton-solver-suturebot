@@ -8,7 +8,7 @@ from unittest.mock import patch
 import numpy as np
 import warp as wp
 
-from newton_solver_suturebot._src.coupling import (
+from newton_solver_suturebot._src.solvers.coupled.coupling import (
     _device_aitken_supported,
     _direction_statistics,
     _relax_interface,
@@ -145,7 +145,7 @@ class DeviceAitkenTests(unittest.TestCase):
                 setattr(obj, name, True)
                 self.assertFalse(_device_aitken_supported(model, solver, state, True))
                 setattr(obj, name, False)
-        with patch("newton_solver_suturebot._src.coupling.active_tape", return_value=object()):
+        with patch("newton_solver_suturebot._src.solvers.coupled.coupling.active_tape", return_value=object()):
             self.assertFalse(_device_aitken_supported(model, solver, state, True))
         self.assertTrue(_device_aitken_supported(model, solver, state, True))
 

@@ -22,6 +22,14 @@ README records no upstream LICENSE file for this mesh. This asset is not
 represented as Apache-2.0 licensed. Its provenance and content hashes are in
 src/newton_solver_suturebot/examples/assets/phantom_pad/provenance.json.
 
+The Baymax tetrahedral body under src/newton_solver_suturebot/examples/assets/baymax/
+is a byte-for-byte copy of tet_baymax.usda of the local newton-solver-fem
+repository (revision 6968f27), which attributes its bundled example meshes to
+The Newton Developers under Apache-2.0. The file itself carries no licence line,
+no upstream location is recorded for it, and its shape is a film character.
+Its hash and source are in
+src/newton_solver_suturebot/examples/assets/baymax/provenance.json.
+
 dVRK rig and SutureBot recording assets have separate source attributions in
 src/newton_solver_suturebot/examples/assets/dvrk/THIRD_PARTY.md and each
 recording's THIRD_PARTY.md. The dVRK MIT notice is retained in
@@ -42,3 +50,13 @@ and the adjacent THIRD_PARTY.txt. The adjacent recording.json identifies
 generated motion and unrelated dVRK placeholder images; their source notice
 is retained in placeholder-source-notice.txt. The existing pad attribution
 above also applies to the full-pad geometry displayed in this preview.
+
+src/newton_solver_suturebot/_src/solvers/mujoco/warp_step/ (tree.py,
+constraint_solver.py, step.py) contains kernels and launch sequences adapted
+from MuJoCo Warp v3.17.0 (https://github.com/google-deepmind/mujoco_warp,
+commit f34c6dd52813852d0f1a2ab6d1f4d21ef1f0829f; mujoco_warp/_src/smooth.py,
+solver.py and forward.py), copyright 2025 The Newton Developers, licensed
+under the Apache License 2.0. Modifications: one launch per body-tree pass,
+fused launches of the Newton constraint solve on a solver context kept
+between steps, and a step restricted to the supported configuration. MuJoCo
+Warp itself is an unmodified dependency of the examples extra.

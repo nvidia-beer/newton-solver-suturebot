@@ -1,0 +1,29 @@
+{
+  "example": "fem_tool_tissue",
+  "module": "newton_solver_suturebot.examples.grasp.example_fem_tool_tissue",
+  "caption": "Simulation-time playback of the tool/tissue contact rig with the opt-in swept-capsule contact (--contact swept): the closed jaws of one joint-actuated dVRK tool press 1.5 mm and then 3 mm into FEM tissue, slide 10 mm, lift, press at the held border and make one fast approach. The tissue under the jaws is pushed into a dimple and the tool is stopped where the tissue cannot follow. In the fast approach at the end the jaws still plunge about 2.5 mm before they are pushed out: a known limit of this contact. Without the option the tools pass through the tissue. Playback at 60 frames/s does not measure live simulation throughput.",
+  "arguments": [
+    "--contact",
+    "swept",
+    "--test"
+  ],
+  "device": "cuda:0",
+  "frames": 942,
+  "fps": 60,
+  "width": 960,
+  "height": 720,
+  "show_ui": false,
+  "recording_wall_seconds": 28.21935048198793,
+  "playback_is_performance_benchmark": false,
+  "simulation_time": [
+    {
+      "attribute": "sim_time",
+      "end": 15.633333333332766
+    }
+  ],
+  "dependencies": {
+    "newton_solver_suturebot": "0.1.0",
+    "newton": "1.8.0",
+    "warp-lang": "1.17.0+cu13"
+  }
+}

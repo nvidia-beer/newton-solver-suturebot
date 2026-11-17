@@ -709,6 +709,76 @@ class SolverThreadTests(unittest.TestCase):
             scale = np.tile(np.repeat((1.0, ELEMENT), 3), solver.thread.node_count)
             np.testing.assert_allclose(expected[0] * scale, replayed[0] * scale, rtol=0.0, atol=_rounding(5, 2))
 
+    def test_changed_mass_damping_refills_the_one_inertia_scale_array(self):
+        """A schedule of ``mass_damping`` steps like fresh solvers and keeps one device array.
+
+        The host forms 1 / dt² + c / dt from the time step and the damping c; the kernels read it from an
+        array of the solver's step time. Fails if a changed damping or time step is not in that array at
+        the next step, or if every value of the damping leaves an array of its own behind.
+        """
+        positions = _line(12, start=(0.0, 0.0, 0.01))
+        # A bent start, so that the chain moves and every step needs its updates.
+        positions[6:, 2] += 0.0005 * np.arange(1, 8)
+        scheduled = _solver(positions, mass_damping=DAMPING, max_iterations=4)
+        step_time = scheduled.step_time
+        array = scheduled._inertia_scale()
+        pointer, arrays = array.ptr, len(step_time._derived)
+        schedule = [(DT, DAMPING), (DT, 40.0), (DT / 2, 40.0), (DT / 2, 0.0), (DT / 3, 7.5), (DT, 7.5), (DT, DAMPING)]
+        for step, (dt, damping) in enumerate(schedule):
+            with self.subTest(step=step, dt=dt, damping=damping):
+                fresh = _solver(positions, mass_damping=damping, max_iterations=4)
+                for target, source in zip(fresh.state, scheduled.state, strict=True):
+                    wp.copy(target, source)
+                scheduled.mass_damping = damping
+                scheduled.step(None, None, None, None, dt)
+                fresh.step(None, None, None, None, dt)
+                np.testing.assert_array_equal(array.numpy(), [1.0 / (dt * dt) + damping / dt])
+                np.testing.assert_array_equal(scheduled.iterations.numpy(), fresh.iterations.numpy())
+                if not wp.get_device(DEVICE).is_cuda:
+                    # A CPU kernel runs in one thread: the same arithmetic, bit for bit.
+                    np.testing.assert_array_equal(scheduled.q.numpy(), fresh.q.numpy())
+                    np.testing.assert_array_equal(scheduled.qd.numpy(), fresh.qd.numpy())
+                else:
+                    scale = np.tile(np.repeat((1.0, ELEMENT), 3), scheduled.thread.node_count)
+                    np.testing.assert_allclose(
+                        scheduled.q.numpy() * scale, fresh.q.numpy() * scale, rtol=0.0, atol=_rounding(1, 4, dt=dt)
+                    )
+                self.assertIs(scheduled._inertia_scale(), array)
+                self.assertEqual((array.ptr, len(step_time._derived)), (pointer, arrays))
+        # The chain did move, and the damping did matter.
+        self.assertGreater(np.abs(scheduled.qd.numpy()).max(), 1.0e-3)
+
+    def test_rejected_time_step_does_not_reach_the_device(self):
+        """A step with a time step of zero raises and leaves the following steps as they would have been.
+
+        Fails if the rejected time step stays in the arrays that the kernels read: the next step at the
+        previous time step writes nothing, so it would divide by that zero.
+        """
+        positions = _line(12, start=(0.0, 0.0, 0.01))
+        positions[6:, 2] += 0.0005 * np.arange(1, 8)
+        disturbed = _solver(positions, mass_damping=DAMPING, max_iterations=4)
+        reference = _solver(positions, mass_damping=DAMPING, max_iterations=4)
+        _advance(disturbed, 3)
+        _advance(reference, 3)
+        seconds = disturbed.step_time.seconds_f64.numpy().copy()
+        scale = disturbed._inertia_scale().numpy().copy()
+        with self.assertRaises(ZeroDivisionError):
+            disturbed.step(None, None, None, None, 0.0)
+        self.assertEqual(disturbed.step_time.value, DT)
+        np.testing.assert_array_equal(disturbed.step_time.seconds_f64.numpy(), seconds)
+        np.testing.assert_array_equal(disturbed._inertia_scale().numpy(), scale)
+        _advance(disturbed, 2)
+        _advance(reference, 2)
+        self.assertTrue(np.isfinite(disturbed.q.numpy()).all() and np.isfinite(disturbed.qd.numpy()).all())
+        if not wp.get_device(DEVICE).is_cuda:
+            np.testing.assert_array_equal(disturbed.q.numpy(), reference.q.numpy())
+            np.testing.assert_array_equal(disturbed.qd.numpy(), reference.qd.numpy())
+        else:
+            node_scale = np.tile(np.repeat((1.0, ELEMENT), 3), disturbed.thread.node_count)
+            np.testing.assert_allclose(
+                disturbed.q.numpy() * node_scale, reference.q.numpy() * node_scale, rtol=0.0, atol=_rounding(5, 4)
+            )
+
     def test_chains_of_a_batch_step_independently(self):
         """Each chain of a batch moves as it does alone, with its own number of updates.
 

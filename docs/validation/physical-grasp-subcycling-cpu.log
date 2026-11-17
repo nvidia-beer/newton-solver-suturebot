@@ -1,0 +1,57 @@
+test_contact_grips_under_gravity_from_first_step_and_transports (test_grasp.ContactGraspTests.test_contact_grips_under_gravity_from_first_step_and_transports) ... ok
+test_invalid_commands_and_parameters_do_not_mutate_controls (test_grasp.ContactGraspTests.test_invalid_commands_and_parameters_do_not_mutate_controls) ... ok
+test_opening_releases_needle_and_gravity_continues_independently (test_grasp.ContactGraspTests.test_opening_releases_needle_and_gravity_continues_independently) ... ok
+test_sufficient_external_load_slips_instead_of_enforcing_grasp (test_grasp.ContactGraspTests.test_sufficient_external_load_slips_instead_of_enforcing_grasp) ... ok
+test_topology_capsules_and_reset_keep_needle_independent (test_grasp.ContactGraspTests.test_topology_capsules_and_reset_keep_needle_independent) ... ok
+test_adaptive_retry_advances_thread_only_for_accepted_intervals (test_grasp_scene.GraspSceneTests.test_adaptive_retry_advances_thread_only_for_accepted_intervals) ... Warp 1.17.0 initialized:
+   CUDA Toolkit 13.0, Driver 13.0
+   Devices:
+     "cpu"      : "aarch64"
+     "cuda:0"   : "NVIDIA GB10" (120 GiB, sm_121, mempool enabled)
+   Kernel cache:
+     /tmp/suture-grasp-warp/1.17.0
+Module newton._src.geometry.inertia f6b4bd8 load on device 'cpu' took 0.94 ms  (cached)
+Module validate_and_correct_inertia_kernel_5f6549e0 5e20ea4 load on device 'cpu' took 0.17 ms  (cached)
+Module compute_body_inverses_kernel_ec4671e6 28153d3 load on device 'cpu' took 0.08 ms  (cached)
+Module newton._src.geometry.bvh 6808164 load on device 'cpu' took 0.11 ms  (cached)
+Module newton._src.sim.articulation 8b1067d load on device 'cpu' took 0.17 ms  (cached)
+Module warp._src.coloring 811e0ea load on device 'cpu' took 0.18 ms  (cached)
+Module newton._src.solvers.mujoco.kernels 4693fd0 load on device 'cpu' took 0.29 ms  (cached)
+Module newton_solver_suturebot.examples._needle_insertion_drive 8d5012f load on device 'cpu' took 0.14 ms  (cached)
+Module newton._src.utils.mesh 92b663b load on device 'cpu' took 0.26 ms  (cached)
+Module newton._src.viewer.kernels c2b7e52 load on device 'cpu' took 0.26 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.kernels ee6664c load on device 'cpu' took 0.22 ms  (cached)
+Module _bsr_accumulate_triplet_values_5520c14c 5f22d31 load on device 'cpu' took 0.11 ms  (cached)
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_incremental_actions_do_not_reposition_independent_needle_or_thread (test_grasp_scene.GraspSceneTests.test_incremental_actions_do_not_reposition_independent_needle_or_thread) ... Module newton_solver_suturebot._src.solvers.fem.fixed_particles d29760f load on device 'cpu' took 0.20 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.sparse_update 822432f load on device 'cpu' took 0.09 ms  (cached)
+Module newton_solver_suturebot.grasp_scene 2444be6 load on device 'cpu' took 0.08 ms  (cached)
+Module newton_solver_suturebot._src.solvers.thread.attachment 599eb15 load on device 'cpu' took 0.08 ms  (cached)
+Module newton_solver_suturebot._src.thread_rigid_contact edf8240 load on device 'cpu' took 0.10 ms  (cached)
+Module newton_solver_suturebot._src.worker_thread 4423aee load on device 'cpu' took 0.07 ms  (cached)
+Module newton_solver_suturebot._src.coupling 4669209 load on device 'cpu' took 0.08 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.solver 08f22c1 load on device 'cpu' took 0.07 ms  (cached)
+Module newton_solver_suturebot._src.solvers.fem.implicit_predictor 028ff9a load on device 'cpu' took 0.07 ms  (cached)
+Module batch_dot_kernel_c57525b8 1a6b87f load on device 'cpu' took 0.08 ms  (cached)
+Module warp.optim.linear 41096ca load on device 'cpu' took 0.17 ms  (cached)
+Module _create_update_condition_kernel__locals___update_condition_bba29a29 51c9998 load on device 'cpu' took 0.11 ms  (cached)
+Module warp.optim.linear 5e4767e load on device 'cpu' took 0.14 ms  (cached)
+Module warp.optim.linear 3bce838 load on device 'cpu' took 0.13 ms  (cached)
+Module newton_solver_suturebot._src.insertion 62f2525 load on device 'cpu' took 0.21 ms  (cached)
+Module newton_solver_suturebot._src.tet_step cba064f load on device 'cpu' took 0.20 ms  (cached)
+Module newton_solver_suturebot._src.solvers.thread.tissue bea0665 load on device 'cpu' took 0.13 ms  (cached)
+Module newton_solver_suturebot._src.solvers.thread.kernels a95f9f7 load on device 'cpu' took 0.26 ms  (cached)
+Module newton_solver_suturebot.examples.example_fem_needle_insertion defe353 load on device 'cpu' took 0.12 ms  (cached)
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+[phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_rejected_multi_body_trial_restores_native_and_output_without_advancing_thread (test_grasp_scene.GraspSceneTests.test_rejected_multi_body_trial_restores_native_and_output_without_advancing_thread) ... [phantom regions] active=[1]: 6/12 tetrahedra, 8 nodes, 4 fixed
+ok
+test_invalid_subcycles_and_timestep_fail_without_mutation (test_grasp_subcycling.GraspSubcyclingTests.test_invalid_subcycles_and_timestep_fail_without_mutation) ... ok
+test_matches_explicit_native_steps_and_preserves_output_particles (test_grasp_subcycling.GraspSubcyclingTests.test_matches_explicit_native_steps_and_preserves_output_particles) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 2.505s
+
+OK

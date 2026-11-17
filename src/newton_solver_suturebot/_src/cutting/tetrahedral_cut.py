@@ -9,11 +9,14 @@ The FEM solver integrates its constant strain over each fragment's volume.
 Boundary contact must use the clipped surface, never the enclosing basis nodes.
 """
 
+from contextlib import contextmanager
 from dataclasses import dataclass
+from time import perf_counter
 
 import numpy as np
 import warp as wp
 
+from ..utils import capture
 from . import fragment_connectivity_gpu as connectivity_kernels
 from .adjacency import CutAdjacency
 from .fragment_adjacency import FragmentAdjacency
@@ -235,7 +238,24 @@ class LinearTetCut:
     the caller copies coordinates/velocities using ``candidate.clone_sources``,
     updates its sparse topology, and calls ``commit``. Geometry edits and
     mechanical integration remain separate operations.
+
+    Setup: :meth:`prepare` and :meth:`prepare_sphere` capture the graphs of the
+    edits and launch each once, so that no edit captures a graph, builds its
+    executable or loads a kernel module unless storage grows. An edit that
+    needs more polygon vertices or faces per fragment, more subtractor scratch
+    or more subtractor work than is reserved grows that storage inside the
+    edit and captures the graphs that are bound to it again; each growth is
+    listed in ``storage_growths``. With ``fixed_storage`` nothing grows: such
+    an edit is rejected and ``refused_growth`` names the reserve it exceeded.
+
+    Args:
+        vertex_capacity: Polygon vertices reserved per fragment; growth ends at 64.
+        face_capacity: Polygon faces reserved per fragment; growth ends at 48.
+        fixed_storage: Reject an edit that exceeds a reserve instead of growing it.
     """
+
+    # Where growth ends: polygon vertices and faces per fragment, and both sizes of the subtractor's scratch.
+    VERTEX_LIMIT, FACE_LIMIT, SCRATCH_LIMIT = 64, 48, 64
 
     def __init__(
         self,
@@ -250,6 +270,7 @@ class LinearTetCut:
         triangle_capacity=None,
         max_patches=2,
         consistent_mass=False,
+        fixed_storage=False,
         device=None,
     ):
         points = np.asarray(rest_positions, dtype=np.float64)
@@ -268,6 +289,12 @@ class LinearTetCut:
         self.device = wp.get_device(device)
         self.node_count, self.node_copies = len(points), int(node_copies)
         self.capacity, self.max_patches = fragment_capacity, int(max_patches)
+        self.fixed_storage = bool(fixed_storage)
+        # One entry for every growth of storage inside an edit: what grew, from and to which size,
+        # its seconds, the graphs captured in it and whether it completed.
+        self.storage_growths = []
+        # The reserve that the last proposed edit exceeded while ``fixed_storage`` kept it from growing.
+        self.refused_growth = None
         self.rest = wp.array(points, dtype=wp.vec3d, device=self.device)
         self.elements = wp.array(topology, dtype=int, device=self.device)
         self.parent_volumes = wp.array(volumes, dtype=wp.float64, device=self.device)
@@ -355,6 +382,14 @@ class LinearTetCut:
     def material_components(self):
         """Accepted material-component labels, independent of shared solver nodes."""
         return self._published_components
+
+    @property
+    def subtractor_storage(self):
+        """Scratch vertices, scratch faces and work entries of the subtractor, or None before :meth:`prepare_sphere`."""
+        if self._sphere is None:
+            return None
+        scratch = self._sphere.scratch[0]
+        return scratch.vertex_capacity, scratch.face_capacity, len(self._sphere.work)
 
     def propose_triangles(self, positions, triangles):
         """Stage a finite knife incision described by world-space triangles."""
@@ -489,6 +524,7 @@ class LinearTetCut:
         """
         if positions.dtype != wp.vec3 or positions.shape != self._input_positions.shape:
             raise ValueError("positions must be vec3 coordinates for the full reserved node-copy pool")
+        self.refused_growth = None
         patches = tuple(np.asarray(polygon, dtype=np.float64) for polygon in polygons)
         if not 1 <= len(patches) <= self.max_patches:
             raise ValueError("knife patch count exceeds reserved capacity")
@@ -506,9 +542,11 @@ class LinearTetCut:
         while True:
             if self.device.is_cuda:
                 if key not in self._graphs:
+                    # Not prepared: the launch that follows the capture is this edit.
                     self._capture(key)
-                graph, pending = self._graphs[key]
-                wp.capture_launch(graph)
+                else:
+                    wp.capture_launch(self._graphs[key][0])
+                pending = self._graphs[key][1]
             else:
                 pending = self.launch(self._input_positions, len(patches))
             error = int(pending.error.numpy()[0])
@@ -533,6 +571,8 @@ class LinearTetCut:
             diagnostics[name] for name in ("geometry_error", "connectivity_error", "integration_error", "surface_error")
         ):
             self.discard()
+            if self.refused_growth is not None:
+                diagnostics["refused_growth"] = self.refused_growth
             raise ValueError(f"linear tetrahedron edit rejected: {diagnostics}")
         return diagnostics
 
@@ -552,11 +592,17 @@ class LinearTetCut:
         )
         return self._complete_geometry(target)
 
-    def prepare_sphere(self, work_capacity=256):
-        """Reserve local clipping scratch and capture an empty spherical edit."""
+    def prepare_sphere(self, work_capacity=256, *, scratch_vertex_capacity=None, scratch_face_capacity=None):
+        """Reserve local clipping scratch, capture an empty spherical edit and launch it once.
+
+        Call it during setup: the first cylinder or sphere edit otherwise does this work.
+        The scratch capacities default to 48 vertices and the polygon faces of the geometry.
+        """
         if self._sphere is not None:
             return
-        self._prepare_subtractor(work_capacity)
+        self._prepare_subtractor(
+            work_capacity, scratch_vertex_capacity=scratch_vertex_capacity, scratch_face_capacity=scratch_face_capacity
+        )
 
     def _prepare_subtractor(self, work_capacity, *, scratch_vertex_capacity=None, scratch_face_capacity=None):
         """Replace only local clipping storage, keeping accepted material intact."""
@@ -584,24 +630,55 @@ class LinearTetCut:
             self._launch_sphere()
             if self.device.is_cuda:
                 wp.synchronize_device(self.device)
-                with wp.ScopedCapture(device=self.device) as capture:
+                with capture.ScopedCapture(device=self.device) as scope:
                     self._launch_sphere()
-                self._sphere_graph = capture.graph
+                self._sphere_graph = scope.graph
+                # Warp builds the executable of a graph at its first launch: here, not in the first edit.
+                # The tool lies far outside the material, and discard() below puts integrals and surface back.
+                wp.capture_launch(self._sphere_graph)
+                wp.synchronize_device(self.device)
             self.discard()
         except (MemoryError, RuntimeError, ValueError):
             self._sphere, self._sphere_graph = previous
             self.discard()
             raise
 
+    @contextmanager
+    def _growth(self, what, before, after):
+        """List one growth of storage inside an edit: its seconds and the graphs captured in it."""
+        start, captured = perf_counter(), capture.census.captures
+        entry = {"what": what, "from": before, "to": after, "completed": False}
+        try:
+            yield entry
+            entry["completed"] = True
+        finally:
+            if self.device.is_cuda:
+                wp.synchronize_device(self.device)
+            entry["seconds"] = perf_counter() - start
+            entry["captures"] = capture.census.captures - captured
+            self.storage_growths.append(entry)
+
     def _grow_geometry(self, error):
         """Grow bounded polygon storage without changing material or FEM arrays."""
         vertices, faces = self.geometry.vertex_capacity, self.geometry.face_capacity
-        if error == 1 and vertices < 64:
-            vertices = min(64, max(48, 2 * vertices))
-        elif error == 2 and faces < 48:
-            faces = min(48, max(32, 2 * faces))
+        if error == 1 and vertices < self.VERTEX_LIMIT:
+            what, before = "polygon vertices per fragment", vertices
+            vertices = after = min(self.VERTEX_LIMIT, max(48, 2 * vertices))
+        elif error == 2 and faces < self.FACE_LIMIT:
+            what, before = "polygon faces per fragment", faces
+            faces = after = min(self.FACE_LIMIT, max(32, 2 * faces))
         else:
             return False
+        if self.fixed_storage:
+            # A scratch reserve that the same edit exceeded was named first.
+            if self.refused_growth is None:
+                self.refused_growth = what
+            return False
+        with self._growth(what, before, after):
+            self._replace_geometry(vertices, faces)
+        return True
+
+    def _replace_geometry(self, vertices, faces):
         self.discard()
         names = ("geometry", "buffers", "scratch", "clipped", "adjacency", "_graphs", "_sphere", "_sphere_graph")
         previous = {name: getattr(self, name) for name in names}
@@ -634,6 +711,11 @@ class LinearTetCut:
             self._cut_adjacency.adjacency = adjacency
             if self._sphere is not None:
                 self._prepare_subtractor(len(self._sphere.work))
+            if self.device.is_cuda:
+                # The graphs of the line cut were bound to the replaced buffers. Capture and launch
+                # them here, inside the growth, and not in the next line cut of each patch count.
+                for count in sorted(previous["_graphs"]):
+                    self._capture(count)
             self.discard()
         except (MemoryError, RuntimeError, ValueError):
             for name, value in previous.items():
@@ -641,21 +723,29 @@ class LinearTetCut:
             self._cut_adjacency.adjacency = self.adjacency
             self.discard()
             raise
-        return True
 
     def _grow_convex_scratch(self):
         """Keep transient cap partitions local instead of padding the mesh."""
         error = max(int(scratch.error.numpy()[0]) for scratch in self._sphere.scratch)
         scratch = self._sphere.scratch[0]
         vertices, faces = scratch.vertex_capacity, scratch.face_capacity
-        if error == 1 and vertices < 64:
-            vertices = 64
-        elif error == 2 and faces < 64:
-            faces = min(64, 2 * faces)
+        if self.fixed_storage:
+            if error in (1, 2):
+                self.refused_growth = "subtractor scratch vertices" if error == 1 else "subtractor scratch faces"
+            return False
+        if error == 1 and vertices < self.SCRATCH_LIMIT:
+            what, before = "subtractor scratch vertices", vertices
+            vertices = after = self.SCRATCH_LIMIT
+        elif error == 2 and faces < self.SCRATCH_LIMIT:
+            what, before = "subtractor scratch faces", faces
+            faces = after = min(self.SCRATCH_LIMIT, 2 * faces)
         else:
             return False
-        self.discard()
-        self._prepare_subtractor(len(self._sphere.work), scratch_vertex_capacity=vertices, scratch_face_capacity=faces)
+        with self._growth(what, before, after):
+            self.discard()
+            self._prepare_subtractor(
+                len(self._sphere.work), scratch_vertex_capacity=vertices, scratch_face_capacity=faces
+            )
         return True
 
     def propose_sphere(self, positions, start, end, radius):
@@ -669,6 +759,7 @@ class LinearTetCut:
 
         if positions.dtype != wp.vec3 or positions.shape != self._input_positions.shape:
             raise ValueError("positions must be vec3 coordinates for the full reserved node-copy pool")
+        self.refused_growth = None
         self.prepare_sphere()
         planes = spherical_sweep_planes(start, end, radius)
         return self._propose_convex(positions, start, end, radius, planes, grow_work=False)
@@ -689,6 +780,7 @@ class LinearTetCut:
         if positions.dtype != wp.vec3 or positions.shape != self._input_positions.shape:
             raise ValueError("positions must be vec3 coordinates for the full reserved node-copy pool")
         planes = cylindrical_cut_planes(start, end, radius)
+        self.refused_growth = None
         self.prepare_cylinder()
         return self._propose_convex(positions, start, end, radius, planes, grow_work=True)
 
@@ -703,11 +795,15 @@ class LinearTetCut:
                 required = int(self._sphere.count.numpy()[0])
                 maximum = int(self.geometry.count.numpy()[0])
                 if len(self._sphere.work) < required <= maximum:
-                    capacity = len(self._sphere.work)
+                    if self.fixed_storage:
+                        self.refused_growth = "subtractor work"
+                        break
+                    before = capacity = len(self._sphere.work)
                     while capacity < required:
                         capacity *= 2
-                    self.discard()
-                    self._prepare_subtractor(min(capacity, maximum))
+                    with self._growth("subtractor work", before, min(capacity, maximum)):
+                        self.discard()
+                        self._prepare_subtractor(min(capacity, maximum))
                     continue
             break
         return self._convex_diagnostics()
@@ -724,20 +820,28 @@ class LinearTetCut:
         return self._diagnostics(self.buffers[0])
 
     def _capture(self, patch_count):
+        """Capture the graph of a line cut with ``patch_count`` patches and launch it once.
+
+        Warp builds the executable of a graph at its first launch: that launch belongs here,
+        and it applies the polygons that are assigned (none during setup).
+        """
         self.launch(self._input_positions, patch_count)
         wp.synchronize_device(self.device)
-        with wp.ScopedCapture(device=self.device) as capture:
+        with capture.ScopedCapture(device=self.device) as scope:
             pending = self.launch(self._input_positions, patch_count)
-        self._graphs[patch_count] = capture.graph, pending
+        self._graphs[patch_count] = scope.graph, pending
+        wp.capture_launch(scope.graph)
+        wp.synchronize_device(self.device)
 
     def prepare(self, patch_counts=(1, 2)):
-        """Compile and capture empty edits during setup, avoiding first-cut JIT."""
+        """Compile, capture and launch empty edits during setup: the first cut then captures and builds nothing."""
         self.polygon_sizes.zero_()
         for count in patch_counts:
             if not 1 <= count <= self.max_patches:
                 raise ValueError("knife patch count exceeds reserved capacity")
             if self.device.is_cuda:
                 if count not in self._graphs:
+                    # The edit is empty, and discard() below puts integrals and surface back.
                     self._capture(count)
             else:
                 self.launch(self._input_positions, count)

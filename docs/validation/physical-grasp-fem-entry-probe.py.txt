@@ -1,0 +1,27 @@
+"""Scripted finite-gripper contact diagnostic; not a trained policy or suture certificate."""
+import json,pickle,time
+from pathlib import Path
+import numpy as np
+import warp as wp
+from newton_solver_suturebot.parallel import SutureSceneConfig,_make_scene,_observe,_geometry,_apply_action
+from newton_solver_suturebot._src.grasp import needle_to_gripper_pose
+from newton_solver_suturebot.examples._needle_insertion_drive import ramp_distance
+c=SutureSceneConfig(device='cuda:0',control_mode='physical_grasp');start=time.perf_counter();s=_make_scene(c,0);first=_observe(s,0)
+relative=wp.transform(*needle_to_gripper_pose(s.geometry));tets=s.model.tet_indices.numpy();active=np.any(s.model.tet_materials.numpy()!=0,axis=1);tets=tets[active];q0=first['tissue_positions'].astype(float);rest=q0[tets];det0=np.linalg.det(np.stack([rest[:,k]-rest[:,0] for k in (1,2,3)],axis=-1));fixed=s.model.particle_inv_mass.numpy()==0
+rows=[];entry_frame=None;minimum=1.;finite=True;fixed_ok=True
+for i in range(240):
+ angle=min(s.plan.initial_angle+ramp_distance((i+1)*c.frame_dt,.003)/s.geometry.radius,s.plan.finish_angle)
+ desired=np.asarray(wp.transform_multiply(wp.transform(*s.plan.pose(angle)),relative),dtype=float)
+ a=np.zeros(7);a[:3]=(desired[:3]-s.cartesian_target[:3])/c.translation_step
+ rot=np.asarray(wp.quat(*desired[3:])*wp.quat_inverse(wp.quat(*s.cartesian_target[3:])),dtype=float)
+ if rot[3]<0:rot=-rot
+ sine=np.linalg.norm(rot[:3]);a[3:6]=rot[:3]*(2*np.arctan2(sine,rot[3])/max(sine,1e-12))/c.rotation_step;a=np.clip(a,-1,1)
+ _apply_action(s,c,a);s.step();o=_observe(s,0);q=o['tissue_positions'].astype(float);vertices=q[tets];jac=np.linalg.det(np.stack([vertices[:,k]-vertices[:,0] for k in (1,2,3)],axis=-1))/det0;minimum=min(minimum,float(jac.min()));fixed_ok &= np.array_equal(q[fixed],q0[fixed]);finite &= all(np.isfinite(o[k]).all() for k in ('tissue_positions','tissue_velocities','rigid_body_poses','rigid_body_velocities','thread_positions'))
+ d=o['diagnostics'];rows.append(dict(frame=i+1,time_s=s.elapsed,minimum_J=float(jac.min()),needle_pose=o['needle_pose'].tolist(),gripper_pose=o['gripper_pose'].tolist(),jaw_normal_force_n=o['jaw_contact_normal_force_n'].tolist(),max_interface_force_n=d['maximum_interface_force_N'],entry_count=d['entry_count'],exit_count=d['exit_count'],status=d['task_status'],tip_entry_distance_m=float(np.linalg.norm(o['tip_position']-o['entry_position'])),thread_head_error_m=o['thread_diagnostics'].get('head_error_m')))
+ if i%10==0:print('PROGRESS',json.dumps(rows[-1]),flush=True)
+ if d['entry_count'] and entry_frame is None:entry_frame=i+1
+ if d['task_status']=='failed' or not finite or not fixed_ok or minimum<=0 or (entry_frame is not None and i+1>=entry_frame+20):break
+report=dict(scope='scripted finite-gripper reference-command diagnostic, not trained policy or complete suturing',config=vars(c),frames=i+1,wall_s=time.perf_counter()-start,minimum_J=minimum,fixed_nodes_unchanged=fixed_ok,all_states_finite=finite,first_entry_frame=entry_frame,diagnostics=d,thread=o['thread_diagnostics'],rows=rows)
+Path('nsys/results/physical-grasp/fem_contact.json').write_text(json.dumps(report,indent=2));print('RESULT',json.dumps({k:v for k,v in report.items() if k not in ('rows','diagnostics','thread')}),flush=True)
+with open('/tmp/grasp_snapshot_final.pkl','wb') as f:pickle.dump(dict(geometry=_geometry(s,c),snapshot=o),f)
+s.viewer.close()

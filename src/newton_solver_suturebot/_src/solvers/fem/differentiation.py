@@ -16,6 +16,7 @@ import warp as wp
 from warp.optim.linear import LinearOperator, cg, preconditioner
 from warp.sparse import bsr_copy, bsr_transposed
 
+from ...utils.capture import PauseGC
 from .kernels import (
     block_jacobi_mv_kernel,
     invert_block_diagonal_kernel,
@@ -205,7 +206,8 @@ class MatrixSnapshot:
         self.maximum.zero_()
         wp.launch(maximum_rhs_component, self.n, inputs=[rhs, self.maximum], device=self.device)
         wp.launch(normalize_linear_rhs, self.n, inputs=[rhs, self.maximum, self.rhs, self.solution], device=self.device)
-        (self.backward_solver if transpose else self.forward_solver)(b=self.rhs)
+        with PauseGC():
+            (self.backward_solver if transpose else self.forward_solver)(b=self.rhs)
         wp.launch(restore_linear_increment, self.n, inputs=[self.maximum, self.solution], device=self.device)
         wp.copy(output, self.solution)
         matrix = self.transpose if transpose else self.matrix
@@ -381,10 +383,13 @@ def step(solver, state_in, state_out, control, contacts, dt, external_forces):
                     check(solver)
 
         tape.record_func(backward, [rhs, dv])
+    # The shared integration kernel reads the timestep from the solver's step time,
+    # which holds this fixed assembly timestep; the array carries no gradient.
+    solver.step_time.set(dt)
     wp.launch(
         update_state,
         q.size,
-        inputs=[dv, dt, q, v],
+        inputs=[dv, solver.step_time.seconds, q, v],
         outputs=[state_out.particle_q, state_out.particle_qd],
         device=q.device,
     )

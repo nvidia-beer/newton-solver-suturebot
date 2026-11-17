@@ -4,8 +4,10 @@
 
 import numpy as np
 import warp as wp
-from warp.optim.linear import LinearOperator, aslinearoperator
+from warp.optim.linear import LinearOperator
 from warp.sparse import bsr_copy, bsr_set_from_triplets, bsr_zeros
+
+from .packed_bsr import packed_aslinearoperator
 
 
 @wp.kernel(enable_backward=False)
@@ -133,7 +135,9 @@ class FixedParticles:
         # Optional exact reduction to the free-free subblock. The Krylov
         # iteration then runs on free nodes only, with gathers/scatters at the
         # solve boundaries; fixed rows carry exact zeros in both formulations.
-        self.free = wp.array(np.flatnonzero(mask == 0).astype(np.int32), dtype=int, device=self.device)
+        # The free nodes, on the host as well: their readers on the host need no device read.
+        self.free_host = np.flatnonzero(mask == 0).astype(np.int32)
+        self.free = wp.array(self.free_host, dtype=int, device=self.device)
         self.compact_matrix = None
         self.compact_operator = None
         self._compact_slots = None
@@ -182,7 +186,7 @@ class FixedParticles:
                 source_slots[slot] = offsets[row] + position
         self.compact_matrix = compact
         self._compact_slots = wp.array(source_slots, dtype=int, device=self.device)
-        self.compact_operator = aslinearoperator(compact)
+        self.compact_operator = packed_aslinearoperator(compact)
         self._compact_version = None
         self.compact_rhs = wp.zeros(free.size, dtype=wp.vec3, device=self.device)
         self.compact_increment = wp.zeros(free.size, dtype=wp.vec3, device=self.device)
@@ -244,7 +248,7 @@ class FixedParticles:
                 self._projected.offsets = matrix.offsets
                 self._projected.columns = matrix.columns
                 self._projected.nnz_sync()
-                self.operator = aslinearoperator(self._projected)
+                self.operator = packed_aslinearoperator(self._projected)
                 self._prepare_compact(matrix, offsets, columns)
             else:
                 self.operator = self._masked_operator

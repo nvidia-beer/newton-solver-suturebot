@@ -16,9 +16,9 @@ import warp as wp
 from newton.viewer import ViewerNull
 from test_needle_insertion_geometry import _boxes
 
-from newton_solver_suturebot import NeedleTissueCoupler, SolverMuJoCoFEM, boundary_faces
-from newton_solver_suturebot.examples import example_fem_needle_insertion as insertion
-from newton_solver_suturebot.examples import example_fem_phantom_regions as phantom
+from newton_solver_suturebot import NeedleTissueCoupler, boundary_faces
+from newton_solver_suturebot.examples.needle import example_fem_needle_insertion as insertion
+from newton_solver_suturebot.examples.phantom import example_fem_phantom_regions as phantom
 
 _REFERENCE = _boxes([((-0.03, -0.02, -0.02), (0.03, 0.02, 0)), ((0.07, -0.02, -0.02), (0.13, 0.02, 0))], [1, 2])
 
@@ -46,7 +46,7 @@ def _selection(_path, ids):
 
 
 @contextmanager
-def _example(*, region_catalog=None, region_loader=None, tunnel_model="penalty", needle_solver=None):
+def _example(*, region_catalog=None, region_loader=None, tunnel_model="penalty"):
     with (
         TemporaryDirectory() as directory,
         wp.ScopedDevice(os.environ.get("NEWTON_TEST_DEVICE", "cpu")),
@@ -60,8 +60,6 @@ def _example(*, region_catalog=None, region_loader=None, tunnel_model="penalty",
         # None leaves the real example default intact for its own integration test.
         if tunnel_model is not None:
             arguments.extend(("--tunnel-model", tunnel_model))
-        if needle_solver is not None:
-            arguments.extend(("--needle-solver", needle_solver))
         args = insertion.Example.create_parser().parse_args(arguments)
         viewer = ViewerNull()
         try:
@@ -77,31 +75,22 @@ def _prepare(example):
 
 
 class NeedleInsertionExampleTests(unittest.TestCase):
-    def test_solver_selection_constructs_public_class_and_advances_physical_state(self):
-        for requested, expected_class in ((None, NeedleTissueCoupler), ("mujoco-fem", SolverMuJoCoFEM)):
-            with self.subTest(solver=requested), _example(tunnel_model=None, needle_solver=requested) as example:
-                self.assertEqual(example.args.needle_solver, requested or "partitioned")
-                self.assertIsNone(example.report()["needle_solver_class"])
-                _prepare(example)
-                example.start()
-                self.assertIs(type(example.coupler), expected_class)
-                before = example.state_0.body_q.numpy()[example.needle_body].copy()
-                fixed = example.state_0.particle_q.numpy()[example.fixed_vertex_indices].copy()
-                example.step()
-                self.assertTrue(example.running, example.failure_reason)
-                self.assertGreater(example.elapsed, 0)
-                self.assertGreater(example.accepted_physics_steps, 0)
-                after = example.state_0.body_q.numpy()[example.needle_body]
-                self.assertGreater(np.linalg.norm(after[:3] - before[:3]), 0)
-                np.testing.assert_array_equal(example.state_0.particle_q.numpy()[example.fixed_vertex_indices], fixed)
-                report = example.report()
-                self.assertEqual(report["needle_solver_requested"], requested or "partitioned")
-                self.assertEqual(report["needle_solver_class"], expected_class.__name__)
-                self.assertEqual(report["coupling_graph_status"], example.coupler.coupling_graph_status)
-                if example.device.is_cpu:
-                    self.assertEqual(report["simultaneous_steps"], 0)
-                    self.assertNotEqual(report["coupling_graph_status"], "simultaneous momentum/friction")
-                example.test_final()
+    def test_example_constructs_the_coupler_and_advances_physical_state(self):
+        with _example(tunnel_model=None) as example:
+            _prepare(example)
+            example.start()
+            self.assertIs(type(example.coupler), NeedleTissueCoupler)
+            before = example.state_0.body_q.numpy()[example.needle_body].copy()
+            fixed = example.state_0.particle_q.numpy()[example.fixed_vertex_indices].copy()
+            example.step()
+            self.assertTrue(example.running, example.failure_reason)
+            self.assertGreater(example.elapsed, 0)
+            self.assertGreater(example.accepted_physics_steps, 0)
+            after = example.state_0.body_q.numpy()[example.needle_body]
+            self.assertGreater(np.linalg.norm(after[:3] - before[:3]), 0)
+            np.testing.assert_array_equal(example.state_0.particle_q.numpy()[example.fixed_vertex_indices], fixed)
+            self.assertEqual(example.report()["coupling_graph_status"], example.coupler.coupling_graph_status)
+            example.test_final()
 
     def test_default_tunnel_uses_alm_and_advances_the_real_coupled_step(self):
         with _example(tunnel_model=None) as example:
@@ -319,6 +308,62 @@ class NeedleInsertionExampleTests(unittest.TestCase):
                 example.entry.reference_position + (0.0002, 0.0003, 0.0004),
                 atol=2e-9,
             )
+
+    def test_picked_markers_are_drawn_on_their_material_points(self):
+        colors = {"entry": (0.2, 1.0, 0.3), "exit": (1.0, 0.25, 0.7)}
+        hidden = {f"/insertion/{which}": (None, None, None, True) for which in colors}
+        with _example() as example:
+            calls = {}
+
+            def log_points(name, points, radii=None, colors=None, hidden=False):
+                if name.startswith("/insertion/"):
+                    host = (None if array is None else array.numpy().copy() for array in (points, radii, colors))
+                    calls[name] = (*host, hidden)
+
+            def draw():
+                calls.clear()
+                with patch.object(example.viewer, "log_points", side_effect=log_points):
+                    example.render()
+                return dict(calls)
+
+            def check(drawn):
+                positions = example.state_0.particle_q.numpy()
+                for which, color in colors.items():
+                    points, radii, shown, is_hidden = drawn[f"/insertion/{which}"]
+                    self.assertFalse(is_hidden)
+                    # One float32 sum of three nodes at a few centimetres.
+                    np.testing.assert_allclose(points, [getattr(example, which).position(positions)], rtol=0, atol=1e-8)
+                    np.testing.assert_array_equal(radii, np.float32([0.0005]))
+                    np.testing.assert_array_equal(shown, np.float32([color]))
+
+            # Nothing is picked: both markers are hidden.
+            self.assertEqual(draw(), hidden)
+            _prepare(example)
+            drawn = draw()
+            check(drawn)
+            np.testing.assert_allclose(
+                drawn["/insertion/entry"][0], [example.entry.reference_position], rtol=0, atol=1e-8
+            )
+            # The tissue under the entry moves: its marker goes with it.
+            positions = example.state_0.particle_q.numpy()
+            positions[example.entry.node_indices] += (0.0002, 0.0003, 0.0004)
+            example.state_0.particle_q.assign(positions)
+            drawn = draw()
+            check(drawn)
+            np.testing.assert_allclose(
+                drawn["/insertion/entry"][0],
+                [example.entry.reference_position + (0.0002, 0.0003, 0.0004)],
+                rtol=0,
+                atol=1e-8,
+            )
+            # Another entry is picked: the marker is bound to the new material point.
+            previous = example.entry
+            example.select_point_xy("entry", -0.008, 0.002)
+            self.assertIsNot(example.entry, previous)
+            check(draw())
+            # A reset clears the picks and hides both markers.
+            example.reset()
+            self.assertEqual(draw(), hidden)
 
     def test_pause_preserves_both_states_and_time_resume_then_reset(self):
         with _example() as example:

@@ -6,15 +6,16 @@
 import math
 import os
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 import warp as wp
 from newton.viewer import ViewerNull
 
 from newton_solver_suturebot import NeedleGeometry
-from newton_solver_suturebot.examples import example_fem_needle_suture as suture
-from newton_solver_suturebot.examples._needle_insertion_geometry import InsertionPlan, MaterialPoint, TetLocator
-from newton_solver_suturebot.examples._suture_stitches import (
+from newton_solver_suturebot.examples.needle import example_fem_needle_suture as suture
+from newton_solver_suturebot.examples.needle._needle_insertion_geometry import InsertionPlan, MaterialPoint, TetLocator
+from newton_solver_suturebot.examples.needle._suture_stitches import (
     NeedleSchedule,
     Stitch,
     _Lift,
@@ -22,7 +23,7 @@ from newton_solver_suturebot.examples._suture_stitches import (
     plan_stitches,
     wound_axis,
 )
-from newton_solver_suturebot.examples._thread_pins import bridge, lay_along_path, serpentine
+from newton_solver_suturebot.examples.needle._thread_pins import bridge, lay_along_path, serpentine
 
 DEVICE = os.environ.get("NEWTON_TEST_DEVICE", "cpu")
 
@@ -597,6 +598,88 @@ class BundledPadTests(unittest.TestCase):
         self.assertAlmostEqual(example.elapsed - start, frames * example.frame_dt, delta=1.0e-9)
         self.assertTrue(np.isfinite(example.thread.q.numpy()).all())
         example.test_final()
+
+    def test_planned_entries_and_exits_are_drawn_on_their_material_points(self):
+        """Fails if the spheres of the planned stitches are not where their surface triangles are in the drawn state."""
+        example = self.example
+        plans = [stitch.plan for stitch in example.stitches]
+        points = [plan.entry for plan in plans] + [plan.exit for plan in plans]
+        calls = []
+
+        def log_points(name, points, radii=None, colors=None, hidden=False):
+            if name == "/suture/stitches":
+                calls.append((points.numpy().copy(), radii.numpy().copy(), colors.numpy().copy(), hidden))
+
+        def draw():
+            del calls[:]
+            with patch.object(example.viewer, "log_points", side_effect=log_points):
+                example.render()
+            self.assertEqual(len(calls), 1)
+            return calls[0]
+
+        saved = wp.clone(example.state_0.particle_q)
+        self.addCleanup(lambda: wp.copy(example.state_0.particle_q, saved))
+        before = example.state_0.particle_q.numpy()
+        drawn, radii, colors, hidden = draw()
+        self.assertFalse(hidden)
+        # One float32 sum of three nodes at a few centimetres.
+        np.testing.assert_allclose(drawn, [point.position(before) for point in points], rtol=0, atol=1e-8)
+        np.testing.assert_array_equal(radii, np.full(len(points), 0.0004, dtype=np.float32))
+        np.testing.assert_array_equal(
+            colors, np.float32([suture.ENTRY_COLOR] * len(plans) + [suture.EXIT_COLOR] * len(plans))
+        )
+        # The tissue moves, each node by its own amount: every sphere goes with its triangle.
+        moved = before + 0.001 * np.sin(300.0 * before[:, [1, 2, 0]]).astype(np.float32)
+        example.state_0.particle_q.assign(moved)
+        after = draw()[0]
+        np.testing.assert_allclose(after, [point.position(moved) for point in points], rtol=0, atol=1e-8)
+        self.assertGreater(float(np.linalg.norm(after - drawn, axis=1).min()), 1e-5)
+
+    def test_thread_graph_serves_every_step_size(self):
+        """Fails if the thread graph of the nominal step differs from the eager thread step at another step size.
+
+        A rejected needle and tissue step is repeated with half the step, and a frame can end with a remainder.
+        The graph reads the step size from the thread's step time, so it is launched for those steps too. Also
+        fails if such a step runs eagerly, or if the step size has no effect on the thread step here.
+        """
+        example = self.example
+        if example._thread_graph is None:
+            self.skipTest("The thread graph needs CUDA")
+        state = (
+            *example.thread.state,
+            *example.coupling.state,
+            *example.needle_contact.state,
+            example._external_forces,
+            example.attachment.wrench,
+        )
+        saved = [wp.clone(array) for array in state]
+
+        def restore():
+            for array, values in zip(state, saved, strict=True):
+                wp.copy(array, values)
+
+        def results():
+            return [array.numpy().copy() for array in state]
+
+        self.addCleanup(restore)
+        base, graph, steps = example.sim_dt, example._thread_graph, {}
+        for dt in (base, base / 2, 0.0020833333333333355, base / 3, base):
+            with self.subTest(dt=dt):
+                restore()
+                with patch.object(example, "_advance_thread", side_effect=AssertionError("eager thread step")):
+                    example._step_thread(dt)
+                replayed = results()
+                self.assertIs(example._thread_graph, graph)
+                self.assertEqual(example.thread.step_time.value, dt)
+                np.testing.assert_array_equal(example.thread.step_time.seconds_f64.numpy(), [dt])
+                # The same step issued eagerly from the same state and input buffers.
+                restore()
+                example._advance_thread(dt)
+                for name, actual, expected in zip(range(len(state)), replayed, results(), strict=True):
+                    np.testing.assert_allclose(actual, expected, rtol=1.0e-6, atol=1.0e-10, err_msg=f"state[{name}]")
+                steps[dt] = replayed
+        # The step size did matter: the thread's velocities after the nominal and the halved step differ.
+        self.assertFalse(np.allclose(steps[base][1], steps[base / 2][1], rtol=1.0e-3, atol=0.0))
 
 
 if __name__ == "__main__":

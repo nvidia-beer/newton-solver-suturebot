@@ -14,6 +14,8 @@ import math
 
 import warp as wp
 
+from ..utils.step_time import StepTime
+
 
 @wp.func
 def _longest_edge(a: wp.vec3, b: wp.vec3, c: wp.vec3):
@@ -84,28 +86,37 @@ def _corrections(
 def _apply(
     correction: wp.array[wp.vec3],
     max_degree: wp.array[int],
-    dt: float,
+    dt: wp.array[float],
     q: wp.array[wp.vec3],
     qd: wp.array[wp.vec3],
 ):
+    # dt holds the timestep [s] in its one element (StepTime.seconds).
     node = wp.tid()
     if max_degree[0] > 0:
         # One common relaxation factor retains the equal/opposite mass-weighted
         # corrections at shared nodes. Independent per-node averaging does not.
         delta = correction[node] / float(max_degree[0])
         q[node] += delta
-        qd[node] += delta / dt
+        qd[node] += delta / dt[0]
 
 
 class CutVolumeGuard:
-    """Keep cut cells away from zero volume with a fixed GPU work budget."""
+    """Keep cut cells away from zero volume with a fixed GPU work budget.
 
-    def __init__(self, model, *, minimum=0.05, iterations=16, components=None):
+    The kernels read the timestep from ``step_time`` (:class:`StepTime`), which
+    :meth:`apply` writes; inside a CUDA graph capture it must already hold its
+    ``dt``. Pass the ``step_time`` of the solver whose step is guarded, so that
+    the whole step reads one time step. Without it the guard keeps one of its
+    own.
+    """
+
+    def __init__(self, model, *, minimum=0.05, iterations=16, components=None, step_time=None):
         if not math.isfinite(minimum) or not 0 < minimum < 1:
             raise ValueError("minimum must be finite and between zero and one")
         if not isinstance(iterations, int) or iterations < 1:
             raise ValueError("iterations must be a positive integer")
         self.model = model
+        self.step_time = StepTime(model.device) if step_time is None else step_time
         self.minimum = minimum
         self.iterations = iterations
         self.correction = wp.zeros(model.particle_count, dtype=wp.vec3, device=model.device)
@@ -123,6 +134,8 @@ class CutVolumeGuard:
     def apply(self, q, qd, dt, *, previous_q=None):
         if not math.isfinite(dt) or dt <= 0:
             raise ValueError("dt must be finite and positive")
+        self.step_time.set(dt)
+        seconds = self.step_time.seconds
 
         def project():
             self.correction.zero_()
@@ -147,7 +160,7 @@ class CutVolumeGuard:
             wp.launch(
                 _apply,
                 dim=self.model.particle_count,
-                inputs=[self.correction, self.max_degree, dt, q, qd],
+                inputs=[self.correction, self.max_degree, seconds, q, qd],
                 device=self.model.device,
             )
 
@@ -209,7 +222,7 @@ class CutVolumeGuard:
                     self.step_fraction,
                     self.mass_displacement,
                     self.component_fixed,
-                    dt,
+                    seconds,
                     q,
                     qd,
                 ],
@@ -324,10 +337,11 @@ def _limit_step(
     step_fraction: wp.array[float],
     displacement: wp.array[wp.vec4],
     component_fixed: wp.array[int],
-    dt: float,
+    dt: wp.array[float],
     q: wp.array[wp.vec3],
     qd: wp.array[wp.vec3],
 ):
+    # dt holds the timestep [s] in its one element (StepTime.seconds).
     node = wp.tid()
     component = node_components[node]
     if component >= 0 and inverse_mass[node] > 0.0 and step_fraction[component] < 1.0:
@@ -340,4 +354,4 @@ def _limit_step(
         # An anchored piece instead exchanges momentum with its fixed support.
         delta = center + step_fraction[component] * (q[node] - previous[node] - center)
         q[node] = previous[node] + delta
-        qd[node] = delta / dt
+        qd[node] = delta / dt[0]

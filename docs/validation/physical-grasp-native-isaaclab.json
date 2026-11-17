@@ -1,0 +1,1682 @@
+{
+  "num_envs": 8,
+  "control_contract": {
+    "schema_version": 1,
+    "control_mode": "physical_grasp",
+    "action_dimension": 7,
+    "action_names": [
+      "gripper_target_delta_x",
+      "gripper_target_delta_y",
+      "gripper_target_delta_z",
+      "gripper_target_delta_rx",
+      "gripper_target_delta_ry",
+      "gripper_target_delta_rz",
+      "jaw_opening_delta"
+    ],
+    "action_bounds": [
+      -1.0,
+      1.0
+    ],
+    "rotation_frame": "world",
+    "zero_action": "hold_all_actuator_targets",
+    "teacher_observation_layout": "physical_grasp_v1",
+    "teacher_observation_dimension": 72,
+    "proprioception_dimension": 20,
+    "previous_action_slice": [
+      30,
+      37
+    ],
+    "needle_actuation": "contact_only"
+  },
+  "physical_steps": 8,
+  "manager": "NewtonSutureManager",
+  "obs_shapes": {
+    "policy": [
+      8,
+      72
+    ],
+    "critic": [
+      8,
+      72
+    ],
+    "teacher_state": [
+      8,
+      72
+    ],
+    "proprioception": [
+      8,
+      20
+    ],
+    "stereo_rgb": [
+      8,
+      12,
+      144,
+      192
+    ]
+  },
+  "time_limit_resets": true,
+  "mean_eye_difference": 22.28920566888503,
+  "camera": {
+    "camera_order": [
+      "left",
+      "right"
+    ],
+    "poses_camera_to_world_xyzw": [
+      [
+        0.06477217376232147,
+        -0.061495646834373474,
+        0.06948687881231308,
+        0.15444634854793549,
+        0.28050315380096436,
+        -0.04578408598899841,
+        0.9462389349937439
+      ],
+      [
+        0.06980283558368683,
+        -0.061495646834373474,
+        0.06621695309877396,
+        0.15444634854793549,
+        0.28050315380096436,
+        -0.04578408598899841,
+        0.9462389349937439
+      ]
+    ],
+    "optical_convention": "opengl",
+    "intrinsics": [
+      [
+        [
+          161.7146453857422,
+          0.0,
+          95.5
+        ],
+        [
+          0.0,
+          161.7146453857422,
+          71.5
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      [
+        [
+          161.7146453857422,
+          0.0,
+          95.5
+        ],
+        [
+          0.0,
+          161.7146453857422,
+          71.5
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    ],
+    "opencv_distortion": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "width": 192,
+    "height": 144,
+    "baseline_m": 0.005999997723847628,
+    "provenance": "synthetic rectified auto view; distance_scale=0.65; not recorded calibration",
+    "world_from_recording": null,
+    "render_appearance": {
+      "mode": "surgical",
+      "version": 2
+    },
+    "stereo_history": 2,
+    "observation_channel_order": [
+      "t-1:left:r",
+      "t-1:left:g",
+      "t-1:left:b",
+      "t-1:right:r",
+      "t-1:right:g",
+      "t-1:right:b",
+      "t0:left:r",
+      "t0:left:g",
+      "t0:left:b",
+      "t0:right:r",
+      "t0:right:g",
+      "t0:right:b"
+    ],
+    "observation_dtype": "float32",
+    "pixel_scale": 0.00392156862745098
+  },
+  "render_appearance": {
+    "mode": "surgical",
+    "version": 2
+  },
+  "scene": {
+    "tissue": "full native exterior; active surface follows accepted FEM state",
+    "tissue_surface_vertices": 55474,
+    "tissue_surface_triangles": 110956,
+    "tissue_material": "constant phantom diffuse color; no photographic texture",
+    "needle": {
+      "kind": "original tapered needle CAD",
+      "coordinate_frame": "independent Needle rigid body",
+      "material": "illustrative polished steel, metallic=1, roughness=0.19; optical properties uncalibrated",
+      "source_layers": [
+        {
+          "path": "needle.usda",
+          "sha256": "e7a1c64b7c8e6798845ee1f7e238e9af36936a192edd9fee08f4661cef299b21"
+        }
+      ]
+    },
+    "tools": [
+      {
+        "kind": "original distal tool CAD; visual assembly only",
+        "instrument": "PSM1",
+        "recording": "dvrk/recordings/tissue3_215300/recording.json",
+        "coordinate_frame": "PSM1 wrist-yaw body",
+        "wrist_pitch_rad": 0.0,
+        "wrist_yaw_rad": 0.0,
+        "symmetric_jaw_opening_rad": 0.0,
+        "appearance": "composed source USD materials; metallic layers are illustrative, not calibrated optics",
+        "physics": "no articulation, grasp or contact is created by this loader",
+        "source_layers": [
+          {
+            "path": "dvrk/models/geometry.usdc",
+            "sha256": "748c4c659c39562169c23a884ba3556afd010a48912e29f4b1d27e10fc8c7381"
+          },
+          {
+            "path": "dvrk/models/replay_appearance.usda",
+            "sha256": "3f62f5de776f143bcf0836ea853744fe48ea705180a8191a4e5b5379222b903e"
+          },
+          {
+            "path": "dvrk/models/tools/debakey_forceps.usdc",
+            "sha256": "af8ad61d1bceace1e92ad00b116ccc4a0fe8e1c310b707bc77d8e732bbcf7b11"
+          },
+          {
+            "path": "dvrk/models/tools/large_needle_driver.usdc",
+            "sha256": "462a8d714971bf01573fea75ff5399f78a57d6c296eda9e0a345bc52465131e1"
+          },
+          {
+            "path": "dvrk/recordings/tissue3_215300/phantom.usdc",
+            "sha256": "f598d78b796065a1a8b26a1aadfd4986cf29dd8c7127a4bc2f6d093e9b8ba18d"
+          },
+          {
+            "path": "dvrk/recordings/tissue3_215300/rig.usdc",
+            "sha256": "46b8eff2fb81e4f4b86aa0adb5035f81402b6a2d79a63f559bfd10766eea3672"
+          },
+          {
+            "path": "dvrk/recordings/tissue3_215300/scene.usda",
+            "sha256": "e30ce457207a0ea76579d2e357be8d9f6ee79cfac5fdfd834c604d5581d98f71"
+          },
+          {
+            "path": "dvrk/recordings/tissue3_215300/scene_pbr.usda",
+            "sha256": "73a0037814c20cb23112af4f5e0005a0cdd9eda2d2685e7dc0c840567cba1731"
+          },
+          {
+            "path": "dvrk/recordings/tissue3_215300/scene_tools.usda",
+            "sha256": "0c36ad37700f10f7150e7a66b501dad761554cbe0ad7864dcc8f661e00854732"
+          }
+        ],
+        "joint_source_layers": [
+          {
+            "path": "dvrk/models/geometry.usdc",
+            "sha256": "748c4c659c39562169c23a884ba3556afd010a48912e29f4b1d27e10fc8c7381"
+          },
+          {
+            "path": "dvrk/suturebot_rig.usda",
+            "sha256": "78c95019603fbfaa70d3f263df630a9a9df12ae3e47b02d33773218d1ba517ec"
+          }
+        ]
+      },
+      {
+        "kind": "original distal tool CAD; visual assembly only",
+        "instrument": "PSM2",
+        "recording": "dvrk/recordings/tissue3_215300/recording.json",
+        "coordinate_frame": "PSM2 wrist-yaw body",
+        "wrist_pitch_rad": 0.0,
+        "wrist_yaw_rad": 0.0,
+        "symmetric_jaw_opening_rad": 0.0,
+        "appearance": "composed source USD materials; metallic layers are illustrative, not calibrated optics",
+        "physics": "no articulation, grasp or contact is created by this loader",
+        "source_layers": [
+          {
+            "path": "dvrk/models/geometry.usdc",
+            "sha256": "748c4c659c39562169c23a884ba3556afd010a48912e29f4b1d27e10fc8c7381"
+          },
+          {
+            "path": "dvrk/models/replay_appearance.usda",
+            "sha256": "3f62f5de776f143bcf0836ea853744fe48ea705180a8191a4e5b5379222b903e"
+          },
+          {
+            "path": "dvrk/models/tools/debakey_forceps.usdc",
+            "sha256": "af8ad61d1bceace1e92ad00b116ccc4a0fe8e1c310b707bc77d8e732bbcf7b11"
+          },
+          {
+            "path": "dvrk/models/tools/large_needle_driver.usdc",
+            "sha256": "462a8d714971bf01573fea75ff5399f78a57d6c296eda9e0a345bc52465131e1"
+          },
+          {
+            "path": "dvrk/recordings/tissue3_215300/phantom.usdc",
+            "sha256": "f598d78b796065a1a8b26a1aadfd4986cf29dd8c7127a4bc2f6d093e9b8ba18d"
+          },
+          {
+            "path": "dvrk/recordings/tissue3_215300/rig.usdc",
+            "sha256": "46b8eff2fb81e4f4b86aa0adb5035f81402b6a2d79a63f559bfd10766eea3672"
+          },
+          {
+            "path": "dvrk/recordings/tissue3_215300/scene.usda",
+            "sha256": "e30ce457207a0ea76579d2e357be8d9f6ee79cfac5fdfd834c604d5581d98f71"
+          },
+          {
+            "path": "dvrk/recordings/tissue3_215300/scene_pbr.usda",
+            "sha256": "73a0037814c20cb23112af4f5e0005a0cdd9eda2d2685e7dc0c840567cba1731"
+          },
+          {
+            "path": "dvrk/recordings/tissue3_215300/scene_tools.usda",
+            "sha256": "0c36ad37700f10f7150e7a66b501dad761554cbe0ad7864dcc8f661e00854732"
+          }
+        ],
+        "joint_source_layers": [
+          {
+            "path": "dvrk/models/geometry.usdc",
+            "sha256": "748c4c659c39562169c23a884ba3556afd010a48912e29f4b1d27e10fc8c7381"
+          },
+          {
+            "path": "dvrk/suturebot_rig.usda",
+            "sha256": "78c95019603fbfaa70d3f263df630a9a9df12ae3e47b02d33773218d1ba517ec"
+          }
+        ]
+      }
+    ],
+    "tool_motion": "accepted MuJoCo palm and independent hinged-jaw body poses; no needle-relative render attachment",
+    "full_robot_arms": false,
+    "camera_rig_geometry": false,
+    "thread": "accepted worker ANCF state with tissue, needle, gripper jaw and shaft capsule contacts; lagged reaction forces",
+    "background": "synthetic teal support surface beneath pad; presentation only",
+    "lighting": "shadowed diffuse environment plus view-dependent analytic steel reflections; four spatial samples per pixel",
+    "pbr_material_limit": "synthetic environment reflections, not a measured operating-room HDR or full multiple-bounce path tracer"
+  },
+  "renderer_diagnostics": {
+    "physical_thread": [
+      {
+        "scope": "physical worker ANCF thread; lagged relaxed rigid/FEM forces; no scheduled eyelets",
+        "physical_time_s": 0.03333333333333333,
+        "accepted_steps": 8,
+        "radius_m": 0.00015,
+        "length_m": 0.18,
+        "elements": 90,
+        "young_modulus_pa": 2000000.0,
+        "density_kg_m3": 1140.0,
+        "newton_iteration_limit": 2,
+        "last_newton_updates": [
+          2
+        ],
+        "contact_stiffness_N_m": 32.80703435029586,
+        "contact_friction": 0.2,
+        "head_to_needle_tail_error_m": 6.397037245161977e-07,
+        "maximum_speed_m_s": 0.36975398770855356,
+        "maximum_chord_stretch_ratio": 1.000951846371709,
+        "needle_attachment_wrench_N_Nm": [
+          1.275741851713974e-05,
+          -1.1436959539423697e-05,
+          -1.8470325812813826e-05,
+          2.0590147187249386e-07,
+          6.866012824957579e-08,
+          1.2238993463142833e-07
+        ],
+        "maximum_tissue_reaction_N": 0.0,
+        "needle_drive_support_assumed": false,
+        "eyelets": 0,
+        "gripper_capsules": 8,
+        "rigid_contact": {
+          "candidate_contacts": 0,
+          "minimum_contact_gap_m": null,
+          "maximum_normal_force_N": 0.0,
+          "maximum_friction_force_N": 0.0,
+          "maximum_friction_limit_excess_N": 0.0,
+          "fresh_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "applied_lagged_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "relaxation": [
+            0.08386574144981684,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017
+          ],
+          "friction_coefficient": 0.2,
+          "groups": 9,
+          "collision_scope": "simultaneous nearest chord/capsule plane per body-radius group; compliant discrete contact"
+        }
+      },
+      {
+        "scope": "physical worker ANCF thread; lagged relaxed rigid/FEM forces; no scheduled eyelets",
+        "physical_time_s": 0.03333333333333333,
+        "accepted_steps": 8,
+        "radius_m": 0.00015,
+        "length_m": 0.18,
+        "elements": 90,
+        "young_modulus_pa": 2000000.0,
+        "density_kg_m3": 1140.0,
+        "newton_iteration_limit": 2,
+        "last_newton_updates": [
+          2
+        ],
+        "contact_stiffness_N_m": 32.80703435029586,
+        "contact_friction": 0.2,
+        "head_to_needle_tail_error_m": 6.731672726448645e-07,
+        "maximum_speed_m_s": 0.37184032048362503,
+        "maximum_chord_stretch_ratio": 1.000608288864999,
+        "needle_attachment_wrench_N_Nm": [
+          1.2453863746486604e-05,
+          -1.1376668226148468e-05,
+          -1.8086839190800674e-05,
+          2.0261917654806894e-07,
+          6.726005352675202e-08,
+          1.2048531061736867e-07
+        ],
+        "maximum_tissue_reaction_N": 0.0,
+        "needle_drive_support_assumed": false,
+        "eyelets": 0,
+        "gripper_capsules": 8,
+        "rigid_contact": {
+          "candidate_contacts": 0,
+          "minimum_contact_gap_m": null,
+          "maximum_normal_force_N": 0.0,
+          "maximum_friction_force_N": 0.0,
+          "maximum_friction_limit_excess_N": 0.0,
+          "fresh_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "applied_lagged_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "relaxation": [
+            0.08386574144981684,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017
+          ],
+          "friction_coefficient": 0.2,
+          "groups": 9,
+          "collision_scope": "simultaneous nearest chord/capsule plane per body-radius group; compliant discrete contact"
+        }
+      },
+      {
+        "scope": "physical worker ANCF thread; lagged relaxed rigid/FEM forces; no scheduled eyelets",
+        "physical_time_s": 0.03333333333333333,
+        "accepted_steps": 8,
+        "radius_m": 0.00015,
+        "length_m": 0.18,
+        "elements": 90,
+        "young_modulus_pa": 2000000.0,
+        "density_kg_m3": 1140.0,
+        "newton_iteration_limit": 2,
+        "last_newton_updates": [
+          2
+        ],
+        "contact_stiffness_N_m": 32.80703435029586,
+        "contact_friction": 0.2,
+        "head_to_needle_tail_error_m": 7.008656465303189e-07,
+        "maximum_speed_m_s": 0.36164433172450394,
+        "maximum_chord_stretch_ratio": 1.0016991639704849,
+        "needle_attachment_wrench_N_Nm": [
+          1.2841332136304118e-05,
+          -1.155368681793334e-05,
+          -1.843450081651099e-05,
+          2.0597568095581664e-07,
+          6.920885908812124e-08,
+          1.2349089217877918e-07
+        ],
+        "maximum_tissue_reaction_N": 0.0,
+        "needle_drive_support_assumed": false,
+        "eyelets": 0,
+        "gripper_capsules": 8,
+        "rigid_contact": {
+          "candidate_contacts": 0,
+          "minimum_contact_gap_m": null,
+          "maximum_normal_force_N": 0.0,
+          "maximum_friction_force_N": 0.0,
+          "maximum_friction_limit_excess_N": 0.0,
+          "fresh_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "applied_lagged_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "relaxation": [
+            0.08386574144981684,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017
+          ],
+          "friction_coefficient": 0.2,
+          "groups": 9,
+          "collision_scope": "simultaneous nearest chord/capsule plane per body-radius group; compliant discrete contact"
+        }
+      },
+      {
+        "scope": "physical worker ANCF thread; lagged relaxed rigid/FEM forces; no scheduled eyelets",
+        "physical_time_s": 0.03333333333333333,
+        "accepted_steps": 8,
+        "radius_m": 0.00015,
+        "length_m": 0.18,
+        "elements": 90,
+        "young_modulus_pa": 2000000.0,
+        "density_kg_m3": 1140.0,
+        "newton_iteration_limit": 2,
+        "last_newton_updates": [
+          2
+        ],
+        "contact_stiffness_N_m": 32.80703435029586,
+        "contact_friction": 0.2,
+        "head_to_needle_tail_error_m": 6.57107172659014e-07,
+        "maximum_speed_m_s": 0.37166651158913355,
+        "maximum_chord_stretch_ratio": 1.000828155176743,
+        "needle_attachment_wrench_N_Nm": [
+          1.2652772056753747e-05,
+          -1.1437387911428232e-05,
+          -1.824729042709805e-05,
+          2.0401175504503044e-07,
+          6.823465525940264e-08,
+          1.2190849929538672e-07
+        ],
+        "maximum_tissue_reaction_N": 0.0,
+        "needle_drive_support_assumed": false,
+        "eyelets": 0,
+        "gripper_capsules": 8,
+        "rigid_contact": {
+          "candidate_contacts": 0,
+          "minimum_contact_gap_m": null,
+          "maximum_normal_force_N": 0.0,
+          "maximum_friction_force_N": 0.0,
+          "maximum_friction_limit_excess_N": 0.0,
+          "fresh_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "applied_lagged_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "relaxation": [
+            0.08386574144981684,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017
+          ],
+          "friction_coefficient": 0.2,
+          "groups": 9,
+          "collision_scope": "simultaneous nearest chord/capsule plane per body-radius group; compliant discrete contact"
+        }
+      },
+      {
+        "scope": "physical worker ANCF thread; lagged relaxed rigid/FEM forces; no scheduled eyelets",
+        "physical_time_s": 0.03333333333333333,
+        "accepted_steps": 8,
+        "radius_m": 0.00015,
+        "length_m": 0.18,
+        "elements": 90,
+        "young_modulus_pa": 2000000.0,
+        "density_kg_m3": 1140.0,
+        "newton_iteration_limit": 2,
+        "last_newton_updates": [
+          2
+        ],
+        "contact_stiffness_N_m": 32.80703435029586,
+        "contact_friction": 0.2,
+        "head_to_needle_tail_error_m": 6.905902848611892e-07,
+        "maximum_speed_m_s": 0.363133572826143,
+        "maximum_chord_stretch_ratio": 1.0012106712169921,
+        "needle_attachment_wrench_N_Nm": [
+          1.2758800949086435e-05,
+          -1.1480204193503596e-05,
+          -1.838370008044876e-05,
+          2.0539586387258169e-07,
+          6.88558827732777e-08,
+          1.2311168973155873e-07
+        ],
+        "maximum_tissue_reaction_N": 0.0,
+        "needle_drive_support_assumed": false,
+        "eyelets": 0,
+        "gripper_capsules": 8,
+        "rigid_contact": {
+          "candidate_contacts": 0,
+          "minimum_contact_gap_m": null,
+          "maximum_normal_force_N": 0.0,
+          "maximum_friction_force_N": 0.0,
+          "maximum_friction_limit_excess_N": 0.0,
+          "fresh_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "applied_lagged_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "relaxation": [
+            0.08386574144981684,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017
+          ],
+          "friction_coefficient": 0.2,
+          "groups": 9,
+          "collision_scope": "simultaneous nearest chord/capsule plane per body-radius group; compliant discrete contact"
+        }
+      },
+      {
+        "scope": "physical worker ANCF thread; lagged relaxed rigid/FEM forces; no scheduled eyelets",
+        "physical_time_s": 0.03333333333333333,
+        "accepted_steps": 8,
+        "radius_m": 0.00015,
+        "length_m": 0.18,
+        "elements": 90,
+        "young_modulus_pa": 2000000.0,
+        "density_kg_m3": 1140.0,
+        "newton_iteration_limit": 2,
+        "last_newton_updates": [
+          2
+        ],
+        "contact_stiffness_N_m": 32.80703435029586,
+        "contact_friction": 0.2,
+        "head_to_needle_tail_error_m": 6.821762000546273e-07,
+        "maximum_speed_m_s": 0.3658426070503271,
+        "maximum_chord_stretch_ratio": 1.0010062028459554,
+        "needle_attachment_wrench_N_Nm": [
+          1.2746015272568911e-05,
+          -1.1495211765577551e-05,
+          -1.8343969713896513e-05,
+          2.049939098469622e-07,
+          6.869647961593728e-08,
+          1.2261273241165327e-07
+        ],
+        "maximum_tissue_reaction_N": 0.0,
+        "needle_drive_support_assumed": false,
+        "eyelets": 0,
+        "gripper_capsules": 8,
+        "rigid_contact": {
+          "candidate_contacts": 0,
+          "minimum_contact_gap_m": null,
+          "maximum_normal_force_N": 0.0,
+          "maximum_friction_force_N": 0.0,
+          "maximum_friction_limit_excess_N": 0.0,
+          "fresh_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "applied_lagged_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "relaxation": [
+            0.08386574144981684,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017
+          ],
+          "friction_coefficient": 0.2,
+          "groups": 9,
+          "collision_scope": "simultaneous nearest chord/capsule plane per body-radius group; compliant discrete contact"
+        }
+      },
+      {
+        "scope": "physical worker ANCF thread; lagged relaxed rigid/FEM forces; no scheduled eyelets",
+        "physical_time_s": 0.03333333333333333,
+        "accepted_steps": 8,
+        "radius_m": 0.00015,
+        "length_m": 0.18,
+        "elements": 90,
+        "young_modulus_pa": 2000000.0,
+        "density_kg_m3": 1140.0,
+        "newton_iteration_limit": 2,
+        "last_newton_updates": [
+          2
+        ],
+        "contact_stiffness_N_m": 32.80703435029586,
+        "contact_friction": 0.2,
+        "head_to_needle_tail_error_m": 6.557853865595735e-07,
+        "maximum_speed_m_s": 0.37198791239731827,
+        "maximum_chord_stretch_ratio": 1.000874310322945,
+        "needle_attachment_wrench_N_Nm": [
+          1.2940265150973573e-05,
+          -1.1306367923680227e-05,
+          -1.8399277905700728e-05,
+          2.0479160411923658e-07,
+          6.982530464938463e-08,
+          1.2462842846616695e-07
+        ],
+        "maximum_tissue_reaction_N": 0.0,
+        "needle_drive_support_assumed": false,
+        "eyelets": 0,
+        "gripper_capsules": 8,
+        "rigid_contact": {
+          "candidate_contacts": 0,
+          "minimum_contact_gap_m": null,
+          "maximum_normal_force_N": 0.0,
+          "maximum_friction_force_N": 0.0,
+          "maximum_friction_limit_excess_N": 0.0,
+          "fresh_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "applied_lagged_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "relaxation": [
+            0.08386574144981684,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017
+          ],
+          "friction_coefficient": 0.2,
+          "groups": 9,
+          "collision_scope": "simultaneous nearest chord/capsule plane per body-radius group; compliant discrete contact"
+        }
+      },
+      {
+        "scope": "physical worker ANCF thread; lagged relaxed rigid/FEM forces; no scheduled eyelets",
+        "physical_time_s": 0.03333333333333333,
+        "accepted_steps": 8,
+        "radius_m": 0.00015,
+        "length_m": 0.18,
+        "elements": 90,
+        "young_modulus_pa": 2000000.0,
+        "density_kg_m3": 1140.0,
+        "newton_iteration_limit": 2,
+        "last_newton_updates": [
+          2
+        ],
+        "contact_stiffness_N_m": 32.80703435029586,
+        "contact_friction": 0.2,
+        "head_to_needle_tail_error_m": 6.847909941417489e-07,
+        "maximum_speed_m_s": 0.3720207833985636,
+        "maximum_chord_stretch_ratio": 1.0008383065113813,
+        "needle_attachment_wrench_N_Nm": [
+          1.2997095836908557e-05,
+          -1.1423595424275845e-05,
+          -1.8543138139648363e-05,
+          2.0641166997847904e-07,
+          7.005745317201217e-08,
+          1.2492073153680394e-07
+        ],
+        "maximum_tissue_reaction_N": 0.0,
+        "needle_drive_support_assumed": false,
+        "eyelets": 0,
+        "gripper_capsules": 8,
+        "rigid_contact": {
+          "candidate_contacts": 0,
+          "minimum_contact_gap_m": null,
+          "maximum_normal_force_N": 0.0,
+          "maximum_friction_force_N": 0.0,
+          "maximum_friction_limit_excess_N": 0.0,
+          "fresh_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "applied_lagged_body_wrench_N_Nm": [
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "relaxation": [
+            0.08386574144981684,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017,
+            0.032104816807863826,
+            0.9133022615550017,
+            0.9133022615550017
+          ],
+          "friction_coefficient": 0.2,
+          "groups": 9,
+          "collision_scope": "simultaneous nearest chord/capsule plane per body-radius group; compliant discrete contact"
+        }
+      }
+    ]
+  },
+  "snapshot_reset_counts": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+  ],
+  "snapshot_physical_time_s": [
+    0.03333333333333333,
+    0.03333333333333333,
+    0.03333333333333333,
+    0.03333333333333333,
+    0.03333333333333333,
+    0.03333333333333333,
+    0.03333333333333333,
+    0.03333333333333333
+  ],
+  "visual_thread_matches_snapshot_times_and_resets": null,
+  "render_model_separate_from_physics_mirror": true,
+  "physics_mirror_body_count": 56,
+  "render_body_count": 56
+}

@@ -4,6 +4,7 @@
 import os
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import numpy as np
 import warp as wp
@@ -49,6 +50,11 @@ class NeedleTunnelALMTests(unittest.TestCase):
         )
         forces = wp.zeros(len(self.vertices), dtype=wp.vec3, device=self.device)
         return interaction, state, forces
+
+    @staticmethod
+    def live(interaction, array):
+        """The rows of a per-track array that hold track samples; the rest of the reserve holds zeros."""
+        return array.numpy()[: interaction.track_count]
 
     def pose(self, state, *, z=None, offset=0, speed=0):
         pose = state.body_q.numpy()
@@ -110,7 +116,7 @@ class NeedleTunnelALMTests(unittest.TestCase):
                 alm.commit()
                 self.pose(state, offset=8e-5)
                 self.equilibrate(interaction, state, forces)
-                density = alm.proposed_normal.numpy()
+                density = self.live(interaction, alm.proposed_normal)
                 actual_offset = float(state.body_q.numpy()[0, 0] - np.float32(0.002))
                 expected = (actual_offset - alm.clearance) / alm.compliance_per_m
                 np.testing.assert_allclose(density[:, 0], expected, rtol=4e-5, atol=2e-5)
@@ -144,10 +150,10 @@ class NeedleTunnelALMTests(unittest.TestCase):
         self.assertGreater(np.linalg.norm(nodal[3]), 0)
         expected = np.zeros_like(nodal)
         for ids, weights, length, density in zip(
-            interaction._track_nodes.numpy(),
-            interaction._track_bary.numpy(),
-            interaction._track_lengths.numpy(),
-            interaction.tunnel_alm.proposed_normal.numpy(),
+            self.live(interaction, interaction._track_nodes),
+            self.live(interaction, interaction._track_bary),
+            self.live(interaction, interaction._track_lengths),
+            self.live(interaction, interaction.tunnel_alm.proposed_normal),
             strict=True,
         ):
             for node, weight in zip(ids, weights, strict=True):
@@ -164,17 +170,17 @@ class NeedleTunnelALMTests(unittest.TestCase):
         alm.commit()
         # A valid accepted sticking traction can persist without velocity.
         # Unlike viscous drag, zero slip alone must not erase this history.
-        bound = interaction.friction * np.linalg.norm(alm.committed_normal.numpy(), axis=1)
+        bound = interaction.friction * np.linalg.norm(self.live(interaction, alm.committed_normal), axis=1)
         alm.committed_tangent.assign(0.4 * bound)
         self.equilibrate(interaction, state, forces)
-        np.testing.assert_allclose(alm.proposed_tangent.numpy(), 0.4 * bound, rtol=2e-6, atol=1e-7)
+        np.testing.assert_allclose(self.live(interaction, alm.proposed_tangent), 0.4 * bound, rtol=2e-6, atol=1e-7)
         self.assertGreater(abs(float(state.body_f.numpy()[0, 2])), 0)
         alm.commit()
         for speed in (0.01, -0.01):
             self.pose(state, offset=8e-5, speed=speed)
             self.equilibrate(interaction, state, forces)
-            density = alm.proposed_tangent.numpy()
-            bound = interaction.friction * np.linalg.norm(alm.proposed_normal.numpy(), axis=1)
+            density = self.live(interaction, alm.proposed_tangent)
+            bound = interaction.friction * np.linalg.norm(self.live(interaction, alm.proposed_normal), axis=1)
             np.testing.assert_allclose(np.abs(density), bound, rtol=2e-6, atol=1e-7)
             self.assertLess(float(state.body_f.numpy()[0, 2]) * speed, 0)
             alm.commit()
@@ -219,6 +225,83 @@ class NeedleTunnelALMTests(unittest.TestCase):
         np.testing.assert_array_equal(alm.committed_normal.numpy(), 0)
         np.testing.assert_array_equal(alm.committed_tangent.numpy(), 0)
 
+    def test_capture_at_an_empty_track_needs_a_bound_projection_and_projects_later_samples(self):
+        if not self.device.is_cuda:
+            self.skipTest("The cooperative projection is bound and captured on CUDA")
+        from newton_solver_suturebot._src.solvers.coupled.interface.shaft_projection import projection_binding
+        from newton_solver_suturebot._src.utils.capture import ScopedCapture
+
+        interaction, state, forces = self.build()
+        interaction.cooperative_shaft_projection = True
+        alm = interaction.tunnel_alm
+        radius = float(interaction.radii.max())
+        interaction.step_time.set(0.001)
+        issued = []
+        launch = wp.launch
+
+        def record(kernel, *arguments, **options):
+            issued.append(kernel.key)
+            return launch(kernel, *arguments, **options)
+
+        def capture():
+            alm.begin_step()
+            try:
+                with ScopedCapture(device=self.device) as scope:
+                    self.evaluate(interaction, state, forces)
+            finally:
+                alm.discard()
+            return scope.graph
+
+        # The cooperative projection is on and nothing is bound. The graph of this capture would hold
+        # the original tunnel kernel, and no later sample captures it again: the capture is refused.
+        self.assertEqual(interaction.track_count, 0)
+        with self.assertRaisesRegex(RuntimeError, "no projection is bound"):
+            capture()
+        self.assertFalse(alm._open)
+        # Bound outside the capture, the graph of the empty track holds the projected kernel.
+        binding = projection_binding(interaction, state, 0, radius)
+        self.assertIsNotNone(binding)
+        with patch.object(wp, "launch", side_effect=record):
+            graph = capture()
+        self.assertEqual(issued, ["prepare_queries", "cooperative_projection", "tunnel_forces_projected"])
+        np.testing.assert_array_equal(binding.counts.numpy(), [0, 0])
+        # Accepted steps of the host path lay the track; they use the same binding.
+        self.seed(interaction, state, forces)
+        count = interaction.track_count
+        self.assertIs(interaction._cooperative_shaft_binding, binding)
+        self.assertEqual(interaction._cooperative_shaft_rebinds, 0)
+        self.pose(state, offset=3e-5)
+        binding.counts.zero_()
+        # The graph captured at the empty track projects the samples that are live now ...
+        alm.begin_step()
+        wp.capture_launch(graph)
+        replayed = (
+            forces.numpy().copy(),
+            state.body_f.numpy().copy(),
+            self.live(interaction, alm.proposed_normal).copy(),
+            self.live(interaction, alm.proposed_tangent).copy(),
+        )
+        alm.discard()
+        np.testing.assert_array_equal(binding.counts.numpy(), [count, 0])
+        # ... and gives the forces and proposals of the original tunnel kernel.
+        interaction.cooperative_shaft_projection = False
+        alm.begin_step()
+        del issued[:]
+        with patch.object(wp, "launch", side_effect=record):
+            self.evaluate(interaction, state, forces)
+        self.assertEqual(issued, ["_tunnel_forces"])
+        original = (
+            forces.numpy().copy(),
+            state.body_f.numpy().copy(),
+            self.live(interaction, alm.proposed_normal).copy(),
+            self.live(interaction, alm.proposed_tangent).copy(),
+        )
+        alm.discard()
+        self.assertGreater(np.abs(original[2]).max(), 0.1)
+        names = ("particle_f", "body_f", "proposed_normal", "proposed_tangent")
+        for name, new, old in zip(names, replayed, original, strict=True):
+            np.testing.assert_allclose(new, old, rtol=1e-4, atol=1e-4 * np.abs(old).max(), err_msg=name)
+
     def test_hard_wall_does_not_treat_geometric_overlap_as_converged(self):
         interaction, state, forces = self.build(compliance=0)
         self.seed(interaction, state, forces)
@@ -247,7 +330,7 @@ class NeedleTunnelALMTests(unittest.TestCase):
         alm = interaction.tunnel_alm
         alm.commit()
         count = interaction.track_count
-        previous = alm.committed_normal.numpy().copy()
+        previous = self.live(interaction, alm.committed_normal).copy()
         self.assertGreater(np.linalg.norm(previous), 0)
         self.pose(state, z=0.000525, offset=8e-5)
         self.equilibrate(interaction, state, forces)
@@ -268,7 +351,9 @@ class NeedleTunnelALMTests(unittest.TestCase):
         self.pose(state, offset=8e-5, speed=0.001)
         alm.begin_step()
         self.evaluate(interaction, state, forces)
-        changes = interaction._track_lengths.numpy() * np.abs(alm.proposed_tangent.numpy())
+        changes = self.live(interaction, interaction._track_lengths) * np.abs(
+            self.live(interaction, alm.proposed_tangent)
+        )
         threshold = 0.5 * (changes.max() + changes.sum())
         self.assertTrue(np.all(changes < threshold))
         self.assertGreater(changes.sum(), threshold)
@@ -290,7 +375,9 @@ class NeedleTunnelALMTests(unittest.TestCase):
         self.assertEqual(interaction.exit_count, 1)
         self.assertEqual(interaction.track_section_count, 2)
         points = np.einsum(
-            "ij,ijk->ik", interaction._track_bary.numpy(), self.vertices[interaction._track_nodes.numpy()]
+            "ij,ijk->ik",
+            self.live(interaction, interaction._track_bary),
+            self.vertices[self.live(interaction, interaction._track_nodes)],
         )
         self.assertFalse(np.any((points[:, 2] > 0.006001) & (points[:, 2] < 0.007999)))
         sections = interaction.track_section_ids
@@ -393,11 +480,13 @@ class NeedleTunnelALMTests(unittest.TestCase):
                     self.evaluate(interaction, state, forces)
                     actual = float(state.body_q.numpy()[0, 0] - np.float32(0.002))
                     expected = np.sign(actual) * max(0, abs(actual) - alm.clearance) / alm.compliance_per_m
-                    np.testing.assert_allclose(alm.proposed_normal.numpy()[:, 0], expected, atol=2e-5, rtol=4e-5)
+                    np.testing.assert_allclose(
+                        self.live(interaction, alm.proposed_normal)[:, 0], expected, atol=2e-5, rtol=4e-5
+                    )
                     self.assertTrue(alm.converged(1e-9, 1e-6))
                     self.assertEqual(alm.dual_updates, 0)
                     self.assertLessEqual(alm.dual_residual, 1e-9)
-                    np.testing.assert_array_equal(alm.committed_normal.numpy(), old)
+                    np.testing.assert_array_equal(self.live(interaction, alm.committed_normal), old)
                     alm.discard()
 
     def test_hard_normal_first_proposal_remains_the_original_augmented_projection(self):
@@ -414,7 +503,7 @@ class NeedleTunnelALMTests(unittest.TestCase):
         z = np.array([2.0 + alm.penalty_per_m * actual, 1.0, 0.0])
         expected = max(0, 1 - alm.penalty_per_m * alm.clearance / np.linalg.norm(z)) * z
         np.testing.assert_allclose(
-            alm.proposed_normal.numpy(), np.broadcast_to(expected, old.shape), atol=3e-5, rtol=3e-6
+            self.live(interaction, alm.proposed_normal), np.broadcast_to(expected, old.shape), atol=3e-5, rtol=3e-6
         )
         self.assertFalse(alm.converged(1e-9, 1e-6))
         alm.discard()

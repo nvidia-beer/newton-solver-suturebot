@@ -160,7 +160,7 @@ original needle positions; the span does not depend on sampling spacing.
 | Initial FEM linear solve tolerance | $3\cdot10^{-3}$ relative | Tightened adaptively during unresolved interface iterations. Earlier paired tolerance studies used the penalty branch; they do not establish blanket ALM accuracy. Set `--fem-tolerance 1e-5` for the stricter reference. The general solver default remains $10^{-2}$ |
 | Interface solve tolerances | $2\cdot10^{-6}$ N absolute; $10^{-3}$ relative | Infinity-norm residual over all nodal forces and the needle wrench, with torque divided by the needle's curve radius; the generic public relative default remains $2\cdot10^{-4}$ |
 | Interface iteration | At most 160 trials; preconditioned vector Aitken relaxation, initially 1.0 | Early convergence ends the solve; relaxation is bounded to [0.001, 2] with an active shaft preconditioner and [0.001, 1] otherwise. Generic public coupler defaults remain 40 trials and 0.3 initial relaxation |
-| Shaft preconditioner | Enabled | Auxiliary block-Jacobi CG, at most 80 iterations; $10^{-2}$ relative tolerance for finite-compliance ALM and $10^{-3}$ for penalty/hard-wall modes. The physical acceptance residual is unchanged; the fast-handling 2 µm trajectory-equivalence gate failed as detailed below. Unpreconditioned Aitken remains capped at 1 |
+| Shaft preconditioner | Enabled | Auxiliary block-Jacobi Krylov solve (BiCGSTAB with the tunnel ALM once its track has samples, whose sliding anchors carry a shear; CG with the penalty tunnel and before the first track sample), at most 80 iterations; $10^{-2}$ relative tolerance for finite-compliance ALM and $10^{-3}$ for penalty/hard-wall modes. The physical acceptance residual is unchanged; the fast-handling 2 µm trajectory-equivalence gate failed as detailed below. Unpreconditioned Aitken remains capped at 1 |
 | Automatic desired tip speed | 3 mm/s | `--insertion-speed`; illustrative speed with a 0.5 s smooth initial ramp |
 | Translational and rotational drive stiffness | 400 N/m; 0.05 N·m/rad | Finite stiffness PD drive with native implicit damping and spring linearization; damping estimated from mass/inertia |
 | Surface penalty stiffness and damping | 20 N/m; 0.025 N·s/m | Damping scales with penetration/radius and acts only during compression; 0.025 is its effective coefficient at one-radius penetration. Tip and length-weighted shaft contact are separate. |
@@ -318,7 +318,7 @@ Unauthorized interior recovery retains the wider nearest-surface query.
 The full material-visibility rays remain unchanged. An earlier 32-thread
 surface-kernel launch audit preserved all force, moment, diagnostic and flag
 outputs exactly across 276 paired GPU evaluations. Current launch defaults
-are described in the [method](method.md#simultaneous-mujocofem-momentum-and-friction).
+are described in the [method](method.md#needle-query-launch-sizes).
 
 On CUDA, this example enables `NeedleTissueCoupler(..., capture_fem=True)`.
 Eligible non-differentiable Tet4 CG steps use CUDA graph replay after an actual
@@ -470,8 +470,10 @@ state_in, state_out = state_out, state_in
 Graph capture assumes fixed model and solver allocations. Call
 `coupler.invalidate_fem_graph()` between completed steps after replacing model
 array storage, force implementations or cached solver resources; construct a
-new coupler if capacities change. Timestep/numerical-setting changes and a
-changed Krylov workspace invalidate automatically. Supported in-place updates
+new coupler if capacities change. Numerical-setting changes and a changed
+Krylov workspace select another cached graph or invalidate automatically. The
+time step needs neither: the graphs read it from device data, so one graph
+serves every time step. Supported in-place updates
 within existing tangent, material and topology buffers need no invalidation.
 
 The example defaults to the material-tunnel mode `--tunnel-model alm`.
@@ -667,6 +669,94 @@ Each validator snapshot labels the state and force evaluations. If coupling
 fails to converge, tip position and time remain the accepted state, while
 `force_evaluation: rejected_coupling_trial` identifies the final rejected
 candidate's diagnostic force. That force is excluded from trace comparisons.
+
+### Start-up and self-test
+
+Run as an example, the scene captures its CUDA graphs and loads its kernel
+modules before the first frame of an insertion, not during it. The graphs of
+the coupled step address the history storage of the interaction, whose size
+follows the planned path, so they are captured as soon as that path is known:
+
+- with `--entry-xy` and `--exit-xy`, while the scene is built;
+- otherwise at **Preview path**. **Start automatic** and the sliders then
+  capture and load nothing. A Start without a Preview previews first, so the
+  same work runs inside that click;
+- again after **Reset** or a region switch. These rebuild the scene and load
+  what needs no path; the next Preview captures the graphs of the new path.
+  A Preview of a path that already has its graphs does nothing more.
+
+Each of these is a start-up. It builds the tangent of the first frame, loads
+the kernel modules of the tissue solver and of the code that a frame issues
+outside a graph, and captures and launches once, for the two state buffers
+together, 20 graphs: the trial preparation (2), the tissue step of the
+host-controlled trials at each of its five inner tolerances (10), the trial
+graph of the device trials (2), the force graphs of the host-controlled
+trials (4) and the contact preparation and the solve of their correction (2).
+These are real steps that are discarded: the needle, the tissue and MuJoCo's
+integration state get back the bits they had, no time passes and no history
+is accepted ([method](method.md#needle-insertion-interaction)). On a CPU
+device nothing is captured; the tangent of the first frame is built at the
+same moment and used once.
+
+The kernel modules of the coupled step do not depend on the path. A start-up
+that ends without one (the scene built without points, a Reset, a region
+switch) loads their builds by name and creates the kernels of the two Krylov
+solvers of the shaft correction, so the start-up of a Preview only captures:
+it loads and compiles no kernel module, also with an empty kernel cache,
+where those builds compile while the scene is built.
+
+`--test` without points plays a scripted user for 365 frames: entry and exit
+on the map, Preview, Start, the whole automatic insertion to its exit, Reset,
+the pair whose path crosses the gap, Preview and a second Start, whose needle
+enters the tissue. With points on the command line the run is the one that
+was asked for. In both cases the self-test fails if a CUDA graph was
+captured, a Krylov solve was issued outside a graph or a kernel module was
+loaded after a start-up, if a graph of a start-up was not launched there, or
+if the track or opening storage of the interaction had to grow, and it
+prints these counts. On a CPU device the script runs and nothing is counted.
+
+Measured on cuda:0 with the null viewer on 2026-11-17, in a run of 718 frames: the
+self-test, then a Reset, the pair across the gap and two in-and-out cycles under
+the sliders (eight entries, seven exits, six flips of the shaft flag).
+
+| | Before | After, warm kernel cache | After, empty kernel cache |
+|---|---|---|---|
+| Graph captures in frames or user input | 56, in 36 frames | 0 | 0 |
+| Graph executables built in frames | 50 | 0 | 0 |
+| Kernel module builds loaded outside a start-up | 40 (10 at the Start click) | 0 | 0 (none compiled) |
+| Start click | 245 ms, 2 captures, 10 module loads | below 0.1 ms, nothing | below 0.1 ms, nothing |
+| Preview click | 0.70 s | 1.25 s the first time, 1.15 to 1.23 s later; no module build loaded | 1.23 s the first time, 1.14 to 1.21 s later; none loaded or compiled |
+| First frame after Start | 383 ms | 22.5 ms | 14.9 ms |
+| Longest frame of a running insertion | 383 ms | 31.7 ms | 30.0 ms |
+
+Of a Preview click, 0.50 to 0.53 s is the start-up (25 captures, 23 graph
+executables, no kernel module build); the rest plans the path as before. The
+row of the Preview click is of a later run of the same day (486 frames with
+three Previews): until then the first Preview loaded the 31 kernel module
+builds of the coupled step (1.36 s) and, with an empty kernel cache, compiled
+them (14.8 s). They are now loaded while the scene is built, in a start-up
+of 3.40 s instead of 3.23 s with a warm kernel cache and of 106 s instead of
+100 s with an empty one. With the points on the command
+line (the first command of this section) the start-up is part of the
+construction, which takes 6.6 s with a warm kernel cache (4.5 s before): 25
+captures and 56 kernel module builds there, none after it, and the first frame
+takes 23 ms (152 ms before).
+
+The accepted states are not the same bits as before on a CUDA device, and
+neither are two runs of the same code: the tissue forces are summed in an order
+that changes from run to run. In the run above every entry, exit and the
+Success of the first insertion fall into the same frames as before, and the
+needle pose differs by at most 6.0e-8 over the 718 frames. On the two test
+blocks, over the 40 frames before the needle touches the tissue, a scene with
+the start-up call differs from one without it by 2.9e-12 (SI units, state and
+velocity increment), and two scenes without it by 2.0e-12. On the CPU the
+frames are the same bits with and without the start-up call.
+
+
+A scene built on the example class (the worker scenes of
+`examples/grasp/parallel.py`) and a caller that builds `Example(viewer, args)`
+without `startup=True` keep the earlier behaviour: a graph is captured where
+the run first needs it.
 
 ## Current interactive preset and finer reference
 

@@ -1,0 +1,449 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "device": "cuda:0",
+  "example_arguments": {
+    "device": null,
+    "viewer": "gl",
+    "rerun_address": null,
+    "output_path": "output.usd",
+    "num_frames": 100,
+    "render_fps": null,
+    "headless": false,
+    "test": false,
+    "quiet": false,
+    "paused": false,
+    "benchmark": false,
+    "warp_config": [],
+    "realtime": false,
+    "asset": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-suturebot/src/newton_solver_suturebot/examples/assets/phantom_pad/phantom_regions.usd",
+    "regions": [
+      1
+    ],
+    "substeps": 4,
+    "solver_iterations": 160,
+    "young_modulus": 25000.0,
+    "poisson_ratio": 0.35,
+    "density": 1000.0,
+    "material_damping": 0.01,
+    "linear_damping": 1.0,
+    "grip_stiffness": 20.0,
+    "grip_damping": 0.03,
+    "grip_radius": 0.002,
+    "grip_speed": 0.015,
+    "needle_solver": "partitioned",
+    "needle_asset": null,
+    "entry_xy": null,
+    "exit_xy": null,
+    "start": false,
+    "insertion_speed": 0.004,
+    "exit_tolerance": 0.001,
+    "puncture_force": 0.003,
+    "contact_stiffness": 20.0,
+    "contact_sample_stiffness": null,
+    "shaft_friction": 0.2,
+    "shaft_stiffness": 60000.0,
+    "track_spacing": 0.00025,
+    "tunnel_model": "alm",
+    "tunnel_clearance": 2e-05,
+    "tunnel_compliance": 3.3333333333333333e-06,
+    "tunnel_penalty": null,
+    "tunnel_tolerance": 2e-06,
+    "shaft_spacing": 0.00014,
+    "drive_stiffness": 400.0,
+    "angular_stiffness": 0.05,
+    "coupling_absolute_tolerance": 2e-06,
+    "coupling_relative_tolerance": 0.001,
+    "fem_tolerance": 0.003,
+    "fem_chebyshev_degree": 4,
+    "capture_coupling": true,
+    "transparent_pad": false,
+    "report": null,
+    "stitches": 3,
+    "first_entry_xy": [
+      0.03,
+      -0.04
+    ],
+    "first_exit_xy": [
+      0.03,
+      -0.048
+    ],
+    "stitch_pitch": 0.006,
+    "eyelet_spacing": 0.0015,
+    "air_speed": 0.012,
+    "thread_length": 0.18,
+    "thread_elements": 90,
+    "thread_modulus": 2000000.0,
+    "updates": 2,
+    "row_length": 0.06,
+    "contact_margin": 0.005,
+    "least_volume": 0.5,
+    "autostart": true
+  },
+  "maximum_frames": 12000,
+  "frames_checked": 2008,
+  "minimum_frame_tet_j": 0.15628288406146637,
+  "failure_calls": [],
+  "phase_transitions": [
+    {
+      "method": "_begin_pull",
+      "phase": "pull",
+      "time_s": 32.63749999999901
+    }
+  ],
+  "checkpoints": [
+    {
+      "frame": 60,
+      "time_s": 0.9999999999999977,
+      "phase": "stitch",
+      "stitch": 0,
+      "minimum_frame_tet_j": 0.9995888789391183
+    },
+    {
+      "frame": 120,
+      "time_s": 1.9999999999999942,
+      "phase": "stitch",
+      "stitch": 0,
+      "minimum_frame_tet_j": 0.9998472831670964
+    },
+    {
+      "frame": 180,
+      "time_s": 3.000000000000044,
+      "phase": "stitch",
+      "stitch": 0,
+      "minimum_frame_tet_j": 0.9996836148744215
+    },
+    {
+      "frame": 240,
+      "time_s": 4.000000000000093,
+      "phase": "stitch",
+      "stitch": 0,
+      "minimum_frame_tet_j": 0.9996849204878335
+    },
+    {
+      "frame": 300,
+      "time_s": 5.000000000000036,
+      "phase": "stitch",
+      "stitch": 0,
+      "minimum_frame_tet_j": 0.999802658176793
+    },
+    {
+      "frame": 360,
+      "time_s": 5.99999999999998,
+      "phase": "stitch",
+      "stitch": 0,
+      "minimum_frame_tet_j": 0.999569338848041
+    },
+    {
+      "frame": 420,
+      "time_s": 6.999999999999923,
+      "phase": "stitch",
+      "stitch": 0,
+      "minimum_frame_tet_j": 0.9707056621571115
+    },
+    {
+      "frame": 480,
+      "time_s": 7.999999999999866,
+      "phase": "stitch",
+      "stitch": 0,
+      "minimum_frame_tet_j": 0.9940519186244109
+    },
+    {
+      "frame": 540,
+      "time_s": 8.99999999999981,
+      "phase": "stitch",
+      "stitch": 0,
+      "minimum_frame_tet_j": 0.9979814758696072
+    },
+    {
+      "frame": 600,
+      "time_s": 9.999999999999753,
+      "phase": "stitch",
+      "stitch": 0,
+      "minimum_frame_tet_j": 0.9368102653177898
+    },
+    {
+      "frame": 660,
+      "time_s": 10.999999999999696,
+      "phase": "stitch",
+      "stitch": 0,
+      "minimum_frame_tet_j": 0.9368705601925745
+    },
+    {
+      "frame": 720,
+      "time_s": 11.99999999999964,
+      "phase": "stitch",
+      "stitch": 1,
+      "minimum_frame_tet_j": 0.8556285001055286
+    },
+    {
+      "frame": 780,
+      "time_s": 12.999999999999583,
+      "phase": "stitch",
+      "stitch": 1,
+      "minimum_frame_tet_j": 0.819550419806412
+    },
+    {
+      "frame": 840,
+      "time_s": 13.999999999999526,
+      "phase": "stitch",
+      "stitch": 1,
+      "minimum_frame_tet_j": 0.8016566413701377
+    },
+    {
+      "frame": 900,
+      "time_s": 14.999999999999469,
+      "phase": "stitch",
+      "stitch": 1,
+      "minimum_frame_tet_j": 0.8019866809372032
+    },
+    {
+      "frame": 960,
+      "time_s": 15.999999999999412,
+      "phase": "stitch",
+      "stitch": 1,
+      "minimum_frame_tet_j": 0.8633278293373661
+    },
+    {
+      "frame": 1020,
+      "time_s": 16.999999999999357,
+      "phase": "stitch",
+      "stitch": 1,
+      "minimum_frame_tet_j": 0.9519059538045986
+    },
+    {
+      "frame": 1080,
+      "time_s": 17.9999999999993,
+      "phase": "stitch",
+      "stitch": 1,
+      "minimum_frame_tet_j": 0.9728868132783418
+    },
+    {
+      "frame": 1140,
+      "time_s": 18.999999999999243,
+      "phase": "stitch",
+      "stitch": 1,
+      "minimum_frame_tet_j": 0.9623141374932898
+    },
+    {
+      "frame": 1200,
+      "time_s": 19.999999999999186,
+      "phase": "stitch",
+      "stitch": 1,
+      "minimum_frame_tet_j": 0.8461251949833023
+    },
+    {
+      "frame": 1260,
+      "time_s": 20.99999999999913,
+      "phase": "stitch",
+      "stitch": 1,
+      "minimum_frame_tet_j": 0.6783151654070972
+    },
+    {
+      "frame": 1320,
+      "time_s": 21.999999999999073,
+      "phase": "stitch",
+      "stitch": 1,
+      "minimum_frame_tet_j": 0.2836192926752353
+    },
+    {
+      "frame": 1380,
+      "time_s": 22.999999999999016,
+      "phase": "stitch",
+      "stitch": 1,
+      "minimum_frame_tet_j": 0.37709267296749643
+    },
+    {
+      "frame": 1440,
+      "time_s": 23.99999999999896,
+      "phase": "stitch",
+      "stitch": 2,
+      "minimum_frame_tet_j": 0.4838314418906478
+    },
+    {
+      "frame": 1500,
+      "time_s": 24.999999999998902,
+      "phase": "stitch",
+      "stitch": 2,
+      "minimum_frame_tet_j": 0.4920026434855804
+    },
+    {
+      "frame": 1560,
+      "time_s": 25.999999999998845,
+      "phase": "stitch",
+      "stitch": 2,
+      "minimum_frame_tet_j": 0.4948142456337362
+    },
+    {
+      "frame": 1620,
+      "time_s": 26.99999999999879,
+      "phase": "stitch",
+      "stitch": 2,
+      "minimum_frame_tet_j": 0.5002956003213691
+    },
+    {
+      "frame": 1680,
+      "time_s": 27.99999999999873,
+      "phase": "stitch",
+      "stitch": 2,
+      "minimum_frame_tet_j": 0.5412343435079094
+    },
+    {
+      "frame": 1740,
+      "time_s": 28.999999999998675,
+      "phase": "stitch",
+      "stitch": 2,
+      "minimum_frame_tet_j": 0.6575961991659415
+    },
+    {
+      "frame": 1800,
+      "time_s": 29.999999999998618,
+      "phase": "stitch",
+      "stitch": 2,
+      "minimum_frame_tet_j": 0.6554465802633607
+    },
+    {
+      "frame": 1860,
+      "time_s": 30.99999999999856,
+      "phase": "stitch",
+      "stitch": 2,
+      "minimum_frame_tet_j": 0.6572896209817456
+    },
+    {
+      "frame": 1920,
+      "time_s": 31.999999999998504,
+      "phase": "stitch",
+      "stitch": 2,
+      "minimum_frame_tet_j": 0.5355330215446054
+    },
+    {
+      "frame": 1980,
+      "time_s": 32.9999999999993,
+      "phase": "drop",
+      "stitch": 2,
+      "minimum_frame_tet_j": 0.5419180749404754
+    },
+    {
+      "frame": 2008,
+      "time_s": 33.466666666666335,
+      "phase": "done",
+      "stitch": 2,
+      "minimum_frame_tet_j": 0.543148984353127
+    }
+  ],
+  "actual_device": "cuda:0",
+  "device_name": "NVIDIA GB10",
+  "cuda": true,
+  "warp_version": "1.17.0",
+  "numpy_version": "2.5.4",
+  "dimensions": {
+    "tissue_vertices": 7205,
+    "tetrahedra": 29160,
+    "fixed_vertices": 1841,
+    "thread_nodes": 91,
+    "eyelets": 22,
+    "stitches": 3
+  },
+  "frame_dt_s": 0.016666666666666666,
+  "nominal_substep_dt_s": 0.004166666666666667,
+  "initial_gap_m": 0.002363114312150654,
+  "maximum_observed_closing_gap_m": 0.002363114312150654,
+  "minimum_observed_closing_gap_m": 0.0015699767197171848,
+  "elapsed_s": 33.466666666666335,
+  "phase": "done",
+  "stitch_index": 2,
+  "accepted_physics_steps": 8032,
+  "step_refinements": 0,
+  "minimum_accepted_swept_tet_j": 0.14001673225827405,
+  "tet_step_rejections": 0,
+  "wall_seconds": 110.67275789500854,
+  "completion": {
+    "failure_calls": [],
+    "running": false,
+    "phase": "done",
+    "task_status": "success",
+    "phases_seen": [
+      "done",
+      "drop",
+      "pull",
+      "stitch"
+    ],
+    "stitches_seen": [
+      0,
+      1,
+      2
+    ],
+    "stitch_count": 3,
+    "threaded_per_stitch": [
+      7,
+      7,
+      8
+    ],
+    "planned_eyelets_per_stitch": [
+      7,
+      7,
+      8
+    ],
+    "elapsed_s": 33.466666666666335,
+    "schedule_duration_s": 32.6351358370581,
+    "closing_reason": "the thread is as tight as the tissue allows",
+    "commanded_closing_pull_distance_m": 9.182098765453959e-09,
+    "wound_gap_m": 0.0015699767197171848,
+    "rest_gap_m": 0.002363114312150654,
+    "drop_started_s": 32.64999999999902,
+    "still_duration_s": 0.5166666666666666,
+    "needle_speed_m_s": 0.00020251396927051246
+  },
+  "outcome": "Done: 3 stitches, the thread is as tight as the tissue allows; wound 1.57 mm of 2.36 mm wide. Drop: the pad carries the dropped needle, it lies still",
+  "final_phase": "done",
+  "final_observed_closing_gap_m": 0.0015699767197171848,
+  "gap_measurement_scope": "Example wound_gap is refreshed during the closing pull, not the drop",
+  "verification": {
+    "base_commit": "79fb7e3c642d4aefc1ae11b68994c2bd99d12e0f",
+    "working_tree_fix": true,
+    "source_and_test_sha256": {
+      "src/newton_solver_suturebot/_src/coupling.py": "9a6d303e7db68e2de6bff93e0b6ad4afb2aaba0e1f1974826c9d16591e19b50a",
+      "src/newton_solver_suturebot/_src/tet_step.py": "4d3ecdd5fcada015cf349b88c8d3179ca2f661c6da14d8a5a9acb1a00a8a7e25",
+      "src/newton_solver_suturebot/_src/solvers/fem/kernels.py": "81b8eddb330b5e4e1ba895b447b68c74a814201bbd087fa7ea7781e22001d535",
+      "src/newton_solver_suturebot/examples/example_fem_needle_suture.py": "9a4115dbcefdb8be98ba3957327a6017011438b3ea093dd7ca6e2161e127b32f",
+      "tests/test_needle_tissue_coupler.py": "c44c93a9ea50b1f3ee11bfe4e044b5f067122bc2aecfebd69976ea3a6ba579ed",
+      "tests/test_tet_step_guard.py": "f64b8d1e42eaac4ce41f471bfbd24129fad2dcf3ba91d08d031a6595d0855478",
+      "tests/test_suture_full_sequence.py": "5c4ffb754e309daaddb57d1de5b94b7804672325ecb0349fe012cead1c0d2d30"
+    },
+    "dependency_sha256": {
+      "pyproject.toml": "2b6a2351d82a8de5e104a7c6d6cf8a0621c42d5bacee9f74f786b1d1bac66bd6",
+      "uv.lock": "aef87604e8ff8226040e941423f200146340c3762cfb8d9ad2ed84a3cfcc73b0"
+    },
+    "full_sequence_command": "NEWTON_TEST_FULL_SUTURE=1 NEWTON_TEST_DEVICE=cuda:0 NEWTON_FULL_SUTURE_REPORT=nsys/results/full_suture_guard_final.json uv run --locked python -u -m unittest discover -s tests -p test_suture_full_sequence.py -v",
+    "full_sequence_module_tests": {
+      "run": 7,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 112.336
+    },
+    "cuda_suite": {
+      "command": "NEWTON_TEST_DEVICE=cuda:0 uv run --locked python -u -m unittest discover -s tests -v",
+      "run": 623,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 3,
+      "expected_failures": 5,
+      "seconds": 157.257,
+      "skips": [
+        "2 opt-in parallel scene tests",
+        "1 opt-in full suturing sequence (run separately above)"
+      ],
+      "scope": "Final runtime implementation. Two phase-observation audit cases added after this suite started are included in the final seven-test full-sequence module run."
+    },
+    "static_checks": [
+      "ruff check .: passed",
+      "ruff format --check .: 221 files formatted",
+      "build_readme.py --check --require-videos: current",
+      "git diff --check: passed"
+    ],
+    "source_local_ignored_logs_sha256": {
+      "nsys/results/suture-inversion-fix/cuda-suite.log": "7922377a79ad69d234fa456f26b3575e3ca92535334cf08349947ff5d7914629",
+      "nsys/results/suture-inversion-fix/full-sequence.log": "436884cc3a3e3b133bba8415688827364f38f872adf7f10a8226abad6d8ae84e"
+    }
+  }
+}

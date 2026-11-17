@@ -5,7 +5,7 @@ import unittest
 
 import numpy as np
 
-from newton_solver_suturebot._src.surface_anderson import SurfaceAnderson
+from newton_solver_suturebot._src.solvers.coupled.acceleration.surface_anderson import SurfaceAnderson
 
 
 class SurfaceAndersonTests(unittest.TestCase):

@@ -1,9 +1,10 @@
 # Standalone package and evidence provenance
 
-This repository contains the required implementation and data for seven
-examples: `fem_phantom_cut`, `fem_needle_insertion`, `fem_phantom_regions` and
-`fem_dvrk`, plus `fem_versius`, `needle_thread` and `fem_needle_suture`. The FEM core, embedded cutting, prepared mechanics, partitioned needle coupling, optional
-`SolverMuJoCoFEM`, geometry queries and viewer helpers live under
+This repository contains the required implementation and data for nine
+examples: `fem_surgical_incision`, `fem_needle_insertion`, `fem_phantom_regions` and
+`fem_dvrk`, plus `fem_versius`, `needle_thread`, `fem_needle_suture`,
+`fem_needle_grasp` and `fem_tool_tissue`. The FEM core, embedded cutting, prepared mechanics, partitioned needle coupling,
+geometry queries and viewer helpers live under
 `src/newton_solver_suturebot/`. Newton, Warp, MuJoCo and the other locked
 packages are external dependencies installed normally by `uv`.
 
@@ -25,7 +26,13 @@ multiples set to the reference's `(4, 2, 1, 0.5, 0.25, 0)`, the CPU solver
 still gives the reference scenarios' step histories bit for bit; its default
 line search has two smaller multiples and does not.
 
-The full-pad cutting workflow uses the local cutting and material-grip
+The `fem_tool_tissue` example, the rig of the contact between tools and
+tissue, was written in this repository on 2026-11-16. It reuses the dVRK tools
+and the tissue block of `fem_needle_grasp`, adds no data and is not covered by
+the extraction reports.
+
+The cutting workflow (`fem_surgical_incision` on the Baymax body; until
+2026-11-17 `fem_phantom_cut` on the whole pad) uses the local cutting and material-grip
 implementation. Its Line, Cylinder and Sphere tools use embedded Tet4
 material fragments. The original
 three-example extraction reports below retain their original scope and hashes.
@@ -36,6 +43,7 @@ three-example extraction reports below retain their original scope and hashes.
 | --- | --- |
 | Regional tissue geometry | [phantom_pad](../src/newton_solver_suturebot/examples/assets/phantom_pad/README.md): original tetrahedral coordinates, surface display and prepared twelve-region assignment |
 | Curved needle | [needle_insertion](../src/newton_solver_suturebot/examples/assets/needle_insertion/README.md): standalone USD and provenance for the physical insertion example |
+| Baymax tetrahedral body | [baymax](../src/newton_solver_suturebot/examples/assets/baymax/README.md): the body that `fem_surgical_incision` cuts, a byte-for-byte copy of `tet_baymax.usda` of the local `newton-solver-fem` repository at revision `6968f27`. The file carries no licence line; that repository attributes it to The Newton Developers under Apache-2.0; no upstream location is recorded; the shape is a film character |
 | Recording scene and samples | [dVRK recordings](../src/newton_solver_suturebot/examples/assets/dvrk/README.md): prepared tools, fixture, cameras, phantom, motion, indexed source images and available point labels |
 | Versius preview | [Preview guide](versius-recording.md): two supplied CMR distal needle holders, generated motion, illustrative stereo views and unrelated dVRK placeholder images |
 
@@ -105,12 +113,34 @@ replace the historical numerical reports or establish calibrated reflectance,
 physical contact or live FPS.
 
 The [full-pad cutting movie](media/fem_phantom_cut.mp4) is a new standalone
-capture, rather than an imported clip. Its [sidecar](media/fem_phantom_cut.json)
+capture, rather than an imported clip. It shows the pad example
+`fem_phantom_cut` as it was before 2026-11-17; the example that replaced it,
+`fem_surgical_incision`, has no recorded clip yet. The movie's [sidecar](media/fem_phantom_cut.json)
 records this package's module, 360 frames, six simulated seconds and the
 slice/grip/release sequence. The encoding rate is 60 FPS; the 199.447-second
 capture wall time includes setup, rendering and encoding and is not live FPS.
 The new [cutting validation report](validation/standalone/phantom-cut.json)
 keeps its evidence separate from the original imported artifact hashes.
+
+The [grasp movie](media/fem_needle_grasp.mp4) and the
+[tool/tissue contact movie](media/fem_tool_tissue.mp4) are standalone captures
+of 2026-11-17. The grasp [sidecar](media/fem_needle_grasp.json) records 1,700
+frames, 28.3 simulated seconds: the whole procedure with both lifts, with the
+options that were the example's defaults when it was captured, so without
+contact between tools and tissue. Later that day the example's defaults
+changed: the pull by the tip replaced the second lift and takes the needle
+out of the tissue with the thread following through its track (the procedure
+is done at 30.4 to 30.9 s), and the swept tool/tissue contact is on. The
+recipe in `docs/videos.json` (`--test`, the example's defaults) therefore
+records another procedure than this clip shows, and the 1,700 frames of the
+recipe end during the pull. The clip has not been recorded again, and its
+sidecar still calls the contact an opt-in switch. The contact
+[sidecar](media/fem_tool_tissue.json) records 942 frames, 15.6 simulated
+seconds, with `--contact swept`: an opt-in contact that does not stop the tool
+in the fast approach at the end of the clip. Both runs passed the example's
+self-test, with no graph capture and no kernel module load after start-up. The
+encoding rate is 60 FPS; the capture wall times (77 s and 28 s) include setup,
+rendering and encoding and are not live FPS.
 
 `docs/videos.json` stores the capture recipes. To replace an imported
 clip with a fresh standalone capture, use the recorder and regenerate the README:

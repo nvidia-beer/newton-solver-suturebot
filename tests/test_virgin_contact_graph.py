@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 import test_needle_trial_commit as fixtures
 
-from newton_solver_suturebot._src.needle_trial_forces import _NeedleTrialForces
+from newton_solver_suturebot._src.solvers.coupled.interface.needle_trial_forces import _NeedleTrialForces
 
 
 class VirginContactGraphTests(unittest.TestCase):
@@ -118,14 +118,18 @@ class VirginContactGraphTests(unittest.TestCase):
     def test_reuse_certificate_tracks_deformed_opening_and_rejects_uncertainty(self):
         import warp as wp
 
-        from newton_solver_suturebot._src.needle_trial_forces import opening_reuse_certificate
+        from newton_solver_suturebot._src.solvers.coupled.interface.needle_trial_forces import (
+            FALLBACK_REASONS,
+            opening_reuse_certificate,
+        )
 
         x, state, _ = self.build()
         nodes = wp.array([[0, 1, 2]], dtype=wp.vec3i, device=x.device)
         bary = wp.array([[1, 0, 0]], dtype=wp.vec3d, device=x.device)
+        live = wp.array([0, 0, 1], dtype=int, device=x.device)  # one opening
         samples = wp.array([[0, 0, 0]], dtype=wp.vec3d, device=x.device)
         flags = wp.zeros(3, dtype=int, device=x.device)
-        fallback = wp.zeros(1, dtype=int, device=x.device)
+        fallback = wp.zeros(len(FALLBACK_REASONS), dtype=int, device=x.device)
         capture = 2 * float(x.radii.max())
         for distance, expected in ((0.01, 0), (0.5 * capture, 1), (capture, 1), (float("nan"), 1)):
             with self.subTest(distance=distance):
@@ -136,7 +140,19 @@ class VirginContactGraphTests(unittest.TestCase):
                 wp.launch(
                     opening_reuse_certificate,
                     1,
-                    [nodes, bary, state.particle_q, samples, state.body_q, 0, wp.vec3d(0), flags, capture, fallback],
+                    [
+                        nodes,
+                        bary,
+                        live,
+                        state.particle_q,
+                        samples,
+                        state.body_q,
+                        0,
+                        wp.vec3d(0),
+                        flags,
+                        capture,
+                        fallback,
+                    ],
                     device=x.device,
                 )
                 self.assertEqual(int(fallback.numpy()[0]), expected)

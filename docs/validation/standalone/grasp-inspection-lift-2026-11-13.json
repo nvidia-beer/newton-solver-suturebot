@@ -1,0 +1,29 @@
+{
+  "physical_passed": true,
+  "frames": 600,
+  "physical_time_s": 9.999999999999751,
+  "lift_height_m": 0.0005,
+  "maximum_actual_needle_lift_m": 0.0004889966235741645,
+  "maximum_upward_tissue_displacement_m": 0.0001874168649664087,
+  "minimum_engaged_length_during_lift_m": 0.00038693242822773755,
+  "checks": [
+    "all tetrahedra positive",
+    "fixed boundaries within 1e-8 m",
+    "finite states",
+    "native accepted clock within 1e-8 s",
+    "lift completes and insertion resumes",
+    "actual upward tissue displacement above 1e-6 m"
+  ],
+  "cuda_suite": {
+    "cases": 1096,
+    "seconds": 302.4,
+    "skipped": 5,
+    "expected_failures": 5,
+    "log_sha256": "3dd821d9dc065e82d462475ea4270465f65e01931a1659b9237cc1c4e9bd9604"
+  },
+  "physical_report": {
+    "path": "nsys/results/inspection-lift/physical.json",
+    "sha256": "b400fc048b5661bd8167c658bb618bdeb42a3e18db518f52e3707ae15ef98f2e"
+  },
+  "limitations": "Physical state and numerical checks do not certify stitch quality; this additional motion is not the historical FPS benchmark."
+}

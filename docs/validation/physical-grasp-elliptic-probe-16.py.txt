@@ -1,0 +1,27 @@
+import json,time
+from pathlib import Path
+import numpy as np
+import newton_solver_suturebot.grasp_scene as gs
+from newton_solver_suturebot._src.grasp import GrasperConfig
+from newton_solver_suturebot.parallel import SutureSceneConfig,_make_scene,_observe,_apply_action
+original=gs.add_grasper
+reports=[]
+for imp,amp,native in ((.9999,1,False),(.9999,-1,False)):
+ gs.add_grasper=lambda builder,**kwargs:original(builder,config=GrasperConfig(contact_impedance=imp),**kwargs)
+ c=SutureSceneConfig(device='cuda:0',control_mode='physical_grasp',substeps=16);s=_make_scene(c,0);s.rigid_solver.mj_model.opt.cone=1;s.rigid_solver.mj_model.opt.iterations=200;s.rigid_solver.mj_model.opt.ls_iterations=50;s.rigid_solver.mj_model.opt.tolerance=1e-12;initial=_observe(s,0);start=time.perf_counter();rows=[]
+ for i in range(128):
+  a=np.zeros(7)
+  if i>=8:
+   sign=1 if ((i-8)//10)%2==0 else -1;a[0]=-abs(amp)*sign;a[6]=.05*sign
+   if amp<0:a[3]=sign
+  _apply_action(s,c,a)
+  if native:
+   for j in range(4):
+    s.state_0.clear_forces();s._prepare_step_loads(s.cartesian_target,np.zeros(6),s.sim_dt)
+    s.rigid_solver.step(s.state_0,s.state_1,s.control,None,s.sim_dt)
+    s.state_0,s.state_1=s.state_1,s.state_0;s.elapsed+=s.sim_dt;s._accepted_step(s.sim_dt)
+  else:s.step()
+  o=_observe(s,0);rows.append({'i':i,'p':o['needle_pose'].tolist(),'g':o['gripper_pose'].tolist(),'relative':o['needle_relative_pose'].tolist(),'normal':o['jaw_contact_normal_force_n'].tolist(),'jaw':o['jaw_position_rad'].tolist(),'vel':o['needle_velocity'].tolist()})
+  if o['diagnostics']['task_status']=='failed':break
+ report={'impedance':imp,'amplitude':amp,'native_only':native,'frames':i+1,'time':s.elapsed,'wall':time.perf_counter()-start,'needle_delta':(o['needle_pose'][:3]-initial['needle_pose'][:3]).tolist(),'normal':o['jaw_contact_normal_force_n'].tolist(),'diagnostics':o['diagnostics'],'rows':rows};reports.append(report);print('RESULT',json.dumps({k:v for k,v in report.items() if k not in ('rows','diagnostics')}),flush=True)
+Path('nsys/results/physical-grasp/elliptic_accuracy16_stress.json').write_text(json.dumps(reports,indent=2))

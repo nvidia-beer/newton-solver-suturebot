@@ -4,13 +4,7 @@
 
 import warp as wp
 
-from .kernels import (
-    _centerline_derivatives,
-    _curvature_coefficients,
-    _gauss_point,
-    _gauss_weight,
-    _shape_derivatives,
-)
+from .kernels import _centerline_derivatives, _curvature_coefficients, _gauss_point, _gauss_weight, _shape_derivatives
 
 
 @wp.kernel(enable_backward=False)

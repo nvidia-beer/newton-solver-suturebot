@@ -6,6 +6,7 @@
 import numpy as np
 import warp as wp
 
+from ..utils.step_time import StepTime
 from .fragment_device import FragmentArrays
 
 _GRID = 8
@@ -261,8 +262,9 @@ def _add_matrix(
     offsets: wp.array[int],
     columns: wp.array[int],
     values: wp.array[wp.mat33],
-    scale: float,
+    scale: wp.array[float],
 ):
+    # scale holds dt² k + dt c of the grips in its one element, formed by the host (StepTime.derived).
     slot, row = wp.tid()
     if enabled[slot] == 0:
         return
@@ -277,17 +279,18 @@ def _add_matrix(
             else:
                 end = middle
         if first < offsets[particle + 1] and columns[first] == target:
-            stiffness = scale * fractions[slot] * weights[slot][row] * weights[slot][column]
+            stiffness = scale[0] * fractions[slot] * weights[slot][row] * weights[slot][column]
             wp.atomic_add(values, first, wp.diag(wp.vec3(stiffness)))
 
 
 @wp.kernel(enable_backward=False)
-def _advance_targets(requested: wp.array[wp.vec3], driven: wp.array[wp.vec3], dt: float, speed: float):
+def _advance_targets(requested: wp.array[wp.vec3], driven: wp.array[wp.vec3], dt: wp.array[float], speed: float):
+    # dt holds the timestep [s] in its one element (StepTime.seconds).
     grip = wp.tid()
     delta = requested[grip] - driven[grip]
     distance = wp.length(delta)
-    if distance > speed * dt:
-        delta *= speed * dt / distance
+    if distance > speed * dt[0]:
+        delta *= speed * dt[0] / distance
     driven[grip] += delta
 
 
@@ -304,8 +307,9 @@ def _add_forces(
     forces: wp.array[wp.vec3],
     stiffness: float,
     damping: float,
-    dt: float,
+    dt: wp.array[float],
 ):
+    # dt holds the timestep [s] in its one element (StepTime.seconds).
     slot = wp.tid()
     if enabled[slot] == 0:
         return
@@ -318,7 +322,7 @@ def _add_forces(
         weight = float(weights[slot][corner]) * fractions[slot]
         # World attachments have nonzero stiffness row sums. This correction
         # completes the solver's translation-invariant elastic predictor.
-        force = weight * (stiffness * (target - point) - (dt * stiffness + damping) * qd[node])
+        force = weight * (stiffness * (target - point) - (dt[0] * stiffness + damping) * qd[node])
         wp.atomic_add(forces, node, force)
 
 
@@ -361,10 +365,28 @@ class MaterialHolds:
     over existing tetrahedral sparse blocks. Targets are rate limited to avoid
     teleporting tiny elements. No state or surface arrays are downloaded while
     dragging or simulating.
+
+    The kernels read the timestep from ``step_time`` (:class:`StepTime`), which
+    :meth:`add_matrix` and :meth:`add_forces` write; inside a CUDA graph capture
+    it must already hold their ``dt``. Pass the ``step_time`` of the solver whose
+    step the grips act in, or assign it to the attribute before the first use,
+    so that the whole step reads one time step. Without it the grips keep one of
+    their own.
     """
 
-    def __init__(self, device, *, capacity=16, stiffness=10000.0, damping=20.0, maximum_speed=1.0, radius=0.08):
+    def __init__(
+        self,
+        device,
+        *,
+        capacity=16,
+        stiffness=10000.0,
+        damping=20.0,
+        maximum_speed=1.0,
+        radius=0.08,
+        step_time=None,
+    ):
         self.device = wp.get_device(device)
+        self.step_time = StepTime(self.device) if step_time is None else step_time
         self.capacity = int(capacity)
         self.samples_per_grip = _SAMPLES
         self.anchor_capacity = self.capacity * _SAMPLES
@@ -555,8 +577,23 @@ class MaterialHolds:
         wp.copy(self.nodes, self._backup_nodes)
         wp.copy(self.enabled, self._backup_enabled)
 
+    def _matrix_scale(self):
+        """One ``float32`` on the device: dt² k + dt c, the grips' share of the system matrix.
+
+        The host forms it from the timestep, the stiffness and the damping as before;
+        ``step_time`` keeps it current when the timestep changes.
+        """
+        stiffness, damping = self.stiffness, self.damping
+        # Several sets of grips may read one step time: each has its own value there.
+        return self.step_time.derived(
+            ("hold matrix scale", id(self)),
+            lambda dt: dt * dt * stiffness + dt * damping,
+            parameters=(stiffness, damping),
+        )
+
     def add_matrix(self, solver, dt):
         """Add attachment tangent after the solver refreshes its element matrix."""
+        self.step_time.set(dt)
         matrix = solver.A_bsr
         wp.launch(
             _add_matrix,
@@ -569,7 +606,7 @@ class MaterialHolds:
                 matrix.offsets,
                 matrix.columns,
                 matrix.values,
-                dt * dt * self.stiffness + dt * self.damping,
+                self._matrix_scale(),
             ],
             device=self.device,
         )
@@ -578,10 +615,11 @@ class MaterialHolds:
         solver.refresh_preconditioner()
 
     def add_forces(self, q, qd, forces, dt):
+        self.step_time.set(dt)
         wp.launch(
             _advance_targets,
             dim=self.capacity,
-            inputs=[self.requested, self.driven, dt, self.maximum_speed],
+            inputs=[self.requested, self.driven, self.step_time.seconds, self.maximum_speed],
             device=self.device,
         )
         wp.launch(
@@ -599,7 +637,7 @@ class MaterialHolds:
                 forces,
                 self.stiffness,
                 self.damping,
-                dt,
+                self.step_time.seconds,
             ],
             device=self.device,
         )

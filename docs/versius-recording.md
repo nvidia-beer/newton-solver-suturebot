@@ -32,6 +32,9 @@ Dragging **Frame** pauses at the selected pose. **2 camera overlays** toggles
 the initial left/right panels; **Frame scene** and **Frame phantom** adjust the
 viewer framing. CLI options include `--playback-speed`, `--loop` and
 `--no-camera-overlays`. The camera toggle's count follows the loaded bundle.
+The overlay is built and rendered once while the scene loads, as in
+[`fem_dvrk`](suturebot-recording.md); `--test` plays the same scripted user
+without a recording switch.
 
 ## What the scene represents
 

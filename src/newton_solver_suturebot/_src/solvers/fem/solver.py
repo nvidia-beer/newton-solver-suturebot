@@ -70,6 +70,8 @@ from newton.solvers import SolverBase
 from warp.optim.linear import LinearOperator, aslinearoperator, bicgstab, cg, cr, gmres, preconditioner
 from warp.sparse import bsr_set_from_triplets, bsr_zeros
 
+from ...utils.capture import PauseGC
+from ...utils.step_time import StepTime
 from . import differentiation
 from .fixed_particles import FixedParticles
 from .implicit_predictor import restore_spring_damping_predictor, subtract_elastic_predictor
@@ -107,11 +109,11 @@ PARTICLE_FLAG_ACTIVE = int(ParticleFlags.ACTIVE)
 @wp.kernel
 def accumulate_scaled_kernel(
     src: wp.array[wp.vec3],
-    scale: wp.float32,
+    scale: wp.array[wp.float32],
     dst: wp.array[wp.vec3],
 ):
     tid = wp.tid()
-    dst[tid] = dst[tid] + scale * src[tid]
+    dst[tid] = dst[tid] + scale[0] * src[tid]
 
 
 @wp.kernel(enable_backward=False)
@@ -291,6 +293,10 @@ class SolverFEM(SolverBase):
         self.min_stretch = float(min_stretch)
         self.max_stretch = float(max_stretch)
         self.dt = float(dt)
+        # The timestep of the step being solved, as device data: the launches of a
+        # step read it there, so a captured step is not tied to one timestep.
+        self.step_time = StepTime(model.device)
+        self.step_time.set(dt)
         self.differentiable = bool(differentiable)
         self.enable_tet_activations = bool(enable_tet_activations)
         self.defer_differentiation_checks = bool(defer_differentiation_checks)
@@ -337,6 +343,8 @@ class SolverFEM(SolverBase):
             device=model.device,
             nnz_capacity=num_blocks,
         )
+        # bsr_zeros leaves that storage unwritten (wp.empty), and the build writes only the blocks in use.
+        self.A_bsr.values.zero_()
         # Build the system matrix once at construction; it is never rebuilt.
         self._build_constant_matrix(model, dt)
         bsr_set_from_triplets(
@@ -372,7 +380,13 @@ class SolverFEM(SolverBase):
         self._lin_solver = None
         self._lin_solver_key = None
         self._linear_workspace_storage = None
+        # One registry of Krylov workspaces for every caller of the standard solve. A key
+        # in _pinned_workspaces belongs to an owner that bound the workspace into a graph
+        # (linear_workspace) and is not evicted; _workspace_epoch counts the times the
+        # registry was dropped, so such an owner sees that its bindings are gone.
         self._linear_workspaces = OrderedDict()
+        self._pinned_workspaces = set()
+        self._workspace_epoch = 0
         self._component_scaling = None
         self._tangent_triplet_slots = None
         self._topology_storage = self._topology_signature()
@@ -439,6 +453,8 @@ class SolverFEM(SolverBase):
         graph launches, so the current linearization state is unambiguous.
         """
         self._invalidate_differentiation()
+        if (predictor := getattr(self, "_affine_predictor", None)) is not None:
+            predictor.invalidate()
         from newton import ModelFlags
 
         if flags & ModelFlags.MODEL_PROPERTIES:
@@ -449,6 +465,10 @@ class SolverFEM(SolverBase):
     def reset(self, state, world_mask=None, flags=None):
         """Clear reusable numerical workspaces after the caller resets state."""
         super().reset(state, world_mask, flags)
+        if (predictor := getattr(self, "_affine_predictor", None)) is not None:
+            predictor.invalidate()
+        if (held := getattr(self, "_held_start", None)) is not None:
+            held.invalidate()
         self.dv.zero_()
         self._normalized_rhs.zero_()
         self._rhs_maximum.zero_()
@@ -561,6 +581,7 @@ class SolverFEM(SolverBase):
         dt: float,
     ) -> None:
         """Write ``state_in.particle_f = h · Σf`` from all force terms."""
+        self.step_time.set(dt)
         if self._soft_surface_contacts is not None:
             # update() (BVH refit) must be called by the caller before step()
             # when using CUDA graphs — mesh.refit() goes through the C++ runtime
@@ -594,7 +615,7 @@ class SolverFEM(SolverBase):
             wp.launch(
                 kernel=accumulate_scaled_kernel,
                 dim=model.particle_count,
-                inputs=[term, wp.float32(dt)],
+                inputs=[term, self.step_time.seconds],
                 outputs=[particle_f],
                 device=model.device,
             )
@@ -618,6 +639,9 @@ class SolverFEM(SolverBase):
         return self._tangent_version
 
     def _write_element_blocks(self, particle_q: wp.array[wp.vec3], dt: float) -> None:
+        # The element kernels read the timestep from the step time. Outside capture this
+        # writes a changed one; a captured tangent refresh must find it written.
+        self.step_time.set(dt)
         self._mark_tangent_values_changed()
         model = self.model
         if model.tet_count > 0:
@@ -631,7 +655,7 @@ class SolverFEM(SolverBase):
                     model.tet_materials,
                     wp.float32(self.min_stretch),
                     wp.float32(self.max_stretch),
-                    wp.float32(dt),
+                    self.step_time.seconds,
                     wp.int32(self._tet_bsr_offset),
                     self.bsr_rows,
                     self.bsr_cols,
@@ -652,7 +676,7 @@ class SolverFEM(SolverBase):
                     self.hex_materials,
                     wp.float32(self.min_stretch),
                     wp.float32(self.max_stretch),
-                    wp.float32(dt),
+                    self.step_time.seconds,
                     wp.int32(self._hex_bsr_offset),
                     self.bsr_rows,
                     self.bsr_cols,
@@ -809,8 +833,12 @@ class SolverFEM(SolverBase):
         At unchanged timestep, only tetrahedral and hexahedral stiffness is
         refreshed. A changed timestep also rebuilds the mass, spring and
         triangle blocks. This is supported only for non-differentiable,
-        non-streaming solvers outside tapes and capture. Recapture any caller-
-        owned step graphs, whose kernel arguments retain the previous timestep.
+        non-streaming solvers outside tapes and capture. The element kernels
+        read the timestep from ``step_time``, like the launches of a step, and
+        this call writes it there; inside a capture it must already be written.
+        A captured tangent refresh and a captured step therefore follow a
+        timestep that was changed by a call of this method outside capture,
+        without recapture.
         The velocity-increment warm start is cleared when the timestep changes.
         Surface-contact BVHs must still be refitted outside capture by the caller.
 
@@ -849,6 +877,8 @@ class SolverFEM(SolverBase):
             # A guess for another h can dwarf the new RHS and lose its initial
             # residual to cancellation. This is Krylov workspace, not velocity.
             self.dv.zero_()
+            # Outside capture here. This also writes the step time, after every check
+            # above, so steps at this timestep find it written.
             self._build_constant_matrix(model, dt, particle_q=particle_q)
         if self._tangent_triplet_slots is None:
             if capturing:
@@ -884,6 +914,11 @@ class SolverFEM(SolverBase):
             device=model.device,
         )
         self._refresh_preconditioner()
+        holds = getattr(self, "_node_holds", None)
+        if holds is not None:
+            # After the preconditioner: the Chebyshev bound is that of the matrix without holds,
+            # which no hold exceeds (node_holds.py).
+            holds.refresh()
         self.dt = dt
 
     def _topology_signature(self):
@@ -931,6 +966,8 @@ class SolverFEM(SolverBase):
                 equal slot IDs. Used only for prepared tetrahedral updates.
         """
         self._invalidate_differentiation()
+        if (predictor := getattr(self, "_affine_predictor", None)) is not None:
+            predictor.invalidate()
         model = self.model
         dt = self.dt if dt is None else float(dt)
         if model.device.is_capturing:
@@ -992,6 +1029,15 @@ class SolverFEM(SolverBase):
         ``state_in.particle_f`` values are not force inputs. The differentiable
         path owns its force workspace and preserves ``state_in.particle_f``.
 
+        The launches read ``dt`` from ``step_time``. This call writes a changed
+        ``dt`` there; inside a CUDA graph capture it only checks that the arrays
+        hold ``dt``, and raises if they do not. A captured step therefore uses
+        the timestep that ``step_time`` holds when the graph is launched, not
+        the one of its capture. Before ``wp.capture_launch`` of a graph of your
+        own, call ``solver.step_time.set(dt)`` if anything may have written
+        another timestep since, and to replay at another timestep refresh the
+        matrix for it first with :meth:`refresh_tangent`, outside capture.
+
         Args:
             state_in: Incoming positions and velocities.
             state_out: Output state storage.
@@ -1011,20 +1057,28 @@ class SolverFEM(SolverBase):
         ):
             raise ValueError("external_forces must be a model-sized wp.vec3 array on the model device")
         if self.differentiable:
+            # It writes the step time itself, after it has accepted dt: a taped step reads
+            # the array again in tape.backward(), so a rejected dt must never be written.
             return differentiation.step(self, state_in, state_out, control, contacts, dt, external_forces)
         if differentiation.active_tape() is not None:
             raise RuntimeError("Construct the solver with differentiable=True before recording a step")
+        # Outside capture this writes a changed timestep; inside it must already be written.
+        self.step_time.set(dt)
         if control is None:
             control = model.control()
 
         if self._fixed_particles is not None:
             self._fixed_particles.restore(state_in)
-        self._accumulate_forces(model, state_in, contacts, control, dt)
+        held = getattr(self, "_held_start", None)
+        if held is not None and held.matches(state_in, dt, control):
+            held.restore_impulse(state_in.particle_f)
+        else:
+            self._accumulate_forces(model, state_in, contacts, control, dt)
         if external_forces is not None:
             wp.launch(
                 accumulate_scaled_kernel,
                 dim=model.particle_count,
-                inputs=[external_forces, wp.float32(dt), state_in.particle_f],
+                inputs=[external_forces, self.step_time.seconds, state_in.particle_f],
                 device=model.device,
             )
         self.implicit_integration(model, state_in, state_out, dt)
@@ -1041,7 +1095,15 @@ class SolverFEM(SolverBase):
         Mass, spring, and tri blocks are state-independent.  The tet/hex
         Hessian blocks are written here for the rest pose (F=I) and then
         refreshed per-step via :meth:`_rebuild_element_blocks`.
+
+        Runs at construction, on a changed timestep and on a topology refresh, never
+        inside a CUDA graph capture: the mass, spring and triangle kernels take the
+        timestep as a launch argument, which a graph would keep. The element kernels
+        read it from ``step_time``, which is written here.
         """
+        if model.device.is_capturing:
+            raise RuntimeError("Assemble the constant FEM matrix blocks outside CUDA graph capture")
+        self.step_time.set(dt)
         self._mark_tangent_values_changed()
         offset = 0
         particle_q = model.particle_q if particle_q is None else particle_q
@@ -1127,7 +1189,7 @@ class SolverFEM(SolverBase):
                     model.tet_materials,
                     wp.float32(self.min_stretch),
                     wp.float32(self.max_stretch),
-                    wp.float32(dt),
+                    self.step_time.seconds,
                     wp.int32(offset),
                     self.bsr_rows,
                     self.bsr_cols,
@@ -1156,7 +1218,7 @@ class SolverFEM(SolverBase):
                     self.hex_materials,
                     wp.float32(self.min_stretch),
                     wp.float32(self.max_stretch),
-                    wp.float32(dt),
+                    self.step_time.seconds,
                     wp.int32(offset),
                     self.bsr_rows,
                     self.bsr_cols,
@@ -1267,12 +1329,35 @@ class SolverFEM(SolverBase):
         if instance is None:
             if len(self._chebyshev_instances) >= 4:
                 self._chebyshev_instances.clear()
-            instance = ChebyshevJacobi(
+            factory = ChebyshevJacobi
+            options = {}
+            fixed = self._fixed_particles
+            if (
+                fixed is not None
+                and fixed.compact_matrix is not None
+                and operator is fixed.compact_operator
+                and inverse_diagonal is fixed.compact_diagonal
+                and getattr(operator, "_packed_bsr_group_size", None) == 16
+                and self.model.device.is_cuda
+                and not self.differentiable
+                and not getattr(self.model, "requires_grad", False)
+                and differentiation.active_tape() is None
+            ):
+                from .fused_chebyshev import FusedPackedChebyshev  # noqa: PLC0415
+
+                factory = FusedPackedChebyshev
+                options = {
+                    "matrix": fixed.compact_matrix,
+                    "compact": True,
+                    "bound_source": (self.A_bsr, fixed.mask, self._pc_inv_diag),
+                }
+            instance = factory(
                 operator,
                 inverse_diagonal,
                 degree=int(self.linear_solver_chebyshev_degree),
                 ratio=float(self.linear_solver_chebyshev_ratio),
                 device=self.model.device,
+                **options,
             )
             self._chebyshev_instances[key] = instance
             self._refresh_chebyshev()
@@ -1348,6 +1433,7 @@ class SolverFEM(SolverBase):
                 arrays.extend((compact.offsets, compact.columns, compact.values))
         return (
             settings,
+            None if getattr(self, "_certified_linear", None) is None else self._certified_linear.key(),
             id(operator),
             id(inverse),
             None if fixed is None else id(fixed.compact_operator),
@@ -1368,7 +1454,7 @@ class SolverFEM(SolverBase):
         # Explicit workspace invalidation/replacement must not resurrect an
         # older cached functor, even when numerical settings stayed equal.
         if self._lin_solver is None or all(self._lin_solver is not value for value in self._linear_workspaces.values()):
-            self._linear_workspaces.clear()
+            self._drop_linear_workspaces()
             return False
         operator = self.A_bsr if self._fixed_particles is None else self._fixed_particles.operator
         settings = self._linear_solver_settings()
@@ -1380,6 +1466,149 @@ class SolverFEM(SolverBase):
         self._lin_solver, self._lin_solver_key = workspace, settings
         self._linear_workspace_storage = key
         return True
+
+    def tolerance_levels(self, tolerance=None):
+        """Inner tolerances that one coupled interval can visit, the loosest first.
+
+        The first level is ``tolerance`` (default: the configured
+        ``linear_solver_tolerance``). Each further level is a tenth of the one
+        before it, not below ``min(tolerance, 1e-6)``, which is the last level.
+        The host-controlled trials tighten the tolerance by the same expression,
+        so they reach these floats and no others.
+        """
+        tolerance = self.linear_solver_tolerance if tolerance is None else tolerance
+        tolerances = [tolerance]
+        while True:
+            value = max(min(tolerance, 1e-6), tolerances[-1] * 0.1)
+            if value == tolerances[-1]:
+                break
+            tolerances.append(value)
+        return tolerances
+
+    def _drop_linear_workspaces(self):
+        """Forget every registered workspace, the pinned ones included.
+
+        The epoch tells an owner that bound registered workspaces into a graph
+        (see :meth:`linear_binding_epoch`) that they are no longer the solver's.
+        """
+        self._linear_workspaces.clear()
+        self._pinned_workspaces.clear()
+        self._workspace_epoch += 1
+
+    def linear_binding_epoch(self):
+        """Number of times the registry of Krylov workspaces was dropped.
+
+        For an owner that binds workspaces of :meth:`linear_workspace` into a
+        captured graph: the bindings are the solver's as long as this number is
+        the one read when they were fetched. An explicit invalidation
+        (``_lin_solver`` set to ``None``) is honored here, before the number is
+        returned, so call this before fetching and not between two fetches.
+        """
+        if self._lin_solver is None:
+            self._drop_linear_workspaces()
+        return self._workspace_epoch
+
+    def linear_workspace(self, tolerance=None):
+        """Registered Krylov workspace of the standard solve at ``tolerance``.
+
+        Returns ``(settings, workspace)`` for the current operator, as a step at
+        this tolerance selects it: the workspace of the registry if it has one,
+        otherwise a new one, allocated without a solve and registered. The
+        workspace is pinned, that is, kept in the registry until the registry is
+        dropped or :meth:`unpin_linear_workspaces` releases it, so a graph that
+        binds it and a later eager or captured step at the same tolerance use
+        the same object. Workspace keys hold the state of the certificate scope:
+        fetch inside the coupling attempt whose steps will use the workspace.
+
+        A configuration without a cacheable key (see
+        :meth:`_linear_workspace_key`) gets a new, unregistered workspace on
+        every call. Must be called outside CUDA graph capture.
+        """
+        if self.model.device.is_capturing:
+            raise RuntimeError("Fetch FEM Krylov workspaces before CUDA graph capture")
+        operator = self.A_bsr if self._fixed_particles is None else self._fixed_particles.operator
+        settings = self._linear_solver_settings(tolerance)
+        key = self._linear_workspace_key(operator, self.M_bsr, settings)
+        workspace = None if key is None else self._linear_workspaces.get(key)
+        if workspace is None:
+            workspace = self._make_linear_solver(operator, self.M_bsr, settings)
+            if key is not None:
+                self._linear_workspaces[key] = workspace
+        if key is not None:
+            self._pinned_workspaces.add(key)
+        return settings, workspace
+
+    def unpin_linear_workspaces(self, workspaces):
+        """Let the registry evict these workspaces again.
+
+        They stay registered while at most eight workspaces are without a pin; the oldest
+        of the others leave here, never the selected workspace (a selection that is not
+        registered counts as an explicit invalidation, see :meth:`_reuse_linear_workspace`).
+        """
+        for key, workspace in self._linear_workspaces.items():
+            if any(workspace is released for released in workspaces):
+                self._pinned_workspaces.discard(key)
+        self._evict_linear_workspaces(keep=self._lin_solver)
+
+    def _evict_linear_workspaces(self, keep=None):
+        """At most eight workspaces that no owner pinned stay: the oldest of the others leave, never ``keep``."""
+        excess = len(self._linear_workspaces) - len(self._pinned_workspaces) - 8
+        if excess > 0:
+            unpinned = [
+                name
+                for name, workspace in self._linear_workspaces.items()
+                if name not in self._pinned_workspaces and workspace is not keep
+            ]
+            for name in unpinned[:excess]:
+                del self._linear_workspaces[name]
+
+    def load_kernel_modules(self):
+        """Load the kernel modules of this package that a step can launch, by name and with no launch.
+
+        For start-up on a CUDA device: a CUDA graph capture loads the modules of what
+        it records, and the first launch of any other kernel loads its module where it
+        happens, in a step. The modules are loaded in the build of the default thread
+        block (256), which every launch of them uses. Kernels that Warp generates per
+        argument type (its sparse and Krylov kernels) have no name to load them by:
+        they are loaded by the launches of the first projection, of the workspaces and
+        of the first step. Nothing is done on a CPU device.
+        """
+        device = self.model.device
+        if not device.is_cuda:
+            return
+        from . import (  # noqa: PLC0415
+            affine_guess,
+            certified_cg,
+            certified_scope,
+            chebyshev,
+            fixed_particles,
+            fused_chebyshev,
+            held_start,
+            kernels,
+            prepared_step,
+            sparse_update,
+            warp_basis_provider,
+        )
+        from .packed_bsr import packed_kernel  # noqa: PLC0415
+
+        modules = (
+            kernels,
+            __name__,
+            fixed_particles,
+            sparse_update,
+            prepared_step,
+            held_start,
+            chebyshev,
+            fused_chebyshev,
+            certified_cg,
+            certified_scope,
+            affine_guess,
+            warp_basis_provider,
+            # The packed matrix-vector product of the compact operator: one module per group size.
+            packed_kernel(16).module,
+        )
+        for module in modules:
+            wp.load_module(module, device=device, block_dim=256)
 
     def _make_linear_solver(self, operator, inverse, settings, *, rhs=None, increment=None):
         """Allocate persistent Krylov scratch without running a discarded solve."""
@@ -1429,20 +1658,43 @@ class SolverFEM(SolverBase):
                     batch_offsets=wp.array([0, scalar_count], dtype=int, device=self.model.device),
                     max_batch_length=scalar_count,
                 )
-        functor = solve(
-            operator,
-            self._normalized_rhs if rhs is None else rhs,
-            self.dv if increment is None else increment,
-            tol=tolerance,
-            # Warp otherwise defaults atol to tol. A 0.01 N*s absolute
-            # threshold suppresses gravity for small physical masses.
-            atol=0.0,
-            maxiter=maxiter,
-            M=inverse,
-            check_every=check_every,
-            use_cuda_graph=use_cuda_graph,
-            run=False,
-        )
+        certificate = getattr(self, "_certified_linear", None)
+        if certificate is not None and certificate.active:
+            from .certified_cg import CertifiedCorrection
+
+            if not (
+                compact_solve
+                and kind == "cg"
+                and maxiter == 160
+                and check_every == 0
+                and use_cuda_graph
+                and not any(a.requires_grad for a in (fixed.compact_matrix.values, rhs, increment))
+            ):
+                raise RuntimeError("Certified FEM configuration changed during its attempt")
+            functor = CertifiedCorrection(
+                fixed.compact_matrix,
+                operator,
+                rhs,
+                increment,
+                inverse,
+                tolerance,
+                status=certificate.status,
+            )
+        else:
+            functor = solve(
+                operator,
+                self._normalized_rhs if rhs is None else rhs,
+                self.dv if increment is None else increment,
+                tol=tolerance,
+                # Warp otherwise defaults atol to tol. A 0.01 N*s absolute
+                # threshold suppresses gravity for small physical masses.
+                atol=0.0,
+                maxiter=maxiter,
+                M=inverse,
+                check_every=check_every,
+                use_cuda_graph=use_cuda_graph,
+                run=False,
+            )
         # Callers pass M explicitly on every call; record the preconditioner
         # this workspace was built around so they apply the same one.
         functor.bound_preconditioner = inverse
@@ -1464,7 +1716,11 @@ class SolverFEM(SolverBase):
         legacy triangle-only diagonal approximation has no off-diagonal
         elastic predictor and retains its existing integration behavior.
         """
-        if self._streaming is not None:
+        self.step_time.set(dt)
+        held = getattr(self, "_held_start", None)
+        if held is not None and held.matches(state_in, dt):
+            held.subtract_predictor(state_in.particle_f, dt)
+        elif self._streaming is not None:
             self._streaming.subtract_predictor(state_in.particle_qd, state_in.particle_f)
         elif model.tet_count or self.hex_count or model.spring_count:
             wp.launch(
@@ -1483,7 +1739,13 @@ class SolverFEM(SolverBase):
                 wp.launch(
                     restore_spring_damping_predictor,
                     dim=model.spring_count,
-                    inputs=[model.spring_indices, model.spring_damping, dt, state_in.particle_qd, state_in.particle_f],
+                    inputs=[
+                        model.spring_indices,
+                        model.spring_damping,
+                        self.step_time.seconds,
+                        state_in.particle_qd,
+                        state_in.particle_f,
+                    ],
                     device=model.device,
                 )
         check_every = self.linear_solver_check_every
@@ -1522,7 +1784,7 @@ class SolverFEM(SolverBase):
         if self._lin_solver is None:
             # Honor explicit invalidation in direct solver.step callers too,
             # including a freshly rebuilt fixed-particle operator above.
-            self._linear_workspaces.clear()
+            self._drop_linear_workspaces()
         if (
             self._lin_solver is None
             or self._lin_solver_key != key
@@ -1535,18 +1797,25 @@ class SolverFEM(SolverBase):
                     self._linear_workspaces[workspace_key] = workspace
                     # Eight tolerance/settings levels cover the adaptive inner
                     # schedule while bounding scratch memory for arbitrary users.
-                    if len(self._linear_workspaces) > 8:
-                        self._linear_workspaces.popitem(last=False)
+                    # Workspaces that an owner pinned are bound into its graphs
+                    # and are not counted: the oldest of the others leave.
+                    self._evict_linear_workspaces()
             elif workspace_key is not None:
                 self._linear_workspaces.move_to_end(workspace_key)
             self._lin_solver, self._lin_solver_key = workspace, key
             self._linear_workspace_storage = workspace_key
         if getattr(self._lin_solver, "compact_solve", False):
             self._fixed_particles.gather_solve_operands(self._normalized_rhs, self.dv)
-        result = self._lin_solver(
-            b=getattr(self._lin_solver, "bound_rhs", self._normalized_rhs),
-            M=getattr(self._lin_solver, "bound_preconditioner", inverse),
-        )
+        affine = getattr(self, "_affine_predictor", None)
+        if affine is not None:
+            affine.before_solve(rhs, self._lin_solver)
+        with PauseGC():
+            result = self._lin_solver(
+                b=getattr(self._lin_solver, "bound_rhs", self._normalized_rhs),
+                M=getattr(self._lin_solver, "bound_preconditioner", inverse),
+            )
+        if affine is not None:
+            affine.after_solve(rhs, self._lin_solver)
         if getattr(self._lin_solver, "compact_solve", False):
             self._fixed_particles.scatter_increment(self.dv)
         wp.launch(
@@ -1565,7 +1834,7 @@ class SolverFEM(SolverBase):
             dim=model.particle_count,
             inputs=[
                 self.dv,
-                dt,
+                self.step_time.seconds,
                 state_in.particle_q,
                 state_in.particle_qd,
                 state_out.particle_q,

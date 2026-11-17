@@ -1,0 +1,22 @@
+{
+  "file": "tet_baymax.usda",
+  "sha256": "c989ec2eb70d88ff2739c209720354e528440d54a4e353f25c0be3cd469876c4",
+  "bytes": 1484097,
+  "source": {
+    "repository": "/home/beer/Dev/Robotics/NewtonSolvers/newton-solver-fem",
+    "revision": "6968f2742bb91f429601bd2b1853ede57d002220",
+    "path": "src/newton_solver_fem/examples/assets/tet_baymax.usda",
+    "in_that_repository_since": "c6bf025 (2026-10-28, its initial commit)",
+    "copied": "2026-11-17, byte for byte"
+  },
+  "counts": {
+    "points": 8965,
+    "tetrahedra": 38730,
+    "surface_triangles": 9882
+  },
+  "changes": [],
+  "license_note": "The file carries no licence or SPDX line. The FEM repository attributes its bundled example meshes to The Newton Developers under Apache-2.0 (THIRD_PARTY_NOTICES and the README of its assets folder). No upstream location is recorded. The shape is a film character.",
+  "upstream": null,
+  "frame_note": "The header says upAxis Z while the figure's height runs along y (head +y, belly +z, arm span along x). The loader follows the header and applies no rotation: the body is read lying on its back, belly up.",
+  "use": "Scale 0.135 and placement are applied at load (examples/incision/_baymax_body.py); the file is not edited."
+}

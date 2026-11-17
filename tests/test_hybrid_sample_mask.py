@@ -12,7 +12,7 @@ from test_needle_insertion_example import _example
 from test_needle_shaft_preconditioner import setup
 from test_needle_trial_forces import prepare
 
-from newton_solver_suturebot._src.tunnel_alm import _TunnelALM
+from newton_solver_suturebot._src.solvers.coupled.interface.tunnel_alm import _TunnelALM
 
 
 class HybridSampleMaskTests(unittest.TestCase):
