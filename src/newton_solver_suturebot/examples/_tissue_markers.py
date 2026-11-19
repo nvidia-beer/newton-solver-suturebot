@@ -145,6 +145,12 @@ def _bind_triangle(
 
 
 @wp.kernel(enable_backward=False)
+def _color_marker(slot: int, color: wp.vec3, colors: wp.array[wp.vec3]):
+    """Give marker ``slot`` another colour; launch once."""
+    colors[slot] = color
+
+
+@wp.kernel(enable_backward=False)
 def _move_marker(
     source: int, target: int, nodes: wp.array[wp.vec3i], weights: wp.array[wp.vec3], colors: wp.array[wp.vec3]
 ):
@@ -200,8 +206,10 @@ class TissueMarkers:
             self._distance = wp.zeros(len(triangles), dtype=float, device=self.device)
             self._nearest = wp.full(1, _FAR, dtype=float, device=self.device)
             self._chosen = wp.full(1, _NO_TRIANGLE, dtype=int, device=self.device)
-        # World and order of attachment of every slot in use (host values).
+        # World and order of attachment of every slot in use (host values), and the markers attached to
+        # every world since it was last cleared.
         self._worlds, self._order, self._attached = [], [], 0
+        self._world_attached = {}
         self.replaced = 0
         # Views of the rows in use; made when their number changes, not in a frame.
         self._shown = None
@@ -228,6 +236,7 @@ class TissueMarkers:
             self._order[slot] = self._attached
             self.replaced += 1
         self._attached += 1
+        self._world_attached[world] = self._world_attached.get(world, 0) + 1
         return slot
 
     def _show(self):
@@ -299,11 +308,37 @@ class TissueMarkers:
         )
         return slot
 
+    def recolor(self, world, index, color):
+        """Give a marker of ``world`` another colour; its binding stays. Returns whether the marker is shown.
+
+        The marker is named by its place among the markers attached to that world, counted from
+        zero since the world was last cleared. A marker whose row a newer one has taken (beyond
+        the reserve) is not shown any more; nothing is done for it.
+
+        Args:
+            world: World of the marker.
+            index: Its number among the markers attached to that world, in the order of attachment.
+            color: RGB of the sphere, each in [0, 1].
+        """
+        own = sorted((self._order[slot], slot) for slot, owner in enumerate(self._worlds) if owner == int(world))
+        # The rows of a world hold its newest markers: the oldest shown is the one attached len(own) before the next.
+        first = self._world_attached.get(int(world), 0) - len(own)
+        if not first <= int(index) < first + len(own):
+            return False
+        wp.launch(
+            _color_marker,
+            1,
+            [own[int(index) - first][1], wp.vec3(*(float(value) for value in color)), self.colors],
+            device=self.device,
+        )
+        return True
+
     def clear(self, world=None):
         """Remove every marker, or those of one world (a reset of that scene); the others keep their bindings."""
         if world is None:
-            self._worlds, self._order = [], []
+            self._worlds, self._order, self._world_attached = [], [], {}
         else:
+            self._world_attached.pop(int(world), None)
             kept = [slot for slot, owner in enumerate(self._worlds) if owner != int(world)]
             for target, source in enumerate(kept):
                 if source != target:
@@ -342,6 +377,7 @@ class TissueMarkers:
             if self._triangles is not None:
                 self.clear()
                 self.attach_point(particle_q, black, black)
+            self.recolor(0, 0, black)
             wp.launch(_move_marker, 1, [0, 0, self.nodes, self.weights, self.colors], device=self.device)
             wp.launch(
                 marker_points, self.capacity, [self.nodes, self.weights, particle_q, self.points], device=self.device

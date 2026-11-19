@@ -812,6 +812,30 @@ class GraspScene(Example):
         if self.worker_thread is not None:
             self.worker_thread.advance(dt)
 
+    def command(self, name, **arguments):
+        """Carry out a command that came with an action (``commands`` of the pool's ``step``), before the frame.
+
+        ``"tie_thread"`` is the one command (:meth:`tie_thread`).
+        """
+        if name != "tie_thread":
+            raise ValueError(f"Unknown scene command: {name!r}")
+        self.tie_thread(**arguments)
+
+    def tie_thread(self, passage=0, last=False):
+        """Tie the thread to the tissue at an end of a passage of the needle's track (``WorkerThread.tie``).
+
+        A stand-in for a knot at the hole through which the thread goes into the tissue (or, with
+        ``last``, comes out of it). Between two frames only: the accepted step of the thread reads
+        the tie from device data. The observation reports the ties that hold (``thread_tension``);
+        a tie that could not be made, such as one at an eyelet that the thread does not pass
+        through, is missing there against ``ties_asked``.
+        """
+        if self.worker_thread is None:
+            raise ValueError("This scene has no thread to tie")
+        if self.frame_pending:
+            raise RuntimeError("A tie is made between two frames, not inside an unfinished one")
+        self.worker_thread.tie(passage, last)
+
     def _reset_interaction_state(self):
         super()._reset_interaction_state()
         # A reset in the middle of an unfinished frame ends the frame of the arm-target ramp too.
@@ -1041,6 +1065,8 @@ class GraspScene(Example):
                 thread_positions=self.worker_thread.positions(),
                 thread_radius=self.worker_config.thread_radius_m,
             )
+            # What the read of the positions brought with it: the ties and the thread's pull.
+            result["thread_tension"] = self.worker_thread.tension
             if include_thread_diagnostics:
                 result["thread_diagnostics"] = self.worker_thread.diagnostics(
                     needle_pose=host_state["body_q"][self.needle_body]

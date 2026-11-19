@@ -1578,6 +1578,20 @@ diameter, when the smallest volume ratio of the tissue's tetrahedra falls
 below a chosen fraction, one half by default, or when the needle's circle
 reaches the pad's edge.
 
+A tie needs a point of the chain. `ThreadTissueCoupling.hold_eyelet` launches
+one kernel, which sets the held flag of an eyelet only if the thread passes
+through it and writes nothing otherwise: the threading is known on the
+device, and nothing is read back for the refusal. Held without the thread,
+an eyelet would tie the chain's first node to itself in the step that threads
+it. The fraction of its rest volume at which a tetrahedron ends a pull is one
+number of the coupling (`TIGHT_VOLUME_RATIO`, one half): the default of
+`fem_needle_suture --least-volume` and the value at which `fem_needle_grasp`
+stops tightening its tied thread
+([below](#physical-distal-grasp-and-worker-owned-thread)). It is a choice of
+how far an element may be squeezed, not a strength of tissue. Both examples
+take the smallest ratio from the check that ends every frame, which reads it
+once and keeps it (`least_volume_ratio`).
+
 The needle in `fem_needle_suture` is stepped with the tissue once per time
 step and that step cannot be repeated, so `ThreadAttachment` runs in its
 lagged mode. The needle's step takes the wrench $\mathbf W_n$ of the thread's
@@ -1864,6 +1878,50 @@ Link inertias, contact friction, force limits
 and servo gains are explicit demonstration assumptions. They are not
 identified dVRK hardware parameters. No equality constraint fixes the needle
 to a tool.
+
+After the pull through the tissue the procedure makes the first step of a
+stitch ([usage](usage.md#the-tie-and-the-tightening)). The thread is tied at
+the first eyelet of its first passage (`WorkerThread.tie`: the held eyelet of
+the [thread](#suture-thread-and-its-needle-attachment)). The request travels
+beside the action of one controller call (the `commands` of the scenes'
+`step`) and the scene makes the tie between two frames, so it never falls
+into an open coupled attempt; the captured step of the thread reads the held
+eyelets from device data. Then the palm moves straight along the chord of the
+needle, from its tail to the point between the jaws, by the commanded travel
+$s$ of the insertion's ramp: speed $v\,u^2(3-2u)$ with $u=t/T$ in the ramp
+time $T$, then $v$. A stop from the speed $v\,u^2(3-2u)$ by the same ramp
+run backwards covers
+
+$$
+d(u)=v\,T\left(u^3-\tfrac12u^4\right),\qquad d(1)=\tfrac12 vT=0.75\ \text{mm}
+$$
+
+for $v=3$ mm/s and $T=0.5$ s. The tightening ends by the tightness rule of the
+thread's section: the smallest volume ratio $J$ of the tissue's tetrahedra at
+$J_{\rm tight}$ = `TIGHT_VOLUME_RATIO`. $J$ goes on falling over the way to
+rest (by 0.11 over 0.75 mm in a pull measured on this tissue), so the stop
+begins where a stop begun now is predicted to end at the rule. With $a$ the
+travel of the observed palm along the direction (it is behind its target) and
+$k$ the slope of $J$ against $a$ over the last $\tfrac12vT$ of $a$,
+
+$$
+J_{\rm rest}=J+k\,(s+d-a),\qquad k=\frac{J-J_w}{a-a_w},
+$$
+
+and the stop ramp begins in the first frame with $J_{\rm rest}\le J_{\rm tight}$,
+to end at $s+d$. The prediction is linear over the length its slope was
+measured on. Its error is what $J$ does that is not linear in the travel: on
+the device $J$ drops twice by 0.07 within a quarter of a millimetre, where
+the thread's pull on the knot rises by 3 to 4 mN within a frame or two; the
+slope over the window takes such a drop for slope, the stop begins early, and
+the four runs end at $J$ = 0.543 to 0.554, inside the predicted
+fall $|k|(s+d-a)$ = 0.112 to 0.120 that the self-test allows. The commanded
+travel is bounded by 6.75 mm, twice the 3.37 mm at which the pull measured on
+the CPU reaches the rule; a tightening that arrives there without its rule
+stops the procedure. One tied stitch narrows the top of the wound by 0.66 to
+0.68 mm of 2.85 mm at 26 mN on the needle while the tool holds; it does not
+close the wound, it is not a knot, and nothing holds the thread once the tool
+lets go.
 
 Measured on one DGX Spark (GB10), MuJoCo Warp backend, 2026-11-17,
 self-test of `fem_needle_grasp` without the tool/tissue contact (2400 frames;

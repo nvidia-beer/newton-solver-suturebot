@@ -37,6 +37,9 @@ def _small_view(example, offsets):
         world_nodes=len(_SURFACE_NODES),
     )
     example._events_drawn = [0] * len(offsets)
+    example._markers_attached = [0] * len(offsets)
+    example._entry_marker = [None] * len(offsets)
+    example._tie_shown = [False] * len(offsets)
 
 
 class _PoolResource:
@@ -986,13 +989,15 @@ class GraspExampleLifecycleTests(unittest.TestCase):
             "lifts_complete": 1,
             "pull_complete": True,
             "tail_past_exit_m": 0.002,
-        }
+        } | self.STITCHED
         threaded = {
             "eyelets": 8,
             "eyelet_passages": [4, 4],
             "eyelets_threaded": 8,
             "eyelets_refused": 0,
             "thread_inside_tissue_m": 0.009,
+            "ties": 1,
+            "ties_asked": 1,
         }
 
         def example_with(report=None, thread=None, engaged=0.0, tracks=True, **options):
@@ -1003,6 +1008,7 @@ class GraspExampleLifecycleTests(unittest.TestCase):
             example.controller.report = lambda: [done | (report or {})]
             example.observations[0]["thread_diagnostics"] = threaded | (thread or {})
             example.observations[0]["diagnostics"]["engaged_track_length_m"] = engaged
+            self.stitched_scene(example.observations[0])
             return example
 
         with contextlib.redirect_stdout(io.StringIO()):
@@ -1050,6 +1056,253 @@ class GraspExampleLifecycleTests(unittest.TestCase):
                 thread={"eyelets_threaded": 3},
                 engaged=0.003,
             ).test_final()
+
+    # What the controller reports of a stitch that ended as it should (ProceduralGraspController.report), with
+    # the numbers of the first device run: the rule began the stop 0.94 mm before rest with a slope of
+    # -126 per metre, so the least volume may end within 0.118 of the rule's 0.5.
+    STITCHED = {
+        "ties": 1,
+        "tighten_travel_m": 0.0056,
+        "tighten_travel_bound_m": 0.00675,
+        "tighten_stop_volume": 0.5,
+        "tighten_predicted_volume": 0.495,
+        "tighten_slope_per_m": -126.0,
+        "tighten_way_to_rest_m": 0.00094,
+        "stitch_calls_without_grasp": 0,
+        "stitch_complete": True,
+    }
+
+    @staticmethod
+    def stitched_scene(observation, **changes):
+        """Give an observation what a scene reports of a tied and tightened thread."""
+        observation["thread_tension"] = {"ties": 1, "ties_asked": 1, "eyelet_force_N": 0.0181, "needle_force_N": 0.0258}
+        observation["wound_widths"] = [
+            {"track_m": 0.00143, "top_m": 0.00218, "rest_track_m": 0.00175, "rest_top_m": 0.00288}
+        ]
+        observation["diagnostics"]["least_volume_ratio"] = 0.553
+        for name, value in changes.items():
+            target = observation["diagnostics"] if name == "least_volume_ratio" else observation
+            if isinstance(value, dict) and isinstance(target.get(name), dict):
+                target[name] = target[name] | value
+            else:
+                target[name] = value
+
+    def test_with_thread_tracks_the_self_test_asks_for_the_tie_and_the_stop_by_its_rule(self):
+        """Fails if the self-test passes a procedure that did not tie, did not stop by its rule or let the needle go."""
+        done = {
+            "commanded_arc_complete": True,
+            "entry_count": 2,
+            "exit_count": 2,
+            "stage": "done",
+            "lifts_complete": 1,
+            "pull_complete": True,
+            "tail_past_exit_m": 0.002,
+        } | self.STITCHED
+        threaded = {
+            "eyelets": 8,
+            "eyelet_passages": [4, 4],
+            "eyelets_threaded": 8,
+            "eyelets_refused": 0,
+            "thread_inside_tissue_m": 0.0066,
+            "ties": 1,
+            "ties_asked": 1,
+        }
+
+        def example_with(report=None, thread=None, tracks=True, **scene):
+            example = self.final_state(lift_height=0.01, pull_through=True)
+            example.geometry["insertion_plan"] = {"expected_passages": 2}
+            if tracks:
+                example.geometry["thread_tracks"] = True
+            example.controller.report = lambda: [done | (report or {})]
+            example.observations[0]["thread_diagnostics"] = threaded | (thread or {})
+            example.observations[0]["diagnostics"]["engaged_track_length_m"] = 0.0
+            self.stitched_scene(example.observations[0], **scene)
+            return example
+
+        # The line of the self-test has the numbers of the stitch, per scene.
+        _printed, line = self.run_final(example_with())
+        stitch = {name: line[name] for name in line if name.startswith(("tighten", "least", "thread", "wound"))}
+        expected = {
+            "tighten_travel_mm": [5.6],
+            "least_volume_ratio": [0.553],
+            "thread_needle_force_mN": [25.8],
+            "thread_eyelet_force_mN": [18.1],
+            "wound_top_mm": [[2.18]],
+            "wound_track_mm": [[1.43]],
+        }
+        self.assertEqual(list(stitch), list(expected))
+        for name, value in expected.items():
+            np.testing.assert_allclose(stitch[name], value, rtol=1e-12)
+        # One tie asked for and one made, in the scene's report, in what the observation brings and in the
+        # controller's own record.
+        for change in (
+            {"thread": {"ties": 0}},
+            {"thread": {"ties": 2, "ties_asked": 2}},
+            {"thread": {"ties_asked": 2}},
+            {"thread_tension": {"ties": 0}},
+            {"report": {"stitch_complete": False}},
+        ):
+            with (
+                self.subTest(change=change),
+                self.assertRaisesRegex(AssertionError, "not tied at its entry by one tie"),
+            ):
+                example_with(**change).test_final()
+        # The tightening ended by its rule, with a slope it had measured, inside its travel bound.
+        for report in (
+            {"tighten_predicted_volume": None, "tighten_slope_per_m": None, "tighten_way_to_rest_m": None},
+            {"tighten_slope_per_m": None},
+            {"tighten_travel_m": 0.0},
+            {"tighten_travel_m": 0.0068},
+        ):
+            with (
+                self.subTest(report=report),
+                self.assertRaisesRegex(AssertionError, "did not end by its rule inside its travel bound"),
+            ):
+                example_with(report=report).test_final()
+        # The least volume at the end is within the fall that the rule predicted for its way to rest
+        # (126 per metre over 0.94 mm: 0.118) of the rule's 0.5, on either side.
+        for volume in (0.383, 0.5, 0.617):
+            with self.subTest(volume=volume), contextlib.redirect_stdout(io.StringIO()):
+                example_with(least_volume_ratio=volume).test_final()
+        for volume in (0.38, 0.62, 0.9):
+            with self.subTest(volume=volume), self.assertRaisesRegex(AssertionError, "not within"):
+                example_with(least_volume_ratio=volume).test_final()
+        # Both jaws were on the needle in every call from the tie on.
+        with self.assertRaisesRegex(AssertionError, "A jaw was off the needle"):
+            example_with(report={"stitch_calls_without_grasp": 1}).test_final()
+        # The wound is narrower at its top than in the reference shape.
+        for wound in ([], [{"track_m": 0.0017, "top_m": 0.00288, "rest_track_m": 0.00175, "rest_top_m": 0.00288}]):
+            with self.subTest(wound=wound), self.assertRaisesRegex(AssertionError, "not narrower at its top"):
+                example_with(wound_widths=wound).test_final()
+        # Without thread tracks the pull ends at the entry and nothing is tied: none of this is asked.
+        untied = {name: None for name in self.STITCHED} | {"stitch_complete": False, "stitch_calls_without_grasp": 0}
+        example = example_with(report=untied | {"tail_past_exit_m": -0.0115}, tracks=False)
+        del example.observations[0]["thread_tension"]
+        _printed, line = self.run_final(example)
+        self.assertNotIn("tighten_travel_mm", line)
+
+    def test_the_panel_line_of_the_stitch_has_the_wound_width_the_tie_and_the_thread_pull(self):
+        """Fails if the panel does not show how wide the wound is, whether the thread is tied and how it pulls."""
+        observation = {"diagnostics": {}}
+        self.stitched_scene(observation)
+        self.assertEqual(
+            grasp_example.stitch_line(observation),
+            "Stitch: wound 2.18 mm wide at the top (2.88 at rest), 1.43 mm at the track (1.75); "
+            "thread tied at its entry, pulls the needle with 25.8 mN, an eyelet with 18.1 mN at most",
+        )
+        observation["thread_tension"] = {"ties": 0, "ties_asked": 0, "eyelet_force_N": 0.0013, "needle_force_N": 0.0021}
+        observation["wound_widths"][0].update(top_m=0.00285, track_m=0.00173)
+        self.assertEqual(
+            grasp_example.stitch_line(observation),
+            "Stitch: wound 2.85 mm wide at the top (2.88 at rest), 1.73 mm at the track (1.75); "
+            "thread not tied, pulls the needle with 2.1 mN, an eyelet with 1.3 mN at most",
+        )
+        # A scene whose plan crosses no gap, a scene without a thread, a thread that was not read yet.
+        for change in ({"wound_widths": []}, {"thread_tension": None}):
+            self.assertIsNone(grasp_example.stitch_line(observation | change))
+        self.assertIsNone(grasp_example.stitch_line({"diagnostics": {}}))
+        # The panel shows it under the thread's line, for the scene it belongs to.
+        example = grasp_example.Example.__new__(grasp_example.Example)
+        example.args = self.args(num_envs=2)
+        example.observations = [{"env_id": 0, "diagnostics": {}}, dict(observation, env_id=1)]
+        shown = []
+        example.gui(SimpleNamespace(text_wrapped=shown.append))
+        self.assertEqual(len(shown), 1)
+        self.assertTrue(shown[0].startswith("Scene 1: Stitch: wound 2.85 mm wide at the top"))
+
+    def test_the_example_hands_the_commands_of_the_controller_to_the_scenes_with_the_actions_of_that_call(self):
+        """Fails if the tie that the controller asks for does not reach the pool, or reaches it in another call."""
+        example = grasp_example.Example.__new__(grasp_example.Example)
+        example.args = self.args()
+        example.config = SimpleNamespace(action_dimension=7, frame_dt=1 / 60)
+        example.render_scene, example.frame_budget, example.halted = None, None, None
+        example.sim_time, example.completed, example.last_phases = 0.0, 0, None
+        steps = []
+
+        def step(actions, **options):
+            steps.append(options)
+            time = example.observations[0]["diagnostics"]["physical_time_s"] + 1 / 60
+            return [{"diagnostics": {"physical_time_s": time}}]
+
+        example.pool = SimpleNamespace(step=step, frame_unfinished=False)
+        example.observations = [{"diagnostics": {"physical_time_s": 0.0}}]
+        asked = [None, [(("tie_thread", {}),)], None]
+
+        class Controller:
+            def __call__(self, observations):
+                return np.zeros((1, 7), dtype=np.float32)
+
+            def report(self):
+                return [{"env_id": 0, "stage": "tie", "phase": "tying", "reason": None}]
+
+            def commands(self):
+                return asked.pop(0)
+
+        example.controller = Controller()
+        with contextlib.redirect_stdout(io.StringIO()):
+            for _ in range(3):
+                example.step()
+        # A call without a command passes none, so a pool is called as before; the tie goes with its call.
+        self.assertEqual([options.get("commands") for options in steps], [None, [(("tie_thread", {}),)], None])
+        self.assertEqual(["commands" in options for options in steps], [False, True, False])
+        self.assertEqual(example.completed, 3)
+
+        # A controller that has no commands (any callable with a report) asks the scenes for nothing.
+        def plain(observations):
+            return np.zeros((1, 7), dtype=np.float32)
+
+        plain.report = example.controller.report
+        example.controller = plain
+        with contextlib.redirect_stdout(io.StringIO()):
+            example.step()
+        self.assertNotIn("commands", steps[-1])
+        self.assertEqual(example.completed, 4)
+
+    def test_the_first_entry_marker_shows_the_tie_of_the_thread(self):
+        """Fails if the tie is shown on another marker than the first entry of its scene, or stays after a reset."""
+        from newton_solver_suturebot.examples.grasp import _grasp_view
+
+        green, blue = (grasp_example.Example.marker_colors[kind] for kind in ("entry", "exit"))
+        yellow = grasp_example.Example.tie_color
+        self.assertNotIn(yellow, (green, blue))
+        calls = []
+        example = self._drawn_example(calls, offsets=np.array([[0.5, 0.0, 0.0], [0.5, 0.45, 0.0]]))
+        events, tied = [[], []], [0, 0]
+
+        def draw():
+            example.observations = [
+                {"diagnostics": {"interaction_events": list(items)}, "thread_tension": {"ties": ties}}
+                for items, ties in zip(events, tied, strict=True)
+            ]
+            del calls[:]
+            with patch.object(_grasp_view, "update_scene"):
+                example.render()
+            return calls[2][4]
+
+        def event(kind, *position):
+            return {"kind": kind, "time_s": 0.0, "position_m": list(position), "reused": False}
+
+        # A tie before any marker changes nothing.
+        tied[0] = 1
+        self.assertIsNone(draw())
+        tied[0] = 0
+        # The needle goes in and out in both scenes; scene 1 is tied: its first entry marker turns.
+        events[0] += [event("entry", 0.002, 0.003, 0.0), event("exit", 0.008, 0.008, 0.0)]
+        events[1] += [event("entry", 0.001, 0.001, 0.0), event("exit", 0.007, 0.002, 0.0)]
+        np.testing.assert_array_equal(draw(), np.float32([green, blue, green, blue]))
+        tied[1] = 1
+        np.testing.assert_array_equal(draw(), np.float32([green, blue, yellow, blue]))
+        # It stays so while the tie holds, and the tie of scene 0 turns that scene's own first entry.
+        tied[0] = 1
+        np.testing.assert_array_equal(draw(), np.float32([yellow, blue, yellow, blue]))
+        np.testing.assert_array_equal(draw(), np.float32([yellow, blue, yellow, blue]))
+        # A thread that is let go: the marker is an entry marker again.
+        tied[1] = 0
+        np.testing.assert_array_equal(draw(), np.float32([yellow, blue, green, blue]))
+        # Scene 0 is reset: its markers go, and the entry of its new run is not shown tied.
+        events[0], tied[0] = [event("entry", 0.009, 0.001, 0.0)], 0
+        np.testing.assert_array_equal(draw(), np.float32([green, blue, green]))
+        example.close()
 
     def test_thread_tracks_are_on_by_default_and_the_switch_reaches_the_scene(self):
         from newton_solver_suturebot.examples.grasp._grasp_scene import GraspScene
@@ -1129,11 +1382,19 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         self.assertEqual((example._pull_through(alone), example._tip_lift_height(alone)), (False, 0.0))
         # An argument set without the options (a caller of the class) has neither.
         self.assertEqual((example._pull_through(self.args()), example._tip_lift_height(self.args())), (False, 0.0))
-        # 40 s at 60 Hz: the measured sequence ends before 32 s of simulated time, and the clip
-        # recipe records those 32 s with the self-test, which asks for the procedure to be done.
+        # 40 s at 60 Hz. The measured sequence is clear of the tissue before 31 s of simulated time; the
+        # stitch then takes at most two frames for the tie, the tightening to its travel bound (6.75 mm at
+        # 3 mm/s with the two ramps of 0.5 s: 2.75 s) and the hold of 0.5 s: it ends before 34.3 s. The clip
+        # recipe records 36 s with the self-test, which asks for the procedure to be done.
         self.assertEqual(args.num_frames, 2400)
+        controller = grasp_example.ProceduralGraspController
+        bound, speed, ramp = controller.tighten_travel_bound, 0.003, 0.5
+        stitch_frames = 2 + round(60 * (bound / speed + ramp)) + round(60 * controller.lift_hold_seconds)
+        self.assertEqual(stitch_frames, 197)
         recipe = json.loads((Path(__file__).parents[1] / "docs/videos.json").read_text())["fem_needle_grasp"]
-        self.assertEqual((recipe["frames"], recipe["fps"], recipe["args"]), (1920, 60, ["--test"]))
+        self.assertEqual((recipe["frames"], recipe["fps"], recipe["args"]), (2160, 60, ["--test"]))
+        self.assertGreaterEqual(recipe["frames"], round(60 * 31.0) + stitch_frames + 60)
+        self.assertLess(recipe["frames"], args.num_frames)
         self.assertLess(recipe["poster_frame"], recipe["frames"])
         self.assertEqual(parser.parse_args(["--lift-height", "0"]).lift_height, 0)
         self.assertEqual(parser.parse_args(["--rigid-backend", "native"]).rigid_backend, "native")

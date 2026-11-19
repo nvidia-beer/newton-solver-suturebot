@@ -130,6 +130,62 @@ class NeedleInsertionExampleTests(unittest.TestCase):
             with self.assertRaisesRegex(AssertionError, "nonfinite"):
                 example._check_tissue_integrity()
 
+    def test_the_integrity_check_keeps_the_least_volume_it_reads_and_the_report_has_it(self):
+        """Fails if the least tissue volume of the report is not the number of the last check, or costs a read."""
+        with _example() as example:
+            # Before the first check of a frame there is no number.
+            self.assertIsNone(example.least_volume_ratio)
+            self.assertIsNone(example.report()["least_volume_ratio"])
+            original = example.state_0.particle_q.numpy().copy()
+            tetrahedra = np.asarray(example.selection.indices)
+
+            def volumes(positions):
+                corner = np.asarray(positions, dtype=float)[tetrahedra]
+                edges = corner[:, 1:] - corner[:, :1]
+                return np.einsum("ei,ei->e", np.cross(edges[:, 0], edges[:, 1]), edges[:, 2])
+
+            rest = volumes(example.selection.vertices)
+            reads = []
+            read = wp.array.numpy
+
+            def counted(array):
+                reads.append(array)
+                return read(array)
+
+            with patch.object(wp.array, "numpy", new=counted):
+                example._check_tissue_integrity()
+            # The one read that the check has always made: its three results.
+            self.assertEqual(len(reads), 1)
+            self.assertIs(reads[0], example._integrity_result)
+            self.assertIsInstance(example.least_volume_ratio, float)
+            self.assertAlmostEqual(example.least_volume_ratio, 1.0, delta=1e-5)
+            # A free node moved 0.3 mm, a part of an edge: the tetrahedra around it change their volume, and the kept
+            # number is the least ratio of a volume to its rest volume, as the device computed it.
+            free = np.setdiff1d(np.arange(len(original)), example.fixed_vertex_indices)[0]
+            positions = original.copy()
+            positions[free, 2] -= 0.0003
+            example.state_0.particle_q.assign(positions)
+            example._check_tissue_integrity()
+            least = float((volumes(positions) / rest).min())
+            self.assertLess(least, 0.99)
+            self.assertGreater(least, 0.0)
+            self.assertAlmostEqual(example.least_volume_ratio, least, delta=1e-4)
+            self.assertEqual(example.report()["least_volume_ratio"], example.least_volume_ratio)
+            # The report is the kept host number: asking for it reads nothing more of the check.
+            with patch.object(wp.array, "numpy", new=counted):
+                del reads[:]
+                example.report()
+            self.assertFalse(any(array is example._integrity_result for array in reads))
+            # A check that fails has kept the number that made it fail.
+            positions[free, 2] = -0.03
+            example.state_0.particle_q.assign(positions)
+            with self.assertRaisesRegex(AssertionError, "inverted"):
+                example._check_tissue_integrity()
+            self.assertLessEqual(example.least_volume_ratio, 0.0)
+            # A reset rebuilds the scene: the number of the run before does not stay in the report.
+            example.reset()
+            self.assertIsNone(example.report()["least_volume_ratio"])
+
     def test_nonfinite_accepted_state_stops_for_each_position_and_velocity_kind(self):
         cases = (
             ("particle_q", 2, np.nan),

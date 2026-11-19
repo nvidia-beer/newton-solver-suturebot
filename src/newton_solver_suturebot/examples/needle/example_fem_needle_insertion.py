@@ -433,6 +433,9 @@ class Example(PhantomExample):
         self._integrity_tetrahedra = wp.array(self.selection.indices, dtype=wp.vec4i, device=self.device)
         self._integrity_fixed = wp.array(self.fixed_vertex_indices, dtype=int, device=self.device)
         self._integrity_result = wp.zeros(3, dtype=wp.float64, device=self.device)
+        # Least ratio of a tetrahedron's volume to its rest volume that the integrity check of the last
+        # finished frame found (the number it reads anyway); None before the first check.
+        self.least_volume_ratio = None
         self.needle_body = list(self.model.body_label).index(self.geometry.body_path)
         self._configure_rigid_dynamics()
         self._reset_interaction_state()
@@ -1480,6 +1483,8 @@ class Example(PhantomExample):
             "accepted_physics_steps": self.accepted_physics_steps,
             "minimum_step_dt_s": self.minimum_step_dt,
             "current_deformation_m": self.current_deformation,
+            # Of the last finished frame: the least ratio of a tetrahedron's volume to its rest volume.
+            "least_volume_ratio": self.least_volume_ratio,
             "engaged_track_length_m": 0.0 if self.interaction is None else self.interaction.engaged_track_length,
             "failure_reason": self.failure_reason,
             "interaction_events": self.interaction_events,
@@ -1609,6 +1614,7 @@ class Example(PhantomExample):
             device=self.device,
         )
         invalid, fixed_moved, minimum_j = self._integrity_result.numpy()
+        self.least_volume_ratio = float(minimum_j)
         if invalid:
             raise AssertionError("Regional FEM produced nonfinite state")
         if minimum_j <= 0:

@@ -600,8 +600,11 @@ class PullStageTests(unittest.TestCase):
             with self.subTest(fixture=fixture_of.__name__):
                 _geometry, config, c, item, state = fixture_of()
                 item["diagnostics"]["engaged_track_length_m"] = 0.0
+                # After the pull through the tissue the stitch follows: the scene of the test ties and its
+                # tissue is at the tightness rule after 3.4 mm.
+                scene = Stitched(c, item, config) if fixture_of is through_the_tissue else None
                 for _ in range(600):
-                    tick(c, item, config)
+                    tick(c, item, config) if scene is None else scene.tick()
                     if state.stage == "done":
                         break
                 self.assertEqual((state.stage, state.pull_complete), ("done", True))
@@ -816,12 +819,12 @@ class PullThroughTests(unittest.TestCase):
         self.assertGreaterEqual(report["tail_past_exit_m"], ELEMENT - 3e-7)
         self.assertLess(report["tail_past_exit_m"], ELEMENT + 0.05 * speed * config.frame_dt)
         self.assertAlmostEqual(report["pull_angle_rad"], travelled / radius, delta=5e-6)
-        # Then the tool holds the needle for the hold time of a lift and the procedure is done.
+        # Then the tool holds the needle for the hold time of a lift, and the stitch follows (StitchTests).
         for _ in range(29):
             tick(c, item, config)
             self.assertEqual(c.report()[0]["stage"], "clear")
         tick(c, item, config)
-        self.assertEqual((c.report()[0]["stage"], c.report()[0]["reason"]), ("done", None))
+        self.assertEqual((c.report()[0]["stage"], c.report()[0]["reason"]), ("tie", None))
 
     def test_the_pull_does_not_end_while_the_tissue_holds_the_track_and_stops_with_a_reason_at_its_bound(self):
         """Fails if a tail that is past the exit ends the pull although the tissue has not let go of the needle."""
@@ -935,6 +938,437 @@ class PullThroughTests(unittest.TestCase):
         geometry["needle_capture_radius"] = HOLE
         off = ProceduralGraspController(geometry, config, settle_seconds=0, lift_height=0.001, pull_through=True)
         self.assertEqual((off.thread_tracks, off.pull_clearance, off.pull_hole), (False, 0.0, HOLE))
+
+
+def clear_of_the_tissue(**options):
+    """The fixture of the pull through the tissue at the call that ends its clear hold: the stage ``tie`` comes next."""
+    geometry, config, c, item, state = through_the_tissue(**options)
+    tick(c, item, config)
+    for _ in range(600):
+        # The tissue of the test: it holds the track until the tail is level with the exit marker.
+        item["diagnostics"]["engaged_track_length_m"] = 0.004 if state.tail_past_exit < 0.0 else 0.0
+        tick(c, item, config)
+        if state.stage == "tie":
+            break
+    assert (state.stage, state.pull_complete) == ("tie", True)
+    return geometry, config, c, item, state
+
+
+class Stitched:
+    """What the scene answers in the stitch: the tie it is asked for, a palm behind its target, a tissue volume.
+
+    The least tissue volume is ``start`` while the palm has moved less than ``slack`` [m] from where it was
+    at the tie, and falls from there by one over ``length`` [m] of palm travel: the linear law that the pull
+    of a tied thread measured on the scene's tissue (0.998 - s / 6.77 mm). ``lag`` is the part of the way to
+    its target that the palm has still to go after a frame (0: the palm is at its target). ``law``, if given,
+    is the least volume as a function of the palm's travel [m] instead of the linear law.
+    """
+
+    def __init__(
+        self, c, item, config, *, length=0.00677, slack=0.0, start=1.0, lag=0.0, ties=True, volume=True, law=None
+    ):
+        self.c, self.item, self.config = c, item, config
+        self.length, self.slack, self.start, self.lag, self.ties, self.volume = length, slack, start, lag, ties, volume
+        self.law = law
+        self.asked, self.commands = [], []
+        self.palm = item["gripper_target_pose"][:3].copy()
+        # Where the palm was when the thread was tied; None before the tie.
+        self.origin = None
+        self.observe()
+
+    @property
+    def travel(self):
+        """How far the palm is from where it was at the tie [m]; zero before the tie."""
+        return 0.0 if self.origin is None else float(np.linalg.norm(self.palm - self.origin))
+
+    def observe(self):
+        """The observation after a frame: the palm, the thread's ties and the least tissue volume."""
+        item = self.item
+        self.palm += (1.0 - self.lag) * (item["gripper_target_pose"][:3] - self.palm)
+        item["gripper_pose"] = np.r_[self.palm, item["gripper_target_pose"][3:]]
+        held = len(self.asked) if self.ties else 0
+        item["thread_tension"] = {
+            "ties": held,
+            "ties_asked": len(self.asked),
+            "eyelet_force_N": 0.0,
+            "needle_force_N": 0.0,
+        }
+        if self.volume and self.law is not None:
+            item["diagnostics"]["least_volume_ratio"] = self.law(self.travel)
+        elif self.volume:
+            item["diagnostics"]["least_volume_ratio"] = self.start - max(0.0, self.travel - self.slack) / self.length
+
+    def tick(self, **options):
+        """One call of the controller and the frame after it; returns the action."""
+        action = tick(self.c, self.item, self.config, **options)
+        commands = self.c.commands()
+        self.commands.append(commands)
+        if commands is not None:
+            # The scene carries out what came with the action before it steps the frame.
+            self.asked.extend(commands[0])
+            self.origin = self.palm.copy()
+        self.observe()
+        return action
+
+    def run(self, stage, limit=600):
+        """Tick until the stage of the scene is ``stage`` or the procedure has stopped; returns the frames."""
+        for frame in range(1, limit + 1):
+            self.tick()
+            report = self.c.report()[0]
+            if report["stage"] == stage or report["phase"] == "stopped":
+                return frame
+        raise AssertionError(f"The stage {stage} was not reached in {limit} frames: {self.c.report()[0]}")
+
+
+class StitchTests(unittest.TestCase):
+    """The stitch after the pull through the tissue: tie, tighten, hold. No physics: :class:`Stitched` answers."""
+
+    def tightening(self, **tissue):
+        """The fixture in the call that has begun the tightening: the tie is made and nothing has moved."""
+        geometry, config, c, item, state = clear_of_the_tissue()
+        scene = Stitched(c, item, config, **tissue)
+        scene.run("tighten")
+        self.assertEqual((state.stage, c.report()[0]["reason"]), ("tighten", None))
+        return geometry, config, c, item, state, scene
+
+    def test_the_tie_is_asked_for_once_beside_the_action_and_the_scene_must_report_it(self):
+        """Fails if the tie is asked for in another call than the first of the stage, more than once, or not checked."""
+        geometry, config, c, item, state = clear_of_the_tissue()
+        # No call of the procedure up to here has asked the scene for anything.
+        self.assertIsNone(c.commands())
+        scene = Stitched(c, item, config)
+        held = item["gripper_target_pose"].copy()
+        action = scene.tick()
+        # The first call of the stage asks for the tie of the thread at its first entry, and holds the tool.
+        self.assertEqual(scene.commands[-1], [(("tie_thread", {}),)])
+        self.assertEqual((state.stage, c.report()[0]["phase"]), ("tie", "tying"))
+        np.testing.assert_array_equal(action[:3], np.zeros(3))
+        # The next call sees the tie in the scene's report and begins the tightening; it asks for nothing.
+        scene.tick()
+        self.assertIsNone(scene.commands[-1])
+        self.assertEqual((state.stage, c.report()[0]["ties"]), ("tighten", 1))
+        np.testing.assert_allclose(item["gripper_target_pose"], held, atol=1e-6)
+        scene.run("done")
+        self.assertEqual(scene.asked, [("tie_thread", {})])
+        self.assertEqual([commands for commands in scene.commands if commands is not None], [[(("tie_thread", {}),)]])
+        # A scene that does not tie (an eyelet without the thread is refused on the device): the procedure stops
+        # with what the scene reports.
+        geometry, config, c, item, state = clear_of_the_tissue()
+        scene = Stitched(c, item, config, ties=False)
+        scene.tick()
+        scene.tick()
+        report = c.report()[0]
+        self.assertEqual((report["phase"], report["stage"], report["stitch_complete"]), ("stopped", "tie", False))
+        self.assertEqual(
+            report["reason"], "The thread was not tied at its entry: the scene reports 0 ties of 1 asked for"
+        )
+        # A caller that does not pass the command on: nothing was asked of the scene.
+        geometry, config, c, item, state = clear_of_the_tissue()
+        scene = Stitched(c, item, config)
+        scene.tick()
+        del scene.asked[:]
+        scene.observe()
+        scene.tick()
+        self.assertEqual(
+            c.report()[0]["reason"], "The thread was not tied at its entry: the scene reports 0 ties of 0 asked for"
+        )
+        # A scene whose observation has no thread report at all.
+        geometry, config, c, item, state = clear_of_the_tissue()
+        tick(c, item, config)
+        tick(c, item, config)
+        self.assertEqual(
+            c.report()[0]["reason"],
+            "The thread was not tied at its entry: the scene reports None ties of None asked for",
+        )
+
+    def test_the_older_procedures_end_where_they_ended_and_ask_the_scene_for_nothing(self):
+        """Fails if the pull to the entry, without thread tracks, goes on to a tie or asks for one."""
+        _geometry, config, c, item, state = closed_on_the_tip()
+        asked = []
+        for _ in range(600):
+            tick(c, item, config)
+            asked.append(c.commands())
+            if state.stage == "done":
+                break
+        report = c.report()[0]
+        self.assertEqual((report["stage"], report["pull_complete"], report["stitch_complete"]), ("done", True, False))
+        self.assertEqual(set(asked), {None})
+        self.assertEqual(
+            (report["ties"], report["tighten_travel_bound_m"], report["tighten_stop_volume"]), (None, None, None)
+        )
+
+    def test_the_palm_moves_straight_along_the_chord_from_the_tail_to_the_bite_point_at_the_ramp_of_the_insertion(self):
+        """Fails if the tightening turns the tool, leaves the chord of the needle or starts with a step in speed."""
+        from newton_solver_suturebot.examples.grasp._dvrk_grasper import GRASP_BITE_DEPTH_M
+
+        _geometry, config, c, item, state, scene = self.tightening()
+        needle, palm = item["needle_pose"], item["gripper_pose"]
+        tail = procedure._rotation(needle) @ c.centerline[-1] + needle[:3]
+        bite = procedure._rotation(palm) @ np.array([0.0, GRASP_BITE_DEPTH_M, 0.0]) + palm[:3]
+        direction = (bite - tail) / np.linalg.norm(bite - tail)
+        # To the rounding that a held target leaves in the poses of the call after it (float32 quaternions).
+        np.testing.assert_allclose(state.tighten_direction, direction, atol=1e-6)
+        direction = state.tighten_direction
+        # The jaws hold the needle 2 mm behind its tip: the chord is longer than the needle's radius.
+        self.assertGreater(np.linalg.norm(bite - tail), c.radius)
+        start = item["gripper_target_pose"].copy()
+        self.assertAlmostEqual(c.tighten_speed, 0.003, delta=1e-15)
+        travelled = []
+        for frame in range(1, 46):
+            action = scene.tick()
+            moved = item["gripper_target_pose"][:3] - start[:3]
+            travelled.append(float(moved @ direction))
+            # Straight along the chord, without turning; the jaws stay closed.
+            np.testing.assert_allclose(moved, travelled[-1] * direction, atol=1e-9)
+            self.assertLessEqual(np.linalg.norm(action[3:6]) * config.rotation_step, 4 * np.finfo(np.float32).eps)
+            self.assertEqual(action[6], 0.0)
+            # The travel is that of the ramp of the insertion: 0.75 mm in its 0.5 s, then 3 mm/s.
+            self.assertAlmostEqual(travelled[-1], float(ramp_distance(frame * config.frame_dt, 0.003)), delta=2e-9)
+            self.assertAlmostEqual(c.report()[0]["tighten_travel_m"], travelled[-1], delta=2e-9)
+        self.assertAlmostEqual(travelled[29], 0.00075, delta=2e-9)
+        self.assertAlmostEqual(travelled[44] - travelled[43], 0.003 * config.frame_dt, delta=2e-9)
+        self.assertEqual((state.stage, c.report()[0]["phase"]), ("tighten", "tightening"))
+        # A palm that the rate limit of the actions holds back sets the speed, as in a lift: 0.8 of it.
+        config.translation_step = 0.00004
+        self.assertAlmostEqual(c.tighten_speed, 0.8 * 0.00004 * 60.0, delta=1e-15)
+
+    def test_the_stop_begins_where_the_measured_slope_predicts_the_rule_at_rest_and_ends_there(self):
+        """Fails if the tightening stops where the least volume is at its rule instead of coming to rest there."""
+        length, way = 0.00677, 0.00075
+        for tissue in ({}, {"lag": 0.6}, {"slack": 0.001}, {"start": 0.9, "slack": 0.0004, "lag": 0.3}):
+            with self.subTest(tissue=tissue):
+                _geometry, config, c, item, state, scene = self.tightening(**tissue)
+                start, slack = tissue.get("start", 1.0), tissue.get("slack", 0.0)
+                self.assertEqual(c.tight_volume, 0.5)
+                self.assertEqual(c.report()[0]["tighten_start_volume"], start)
+                steps, volumes = [], []
+                while state.stage == "tighten":
+                    before = state.tighten_travel
+                    scene.tick()
+                    steps.append(state.tighten_travel - before)
+                    volumes.append(item["diagnostics"]["least_volume_ratio"])
+                    self.assertLess(len(steps), 400)
+                report = c.report()[0]
+                self.assertEqual((report["stage"], report["phase"], report["reason"]), ("hold", "holding", None))
+                # By hand: at 3 mm/s the ramp to rest takes v T / 2 = 0.75 mm, over which the volume falls by
+                # 0.75 / 6.77 = 0.111. The stop therefore begins in the first frame in which the command is
+                # within 0.75 mm of the travel at which the volume is 0.5, slack + 6.77 mm (start - 0.5): for
+                # a volume that is linear in the palm's travel this is so whatever the palm lags.
+                rule = slack + length * (start - 0.5)
+                travel = report["tighten_travel_m"]
+                self.assertGreaterEqual(travel, rule - 1e-9)
+                self.assertLess(travel, rule + 0.003 * config.frame_dt)
+                self.assertAlmostEqual(report["tighten_slope_per_m"], -1.0 / length, delta=1e-6 / length)
+                # What the rule predicted when it began the stop: at most the rule's value, by less than the
+                # fall of one frame at speed, 0.05 mm / 6.77 mm = 0.0074.
+                predicted = report["tighten_predicted_volume"]
+                self.assertLessEqual(predicted, 0.5)
+                self.assertGreater(predicted, 0.5 - 0.003 * config.frame_dt / length)
+                self.assertAlmostEqual(predicted, start - (travel - slack) / length, delta=1e-9)
+                # The way that the palm had left when the stop began: the ramp's 0.75 mm and what it lagged.
+                self.assertGreaterEqual(report["tighten_way_to_rest_m"], way - 1e-9)
+                # The stop is the ramp of the insertion run backwards: the frame steps fall to nothing.
+                stop = len(steps) - int(np.argmax(np.array(steps[::-1]) > 0.003 * config.frame_dt - 1e-9))
+                self.assertGreater(len(steps) - stop, 20)
+                self.assertTrue(np.all(np.diff(steps[stop:]) <= 1e-12))
+                self.assertLess(steps[-2], 0.05 * 0.003 * config.frame_dt)
+                self.assertAlmostEqual(sum(steps[stop:]), way, delta=2.0 * 0.003 * config.frame_dt)
+                # The tool holds for the hold time of a lift (0.5 s, 30 frames) and the procedure is done; a
+                # palm that lagged has arrived, and the least volume is where the rule predicted it.
+                held = item["gripper_target_pose"].copy()
+                self.assertEqual(scene.run("done"), 30)
+                np.testing.assert_allclose(item["gripper_target_pose"], held, atol=1e-6)
+                report = c.report()[0]
+                self.assertEqual((report["stage"], report["stitch_complete"], report["ties"]), ("done", True, 1))
+                self.assertAlmostEqual(report["least_volume_ratio"], predicted, delta=2e-3)
+                self.assertLessEqual(
+                    abs(report["least_volume_ratio"] - 0.5),
+                    -report["tighten_slope_per_m"] * report["tighten_way_to_rest_m"],
+                )
+                self.assertLess(report["tighten_travel_m"], report["tighten_travel_bound_m"])
+
+    def test_the_slope_of_the_rule_is_the_secant_over_the_last_way_to_rest_of_the_palms_travel(self):
+        """Fails if the rule takes its slope over another length of travel than the 0.75 mm it extrapolates over."""
+        # Tissue whose least volume falls by 0.05 per mm up to 2 mm of travel and by 0.5 per mm from there
+        # on: the stop begins while the window of the slope still reaches back over the kink.
+        kink, slow, fast = 0.002, 50.0, 500.0
+
+        def law(travel):
+            return 1.0 - slow * travel if travel <= kink else 1.0 - slow * kink - fast * (travel - kink)
+
+        _geometry, config, c, item, state, scene = self.tightening(law=law)
+        seen = []
+        while c.report()[0]["tighten_predicted_volume"] is None:
+            # What the call that follows sees: the palm's travel and the least volume of the frame before.
+            seen.append((scene.travel, item["diagnostics"]["least_volume_ratio"]))
+            scene.tick()
+            self.assertLess(len(seen), 400)
+        report = c.report()[0]
+        travel, volume = seen[-1]
+        window = 0.5 * 0.003 * 0.5
+        first = next(sample for sample in seen if sample[0] >= travel - window)
+        self.assertLess(first[0], kink)
+        self.assertGreater(travel, kink)
+        # The slope is the secant from the first sample inside the last 0.75 mm of the palm's travel:
+        # at full speed a sample every 0.05 mm, so it reaches back by 0.70 mm at least.
+        self.assertGreater(travel - first[0], window - 0.003 * config.frame_dt - 1e-9)
+        self.assertLessEqual(travel - first[0], window + 1e-9)
+        slope = (volume - first[1]) / (travel - first[0])
+        self.assertAlmostEqual(report["tighten_slope_per_m"], slope, delta=1e-6 * abs(slope))
+        self.assertAlmostEqual(report["tighten_way_to_rest_m"], window, delta=1e-6)
+        # By hand, x the travel beyond the kink in mm, the window 0.75 mm, the palm at its target:
+        # J = 0.9 - 0.5 x, J_w = 0.9 + 0.05 (0.75 - x), J_rest = J + (J - J_w) = 0.8625 - 0.95 x <= 0.5
+        # from x = 0.3816 mm on. A slope over 1.5 mm would begin the stop 0.12 mm later (x >= 0.5 mm).
+        self.assertGreater(travel, kink + 0.0003816 - 2e-6)
+        self.assertLess(travel, kink + 0.0003816 + 0.003 * config.frame_dt + 2e-6)
+        self.assertAlmostEqual(report["tighten_predicted_volume"], volume + slope * window, delta=1e-4)
+        self.assertLessEqual(report["tighten_predicted_volume"], 0.5)
+
+    def test_a_stop_that_begins_in_the_start_ramp_takes_the_way_of_the_speed_it_has_reached(self):
+        """Fails if the way to rest is taken for the full speed while the start ramp has not reached it."""
+        # Tissue six times as tight as the measured one: the volume is at the rule after 0.56 mm.
+        length = 0.00677 / 6.0
+        _geometry, config, c, item, state, scene = self.tightening(length=length)
+        scene.run("hold")
+        report = c.report()[0]
+        # From the speed v u² (3 - 2 u) the ramp to rest covers v T (u³ - u⁴ / 2), as much as the start ramp
+        # had covered when it reached that speed: the stop begins at half of the travel to the rule.
+        way, travel = report["tighten_way_to_rest_m"], report["tighten_travel_m"]
+        self.assertLess(way, 0.00075)
+        self.assertAlmostEqual(way, 0.5 * travel, delta=1e-9)
+        self.assertGreaterEqual(travel, 0.5 * length - 1e-9)
+        # Within the travel of two frames at the speed that the ramp had reached there (2.1 mm/s).
+        self.assertLess(travel, 0.5 * length + 2.0 * 0.0021 * config.frame_dt)
+        self.assertEqual(report["reason"], None)
+
+    def test_a_thread_that_does_not_come_tight_stops_the_procedure_at_the_travel_bound(self):
+        """Fails if a tightening whose rule never answers goes on beyond its bound or ends as if it were tight."""
+        # The least volume does not fall: the thread slides, or was not tied where it was said to be.
+        _geometry, config, c, item, state, scene = self.tightening(slack=1.0)
+        bound = c.tighten_travel_bound
+        # Twice the travel at which the measured pull reaches the rule (3.37 mm, CPU); the table at the top
+        # of the module names it.
+        self.assertAlmostEqual(bound, 0.00675, delta=1e-12)
+        steps = []
+        while c.report()[0]["phase"] != "stopped":
+            before = state.tighten_travel
+            scene.tick()
+            steps.append(state.tighten_travel - before)
+            self.assertLess(len(steps), 400)
+        report = c.report()[0]
+        self.assertEqual((report["stage"], report["stitch_complete"]), ("tighten", False))
+        self.assertAlmostEqual(report["tighten_travel_m"], bound, delta=1e-12)
+        self.assertRegex(report["reason"], r"^The thread did not come tight: the tool moved the needle on by 6\.75 mm")
+        self.assertIsNone(report["tighten_predicted_volume"])
+        # The command came to rest at the bound by the ramp of the insertion run backwards.
+        self.assertLess(steps[-2], 0.05 * 0.003 * config.frame_dt)
+        self.assertAlmostEqual(sum(steps), bound, delta=1e-12)
+        # Tissue whose volume falls only inside the ramp to the bound, from 6 mm on and to the rule within
+        # 0.5 mm: the rule ends the tightening, where that ramp ends: at the bound, with no reason to stop.
+        _geometry, config, c, item, state, scene = self.tightening(slack=0.006, length=0.001)
+        scene.run("hold")
+        report = c.report()[0]
+        self.assertEqual((report["stage"], report["reason"]), ("hold", None))
+        self.assertAlmostEqual(report["tighten_travel_m"], bound, delta=1e-12)
+        self.assertLessEqual(report["tighten_predicted_volume"], 0.5)
+
+    def test_the_way_of_the_tightening_is_asked_for_reach_to_its_bound_before_it_begins(self):
+        """Fails if the tool starts a tightening whose line it cannot follow to the travel bound."""
+        geometry, config, c, item, state = clear_of_the_tissue()
+        scene = Stitched(c, item, config)
+        asked = []
+        reach = c._reach
+        c._reach = lambda poses: (asked.append(np.array(poses)), reach(poses))[1]
+        scene.run("tighten")
+        (row,) = asked
+        # From the target of the tool, straight along the direction, a pose every translation step of the
+        # actions at most, to the bound; the tool does not turn.
+        np.testing.assert_allclose(row[0], item["gripper_target_pose"], atol=1e-12)
+        np.testing.assert_allclose(
+            row[-1, :3] - row[0, :3], c.tighten_travel_bound * state.tighten_direction, atol=1e-12
+        )
+        self.assertEqual(len(row), int(np.ceil(c.tighten_travel_bound / config.translation_step)) + 1)
+        self.assertLessEqual(np.linalg.norm(np.diff(row[:, :3], axis=0), axis=1).max(), config.translation_step + 1e-12)
+        np.testing.assert_array_equal(row[:, 3:], np.tile(row[0, 3:], (len(row), 1)))
+        margins = (c.report()[0]["joint_margin_rad"], c.report()[0]["joint_margin_m"])
+        self.assertTrue(np.isfinite(margins).all())
+        # A line that the tool does not reach: the procedure stops before the first target, with the joint.
+        geometry, config, c, item, state = clear_of_the_tissue()
+        scene = Stitched(c, item, config)
+        held = item["gripper_target_pose"].copy()
+        c._reach = lambda poses: ("roll is 0.01 rad inside its limit where 0.03 rad are needed", 0.01, 0.02)
+        scene.run("tighten")
+        report = c.report()[0]
+        self.assertEqual((report["phase"], report["stage"]), ("stopped", "tie"))
+        self.assertEqual(
+            report["reason"],
+            "The tool cannot move the needle on to tighten the thread within its joint limits: "
+            "roll is 0.01 rad inside its limit where 0.03 rad are needed",
+        )
+        np.testing.assert_allclose(item["gripper_target_pose"], held, atol=1e-6)
+
+    def test_the_rule_needs_the_least_volume_of_the_scene_and_stops_at_once_where_the_tissue_is_at_it(self):
+        """Fails if the tightening begins without the number it stops by, or moves on in tissue that is at the rule."""
+        geometry, config, c, item, state = clear_of_the_tissue()
+        scene = Stitched(c, item, config, volume=False)
+        scene.run("tighten")
+        report = c.report()[0]
+        self.assertEqual((report["phase"], report["stage"]), ("stopped", "tie"))
+        self.assertEqual(
+            report["reason"], "The scene does not report the least tissue volume that the tightening stops by"
+        )
+        # Tissue that is at the rule before the tool has moved: the tool holds where it is. Nothing was
+        # tightened by the rule, so the report has no slope and no travel, which the self-test asks for.
+        _geometry, config, c, item, state, scene = self.tightening(start=0.5)
+        held = item["gripper_target_pose"].copy()
+        scene.run("done")
+        report = c.report()[0]
+        np.testing.assert_allclose(item["gripper_target_pose"], held, atol=1e-6)
+        self.assertEqual((report["tighten_travel_m"], report["tighten_slope_per_m"]), (0.0, None))
+        self.assertEqual(report["tighten_predicted_volume"], 0.5)
+
+    def test_the_report_has_the_needle_in_the_jaws_and_the_calls_without_both_jaws(self):
+        """Fails if the stitch does not report how the needle moved in the jaws or counts time without a grasp."""
+        _geometry, config, c, item, state, scene = self.tightening()
+        for _ in range(40):
+            scene.tick()
+        report = c.report()[0]
+        self.assertEqual(
+            (report["tighten_slip_m"], report["tighten_slip_rad"], report["stitch_calls_without_grasp"]), (0.0, 0.0, 0)
+        )
+        # The needle slips 0.02 mm along the jaws and turns 20 mrad in them.
+        turn = np.asarray(wp.quat_from_axis_angle(wp.vec3(0.0, 0.0, 1.0), 0.02), dtype=float)
+        item["needle_relative_pose"] = times(item["needle_relative_pose"], np.r_[0.0, 0.0, 0.0, turn])
+        item["needle_relative_pose"][:3] += (0.0, 0.00002, 0.0)
+        scene.tick()
+        report = c.report()[0]
+        self.assertAlmostEqual(report["tighten_slip_m"], 0.00002, delta=1e-9)
+        self.assertAlmostEqual(report["tighten_slip_rad"], 0.02, delta=2e-4)
+        # The largest values are kept, and the pull's own numbers (against the grasp of the pull) go on.
+        item["needle_relative_pose"][:3] -= (0.0, 0.00001, 0.0)
+        scene.tick()
+        self.assertAlmostEqual(c.report()[0]["tighten_slip_m"], 0.00002, delta=1e-9)
+        self.assertAlmostEqual(c.report()[0]["relative_translation_m"], 0.00001, delta=1e-9)
+        # Two calls with a jaw off the needle: counted, and the travel does not go on in them.
+        travel = state.tighten_travel
+        scene.tick(contact=False)
+        scene.tick(contact=False)
+        report = c.report()[0]
+        self.assertEqual((report["stitch_calls_without_grasp"], report["phase"]), (2, "grasp_lost"))
+        self.assertEqual(state.tighten_travel, travel)
+        # Both jaws again: the tightening goes on from the next call (the time without them does not
+        # count); lost for the time of a lost contact, the procedure stops.
+        scene.tick()
+        self.assertEqual((c.report()[0]["phase"], state.tighten_travel), ("tightening", travel))
+        scene.tick()
+        self.assertGreater(state.tighten_travel, travel)
+        for _ in range(16):
+            scene.tick(contact=False)
+        report = c.report()[0]
+        self.assertEqual(
+            (report["phase"], report["reason"]), ("stopped", "Bilateral needle contact lost for 0.25 seconds")
+        )
+        self.assertEqual(report["stitch_calls_without_grasp"], 18)
 
 
 class PlanReachTests(unittest.TestCase):

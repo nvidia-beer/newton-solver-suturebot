@@ -7,7 +7,9 @@ The caller advances this object only after accepting a rigid/FEM interval and
 adds its stored loads before the next rigid/FEM trial. Rejected trials never
 advance the thread. No renderer owns this state and no puncture track or eyelet
 is scheduled: where the scene asks for it, the thread follows the track that
-the needle has actually cut (``thread_tracks``). The far end remains free.
+the needle has actually cut (``thread_tracks``). The far end remains free
+until the scene ties the thread to the tissue at an eyelet of that track
+(:meth:`WorkerThread.tie`).
 """
 
 import math
@@ -79,6 +81,33 @@ def _thread_in_tracks(
         first = wp.float64(0.0)
     wp.atomic_add(report, 2, float(count[track]))
     wp.atomic_add(report, 3, float(highest[track] - first) * element_length)
+
+
+@wp.kernel(enable_backward=False)
+def _held_eyelets(held: wp.array[int], report: wp.array[float]):
+    # Launch over the eyelet slots. Entry 4: the eyelets that hold the thread (ties).
+    if held[wp.tid()] != 0:
+        wp.atomic_add(report, 4, 1.0)
+
+
+@wp.kernel(enable_backward=False)
+def _tension_row(
+    held: wp.array[int],
+    force: wp.array[wp.vec3d],
+    wrench: wp.array[wp.spatial_vector],
+    row: int,
+    points: wp.array[wp.vec3],
+):
+    # One launch of one thread. The row after the centre-line samples: the eyelets that hold the thread
+    # (ties), the largest force of the thread on an eyelet [N] and the thread's force on the needle [N].
+    ties = float(0.0)
+    largest = float(0.0)
+    for eyelet in range(held.shape[0]):
+        if held[eyelet] != 0:
+            ties += 1.0
+        largest = wp.max(largest, float(wp.length(force[eyelet])))
+    pull = wrench[0]
+    points[row] = wp.vec3(ties, largest, wp.length(wp.vec3(pull[0], pull[1], pull[2])))
 
 
 @wp.kernel(enable_backward=False)
@@ -168,6 +197,10 @@ class WorkerThread:
     ``floor(L / s) + 2 p`` eyelets (a passage has one at each end, and its track
     is no longer than the needle), in ``p`` tracks. An eyelet beyond the reserve
     is not made and is counted (``eyelets_refused`` of :meth:`diagnostics`).
+
+    The thread can be tied to the tissue at an end of a passage (:meth:`tie`), a
+    stand-in for a knot. What a tied thread then does to the tissue and the needle
+    comes with the read of :meth:`positions`, as :attr:`tension`.
     """
 
     samples_per_element = 2
@@ -377,9 +410,15 @@ class WorkerThread:
         self._nodal_force = wp.zeros(model.particle_count, dtype=wp.vec3, device=self.device)
         self._reaction_squares = wp.empty(model.particle_count, dtype=wp.vec3, device=self.device)
         # Reductions that a report reads in one go: the largest nodal reaction and whether one is
-        # undefined (maximum_tissue_reaction), then the threaded eyelets and the thread inside the tissue.
-        self._largest_reaction = wp.zeros(4, dtype=float, device=self.device)
-        self._positions = wp.empty(self.elements * self.samples_per_element + 1, dtype=wp.vec3, device=self.device)
+        # undefined (maximum_tissue_reaction), then the threaded eyelets, the thread inside the tissue
+        # and the eyelets that hold the thread.
+        self._largest_reaction = wp.zeros(5, dtype=float, device=self.device)
+        # The centre-line samples that an observation reads, and one more row for the same read (tension).
+        self._sample_count = self.elements * self.samples_per_element + 1
+        self._positions = wp.zeros(self._sample_count + 1, dtype=wp.vec3, device=self.device)
+        # Ties: the eyelets that the scene asked to hold, the requests that named no eyelet, and what
+        # the last read of positions() found (tension).
+        self._tie_slots, self._ties_unmet, self._tension = set(), 0, None
         self.accepted_steps, self.physical_time_s = 0, 0.0
         self.capture = bool(capture)
         self._step_graphs = OrderedDict()
@@ -613,17 +652,80 @@ class WorkerThread:
                 step_time.set(interval)
         return True
 
+    def tie(self, passage=0, last=False):
+        """Tie the thread to the tissue at an end of a passage of the needle's track: a stand-in for a knot.
+
+        The first eyelet of the passage, the hole through which the thread goes in, or with
+        ``last`` its last, where it comes out, is held (``ThreadTissueCoupling.hold_eyelet``):
+        the thread no longer slides through it and pulls its material point in every
+        direction. One kernel launch from the host, between two accepted steps; the step,
+        captured or not, reads the held eyelets from device data. Nothing is read back.
+
+        A request that cannot be met ties nothing: a scene without thread tracks, a passage
+        that the needle has not made, and, decided on the device, an eyelet that the thread
+        does not pass through. :attr:`tension` and :meth:`diagnostics` then report fewer ties
+        than were asked for (``ties`` against ``ties_asked``).
+
+        Args:
+            passage: Index of the passage of the needle's track, in the order they were made.
+            last: Tie at the last eyelet of the passage instead of the first.
+        """
+        slots = [] if self.track is None else self.track.passages
+        if isinstance(passage, bool) or not isinstance(passage, (int, np.integer)):
+            raise ValueError("A tie names a passage of the needle's track by its index")
+        if not 0 <= passage < len(slots) or not slots[passage]:
+            self._ties_unmet += 1
+            return
+        slot = int(slots[passage][-1 if last else 0])
+        self._tie_slots.add(slot)
+        self.tissue.hold_eyelet(slot)
+
+    @property
+    def ties_asked(self):
+        """Number of ties that :meth:`tie` was asked for: the distinct eyelets, and the requests that named none."""
+        return len(self._tie_slots) + self._ties_unmet
+
+    @property
+    def tension(self):
+        """What the last read of :meth:`positions` found of the thread's pull; None before the first.
+
+        ``ties``: the eyelets that hold the thread, as the device has them; ``ties_asked``
+        (:attr:`ties_asked`); ``eyelet_force_N``: the largest force of the thread on an eyelet;
+        ``needle_force_N``: the thread's force on the needle. The forces are those of the last
+        accepted step.
+        """
+        return None if self._tension is None else dict(self._tension, ties_asked=self.ties_asked)
+
     def positions(self):
-        """Actual cubic centreline samples [2*elements+1,3], copied to host."""
+        """Actual cubic centreline samples [2*elements+1,3], copied to host.
+
+        The array that is read has one more row, written by one more kernel launch, so that
+        the same read brings :attr:`tension`.
+        """
         wp.launch(
             _sample,
-            len(self._positions),
+            self._sample_count,
             inputs=[self.solver.q, self.thread_model.lengths, self.samples_per_element, self._positions],
             device=self.device,
         )
-        result = self._positions.numpy().copy()
+        wp.launch(
+            _tension_row,
+            1,
+            inputs=[
+                self.solver.eyelet_held,
+                self.solver.eyelet_force,
+                self.attachment.wrench,
+                self._sample_count,
+                self._positions,
+            ],
+            device=self.device,
+        )
+        values = self._positions.numpy()
+        result = values[: self._sample_count].copy()
         if not np.isfinite(result).all():
             raise RuntimeError("Physical worker thread has nonfinite centreline coordinates")
+        ties, eyelet, needle = (float(value) for value in values[self._sample_count])
+        self._tension = {"ties": int(round(ties)), "eyelet_force_N": eyelet, "needle_force_N": needle}
         return result
 
     def maximum_tissue_reaction(self):
@@ -637,12 +739,13 @@ class WorkerThread:
         return self._reductions()[0]
 
     def _reductions(self):
-        """The reductions of a report, in one read: largest tissue reaction [N], threaded eyelets, thread inside [m].
+        """The reductions of a report, in one read: largest tissue reaction [N], threaded eyelets, thread inside [m], ties.
 
         The eyelet numbers are those of the last accepted step (what its tissue update found):
         the count of threaded eyelets, and the rest length of thread that the coupling treats as
         inside the tissue, between the first and the last threaded eyelet of each track and from
-        the thread's first node while a track is partly threaded.
+        the thread's first node while a track is partly threaded. The ties are the eyelets that
+        hold the thread now.
         """
         count = self.scene.model.particle_count
         reaction = self._nodal_force if self.tool_tissue is None else self.tissue.applied_force
@@ -656,8 +759,15 @@ class WorkerThread:
                 inputs=[*self.tissue.track_spans, self.length / self.elements, self._largest_reaction],
                 device=self.device,
             )
-        largest, undefined, threaded, inside = self._largest_reaction.numpy()
-        return (float("nan") if undefined else float(largest)), int(round(float(threaded))), float(inside)
+            wp.launch(
+                _held_eyelets,
+                self.solver.max_eyelets,
+                inputs=[self.solver.eyelet_held, self._largest_reaction],
+                device=self.device,
+            )
+        largest, undefined, threaded, inside, ties = self._largest_reaction.numpy()
+        reaction = float("nan") if undefined else float(largest)
+        return reaction, int(round(float(threaded))), float(inside), int(round(float(ties)))
 
     def diagnostics(self, *, needle_pose=None):
         q, qd = self.solver.q.numpy().reshape(-1, 6), self.solver.qd.numpy().reshape(-1, 6)
@@ -665,7 +775,7 @@ class WorkerThread:
         actual_tail = np.asarray(
             wp.transform_point(wp.transform(wp.vec3(pose[:3]), wp.quat(pose[3:])), wp.vec3(self.tail))
         )
-        reaction, threaded, inside = self._reductions()
+        reaction, threaded, inside, ties = self._reductions()
         values = {
             "scope": "physical worker ANCF thread; lagged relaxed rigid/FEM forces; "
             + (
@@ -703,6 +813,9 @@ class WorkerThread:
             "eyelets_refused": self.tissue.refused_points,
             "eyelet_reserve": list(self.eyelet_reserve),
             "thread_inside_tissue_m": inside,
+            # Ties (tie): the eyelets that hold the thread on the device, and how many were asked for.
+            "ties": ties,
+            "ties_asked": self.ties_asked,
             "gripper_capsules": sum(len(g.capsule_bodies) for g in self.scene.graspers),
             "rigid_contact": self.rigid_contact.diagnostics(),
         }

@@ -181,6 +181,7 @@ def _reset_scene(scene, config, *, rebuild=False):
     import warp as wp
 
     from newton_solver_suturebot._src.utils import capture
+    from newton_solver_suturebot.examples.needle._needle_insertion_geometry import wound_gaps
 
     # Everything from here to the mark is start-up: graph captures and kernel module loads after
     # the mark are reported as late ones (the scene's report()).
@@ -209,11 +210,13 @@ def _reset_scene(scene, config, *, rebuild=False):
         scene.initialize_worker_thread(config)
     scene.actual_tip_history.clear()
     scene.reset_count += 1
-    scene.observation_nodes = wp.array(
-        [scene.entry.node_indices, scene.exit.node_indices], dtype=wp.vec3i, device=scene.device
-    )
-    scene.observation_weights = wp.array([scene.entry.weights, scene.exit.weights], dtype=wp.vec3, device=scene.device)
-    scene.observation_landmarks = wp.empty(2, dtype=wp.vec3, device=scene.device)
+    # The material landmarks of a compact observation: entry and exit, then the four points of every
+    # gap that the planned circle crosses (the walls and rims of a wound, wound_gaps).
+    scene.wound_gaps = wound_gaps(scene.plan, scene.selection)
+    landmarks = [scene.entry, scene.exit, *(point for gap in scene.wound_gaps for point in gap.points)]
+    scene.observation_nodes = wp.array([point.node_indices for point in landmarks], dtype=wp.vec3i, device=scene.device)
+    scene.observation_weights = wp.array([point.weights for point in landmarks], dtype=wp.vec3, device=scene.device)
+    scene.observation_landmarks = wp.empty(len(landmarks), dtype=wp.vec3, device=scene.device)
     # The scene's start-up call captures, before the first frame, graphs that the run would capture.
     # Captures and loads after start-up are checked for a scene whose call ran; a scene that
     # declines says why in its status.
@@ -273,6 +276,19 @@ def _apply_action(scene, config, action):
         )
 
 
+def _apply_commands(scene, commands):
+    """Carry out the commands that came with an action, in their order, before the frame is stepped.
+
+    ``commands`` are ``(name, arguments)`` pairs: a name that the scene's ``command`` method knows
+    and its keyword arguments. A scene without that method takes no commands.
+    """
+    for name, arguments in commands:
+        command = getattr(scene, "command", None)
+        if command is None:
+            raise ValueError(f"This scene takes no commands: {name!r}")
+        command(name, **arguments)
+
+
 def _tip_position(scene, needle_pose):
     import warp as wp
 
@@ -316,14 +332,16 @@ def _observe(scene, env_id, *, include_tissue=True, include_thread_diagnostics=T
     if include_tissue:
         positions = state.particle_q.numpy().copy()
         entry, exit_point = scene.entry.position(positions), scene.exit.position(positions)
+        wound = [[point.position(positions) for point in gap.points] for gap in scene.wound_gaps]
     else:
         wp.launch(
             _marker_positions,
-            2,
+            len(scene.observation_landmarks),
             [scene.observation_nodes, scene.observation_weights, state.particle_q, scene.observation_landmarks],
             device=scene.device,
         )
-        entry, exit_point = scene.observation_landmarks.numpy()
+        landmarks = scene.observation_landmarks.numpy()
+        entry, exit_point, wound = landmarks[0], landmarks[1], landmarks[2:].reshape(-1, 4, 3)
     # Each accepted rigid array crosses to the host once. All observation
     # fields below describe this same snapshot; none requests another readback.
     host_state = {"body_q": state.body_q.numpy() if body_q is None else body_q, "body_qd": state.body_qd.numpy()}
@@ -338,6 +356,9 @@ def _observe(scene, env_id, *, include_tissue=True, include_thread_diagnostics=T
         "target_pose": scene.cartesian_target.copy(),
         "entry_position": entry.copy(),
         "exit_position": exit_point.copy(),
+        # Per gap that the planned circle crosses (a wound between two passages): its width between
+        # the walls at the track and between the rims at the top [m], now and in the reference shape.
+        "wound_widths": [gap.report(points) for gap, points in zip(scene.wound_gaps, wound, strict=True)],
         "diagnostics": scene.report(),
     }
     if include_tissue:
@@ -445,8 +466,10 @@ def _worker(connection, config, env_id, log_path):
                 break
             started = time.perf_counter_ns()
             if command == "step":
-                action, include_tissue, include_thread_diagnostics = payload
+                action, include_tissue, include_thread_diagnostics, *commands = payload
                 _apply_action(scene, config, action)
+                if commands:
+                    _apply_commands(scene, commands[0])
                 body_q = _step(scene)
                 result = _observe(
                     scene,
@@ -562,6 +585,7 @@ class LocalSutureScene:
         deadline=None,
         unit="attempt",
         observe_native_trials=False,
+        commands=None,
     ):
         """Advance the scene by one frame; see :meth:`ParallelSutureScenes.step`.
 
@@ -593,6 +617,9 @@ class LocalSutureScene:
         backend the rigid data hold a trial while an attempt is open, and the observation reads
         the jaw contact force and the native clock from them: ``"host-trial"`` is refused there
         with a ``ValueError`` unless ``observe_native_trials`` is true (tests).
+
+        ``commands`` (default None) are those of :meth:`ParallelSutureScenes.step`, one entry for
+        the one scene; they come with the action that starts a frame, not with ``actions=None``.
         """
         scene = self._open_scene()
         if unit not in ("attempt", "host-trial"):
@@ -605,6 +632,8 @@ class LocalSutureScene:
                     "unit 'host-trial' on the native rigid backend: an observation inside an attempt would read "
                     "the contacts and the clock of a trial"
                 )
+        if commands is not None and (actions is None or len(commands) != 1):
+            raise ValueError("commands come with the action that starts a frame, one entry for the one scene")
         if self.frame_unfinished:
             if actions is not None:
                 raise ValueError("A frame is unfinished: go on with it by passing actions=None")
@@ -616,6 +645,8 @@ class LocalSutureScene:
         started = time.perf_counter_ns()
         if actions is not None:
             _apply_action(scene, self.config, actions[0])
+            if commands is not None and commands[0]:
+                _apply_commands(scene, commands[0])
         if unit == "attempt":
             body_q = _step(scene) if deadline is None else _step(scene, deadline - self._observe_longest)
         else:
@@ -781,17 +812,30 @@ class ParallelSutureScenes:
                 self._last[env_id] = result
         return results
 
-    def step(self, actions, *, include_tissue=True, include_thread_diagnostics=True):
+    def step(self, actions, *, include_tissue=True, include_thread_diagnostics=True, commands=None):
         """Advance every scene; omit full tissue arrays for compact teacher observations.
 
         ``include_thread_diagnostics=False`` omits ``thread_diagnostics`` of physical-grasp
         scenes, a report that reads 14 device arrays and that only reporting consumes.
+
+        ``commands`` (default None: none) asks scenes for something that an action cannot say,
+        once, before their frame is stepped: one entry per scene, None or a sequence of
+        ``(name, arguments)`` pairs, each a name that the scene's ``command`` method knows with
+        its keyword arguments. A physical-grasp scene knows ``"tie_thread"``
+        (``GraspScene.tie_thread``).
         """
         actions = np.asarray(actions, dtype=float)
         shape = (self.num_envs, self.config.action_dimension)
         if actions.shape != shape or not np.isfinite(actions).all() or np.any(np.abs(actions) > 1):
             raise ValueError(f"actions must have shape {shape} and finite values in [-1, 1]")
         payloads = [(action, include_tissue, include_thread_diagnostics) for action in actions]
+        if commands is not None:
+            if len(commands) != self.num_envs:
+                raise ValueError("commands need one entry per scene")
+            payloads = [
+                (*payload, tuple(asked)) if asked else payload
+                for payload, asked in zip(payloads, commands, strict=True)
+            ]
         return self._request("step", payloads, list(range(self.num_envs)))
 
     def reset(self, env_ids=None):

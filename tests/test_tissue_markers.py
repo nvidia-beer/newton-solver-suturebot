@@ -4,6 +4,7 @@
 import os
 import unittest
 from contextlib import contextmanager
+from unittest.mock import patch
 
 import numpy as np
 import warp as wp
@@ -290,6 +291,49 @@ class TissueMarkersTests(unittest.TestCase):
         self.assertEqual((rows, markers.count, markers.replaced), ([4, 5, 3], 6, 5))
         self.assertEqual(len(self.drawn(markers, state)[1]), markers.capacity)
 
+    def test_a_marker_is_recoloured_by_its_number_in_its_world_while_it_is_shown(self):
+        """Fails if a colour goes to another marker than the one named, to a row that a newer marker has taken,
+        or moves a marker."""
+        nodes = len(self.nodes)
+        offset = np.array([0.45, 0.0, 0.0])
+        state = wp.array(
+            np.concatenate([self.nodes, self.nodes + offset]).astype(np.float32), dtype=wp.vec3, device=self.device
+        )
+        markers = self.markers(per_world=3, worlds=2, world_nodes=nodes)
+        positions = self.positions()
+        yellow = (1.0, 0.8, 0.1)
+        # Without a marker there is nothing to colour.
+        self.assertFalse(markers.recolor(0, 0, yellow))
+        for index in range(2):
+            markers.attach_point(state, positions[index], GREEN)
+        markers.attach_point(state, positions[3] + offset, BLUE, world=1)
+        before = self.drawn(markers, state)
+        # The second marker of world 0 and the first of world 1: each world counts its own markers.
+        self.assertTrue(markers.recolor(0, 1, yellow))
+        self.assertTrue(markers.recolor(1, 0, yellow))
+        _, points, _, colors, _ = self.drawn(markers, state)
+        np.testing.assert_array_equal(points, before[1])
+        np.testing.assert_array_equal(colors, np.float32([GREEN, yellow, yellow]))
+        # A number that no marker of the world has changes nothing.
+        for world, index in ((0, 2), (0, -1), (1, 1)):
+            self.assertFalse(markers.recolor(world, index, BLUE))
+        np.testing.assert_array_equal(self.drawn(markers, state)[3], colors)
+        # Three more markers of world 0, the last two beyond its reserve of three: they take the rows of
+        # its first two markers, which are not shown any more and cannot be coloured. Marker 3 is in row 0.
+        for index in (4, 5, 6):
+            markers.attach_point(state, positions[index], GREEN)
+        self.assertEqual(markers.replaced, 2)
+        self.assertFalse(markers.recolor(0, 0, BLUE))
+        self.assertFalse(markers.recolor(0, 1, BLUE))
+        self.assertTrue(markers.recolor(0, 3, BLUE))
+        np.testing.assert_array_equal(self.drawn(markers, state)[3], np.float32([BLUE, GREEN, yellow, GREEN]))
+        # A reset of world 0 starts its numbers again; the marker of world 1 keeps its colour.
+        markers.clear(0)
+        self.assertFalse(markers.recolor(0, 0, yellow))
+        markers.attach_point(state, positions[0], GREEN)
+        self.assertTrue(markers.recolor(0, 0, BLUE))
+        np.testing.assert_array_equal(self.drawn(markers, state)[3], np.float32([yellow, BLUE]))
+
     def test_each_world_binds_to_its_own_surface(self):
         nodes = len(self.nodes)
         offset = np.array([0.45, 0.45, 0.0])
@@ -391,13 +435,26 @@ class TissueMarkersTests(unittest.TestCase):
         # The kernel module is loaded when the markers are made, with no launch.
         loaded = capture.loaded_modules()
         self.assertIn((_tissue_markers.marker_points.module.name, self.device.alias, size), loaded)
-        markers.warm(state)
+        # Every kernel that the markers launch, by name, in the start-up draw and then in the frames.
+        launched, launch = [], wp.launch
+
+        def recorded(kernel, *arguments, **options):
+            launched.append(kernel.key)
+            return launch(kernel, *arguments, **options)
+
+        with patch.object(wp, "launch", new=recorded):
+            markers.warm(state)
+        warmed = set(launched)
+        del launched[:]
         positions = self.positions()
-        with counted_allocations() as calls:
+        with counted_allocations() as calls, patch.object(wp, "launch", new=recorded):
             for frame in range(12):
                 if frame in (2, 5, 6, 7, 9):
                     # A new marker, the last three beyond the reserve of their world.
                     markers.attach_point(state, positions[frame % len(positions)], GREEN, world=0)
+                if frame == 3:
+                    # The marker of frame 2 gets another colour (the tie of a thread at an entry).
+                    self.assertTrue(markers.recolor(0, 0, BLUE))
                 if frame == 8:
                     markers.attach(self.triangles[3] + nodes, (0.2, 0.3, 0.5), BLUE, world=1)
                 if frame == 10:
@@ -407,6 +464,9 @@ class TissueMarkersTests(unittest.TestCase):
         self.assertEqual(viewer.calls, 1 + 12)
         self.assertEqual(markers.replaced, 3)
         self.assertEqual(capture.loaded_modules(), loaded)
+        # The start-up draw issued every launch of the frames: none of them is a first launch.
+        self.assertIn(_tissue_markers._color_marker.key, launched)
+        self.assertEqual(set(launched) - warmed, set())
 
     def test_a_reserve_and_a_surface_are_checked_when_the_markers_are_made(self):
         with self.assertRaisesRegex(ValueError, "at least one marker"):

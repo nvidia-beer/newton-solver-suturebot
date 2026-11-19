@@ -8,6 +8,7 @@ import json
 import os
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import newton
 import numpy as np
@@ -284,6 +285,112 @@ class WorkerThreadTests(unittest.TestCase):
         worker.tissue.update(accepted.particle_q, accepted.body_q)
         np.testing.assert_array_equal(np.flatnonzero(worker.solver.eyelet_element.numpy() >= 0), [1, 2])
         self.assertEqual(worker.diagnostics()["eyelets_threaded"], 2)
+
+    def test_a_tie_holds_an_end_of_a_passage_and_is_refused_where_the_thread_does_not_pass(self):
+        """Fails if a tie holds another eyelet than the asked end of the passage, or one without the thread."""
+        scene, config = scene_fixture()
+        scene.plan = SimpleNamespace(expected_passages=2)
+        scene.interaction = track_rows(scene, 5)
+        scene.interaction.count = 5
+        worker = WorkerThread(scene, config, thread_tracks=True)
+        worker.track.advance()
+        self.assertEqual(worker.track.passages, [[0, 1, 2], [3, 4]])
+        held = worker.solver.eyelet_held
+        self.assertEqual((worker.ties_asked, worker.diagnostics()["ties"]), (0, 0))
+        # Nothing is threaded yet: the tie is asked for and refused on the device.
+        worker.tie()
+        np.testing.assert_array_equal(held.numpy(), 0)
+        report = worker.diagnostics()
+        self.assertEqual((report["ties"], report["ties_asked"]), (0, 1))
+        # The thread through the first passage and the first eyelet of the second.
+        for slot, (element, xi) in zip((0, 1, 2, 3), ((6, 0.25), (5, 0.5), (4, 0.0), (3, 0.75)), strict=True):
+            worker.tissue.thread_eyelet(slot, element, xi)
+        # The default is the first eyelet of the first passage: the hole through which the thread goes in.
+        # The same request again names the same eyelet: one tie asked for, one made.
+        worker.tie()
+        np.testing.assert_array_equal(np.flatnonzero(held.numpy()), [0])
+        self.assertEqual(worker.ties_asked, 1)
+        # The last eyelet of the first passage, where the thread comes out, and the first of the second.
+        worker.tie(0, last=True)
+        worker.tie(1)
+        np.testing.assert_array_equal(np.flatnonzero(held.numpy()), [0, 2, 3])
+        # The last eyelet of the second passage has no thread: asked for, not made.
+        worker.tie(1, last=True)
+        np.testing.assert_array_equal(np.flatnonzero(held.numpy()), [0, 2, 3])
+        # A passage that the needle has not made ties nothing and is counted as asked for.
+        worker.tie(2)
+        worker.tie(-1)
+        report = worker.diagnostics()
+        self.assertEqual((report["ties"], report["ties_asked"], worker.ties_asked), (3, 6, 6))
+        json.dumps(report, allow_nan=False)
+        for passage in (True, 0.0, "0", None):
+            with self.assertRaisesRegex(ValueError, "passage"):
+                worker.tie(passage)
+        self.assertEqual(worker.ties_asked, 6)
+        # A held eyelet keeps its point of the thread through an accepted step; the others slide.
+        point = (worker.solver.eyelet_element.numpy()[0], worker.solver.eyelet_xi.numpy()[0])
+        worker.advance(1 / 240)
+        self.assertEqual((worker.solver.eyelet_element.numpy()[0], worker.solver.eyelet_xi.numpy()[0]), point)
+        np.testing.assert_array_equal(np.flatnonzero(held.numpy()), [0, 2, 3])
+        # A worker whose thread follows no track has no eyelet to tie: asked for, not made.
+        plain = WorkerThread(scene_fixture()[0], config)
+        plain.tie()
+        self.assertEqual((plain.diagnostics()["ties"], plain.ties_asked), (0, 1))
+        plain.positions()
+        self.assertEqual(plain.tension, {"ties": 0, "ties_asked": 1, "eyelet_force_N": 0.0, "needle_force_N": 0.0})
+
+    def test_the_ties_and_the_pull_of_the_thread_come_with_the_one_read_of_the_positions(self):
+        """Fails if the tension report needs a device read of its own, changes the samples or is not the device's."""
+        scene, config = scene_fixture()
+        scene.plan = SimpleNamespace(expected_passages=2)
+        scene.interaction = track_rows(scene, 5)
+        scene.interaction.count = 5
+        worker = WorkerThread(scene, config, thread_tracks=True)
+        # Before the first read of the positions there is nothing to report.
+        self.assertIsNone(worker.tension)
+        worker.track.advance()
+        before = worker.positions()
+        self.assertEqual(worker.tension, {"ties": 0, "ties_asked": 0, "eyelet_force_N": 0.0, "needle_force_N": 0.0})
+        # The thread through two eyelets far from where it lies, the first one tied: both pull.
+        worker.tissue.thread_eyelet(0, 6, 0.25)
+        worker.tissue.thread_eyelet(1, 5, 0.5)
+        worker.tie()
+        # The tie is a launch from the host: the samples are those of before, and so is the thread.
+        np.testing.assert_array_equal(worker.positions(), before)
+        self.assertEqual(worker.tension["ties"], 1)
+        worker.advance(1 / 240)
+        reads = []
+        original = wp.array.numpy
+
+        def read(array):
+            reads.append(array)
+            return original(array)
+
+        with patch.object(wp.array, "numpy", new=read):
+            samples = worker.positions()
+            tension = worker.tension
+        # One array crossed to the host: the samples with their one more row.
+        self.assertEqual(len(reads), 1)
+        self.assertIs(reads[0], worker._positions)
+        self.assertEqual((samples.shape, reads[0].shape), ((181, 3), (182,)))
+        self.assertEqual(set(tension), {"ties", "ties_asked", "eyelet_force_N", "needle_force_N"})
+        self.assertEqual((tension["ties"], tension["ties_asked"]), (1, 1))
+        # The row holds what the device has, in single precision: the largest eyelet force and the force of the
+        # thread on the needle (the first three entries of its wrench).
+        pulls = np.linalg.norm(worker.solver.eyelet_force.numpy(), axis=1)
+        self.assertGreater(pulls.max(), 1.0e-6)
+        self.assertEqual(int(pulls.argmax()) in (0, 1), True)
+        self.assertAlmostEqual(tension["eyelet_force_N"], pulls.max(), delta=1.0e-6 * pulls.max())
+        wrench = worker.attachment.wrench.numpy()[0]
+        self.assertGreater(np.linalg.norm(wrench[:3]), 0.0)
+        self.assertAlmostEqual(
+            tension["needle_force_N"], np.linalg.norm(wrench[:3]), delta=1.0e-6 * np.linalg.norm(wrench[:3])
+        )
+        # The samples are the centre line of the thread as it is, and reading them again changes nothing.
+        nodes = worker.solver.q.numpy().reshape(-1, 6)[:, :3]
+        np.testing.assert_allclose(samples[::2], nodes, rtol=0.0, atol=1.0e-7)
+        np.testing.assert_array_equal(worker.positions(), samples)
+        self.assertEqual(worker.tension, tension)
 
     def test_the_worker_lays_its_spare_thread_on_the_pad_behind_the_planned_stitch_and_clear_of_the_tools(self):
         """Fails if the layout does not get the scene's surface, its stitch, the thread's own turn radius or the capsules' world places."""

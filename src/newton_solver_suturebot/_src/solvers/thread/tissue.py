@@ -47,6 +47,12 @@ import warp as wp
 from ...geometry.mesh_refit import GraphMeshRefit
 from .solver import SolverThread
 
+# A thread that is pulled on its eyelets is as tight as the tissue allows when a tetrahedron of the
+# tissue has this fraction of its rest volume left: a choice, the default of the suture example's
+# --least-volume. The examples that tighten a tied thread stop by it; the tissue solver separately
+# rejects a step that would invert a tetrahedron.
+TIGHT_VOLUME_RATIO = 0.5
+
 
 @wp.kernel(enable_backward=False)
 def _move_surface(particle_q: wp.array[wp.vec3], particle_point: wp.array[int], points: wp.array[wp.vec3]):
@@ -76,7 +82,11 @@ def _thread_eyelet(slot: int, tracked: int, coordinate: wp.float64, element: wp.
 
 
 @wp.kernel(enable_backward=False)
-def _hold_eyelet(slot: int, value: int, held: wp.array[int]):
+def _hold_eyelet(slot: int, value: int, element: wp.array[int], held: wp.array[int]):
+    # A tie needs a point of the thread: an eyelet that the thread does not pass through is left as it is.
+    # Held all the same, it would tie the thread's first node to it in the step that threads it.
+    if value != 0 and element[slot] < 0:
+        return
     held[slot] = value
 
 
@@ -517,13 +527,16 @@ class ThreadTissueCoupling:
         """Tie the thread to eyelet ``slot`` at the point it passes through now, or let it slide again.
 
         A held eyelet is a knot: the thread pulls its material point in every
-        direction and cannot slide through. Only launches a kernel.
+        direction and cannot slide through. Only launches a kernel. An eyelet
+        that the thread does not pass through is not tied: the kernel refuses
+        it on the device, where the threading is known, and nothing is read
+        back. The held eyelets are ``thread.eyelet_held``.
         """
         thread = self.thread
         wp.launch(
             _hold_eyelet,
             dim=1,
-            inputs=[int(slot), int(bool(held))],
+            inputs=[int(slot), int(bool(held)), thread.eyelet_element],
             outputs=[thread.eyelet_held],
             device=thread.thread.device,
         )

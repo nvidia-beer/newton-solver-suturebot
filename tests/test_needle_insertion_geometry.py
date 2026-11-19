@@ -18,6 +18,7 @@ from newton_solver_suturebot.examples.needle._needle_insertion_geometry import (
     NeedleGeometry,
     TetLocator,
     pick_material_point,
+    wound_gaps,
 )
 from newton_solver_suturebot.examples.phantom._region_map import RegionMap
 from newton_solver_suturebot.examples.phantom.example_fem_phantom_regions import underside_vertices
@@ -209,6 +210,63 @@ class NeedleInsertionGeometryTests(unittest.TestCase):
                 np.testing.assert_allclose(
                     point.position(mesh.vertices + (0, 0, 0.001)), plan.tip(angle) + (0, 0, 0.001), atol=1e-12
                 )
+
+    def test_a_wound_gap_is_measured_between_its_walls_at_the_track_and_between_their_rims_at_the_top(self):
+        """Fails if the walls are not where the planned circle crosses them, the rims not the tops of those walls,
+        or the widths not those of the tissue as it is."""
+        mesh = _boxes([((-0.03, -0.02, -0.02), (-0.001, 0.02, 0)), ((0.001, -0.02, -0.02), (0.03, 0.02, 0))])
+        # Lean the two walls of the gap apart: 2 mm wide at the bottom of the boxes, 3.3 mm at their tops.
+        vertices = mesh.vertices.copy()
+        top = np.isclose(vertices[:, 2], 0.0)
+        vertices[top & np.isclose(vertices[:, 0], -0.001), 0] = -0.0015
+        vertices[top & np.isclose(vertices[:, 0], 0.001), 0] = 0.0018
+        self.assertEqual(int((vertices != mesh.vertices).sum()), 4)
+        mesh = replace(mesh, vertices=vertices)
+        plan = InsertionPlan.create(_needle(), _point(-0.005), _point(0.005), mesh, mesh)
+        self.assertEqual(plan.expected_passages, 2)
+        (gap,) = wound_gaps(plan, mesh)
+        # The walls: where the circle leaves the first lip and where it enters the second.
+        self.assertIs(gap.walls[0], plan.passage_boundaries[0][1])
+        self.assertIs(gap.walls[1], plan.passage_boundaries[1][0])
+        np.testing.assert_allclose(gap.level, (1.0, 0.0, 0.0), atol=1e-12)
+        for wall, (bottom, top) in zip(gap.walls, ((-0.001, -0.0015), (0.001, 0.0018)), strict=True):
+            x, y, z = wall.reference_position
+            # On the leaning wall, in the plane of the circle (y = 0), below the top of the lips.
+            self.assertAlmostEqual(x, bottom + (top - bottom) * (z + 0.02) / 0.02, delta=1e-12)
+            self.assertAlmostEqual(y, 0.0, delta=1e-12)
+            self.assertTrue(-0.005 < z < -0.0005)
+        # The rims: the top of each wall in that plane, where the profile turns into the level top of the lip.
+        np.testing.assert_allclose(gap.rims[0].reference_position, (-0.0015, 0.0, 0.0), atol=1e-12)
+        np.testing.assert_allclose(gap.rims[1].reference_position, (0.0018, 0.0, 0.0), atol=1e-12)
+        for point in gap.points:
+            # Material points of the surface: three nodes of one surface triangle, weights that add up to one.
+            self.assertIn(
+                sorted(point.node_indices), [sorted(triangle) for triangle in mesh.exterior_surface_triangles]
+            )
+            self.assertAlmostEqual(point.weights.sum(), 1.0, delta=1e-12)
+            np.testing.assert_allclose(point.position(mesh.vertices), point.reference_position, atol=1e-12)
+        track, top = gap.rest_widths()
+        self.assertAlmostEqual(top, 0.0033, delta=1e-12)
+        # At the track the width is the distance between the two wall points; each is at its own depth
+        # (the walls lean differently), about 1.2 mm down, where the walls are 3.22 mm apart.
+        across = gap.walls[1].reference_position - gap.walls[0].reference_position
+        self.assertAlmostEqual(track, float(np.linalg.norm(across)), delta=1e-15)
+        self.assertAlmostEqual(track, 0.00322, delta=1e-5)
+        # The second lip comes 0.4 mm nearer and 0.3 mm up: both widths are those of the moved tissue, the
+        # top along the level direction of the stitch and the track between the two wall points.
+        moved = mesh.vertices.copy()
+        moved[8:] += (-0.0004, 0.0, 0.0003)
+        report = gap.report([point.position(moved) for point in gap.points])
+        self.assertAlmostEqual(report["top_m"], 0.0029, delta=1e-12)
+        self.assertAlmostEqual(report["track_m"], float(np.linalg.norm(across + (-0.0004, 0.0, 0.0003))), delta=1e-12)
+        self.assertLess(report["track_m"], track - 0.0003)
+        self.assertEqual((report["rest_track_m"], report["rest_top_m"]), (track, top))
+        self.assertEqual(gap.widths(np.array([point.reference_position for point in gap.points])), (track, top))
+        # A plan through one piece of tissue crosses no gap.
+        solid = _boxes([((-0.03, -0.02, -0.02), (0.03, 0.02, 0))])
+        self.assertEqual(
+            wound_gaps(InsertionPlan.create(_needle(), _point(-0.005), _point(0.005), solid, solid), solid), ()
+        )
 
     def test_analytic_crossings_retain_subsample_gaps_and_thin_material(self):
         cases = (

@@ -23,6 +23,7 @@ from newton_solver_suturebot.examples.grasp.parallel import (
     LocalSutureScene,
     SutureSceneConfig,
     _apply_action,
+    _apply_commands,
     _geometry,
     _make_scene,
     _mark_startup,
@@ -31,6 +32,7 @@ from newton_solver_suturebot.examples.grasp.parallel import (
     _snapshot,
     _step,
 )
+from newton_solver_suturebot.examples.needle import _needle_insertion_geometry as insertion_geometry
 from newton_solver_suturebot.examples.phantom import example_fem_phantom_regions as phantom
 
 
@@ -369,6 +371,108 @@ class GraspSceneTests(unittest.TestCase):
             self.assertEqual(reset["thread_diagnostics"]["physical_time_s"], 0)
             np.testing.assert_array_equal(reset["rigid_body_poses"], rigid)
             np.testing.assert_array_equal(reset["thread_positions"], thread)
+
+    def test_the_scene_ties_its_thread_on_command_between_two_frames_and_the_observation_reports_it(self):
+        """Fails if a command of the pool does not reach the thread's tie with its arguments, ties inside an
+        unfinished frame, or the observation does not bring what the thread reports of its ties."""
+        with _scene() as (scene, _):
+            worker = scene.worker_thread
+            asked, tie = [], worker.tie
+            worker.tie = lambda passage=0, last=False: (asked.append((passage, last)), tie(passage, last))[1]
+            # The one command a scene knows, with the arguments of the tie; without them the first eyelet
+            # of the first passage. The pool hands the commands of a step on in their order.
+            scene.command("tie_thread")
+            _apply_commands(scene, (("tie_thread", {"passage": 1, "last": True}), ("tie_thread", {"passage": 2})))
+            self.assertEqual(asked, [(0, False), (1, True), (2, False)])
+            with self.assertRaisesRegex(ValueError, "Unknown scene command: 'cut_thread'"):
+                scene.command("cut_thread")
+            # The needle has made no passage: three ties asked for, none made. Every observation has it,
+            # with the read of the thread's samples; the thread's report has it with its own read.
+            scene.step()
+            observed = _observe(scene, 0)
+            compact = _observe(scene, 0, include_tissue=False, include_thread_diagnostics=False)
+            for item in (observed, compact):
+                tension = item["thread_tension"]
+                self.assertEqual(set(tension), {"ties", "ties_asked", "eyelet_force_N", "needle_force_N"})
+                self.assertEqual((tension["ties"], tension["ties_asked"], tension["eyelet_force_N"]), (0, 3, 0.0))
+            self.assertEqual(compact["thread_tension"], observed["thread_tension"])
+            report = observed["thread_diagnostics"]
+            self.assertEqual((report["ties"], report["ties_asked"]), (0, 3))
+            self.assertNotIn("thread_diagnostics", compact)
+            # Inside an unfinished frame the thread is between two accepted steps of one frame: no tie.
+            with (
+                patch.object(type(scene), "frame_pending", new=property(lambda self: True)),
+                self.assertRaisesRegex(RuntimeError, "between two frames"),
+            ):
+                scene.command("tie_thread")
+            self.assertEqual(len(asked), 3)
+            # A scene without a thread says so.
+            scene.worker_thread = None
+            with self.assertRaisesRegex(ValueError, "no thread to tie"):
+                scene.command("tie_thread")
+
+    def test_the_observation_measures_a_wound_between_landmarks_that_it_reads_with_entry_and_exit(self):
+        """Fails if the widths of a wound differ between the compact observation and the one with the tissue,
+        are not those of the tissue as it is, or cost the compact observation a read of their own."""
+        with _scene() as (scene, config):
+            # The planned stitch of this scene goes through one piece of tissue: no gap, two landmarks.
+            self.assertEqual(scene.wound_gaps, ())
+            self.assertEqual(len(scene.observation_landmarks), 2)
+            self.assertEqual(_observe(scene, 0)["wound_widths"], [])
+            self.assertEqual(_observe(scene, 0, include_tissue=False)["wound_widths"], [])
+            # Two gaps of material points of this scene, as a plan through a wound gives them: the walls,
+            # then the rims. The second has its walls the other way round and both rims at one point.
+            entry, exit_point = scene.entry, scene.exit
+            level = np.array([0.0, -1.0, 0.0])
+            gaps = (
+                insertion_geometry.WoundGap((entry, exit_point), (exit_point, entry), level),
+                insertion_geometry.WoundGap((exit_point, entry), (entry, entry), level),
+            )
+            with patch.object(insertion_geometry, "wound_gaps", return_value=gaps) as planned:
+                _reset_scene(scene, config, rebuild=True)
+            self.assertEqual(planned.call_count, 1)
+            self.assertIs(planned.call_args.args[0], scene.plan)
+            self.assertIs(planned.call_args.args[1], scene.selection)
+            self.assertIs(scene.wound_gaps, gaps)
+            # Entry and exit, then the four points of every gap: one array, read once.
+            self.assertEqual(len(scene.observation_landmarks), 2 + 4 * 2)
+            # The tissue moves: the node that the exit hangs on most goes 0.8 mm towards the entry and 0.6 mm up.
+            moved = scene.state_0.particle_q.numpy().copy()
+            node = int(np.asarray(exit_point.node_indices)[int(np.argmax(exit_point.weights))])
+            moved[node] += np.float32([0.0, 0.0008, 0.0006])
+            scene.state_0.particle_q.assign(moved)
+            expected = [gap.report([point.position(moved) for point in gap.points]) for gap in gaps]
+            across = exit_point.position(moved) - entry.position(moved)
+            self.assertAlmostEqual(expected[0]["track_m"], float(np.linalg.norm(across)), delta=1e-15)
+            self.assertAlmostEqual(expected[0]["top_m"], float(abs(across @ level)), delta=1e-15)
+            self.assertEqual(expected[1]["top_m"], 0.0)
+            # Both widths are those of the moved tissue, not of the reference shape: narrower by a part of
+            # the node's 0.8 mm, and between the walls no shorter than along the level.
+            self.assertLess(expected[0]["top_m"], expected[0]["rest_top_m"] - 0.00005)
+            self.assertLess(expected[0]["track_m"], expected[0]["rest_track_m"] - 0.00005)
+            self.assertGreaterEqual(expected[0]["track_m"], expected[0]["top_m"])
+            reads = []
+            original = wp.array.numpy
+
+            def read(array):
+                reads.append(array)
+                return original(array)
+
+            with patch.object(wp.array, "numpy", new=read):
+                compact = _observe(scene, 0, include_tissue=False, include_thread_diagnostics=False)
+            # The compact observation reads the landmarks once and the tissue not at all.
+            self.assertEqual(sum(array is scene.observation_landmarks for array in reads), 1)
+            self.assertFalse(any(array is scene.state_0.particle_q for array in reads))
+            full = _observe(scene, 0)
+            self.assertEqual(full["wound_widths"], expected)
+            self.assertEqual(len(compact["wound_widths"]), 2)
+            for found, wanted in zip(compact["wound_widths"], expected, strict=True):
+                self.assertEqual(set(found), {"track_m", "top_m", "rest_track_m", "rest_top_m"})
+                for name, value in wanted.items():
+                    # The device interpolates in single precision.
+                    self.assertAlmostEqual(found[name], value, delta=1e-7)
+            np.testing.assert_allclose(compact["entry_position"], full["entry_position"], rtol=0, atol=5e-8)
+            np.testing.assert_allclose(compact["exit_position"], exit_point.position(moved), rtol=0, atol=5e-8)
 
     def test_rejected_multi_body_trial_restores_native_and_output_without_advancing_thread(
         self,

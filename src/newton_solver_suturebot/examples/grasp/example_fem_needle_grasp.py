@@ -6,9 +6,11 @@ MuJoCo actuators. Jaw friction holds the free rigid needle. The procedural
 controller drives the needle through the tissue until it is centred, lifts it to
 show the tissue deformation, lets go, takes the needle by its tip and pulls it
 on along its own curve until it is out of the tissue; the thread on its tail
-follows it through the track it has cut. No trained policy or Isaac Lab is
-used. One scene runs in this process; several scenes each run in a worker
-process.
+follows it through the track it has cut. Then the thread is tied at its entry
+(a stand-in for a knot), and the tool moves the needle on until the thread is
+as tight as the tissue allows, and holds: the wound narrows at its top. No
+trained policy or Isaac Lab is used. One scene runs in this process; several
+scenes each run in a worker process.
 
 By default the tools push the tissue where they touch it (the swept tool/tissue
 contact, --tool-tissue-contact), and with one scene in the window a step plans
@@ -145,6 +147,30 @@ def thread_line(thread):
     return line + (f"; {refused} eyelets found no room in the reserve" if refused else "")
 
 
+def stitch_line(item):
+    """The panel line of one scene's stitch: the wound's width, whether the thread is tied, and its pull.
+
+    The width of every gap that the planned needle path crosses, at the top and at the track,
+    with the widths of the reference shape (``wound_widths`` of the observation); whether the
+    thread is tied to the tissue; the thread's force on the needle and its largest force on an
+    eyelet (``thread_tension``). None for a scene without such a gap or without a thread.
+    """
+    wound, tension = item.get("wound_widths"), item.get("thread_tension")
+    if not wound or not tension:
+        return None
+    widths = "; ".join(
+        f"{1.0e3 * gap['top_m']:.2f} mm wide at the top ({1.0e3 * gap['rest_top_m']:.2f} at rest), "
+        f"{1.0e3 * gap['track_m']:.2f} mm at the track ({1.0e3 * gap['rest_track_m']:.2f})"
+        for gap in wound
+    )
+    tied = "tied at its entry" if tension["ties"] else "not tied"
+    pull = (
+        f"pulls the needle with {1.0e3 * tension['needle_force_N']:.1f} mN, "
+        f"an eyelet with {1.0e3 * tension['eyelet_force_N']:.1f} mN at most"
+    )
+    return f"Stitch: wound {widths}; thread {tied}, {pull}"
+
+
 class Example:
     """A normal Newton viewer over one physical scene in its own process, or over several in workers."""
 
@@ -152,6 +178,8 @@ class Example:
     # Radius of the entry and exit markers [m]: twice the needle wire radius of the dVRK scene.
     marker_radius = 0.0006
     marker_colors = {"entry": (0.1, 0.8, 0.2), "exit": (0.15, 0.35, 0.95)}
+    # Colour of the first entry marker of a scene while its thread is tied there (a stand-in for a knot).
+    tie_color = (1.0, 0.8, 0.1)
     # Markers one scene can show at a time, per passage of the planned arc through the tissue:
     # the entry and the exit of the passage, four times over for crossings that the plan does not
     # have (a tip that goes through the surface again under a lift or a new grasp). The reserve is
@@ -467,8 +495,12 @@ class Example:
             triangles=self.render_scene.surface.triangles,
             world_nodes=self.model.particle_count // self.args.num_envs,
         )
-        # Events of every scene that the markers have been asked about (render()).
+        # Events of every scene that the markers have been asked about (render()), the markers attached
+        # for them, which of those is the first entry, and whether it shows a tie.
         self._events_drawn = [0] * self.args.num_envs
+        self._markers_attached = [0] * self.args.num_envs
+        self._entry_marker = [None] * self.args.num_envs
+        self._tie_shown = [False] * self.args.num_envs
         if hasattr(self.viewer, "camera"):
             if self.args.overview:
                 points = framing_points(self.render_scene, self.geometry, self.observations, world_offsets)
@@ -589,6 +621,12 @@ class Example:
         # one the workers keep them on the device; test_final asks for the complete state.
         rendered = self.render_scene is not None
         options = {"include_tissue": rendered, "include_thread_diagnostics": rendered}
+        # What the controller asks of the scenes beside the actions of a new frame (the tie of the thread).
+        # A controller that has no commands asks for none.
+        commands = getattr(self.controller, "commands", None)
+        asked = commands() if actions is not None and commands is not None else None
+        if asked is not None:
+            options["commands"] = asked
         if self.frame_budget is not None and not self._single_step():
             # The drawing that follows this call is taken to cost what the longest one has cost.
             options["deadline"] = started + self.frame_budget - self._draw_longest
@@ -631,7 +669,8 @@ class Example:
                 if len(events) < self._events_drawn[world]:
                     # The scene was reset: its markers go with its events.
                     self.markers.clear(world)
-                    self._events_drawn[world] = 0
+                    self._events_drawn[world] = self._markers_attached[world] = 0
+                    self._entry_marker[world], self._tie_shown[world] = None, False
                 for event in events[self._events_drawn[world] :]:
                     if event["kind"] in self.marker_colors:
                         self.markers.attach_point(
@@ -640,18 +679,27 @@ class Example:
                             self.marker_colors[event["kind"]],
                             world,
                         )
+                        if event["kind"] == "entry" and self._entry_marker[world] is None:
+                            self._entry_marker[world] = self._markers_attached[world]
+                        self._markers_attached[world] += 1
                 self._events_drawn[world] = len(events)
+                # The first entry marker shows the tie of the thread: the thread is tied where it goes in.
+                tied = bool((item.get("thread_tension") or {}).get("ties"))
+                if tied != self._tie_shown[world] and self._entry_marker[world] is not None:
+                    color = self.tie_color if tied else self.marker_colors["entry"]
+                    if self.markers.recolor(world, self._entry_marker[world], color):
+                        self._tie_shown[world] = tied
             self.markers.draw(self.state_0.particle_q)
         self.viewer.end_frame()
         self._draw_seconds = time.perf_counter() - started
         self._draw_longest = max(self._draw_longest, self._draw_seconds)
 
     def gui(self, ui):
-        """The example's lines of the viewer's side panel: per scene, where the thread goes through the tissue."""
+        """The example's lines of the viewer's side panel: per scene, where the thread goes through the tissue and the stitch."""
         for item in self.observations:
-            line = thread_line(item.get("thread_diagnostics"))
-            if line is not None:
-                ui.text_wrapped(line if self.args.num_envs == 1 else f"Scene {item['env_id']}: {line}")
+            for line in (thread_line(item.get("thread_diagnostics")), stitch_line(item)):
+                if line is not None:
+                    ui.text_wrapped(line if self.args.num_envs == 1 else f"Scene {item['env_id']}: {line}")
 
     # What must be zero after start-up in a scene whose start-up call ran (the scene's report()).
     census_numbers = ("captures_after_startup", "solver_captures_after_startup", "module_loads_after_startup")
@@ -734,6 +782,8 @@ class Example:
                 raise AssertionError("The needle must be an independently simulated rigid body")
         default_procedure = self.args.speed == ARC_SPEED and self.args.settle_seconds == SETTLE_SECONDS
         lift_height = getattr(self.args, "lift_height", 0.0)
+        # What the line of this test gains from a stitch that was checked (_check_stitched).
+        stitch = {}
         # Without a lift the procedure is the arc, complete after 6 s. With a lift it has no fixed
         # duration and ends with the stage "done": the self-test asks for that at its last frame,
         # however long the run is, so a run that ends while the procedure is under way fails.
@@ -753,6 +803,7 @@ class Example:
                     raise AssertionError(f"The procedure had not ended at the last frame: {item}")
             if self._pull_through(self.args) and self.geometry.get("thread_tracks"):
                 self._check_pulled_through(observations)
+                stitch = self._check_stitched(observations)
         for item in observations:
             # The reserve of eyelets is fixed at start-up: an eyelet that found no room in it is a failure.
             refused = item.get("thread_diagnostics", {}).get("eyelets_refused", 0)
@@ -766,6 +817,7 @@ class Example:
                     "num_envs": self.args.num_envs,
                     "physical_time_s": self.sim_time,
                     **census,
+                    **stitch,
                 }
             )
         )
@@ -795,6 +847,72 @@ class Example:
                 )
             if not thread["thread_inside_tissue_m"] > 0.0:
                 raise AssertionError("No thread is inside the tissue after the pull")
+
+    def _check_stitched(self, observations):
+        """Fail unless the thread is tied at its entry and was tightened by its rule; returns the numbers of the stitch.
+
+        For a procedure that is done, in a scene whose thread follows the needle's track. Per scene:
+
+        - one tie was asked for and one holds, in the scene's thread report and in the controller's;
+        - the tightening ended by its rule (the controller's report has what the rule predicted;
+          a tightening that ends at its travel bound stops the procedure), inside the travel
+          bound, and the least tissue volume is now within the fall that the rule predicted for
+          its way to rest (slope times way) of the rule's value;
+        - both jaws were on the needle in every call from the tie on;
+        - the wound is narrower at its top than in the reference shape.
+
+        Returns:
+            Per scene, in lists: the tool's travel, the least tissue volume, the thread's force on
+            the needle and its largest force on an eyelet, and the wound's widths, for the line
+            of :meth:`test_final`.
+        """
+        numbers = {
+            name: []
+            for name in (
+                "tighten_travel_mm",
+                "least_volume_ratio",
+                "thread_needle_force_mN",
+                "thread_eyelet_force_mN",
+                "wound_top_mm",
+                "wound_track_mm",
+            )
+        }
+        for item, observation in zip(self.controller.report(), observations, strict=True):
+            thread, tension = observation["thread_diagnostics"], observation["thread_tension"]
+            if not item["stitch_complete"] or (thread["ties"], thread["ties_asked"], tension["ties"]) != (1, 1, 1):
+                raise AssertionError(
+                    f"The thread is not tied at its entry by one tie: {thread['ties']} ties of {thread['ties_asked']} "
+                    f"asked for; the stitch of the procedure: {item}"
+                )
+            slope, way = item["tighten_slope_per_m"], item["tighten_way_to_rest_m"]
+            travel, bound = item["tighten_travel_m"], item["tighten_travel_bound_m"]
+            if item["tighten_predicted_volume"] is None or slope is None or not 0.0 < travel <= bound:
+                raise AssertionError(f"The tightening did not end by its rule inside its travel bound: {item}")
+            volume, rule = observation["diagnostics"]["least_volume_ratio"], item["tighten_stop_volume"]
+            if not abs(volume - rule) <= -slope * way:
+                raise AssertionError(
+                    f"The least tissue volume {volume} is not within {-slope * way} of the rule's {rule}, "
+                    f"the fall that the rule predicted for its way to rest: {item}"
+                )
+            if item["stitch_calls_without_grasp"]:
+                raise AssertionError(f"A jaw was off the needle while the thread was tied and tightened: {item}")
+            wound = observation["wound_widths"]
+            if not wound or not all(gap["top_m"] < gap["rest_top_m"] for gap in wound):
+                raise AssertionError(f"The wound is not narrower at its top than in the reference shape: {wound}")
+            for name, value in zip(
+                numbers,
+                (
+                    1.0e3 * travel,
+                    volume,
+                    1.0e3 * tension["needle_force_N"],
+                    1.0e3 * tension["eyelet_force_N"],
+                    [1.0e3 * gap["top_m"] for gap in wound],
+                    [1.0e3 * gap["track_m"] for gap in wound],
+                ),
+                strict=True,
+            ):
+                numbers[name].append(value)
+        return numbers
 
     def close(self):
         self._cleanup()
@@ -836,7 +954,8 @@ class Example:
             action=argparse.BooleanOptionalAction,
             default=True,
             help="After the lift the tool lets go, takes the needle by its tip and pulls it on along its own "
-            "curve until it is out of the tissue; the thread follows it through the track. "
+            "curve until it is out of the tissue; the thread follows it through the track, is then tied at its "
+            "entry and tightened until the tissue allows no more. "
             "--no-pull-through takes the tip with the earlier grasp and lifts by it instead (--tip-lift-height). "
             "With --lift-height 0 the example is the insertion alone.",
         )

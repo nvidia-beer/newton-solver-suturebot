@@ -407,3 +407,131 @@ class InsertionPlan:
                 if _distance_to_triangles(point, surface[nearby]) <= padding:
                     raise ValueError("The available exterior approach does not clear the pad by the needle radius")
         return intervals, boundaries
+
+
+@dataclass(frozen=True)
+class WoundGap:
+    """A gap that the planned needle circle crosses between two passages, as four material points of the surface.
+
+    ``walls`` are the two points where the circle crosses the walls of the gap: where it leaves
+    the tissue of the passage before the gap and where it enters that of the passage after it.
+    ``rims`` are the tops of those two walls (:func:`wound_gaps`). ``level`` is the unit
+    horizontal direction from the planned entry to the planned exit.
+    """
+
+    walls: tuple
+    rims: tuple
+    level: np.ndarray
+
+    @property
+    def points(self):
+        """The four material points in the order of :meth:`widths`: the two walls, then the two rims."""
+        return (*self.walls, *self.rims)
+
+    def widths(self, points):
+        """Width of the gap for the positions of :attr:`points` [m], shape (4, 3): at the track and at the top.
+
+        At the track: the distance between the two wall points, as the suture example measures a
+        wound between the last track point of one lip and the first of the other. At the top: the
+        distance between the two rim points along :attr:`level`, the opening seen from above.
+        """
+        points = np.asarray(points, dtype=float).reshape(4, 3)
+        return float(np.linalg.norm(points[1] - points[0])), float(abs((points[3] - points[2]) @ self.level))
+
+    def rest_widths(self):
+        """:meth:`widths` of the reference shape."""
+        return self.widths([point.reference_position for point in self.points])
+
+    def report(self, points):
+        """The widths for the positions of :attr:`points` and of the reference shape [m], by name."""
+        track, top = self.widths(points)
+        rest_track, rest_top = self.rest_widths()
+        return {"track_m": track, "top_m": top, "rest_track_m": rest_track, "rest_top_m": rest_top}
+
+
+def wound_gaps(plan, selection):
+    """The gaps of a plan with more than one passage, each with material points on its walls and its rims.
+
+    The planned circle leaves the tissue at the far end of one passage and enters it again at
+    the near end of the next (``plan.passage_boundaries``): two points on the walls of the gap
+    between two lips of a wound, at the depth of the track. The rim of a wall is found on the
+    profile of the surface in the plane of the circle, which holds both points. A piece of
+    that profile belongs to a wall while it rises at least as much as it runs (45 degrees to
+    the level, Z up): the top of a lip is flatter, the wall of a gap steeper. From the wall
+    point the profile is followed upwards, from triangle to triangle across their shared
+    edges, while it is wall and still rises; where that ends is the rim, a point on an edge
+    of the last wall triangle. A wall point on a triangle that is not steep is its own rim.
+
+    The points are material points of the surface: they move with the tissue, and a width
+    measured between them is the width of the same piece of the wound in every state.
+
+    Args:
+        plan: An :class:`InsertionPlan` made with the selection (its passages are known).
+        selection: The active mesh (``vertices``, ``exterior_surface_triangles``).
+
+    Returns:
+        One :class:`WoundGap` per gap between two consecutive passages, in the order of the
+        passages; empty for a plan with one passage.
+    """
+    boundaries = plan.passage_boundaries
+    if len(boundaries) < 2:
+        return ()
+    vertices = np.asarray(selection.vertices, dtype=float)
+    triangles = np.asarray(selection.exterior_surface_triangles)
+    offsets = (vertices - plan.center) @ plan.axis
+    above = offsets > 0.0
+    crossed = np.flatnonzero(above[triangles].any(axis=1) & ~above[triangles].all(axis=1))
+    faces_of, by_nodes = {}, {}
+    for face in crossed:
+        nodes = [int(node) for node in triangles[face]]
+        by_nodes[tuple(sorted(nodes))] = int(face)
+        for a, b in zip(nodes, nodes[1:] + nodes[:1], strict=True):
+            if above[a] != above[b]:
+                faces_of.setdefault((min(a, b), max(a, b)), []).append(int(face))
+
+    def crossing(edge):
+        """Where the plane crosses an edge: the point and its fraction of the way from the first node."""
+        a, b = edge
+        fraction = offsets[a] / (offsets[a] - offsets[b])
+        return (1.0 - fraction) * vertices[a] + fraction * vertices[b], fraction
+
+    def edges(face):
+        nodes = [int(node) for node in triangles[face]]
+        pairs = [(min(a, b), max(a, b)) for a, b in zip(nodes, nodes[1:] + nodes[:1], strict=True)]
+        return [edge for edge in pairs if edge in faces_of]
+
+    def steep(face):
+        first, second = (crossing(edge)[0] for edge in edges(face))
+        run = second - first
+        return abs(run[2]) >= np.hypot(run[0], run[1])
+
+    def rim(wall):
+        face = by_nodes.get(tuple(sorted(int(node) for node in wall.node_indices)))
+        if face is None or len(edges(face)) != 2 or not steep(face):
+            return wall
+        edge = max(edges(face), key=lambda item: crossing(item)[0][2])
+        for _ in range(len(crossed)):
+            beyond = [other for other in faces_of[edge] if other != face]
+            if len(beyond) != 1 or len(edges(beyond[0])) != 2 or not steep(beyond[0]):
+                break
+            onward = next(item for item in edges(beyond[0]) if item != edge)
+            if crossing(onward)[0][2] <= crossing(edge)[0][2]:
+                break
+            face, edge = beyond[0], onward
+        nodes = triangles[face]
+        point, fraction = crossing(edge)
+        weights = np.zeros(3)
+        weights[int(np.flatnonzero(nodes == edge[0])[0])] = 1.0 - fraction
+        weights[int(np.flatnonzero(nodes == edge[1])[0])] = fraction
+        corner = vertices[nodes]
+        return MaterialPoint(
+            wall.region_id, nodes.copy(), weights, point, _unit(np.cross(corner[1] - corner[0], corner[2] - corner[0]))
+        )
+
+    level = plan.exit.reference_position - plan.entry.reference_position
+    level = _unit(np.array([level[0], level[1], 0.0]))
+    gaps = []
+    for before, after in zip(boundaries[:-1], boundaries[1:], strict=True):
+        walls = (before[1], after[0])
+        gaps.append(WoundGap(walls, tuple(rim(wall) for wall in walls), level))
+    return tuple(gaps)

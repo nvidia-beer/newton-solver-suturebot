@@ -76,6 +76,7 @@ from newton_solver_suturebot import (
     ThreadModel,
     ThreadTissueCoupling,
 )
+from newton_solver_suturebot._src.solvers.thread.tissue import TIGHT_VOLUME_RATIO
 from newton_solver_suturebot._src.utils import capture
 from newton_solver_suturebot.examples._startup import Script, launch_startup_graph, load_kernel_modules, owns_startup
 from newton_solver_suturebot.examples._tissue_markers import TissueMarkers
@@ -716,8 +717,8 @@ class Example(InsertionExample):
             device=self.device,
         )
         total, self.largest_pull = (float(value) for value in self._closure.numpy())
-        # The integrity check of this frame left the smallest volume ratio in its result.
-        self.least_volume = float(self._integrity_result.numpy()[2])
+        # The integrity check of this frame kept the smallest volume ratio it read.
+        self.least_volume = self.least_volume_ratio
         if self.rest_gap is None:
             # Stitches through unbroken tissue have nothing to draw together; pulling would only squeeze it.
             self.closing = "there is no open wound to close"
@@ -1056,7 +1057,7 @@ class Example(InsertionExample):
         parser.add_argument(
             "--least-volume",
             type=float,
-            default=0.5,
+            default=TIGHT_VOLUME_RATIO,
             help="Stop pulling when the end-of-frame check finds a tissue tetrahedron below this fraction "
             "of its rest volume; the coupled solver separately rejects steps that would invert tissue",
         )

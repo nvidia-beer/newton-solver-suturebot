@@ -109,6 +109,79 @@ class LocalSceneTests(unittest.TestCase):
         self.assertEqual(self.calls, [])
         scenes.close()
 
+    @staticmethod
+    def _names(calls):
+        return [call if isinstance(call, str) else call[0] for call in calls]
+
+    def test_commands_come_with_the_action_and_are_carried_out_before_the_frame(self):
+        """Fails if a command reaches the scene after its frame, out of order, or with a call that starts no frame."""
+        scenes = LocalSutureScene()
+        self.scene.command = lambda name, **arguments: self.calls.append(("command", name, arguments))
+        del self.calls[:]
+        action = np.zeros((1, 6))
+        tie, other = ("tie_thread", {}), ("tie_thread", {"passage": 1, "last": True})
+        scenes.step(action, commands=[(tie, other)])
+        self.assertEqual(self._names(self.calls), ["apply", "command", "command", "step", "observe"])
+        self.assertEqual(self.calls[1:3], [("command", *tie), ("command", *other)])
+        # Without a command the scene is not asked: no argument, no entry for the scene, an empty entry.
+        for commands in (None, [None], [()]):
+            del self.calls[:]
+            scenes.step(action, commands=commands)
+            self.assertEqual(self._names(self.calls), ["apply", "step", "observe"])
+        # One entry for the one scene, and only with the action that starts a frame.
+        del self.calls[:]
+        for actions, commands in ((action, [None, None]), (action, []), (None, [(tie,)])):
+            with self.assertRaisesRegex(ValueError, "commands come with the action that starts a frame"):
+                scenes.step(actions, commands=commands)
+        self.assertEqual(self.calls, [])
+        # A scene that takes no commands says which one it was asked for; its frame is not stepped.
+        del self.scene.command
+        with self.assertRaisesRegex(ValueError, "takes no commands: 'tie_thread'"):
+            scenes.step(action, commands=[(tie,)])
+        self.assertEqual(self._names(self.calls), ["apply"])
+        scenes.close()
+
+    def test_a_worker_carries_out_the_commands_of_its_step_between_the_action_and_the_frame(self):
+        """Fails if a worker drops the commands that came with a step, or asks a scene that was sent none."""
+        self.scene.command = lambda name, **arguments: self.calls.append(("command", name, arguments))
+        tie = ("tie_thread", {"passage": 0})
+        commands = [
+            ("step", (np.zeros(6), False, False)),
+            ("step", (np.zeros(6), False, False, (tie,))),
+            ("close", None),
+        ]
+        sent = []
+        connection = SimpleNamespace(recv=lambda: commands.pop(0), send=sent.append, close=lambda: None)
+        parallel._worker(connection, SutureSceneConfig(), 0, None)
+        self.assertEqual([success for success, _ in sent], [True] * 3)
+        names = self._names(self.calls)
+        first = names.index("apply")
+        self.assertEqual(names[first : first + 7], ["apply", "step", "observe", "apply", "command", "step", "observe"])
+        self.assertEqual(self.calls[first + 4], ("command", *tie))
+
+    def test_the_pool_sends_commands_only_to_the_scenes_that_have_some(self):
+        """Fails if a step without commands changes what a worker is sent, or a command goes to another scene."""
+        pool = object.__new__(ParallelSutureScenes)
+        pool.num_envs, pool.config = 3, SutureSceneConfig()
+        sent = []
+        pool._request = lambda command, payloads, env_ids: sent.append((command, payloads, env_ids)) or payloads
+        actions = np.zeros((3, 6))
+        actions[1, 0] = 0.5
+        pool.step(actions, include_tissue=False)
+        command, payloads, env_ids = sent[-1]
+        self.assertEqual((command, env_ids), ("step", [0, 1, 2]))
+        # Without commands: the three entries a worker has always been sent.
+        self.assertEqual([len(payload) for payload in payloads], [3, 3, 3])
+        self.assertEqual([payload[1:] for payload in payloads], [(False, True)] * 3)
+        np.testing.assert_array_equal(payloads[1][0], actions[1])
+        tie = ("tie_thread", {})
+        pool.step(actions, commands=[None, [tie], ()])
+        payloads = sent[-1][1]
+        self.assertEqual([len(payload) for payload in payloads], [3, 4, 3])
+        self.assertEqual(payloads[1][3], (tie,))
+        with self.assertRaisesRegex(ValueError, "one entry per scene"):
+            pool.step(actions, commands=[None, None])
+
     def test_reset_rebuilds_observe_passes_its_options_and_geometry_is_a_snapshot(self):
         scenes = LocalSutureScene()
         del self.calls[:]

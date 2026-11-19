@@ -673,6 +673,69 @@ class EyeletTrackTests(unittest.TestCase):
         self.assertGreater(scene.tracked()[knot], element + xi + 0.5 * pull / ELEMENT)
         self.assertLess(abs(scene.tension(taut)), 1.0e-3 * tension)
 
+    def test_an_eyelet_without_the_thread_is_not_tied(self):
+        """Fails if a tie of an eyelet that the thread does not pass through is stored, or a threaded one refused."""
+        scene = _Scene(_line((0.0031, 0.0013, 0.001), RESTING + 1), eyelets=5, max_tracks=2)
+        quarter = np.full(4, 0.25)
+        slots = scene.coupling.add_track([0, 1, 2], [quarter] * 3)
+        scene.coupling.hold_eyelet(slots[1])
+        np.testing.assert_array_equal(scene.thread.eyelet_held.numpy(), 0)
+        # Threaded later, the eyelet is an eyelet: the refused tie has left nothing behind.
+        scene.coupling.thread_eyelet(slots[1], 3, 0.25)
+        np.testing.assert_array_equal(scene.thread.eyelet_held.numpy(), 0)
+        scene.coupling.hold_eyelet(slots[1])
+        np.testing.assert_array_equal(scene.thread.eyelet_held.numpy(), [0, 1, 0, 0, 0])
+        # Letting go is never refused, with or without the thread.
+        scene.coupling.hold_eyelet(slots[0], False)
+        scene.coupling.hold_eyelet(slots[1], False)
+        np.testing.assert_array_equal(scene.thread.eyelet_held.numpy(), 0)
+
+    def test_tension_of_a_tied_thread_follows_the_travel_of_its_end_by_the_green_strain(self):
+        """Fails if a tied thread whose first node is drawn on carries another tension than its stretch gives.
+
+        The tightening of a stitch: the thread is tied at an eyelet and the needle, which carries the
+        thread's first node, moves on. The thread between the node and the knot is stretched by the
+        travel less what the knot's spring gives, and its tension follows the Green strain of that
+        stretch, ``E A (s² - 1) s / 2`` for the stretch ``s``; at the 8 % of a tightened stitch that is
+        12 % more than a tension proportional to the elongation.
+        """
+        scene = _Through()
+        scene.step(5)
+        knot = scene.slots[-1]
+        scene.coupling.hold_eyelet(knot)
+        free = float(scene.tracked()[knot]) * ELEMENT
+
+        def tension_of(travel, length):
+            """Tension [N] of ``length`` of thread in series with the knot's spring, its end moved by ``travel``."""
+            low, high = 1.0, 1.0 + travel / length
+            for _ in range(100):
+                stretch = 0.5 * (low + high)
+                tension = AXIAL_STIFFNESS * 0.5 * (stretch**2 - 1.0) * stretch
+                low, high = (stretch, high) if length * (stretch - 1.0) + tension / SPRING < travel else (low, stretch)
+            return AXIAL_STIFFNESS * 0.5 * (low**2 - 1.0) * low
+
+        taut, travelled, proportional = 7, 0.0, []
+        for travel in (0.0005, 0.001, 0.002, 0.003):
+            scene.draw(travel - travelled, 30)
+            scene.step(90)
+            travelled = travel
+            tension = scene.tension(taut)
+            # Node 0's slope is prescribed with unit length, which keeps the strain out of part of the first
+            # element: the stretched length lies between the free length and one element less. Measured at
+            # 3 mm of travel: 16.29 mN between 16.07 and 17.35 mN; a proportional law gives 15.03 mN at most.
+            self.assertGreater(tension, tension_of(travel, free))
+            self.assertLess(tension, tension_of(travel, free - ELEMENT))
+            proportional.append(travel / ((free - ELEMENT) / AXIAL_STIFFNESS + 1.0 / SPRING))
+            # The knot takes that tension, and the eyelets that the thread slides through take none. The
+            # tension is that of one element's chord: measured within 0.6 % of the knot's pull.
+            pulls = np.linalg.norm(scene.thread.eyelet_force.numpy(), axis=1)
+            self.assertAlmostEqual(pulls[knot], tension, delta=1.0e-2 * tension)
+            self.assertLess(pulls[scene.slots[:-1]].max(), 1.0e-3 * tension)
+        # At 3 mm, 10 % of stretch, the tension is above what a proportional law gives for the shorter of
+        # the two lengths: measured 1.084 times that.
+        self.assertGreater(tension, 1.05 * proportional[-1])
+        self.assertEqual(scene.thread.eyelet_held.numpy()[knot], 1)
+
     # Defect: the surface contact stops a node at a track's mouth with up to k (r + depth of the first eyelet), 35 mN.
     @unittest.expectedFailure
     def test_thread_is_drawn_into_a_track_through_its_mouth(self):

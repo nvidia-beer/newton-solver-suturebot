@@ -836,6 +836,7 @@ class GraspLiftTests(unittest.TestCase):
             "pull_grasp_bite_rad": 0.5236,
             "pull_grasp_jaws_exchanged": True,
             "pull_slack_radii": 4.0,
+            "tighten_travel_bound": 0.00675,
         }
         for name, value in module.items():
             with self.subTest(name=name):
@@ -851,6 +852,12 @@ class GraspLiftTests(unittest.TestCase):
         # Two numbers that follow from the choices are written as what they follow from.
         self.assertEqual(ProceduralGraspController.pull_wait_seconds, ProceduralGraspController.contact_loss_seconds)
         self.assertEqual(procedure.WIRE_REACH_RADII, 1.5)
+        # The least tissue volume at which a tied thread is tight is the thread/tissue coupling's, shared
+        # with the suture example; the table names it and the controller takes it from there.
+        from newton_solver_suturebot._src.solvers.thread.tissue import TIGHT_VOLUME_RATIO
+
+        self.assertEqual(TIGHT_VOLUME_RATIO, 0.5)
+        self.assertIn("``TIGHT_VOLUME_RATIO``", procedure.__doc__)
         # The defaults of the arguments are the two choices that the example offers as options.
         geometry, config = fixture()
         default = ProceduralGraspController(geometry, config)

@@ -6,6 +6,7 @@
 import math
 import os
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import numpy as np
@@ -452,6 +453,85 @@ class NeedleScheduleTests(unittest.TestCase):
         angles = [self.turning.at(0.5 * end + sign * step)[2] for sign in (-1.0, 1.0)]
         speed = self.geometry.radius * (angles[1] - angles[0]) / (2.0 * step)
         self.assertAlmostEqual(speed, self.pass_speed, delta=0.005 * self.pass_speed)
+
+
+class ClosingRuleTests(unittest.TestCase):
+    """The end of the closing pull (``Example._observe_closing``) on a stand-in for the example: no scene is built."""
+
+    def pulling(self, least_volume, gap=0.002, rule=None):
+        """An example in its pull: two eyelets ``gap`` apart across the wound, the kept least volume of the frame."""
+        if DEVICE.startswith("cuda") and not wp.is_cuda_available():
+            raise unittest.SkipTest("NEWTON_TEST_DEVICE asks for CUDA and there is none")
+        device = wp.get_device(DEVICE)
+        example = suture.Example.__new__(suture.Example)
+        targets = np.zeros((4, 3))
+        targets[1] = (gap, 0.0, 0.0)
+        forces = np.zeros((4, 3))
+        forces[0], forces[3] = (0.0, 0.0, 0.004), (0.003, 0.0, 0.0)
+        example.device = device
+        example.thread = SimpleNamespace(
+            eyelet_target=wp.array(targets, dtype=wp.vec3d, device=device),
+            eyelet_force=wp.array(forces, dtype=wp.vec3d, device=device),
+            max_eyelets=4,
+        )
+        example._gap_near = wp.array([0], dtype=int, device=device)
+        example._gap_far = wp.array([1], dtype=int, device=device)
+        example._closure = wp.zeros(2, dtype=float, device=device)
+        example.rest_gap = example.wound_gap = 0.0023
+        example.least_volume_ratio = least_volume
+        arguments = [] if rule is None else ["--least-volume", str(rule)]
+        example.args = suture.Example.create_parser().parse_args(arguments)
+        example.closing, example.phase, example.elapsed = "", "pull", 12.0
+        example._pulled, example._pull_reach = 0.001, 0.02
+        held = []
+        example.coupling = SimpleNamespace(hold_eyelet=held.append)
+        example._slots = [[0, 1], [2, 3]]
+        example.drive = SimpleNamespace(configure_mujoco=lambda solver, spring: None)
+        example.rigid_solver = None
+        example._support_needle = lambda spring: None
+        return example, held
+
+    def test_the_pull_ends_where_the_kept_least_volume_of_the_frame_is_under_the_tightness_rule(self):
+        """Fails if the pull does not end by the least tissue volume that the frame's check kept, or reads for it."""
+        from newton_solver_suturebot._src.solvers.thread.tissue import TIGHT_VOLUME_RATIO
+
+        # The default of --least-volume is the coupling's one number, which fem_needle_grasp stops by too.
+        self.assertEqual(suture.Example.create_parser().parse_args([]).least_volume, TIGHT_VOLUME_RATIO)
+        self.assertEqual(TIGHT_VOLUME_RATIO, 0.5)
+        # Above the rule the pull goes on.
+        example, held = self.pulling(0.51)
+        reads = []
+        original = wp.array.numpy
+
+        def read(array):
+            reads.append(array)
+            return original(array)
+
+        with patch.object(wp.array, "numpy", new=read):
+            example._observe_closing()
+        # One read: the wound's width and the largest pull. The least volume is the number that was kept.
+        self.assertEqual(len(reads), 1)
+        self.assertIs(reads[0], example._closure)
+        self.assertEqual((example.phase, example.closing, held), ("pull", "", []))
+        self.assertEqual(example.least_volume, 0.51)
+        self.assertAlmostEqual(example.wound_gap, 0.002, delta=1e-9)
+        self.assertAlmostEqual(example.largest_pull, 0.004, delta=1e-9)
+        self.assertEqual(example.outcome, "Pulling the thread: wound 2.00 mm of 2.30 mm wide")
+        # Under it the thread is as tight as the tissue allows: a knot at the last exit, and the needle is let go.
+        example, held = self.pulling(0.49)
+        example._observe_closing()
+        self.assertEqual((example.phase, held), ("drop", [3]))
+        self.assertEqual(example.closing, "the thread is as tight as the tissue allows")
+        self.assertEqual(example.outcome, "Needle dropped: the thread is as tight as the tissue allows")
+        self.assertEqual((example._drop_start, example._still), (12.0, 0.0))
+        # The option moves the rule.
+        example, held = self.pulling(0.49, rule=0.3)
+        example._observe_closing()
+        self.assertEqual((example.phase, held), ("pull", []))
+        # A wound that is closed to the thread's diameter ends the pull first.
+        example, held = self.pulling(0.49, gap=0.00025)
+        example._observe_closing()
+        self.assertEqual((example.phase, example.closing, held), ("drop", "the wound is closed", [3]))
 
 
 class BundledPadTests(unittest.TestCase):
