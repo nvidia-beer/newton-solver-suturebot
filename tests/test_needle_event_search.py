@@ -9,6 +9,8 @@ the first option relies on, and the hand-over of a standing trial. On CUDA the s
 default demo is driven through its first puncture and entry with the options off and on.
 """
 
+import contextlib
+import io
 import os
 import unittest
 from pathlib import Path
@@ -203,38 +205,45 @@ class EventOptionTests(unittest.TestCase):
             finally:
                 viewer.close()
 
-    def test_grasp_example_forwards_its_event_options_to_the_scene(self):
+    def test_grasp_example_hands_its_surface_events_to_the_scene_and_has_no_option_for_them(self):
+        from newton_solver_suturebot.examples.grasp import example_fem_needle_grasp as grasp_example
         from newton_solver_suturebot.examples.grasp._grasp_scene import GraspScene
 
         parser = GraspExample.create_parser()
         defaults = GraspExample._coupling(parser.parse_args([]))
+        # The search past the puncture threshold and the oracle at the device trial: one way,
+        # named once in the example; the budget of the step is not handed on, so the scene's
+        # own value ("loop") stands.
+        self.assertEqual(grasp_example.SURFACE_EVENTS, ("--event-search", "puncture", "--event-oracle", "device-trial"))
+        self.assertEqual(defaults[4:8], grasp_example.SURFACE_EVENTS)
+        self.assertNotIn("--event-budget", defaults)
         # The parser of the example's scene: the insertion example's, and the tool/tissue contact
         # that the example forwards by default.
         scene_parser = GraspScene.create_parser()
-        # The values that are the scene's own defaults are not forwarded.
-        forwarded = GraspExample._coupling(
-            parser.parse_args(["--event-search", "tip-path", "--event-oracle", "restart", "--event-budget", "loop"])
-        )
-        for option in ("--event-search", "--event-oracle", "--event-budget"):
-            self.assertNotIn(option, forwarded)
-        chosen = GraspExample._coupling(
-            parser.parse_args(
-                ["--event-search", "puncture", "--event-oracle", "device-trial", "--event-budget", "step"]
-            )
-        )
-        parsed = scene_parser.parse_args(["--asset", "pad.usd", *chosen])
-        self.assertEqual(
-            (parsed.event_search, parsed.event_oracle, parsed.event_budget), ("puncture", "device-trial", "step")
-        )
-        # Without a trial budget there is nothing for the budget option to select.
-        unbudgeted = GraspExample._coupling(parser.parse_args(["--trial-budget", "none", "--event-budget", "step"]))
-        self.assertNotIn("--event-budget", unbudgeted)
         parsed = scene_parser.parse_args(["--asset", "pad.usd", *defaults])
-        grasp_defaults = parser.parse_args([])
         self.assertEqual(
-            (parsed.event_search, parsed.event_oracle, parsed.event_budget),
-            (grasp_defaults.event_search, grasp_defaults.event_oracle, grasp_defaults.event_budget),
+            (parsed.event_search, parsed.event_oracle, parsed.event_budget), ("puncture", "device-trial", "loop")
         )
+        # The alternatives are options of the scene, not of the example.
+        names = vars(parser.parse_args([]))
+        for name in ("event_search", "event_oracle", "event_budget"):
+            self.assertNotIn(name, names)
+        for option, value in (
+            ("--event-search", "tip-path"),
+            ("--event-oracle", "restart"),
+            ("--event-budget", "step"),
+        ):
+            with (
+                self.subTest(option=option),
+                contextlib.redirect_stderr(io.StringIO()),
+                self.assertRaises(SystemExit),
+            ):
+                parser.parse_args([option, value])
+        # A caller of the scene replaces them after the example's arguments: the later argument stands.
+        replaced = scene_parser.parse_args(
+            ["--asset", "pad.usd", *defaults, "--event-search", "tip-path", "--event-oracle", "restart"]
+        )
+        self.assertEqual((replaced.event_search, replaced.event_oracle), ("tip-path", "restart"))
 
 
 class StandingTrialTests(unittest.TestCase):
@@ -408,13 +417,15 @@ class DeviceSearchSceneTests(unittest.TestCase):
             self.skipTest("Device trials and their captured graphs: CUDA only")
 
     def _drive(self, arguments):
-        defaults = GraspExample.create_parser().parse_args(list(arguments))
+        # The example's own settings without its tool/tissue contact, then the scene arguments of
+        # this drive: an argument that comes later replaces the one of the example.
+        defaults = GraspExample.create_parser().parse_args(list(self.contact))
         config = SutureSceneConfig(
             device=os.environ["NEWTON_TEST_DEVICE"],
             control_mode="physical_grasp",
             rigid_backend=defaults.rigid_backend,
             substeps=defaults.substeps,
-            example_arguments=GraspExample._coupling(defaults),
+            example_arguments=(*GraspExample._coupling(defaults), *arguments),
             **GraspExample._bite(defaults.bite_length),
         )
         self.assertEqual(config.rigid_backend, "mujoco-warp")
@@ -488,8 +499,8 @@ class DeviceSearchSceneTests(unittest.TestCase):
             scene.viewer.close()
 
     def test_oracle_evaluates_device_trials_and_decides_the_events_of_the_default_scene_at_their_substeps(self):
-        off = self._drive(self.scene_defaults + self.budget + self.contact)
-        on = self._drive(self.options + self.budget + self.contact)
+        off = self._drive(self.scene_defaults + self.budget)
+        on = self._drive(self.options + self.budget)
         self.assertEqual((off["options"], on["options"]), ((False, False, False), (True, True, False)))
         # Both went through the first puncture and the entry behind it.
         self.assertEqual([kind for _, _, kind in off["events"]][:2], ["puncture", "entry"])

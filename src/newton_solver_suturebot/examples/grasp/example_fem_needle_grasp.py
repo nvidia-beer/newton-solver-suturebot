@@ -38,61 +38,51 @@ from newton_solver_suturebot.examples.needle.example_fem_needle_insertion import
     trial_budget_argument,
 )
 
-# Needle/tissue coupling of this example; the insertion example and SutureSceneConfig keep
-# relative tolerance 1e-3 and no trial budget. Both values are measured choices, not derived
-# ones: of the tolerances 1e-3 and 1e-2 and the budgets 6 and 12 run over 870 frames
-# (docs/usage.md), these kept the needle path within the difference between two runs. The
-# budget does not follow from the correction of the loop: a captured loop without a
-# multiplier update tightens the tissue-solver tolerance at trial 9 and starts a new
-# Anderson history there, so the load of trial 12 is proposed from trials 9 to 11.
+# The settings of this example that are choices: values that runs selected, not values that
+# follow from the model. Each is named here once, with what it selects and what measured it;
+# the numbers of the runs are in docs/usage.md, under the heading given. The scene (the parser
+# of GraspScene), the insertion example and SutureSceneConfig keep their own values, given in
+# brackets, so a caller of SutureSceneConfig.example_arguments gets what it asks for.
+#
+# Relative interface force tolerance of the needle/tissue coupling (scene: 1e-3) and trials of
+# one coupling loop after which its best evaluated trial is kept (scene: no budget). Of the
+# tolerances 1e-3 and 1e-2 and the budgets 6, 12 and none, run over 870 frames, these kept the
+# needle path within the difference between two runs ("Coupling tolerance and trial budget").
+# The budget does not follow from the correction of the loop: a captured loop without a
+# multiplier update tightens the tissue-solver tolerance at trial 9 and starts a new Anderson
+# history there, so the load of trial 12 is proposed from trials 9 to 11.
 COUPLING_RELATIVE_TOLERANCE = 1e-2
 TRIAL_BUDGET = 12
-# Contact between the tool capsules and the tissue (GraspScene, --tool-tissue-contact): False
-# (off), True (the first-version law) or "swept" (the contact on the sweep of the capsules). The
-# scene (the parser of GraspScene) and SutureSceneConfig keep it off; this example turns the
-# swept law on, for its parser and for arguments without the setting. With the swept law the
-# tools push the tissue instead of passing through it, and the procedure completed in the
-# runs on the device that the default rests on (2026-11-17): 5 of 5 with the thread tracks,
-# the default since that day (four self-tests, one with records per physics interval), and
-# 11 of 11 of the procedure of before them (today --no-thread-tracks: five with the window,
-# three self-tests, three with records per physics interval). What else it changes and what
-# it costs is measured in docs/usage.md. With the first-version law the default procedure
-# does not complete (docs/usage.md): at 6.1 s the tip of the second jaw meets the tissue on
-# the held border of the simulated region, the contact force rises to 0.1 N on that one
-# point, and at 6.4 s the step control rejects the tetrahedra beside it.
-TOOL_TISSUE_CONTACT = "swept"
-# Frame time budget of the window [ms] (--frame-budget) and its unit (--frame-budget-unit), for
-# the parser and for arguments without the settings: the example plans for a picture of the
-# window no later than 66.7 ms after the one before (15 pictures per second), and a step may
-# return between two host-controlled trials of an attempt as well as between two attempts.
-# 0 runs whole frames, "attempt" is the other unit. Where a budget is used and where the unit
-# applies is decided by Example._frame_budget and Example._frame_unit. Measured in the window
-# with the swept contact and the plan of before the worst case (docs/usage.md: mean times, the
-# last observation and drawing), on the procedure of before the thread tracks (2026-11-17, 1750
-# frames, today --no-thread-tracks; docs/usage.md): no interval between two pictures over
-# 66.7 ms in three of three runs (longest 65.4 ms), where whole frames have 111 of 1750 over
-# it (longest 470 ms); the 26 s of that procedure then take 100 to 111 s on the screen instead
-# of 76 s. What the window was measured to do in the procedure with the thread tracks (the
-# default, 31 s) is in docs/usage.md. The scene has no budget of its own: a deadline is an
-# argument of LocalSutureScene.step, and SutureSceneConfig has no setting for it.
-FRAME_BUDGET_MS = 66.7
-FRAME_BUDGET_UNIT = "host-trial"
-# Surface events between the device trials and the host oracle (NeedleTissueCoupler:
-# search_past_puncture, oracle_at_device_trial, step_trial_budget). The scene, the insertion
-# example and SutureSceneConfig keep the three options off. This example searches a step that
-# touches the puncture threshold on the device and lets the oracle evaluate the device trial it
-# is handed instead of repeating it: measured choices (docs/usage.md). The budget of the step
-# stays off here: it changes which event steps are kept unconverged.
-EVENT_SEARCH = "puncture"
-EVENT_ORACLE = "device-trial"
-EVENT_BUDGET = "loop"
-# Whether the thread follows the needle's track through the tissue (GraspScene, --thread-tracks):
-# on, as in the scene and in SutureSceneConfig. The pull then takes the needle out of the tissue.
-THREAD_TRACKS = True
+# Surface events between the device trials and the host oracle, as arguments of the scene
+# (scene: tip-path, restart): a step that touches the puncture threshold is searched on the
+# device, and the oracle evaluates the device trial it is handed instead of repeating it
+# ("Surface events on the device and response columns per step").
+SURFACE_EVENTS = ("--event-search", "puncture", "--event-oracle", "device-trial")
 # Support nodes whose response columns the response-basis guess solves per coupled step after
-# the track has grown (AffineGuessManager.nodes_per_attempt); 0: every missing column at once.
-# One node is a measured choice as well (docs/usage.md).
+# the track has grown (scene: 0, every missing column at once); measured with the surface
+# events, under the same heading.
 RESPONSE_BASIS_NODES = 1
+
+# Defaults of this example that are not numbers of a run.
+#
+# Contact between the tool capsules and the tissue (--tool-tissue-contact): "swept", the contact
+# on the sweep of the capsules, or False / "off" (the scene and SutureSceneConfig keep it off).
+# With it the tools push the tissue instead of passing through it ("Tool/tissue contact").
+TOOL_TISSUE_CONTACT = "swept"
+# Frame time budget of the window [ms] (--frame-budget): the time of one picture at 15 pictures
+# per second, 1000 / 15 ms written to 0.1 ms; 0 runs whole frames. Where a budget is used is
+# decided by Example._frame_budget, and the smallest part of a frame after which a step may
+# return by Example._frame_unit. The scene has no budget of its own: a deadline is an argument
+# of LocalSutureScene.step ("Frame time budget").
+FRAME_BUDGET_MS = 66.7
+# Whether the thread follows the needle's track through the tissue (--thread-tracks): on, as in
+# the scene and in SutureSceneConfig. The pull then takes the needle out of the tissue.
+THREAD_TRACKS = True
+# Needle arc speed [m/s] and closed-jaw settling time [s] of the procedure (--speed,
+# --settle-seconds): choices of the demonstration. The self-test asks for the complete
+# procedure only at these values (Example.test_final).
+ARC_SPEED = 0.003
+SETTLE_SECONDS = 0.5
 
 
 def _pull_through(args):
@@ -109,6 +99,50 @@ def _tip_lift_height(args):
     if height is None:
         return 0.0 if _pull_through(args) or not getattr(args, "lift_height", 0.0) else 0.005
     return height
+
+
+def threaded_in_order(passages, threaded):
+    """Of ``threaded`` eyelets, how many each passage has when the thread takes the eyelets in the order they were made.
+
+    A scene reports how many eyelets its thread goes through, not which ones. The thread hangs on
+    the needle's tail, and the tail goes through the track behind the tip, so it passes the
+    eyelets in the order in which the tip made them: the first ``threaded`` eyelets are taken for
+    the threaded ones. An eyelet that the tail went past without threading it would be counted
+    here as threaded, and the last one made as waiting; the number itself stays right.
+
+    Args:
+        passages: Number of eyelets of every passage, in the order the passages were made.
+        threaded: Number of threaded eyelets of the scene.
+    """
+    counts, left = [], int(threaded)
+    for size in passages:
+        counts.append(min(left, int(size)))
+        left -= counts[-1]
+    return counts
+
+
+def thread_line(thread):
+    """The panel line of one scene's thread report: where the thread goes through the tissue.
+
+    The eyelets that the thread goes through of those that the needle's track has made, the
+    same per passage (:func:`threaded_in_order`), the rest length of thread inside the tissue,
+    and the eyelets that found no room in the reserve, if any. None without a report and for
+    a scene whose thread has no eyelet slots (it stays on the surface).
+    """
+    if not thread or not thread.get("eyelet_reserve", (0, 0))[0]:
+        return None
+    made, threaded, passages = thread["eyelets"], thread["eyelets_threaded"], thread["eyelet_passages"]
+    if not made:
+        line = "Thread: no eyelets yet, the needle has made no track"
+    else:
+        split = ", ".join(
+            f"passage {index + 1}: {done} of {size}"
+            for index, (done, size) in enumerate(zip(threaded_in_order(passages, threaded), passages, strict=True))
+        )
+        inside = 1.0e3 * thread["thread_inside_tissue_m"]
+        line = f"Thread: {threaded} of {made} eyelets threaded ({split}), {inside:.1f} mm inside the tissue"
+    refused = thread.get("eyelets_refused", 0)
+    return line + (f"; {refused} eyelets found no room in the reserve" if refused else "")
 
 
 class Example:
@@ -130,9 +164,9 @@ class Example:
     frame_budget = None
     # Unit of the frame budget of this run: the smallest part of a frame after which a step()
     # may return. "attempt": one attempt of a coupled step. "host-trial": also one
-    # host-controlled trial inside an attempt. The constructor takes it from
-    # --frame-budget-unit (FRAME_BUDGET_UNIT) where that unit applies (_frame_unit); "attempt"
-    # is what an example has before that and wherever no budget is in use.
+    # host-controlled trial inside an attempt. The constructor takes "host-trial" where that
+    # unit applies (_frame_unit); "attempt" is what an example has before that and wherever
+    # no budget is in use.
     frame_unit = "attempt"
     # Calls of step() that returned with their frame unfinished.
     unfinished_calls = 0
@@ -266,47 +300,35 @@ class Example:
 
     @staticmethod
     def _frame_unit(args, budget):
-        """The unit of the frame budget of this run: ``"attempt"``, or ``"host-trial"`` where it applies.
+        """The unit of the frame budget of this run: ``"host-trial"`` where it applies, else ``"attempt"``.
 
-        The unit is that of ``--frame-budget-unit``; arguments without the option have the
-        default of the example, :data:`FRAME_BUDGET_UNIT`. ``host-trial`` is used only with a
-        frame budget in use (:meth:`_frame_budget`), on the GPU rigid backend, and without the
-        first-version contact between the tools and the tissue. On the native rigid backend
+        With a frame budget in use (:meth:`_frame_budget`) on the GPU rigid backend the unit is
+        the host trial: a step may return between two host-controlled trials of an attempt as
+        well as between two attempts. The swept tool/tissue contact allows that: it changes its
+        state only in the step after an acceptance, and an attempt reads its forces and its
+        holds as that step left them, in one call or in several. On the native rigid backend
         the rigid data hold a trial while an attempt is open, and the observation of a call
         that left one open would read the jaw contact force and the native clock of that
-        trial. The swept tool/tissue contact takes the unit: it changes its state only in the
-        step after an acceptance, and an attempt reads its forces and its holds as that step
-        left them, in one call or in several. With the first-version contact no run has left
-        an attempt open. The unit then stays the attempt, and the reason is printed.
+        trial: the unit there is the attempt, and the reason is printed.
 
-        Where no budget is in use there is no unit either, and nothing is printed: a run that
-        keeps whole frames (the self-test, a viewer without the window, several scenes,
-        ``--frame-budget 0``) has the unit ``host-trial`` as the default, not because it was
-        asked for.
+        Where no budget is in use (the self-test, a viewer without the window, several scenes,
+        ``--frame-budget 0``) there is no unit either, and nothing is printed.
         """
-        unit = getattr(args, "frame_budget_unit", FRAME_BUDGET_UNIT)
-        if unit == "attempt":
-            return unit
-        if unit != "host-trial":
-            raise ValueError("The unit of the frame budget must be 'attempt' or 'host-trial'")
         if budget is None:
             return "attempt"
         if getattr(args, "rigid_backend", "mujoco-warp") != "mujoco-warp":
-            reason = (
-                "on the native rigid backend an observation inside an attempt would read the contacts and the "
-                "clock of a trial"
-            )
-        elif getattr(args, "tool_tissue_contact", TOOL_TISSUE_CONTACT) not in (False, None, "off", "swept"):
-            reason = "no run with the first-version contact between the tools and the tissue has left an attempt open"
-        else:
             print(
-                "Frame budget unit host-trial: a step may also return inside an attempt, between two "
-                "host-controlled trials",
+                "Frame budget unit host-trial not used, the unit stays the attempt: on the native rigid backend an "
+                "observation inside an attempt would read the contacts and the clock of a trial",
                 flush=True,
             )
-            return unit
-        print(f"Frame budget unit host-trial not used, the unit stays the attempt: {reason}", flush=True)
-        return "attempt"
+            return "attempt"
+        print(
+            "Frame budget unit host-trial: a step may also return inside an attempt, between two "
+            "host-controlled trials",
+            flush=True,
+        )
+        return "host-trial"
 
     @staticmethod
     def _freeze_startup_objects():
@@ -357,31 +379,22 @@ class Example:
 
     @staticmethod
     def _coupling(args):
-        """Arguments for the scene's parser: coupling tolerance, trial budget, event options and tool/tissue contact."""
+        """Arguments for the scene's parser: coupling tolerance, trial budget, surface events and tool/tissue contact."""
         tolerance = getattr(args, "coupling_relative_tolerance", COUPLING_RELATIVE_TOLERANCE)
         budget = getattr(args, "trial_budget", TRIAL_BUDGET)
         arguments = ("--coupling-relative-tolerance", repr(float(tolerance)))
         if budget is not None:
             arguments += ("--trial-budget", str(int(budget)))
-        # The surface-event options and the bound on the response columns; a value that is the
-        # scene's own default is not forwarded.
-        search, oracle = getattr(args, "event_search", EVENT_SEARCH), getattr(args, "event_oracle", EVENT_ORACLE)
-        if search != "tip-path":
-            arguments += ("--event-search", search)
-        if oracle != "restart":
-            arguments += ("--event-oracle", oracle)
-        budget_scope = getattr(args, "event_budget", EVENT_BUDGET)
-        if budget_scope != "loop" and budget is not None:
-            arguments += ("--event-budget", budget_scope)
+        arguments += SURFACE_EVENTS
+        # A value that is the scene's own default is not forwarded.
         basis_nodes = int(getattr(args, "response_basis_nodes", RESPONSE_BASIS_NODES))
         if basis_nodes:
             arguments += ("--response-basis-nodes", str(basis_nodes))
         contact = getattr(args, "tool_tissue_contact", TOOL_TISSUE_CONTACT)
         if contact == "swept":
             arguments += ("--tool-tissue-contact", "swept")
-        elif contact and contact != "off":
-            # The scene's argument without a value: the first-version law, as before.
-            arguments += ("--tool-tissue-contact",)
+        elif contact not in (False, None, "off"):
+            raise ValueError("The contact between the tools and the tissue of this example is 'swept' or 'off'")
         if not getattr(args, "thread_tracks", THREAD_TRACKS):
             arguments += ("--no-thread-tracks",)
         return arguments
@@ -389,7 +402,8 @@ class Example:
     # Reset grasp for the 10 mm bite: fraction of the arc from the tip, twist about the needle
     # tangent and bite angle [rad]. A scan of the tool's inverse kinematics along the whole arc
     # of that bite, for the dVRK port layout, finds twists of -105 to -90 degrees with bite
-    # angles of -30 to -15 degrees reachable; this is the middle of that range.
+    # angles of -30 to -15 degrees reachable; this is the middle of that range, -97.5 and -22.5
+    # degrees, written in radians to four digits. The fraction is the scene's own (0.8).
     deep_bite_grasp = (0.8, -1.7017, -0.3927)
 
     @classmethod
@@ -467,6 +481,8 @@ class Example:
                         for item, offset in zip(self.observations, world_offsets, strict=True)
                     ]
                 )
+            # The field of view that fit_inspection_camera frames the points for: its vertical
+            # aperture of 15.2908 mm at its focal length of 12 mm.
             self.viewer.camera.fov = math.degrees(2 * math.atan(15.2908 / 24.0))
             eye, target = fit_inspection_camera(points, view_direction=(0.0, -1.0, 0.65))
             self.viewer.set_camera(wp.vec3(eye))
@@ -630,6 +646,13 @@ class Example:
         self._draw_seconds = time.perf_counter() - started
         self._draw_longest = max(self._draw_longest, self._draw_seconds)
 
+    def gui(self, ui):
+        """The example's lines of the viewer's side panel: per scene, where the thread goes through the tissue."""
+        for item in self.observations:
+            line = thread_line(item.get("thread_diagnostics"))
+            if line is not None:
+                ui.text_wrapped(line if self.args.num_envs == 1 else f"Scene {item['env_id']}: {line}")
+
     # What must be zero after start-up in a scene whose start-up call ran (the scene's report()).
     census_numbers = ("captures_after_startup", "solver_captures_after_startup", "module_loads_after_startup")
 
@@ -709,7 +732,7 @@ class Example:
             np.testing.assert_allclose(item["tissue_positions"][fixed], rest[fixed], rtol=0, atol=1e-8)
             if not item["diagnostics"]["independent_free_needle"] or item["diagnostics"]["needle_pose_drive"]:
                 raise AssertionError("The needle must be an independently simulated rigid body")
-        default_procedure = self.args.speed == 0.003 and self.args.settle_seconds == 0.5
+        default_procedure = self.args.speed == ARC_SPEED and self.args.settle_seconds == SETTLE_SECONDS
         lift_height = getattr(self.args, "lift_height", 0.0)
         # Without a lift the procedure is the arc, complete after 6 s. With a lift it has no fixed
         # duration and ends with the stage "done": the self-test asks for that at its last frame,
@@ -778,6 +801,7 @@ class Example:
 
     @staticmethod
     def create_parser():
+        # The parser's formatter prints the default of every option after its help text.
         parser = newton.examples.create_parser()
         parser.description = __doc__
         parser.set_defaults(num_frames=2400)
@@ -790,13 +814,15 @@ class Example:
             help="FP32 MuJoCo Warp GPU backend (tolerance 1e-6, needs a CUDA device) or native CPU contacts.",
         )
         parser.add_argument("--controller", choices=("procedural", "hold"), default="procedural")
-        parser.add_argument("--speed", type=float, default=0.003, help="Needle arc speed [m/s].")
-        parser.add_argument("--settle-seconds", type=float, default=0.5, help="Closed-jaw settling time [s].")
+        parser.add_argument("--speed", type=float, default=ARC_SPEED, help="Needle arc speed [m/s].")
+        parser.add_argument(
+            "--settle-seconds", type=float, default=SETTLE_SECONDS, help="Closed-jaw settling time [s]."
+        )
         parser.add_argument(
             "--lift-height",
             type=float,
             default=0.01,
-            help="Inspection lift along the tissue entry normal [m], after the insertion arc; 0 disables it (default: 0.01).",
+            help="Inspection lift along the tissue entry normal [m], after the insertion arc; 0 disables it.",
         )
         parser.add_argument(
             "--tip-lift-height",
@@ -810,12 +836,9 @@ class Example:
             action=argparse.BooleanOptionalAction,
             default=True,
             help="After the lift the tool lets go, takes the needle by its tip and pulls it on along its own "
-            "curve, about the needle's centre of curvature: the tail goes into the entry, through the tissue and "
-            "out of the exit, the thread follows it through the track, and the tool holds the needle clear of the "
-            "tissue (default). With --no-thread-tracks the pull ends when the tail arrives at its entry. "
-            "--no-pull-through takes the tip with the earlier grasp and lifts by it instead, on the same clear "
-            "way from the one grasp to the other. With --lift-height 0 "
-            "the example is the insertion alone, as before.",
+            "curve until it is out of the tissue; the thread follows it through the track. "
+            "--no-pull-through takes the tip with the earlier grasp and lifts by it instead (--tip-lift-height). "
+            "With --lift-height 0 the example is the insertion alone.",
         )
         parser.add_argument(
             "--thread-tracks",
@@ -829,16 +852,14 @@ class Example:
             "--bite-length",
             type=float,
             default=0.010,
-            help="Distance from entry to exit [m]; 0 keeps the recorded stitch, 5.4 mm apart and 0.39 mm deep (default: 0.010).",
+            help="Distance from entry to exit [m]; 0 keeps the recorded stitch, 5.4 mm apart and 0.39 mm deep.",
         )
         parser.add_argument(
             "--coupling-relative-tolerance",
             type=float,
             default=COUPLING_RELATIVE_TOLERANCE,
-            help="Relative interface force tolerance of the needle/tissue coupling (default: 1e-2; the insertion "
-            "example keeps 1e-3). Measured over 870 frames on one DGX Spark against 1e-3: run time 55 s instead of "
-            "66 to 72 s, needle path 0.06 mm (median) and 0.23 mm (worst) away, where two runs at 1e-3 differ from "
-            "each other by 0.24 mm and 0.50 mm.",
+            help="Relative interface force tolerance of the needle/tissue coupling. The default is a measured "
+            "choice (docs/usage.md); the insertion example keeps 1e-3.",
         )
         parser.add_argument(
             "--trial-budget",
@@ -846,67 +867,24 @@ class Example:
             default=TRIAL_BUDGET,
             help="Trials of one coupling loop after which its best evaluated trial is kept instead of iterating "
             f"on to the limit of {COUPLING_TRIAL_LIMIT} trials: 2 to {COUPLING_TRIAL_LIMIT - 1}, or 0 or none for "
-            "no budget (default: 12, a measured choice between the two budgets that were run, not a derived "
-            "value). Measured over 870 frames with tolerance 1e-2 and the budget on the GPU loop: with 12, 139 of "
-            "about 3600 loops kept at the budget, 5 frames slower than 200 ms (16 without a budget, 27 at "
-            "tolerance 1e-3), needle path within the difference between two runs (0.12 mm median, 0.28 mm "
-            "worst); a budget of 6 keeps 561 loops and moves the path to twice that difference. A kept step is "
-            "not converged to the tolerance.",
+            "no budget. The default is a measured choice (docs/usage.md). A kept step is not converged to the "
+            "tolerance.",
         )
         parser.add_argument(
             "--tool-tissue-contact",
-            nargs="?",
-            const=True,
             default=TOOL_TISSUE_CONTACT,
-            choices=("off", "first", "swept"),
+            choices=("off", "swept"),
             metavar="LAW",
-            help="Contact between the tools and the tissue: the shaft, wrist and jaws of both tools, with the size "
-            "of the drawn tool, without friction. LAW is 'swept', 'first' or 'off' (default: swept; the scene and "
-            "SutureSceneConfig keep the contact off). swept: every tool capsule is swept to the pose it will have "
-            "at the end of the next physics interval; the tissue surface nodes it reaches are placed on it and "
-            "held there through that interval, so the tissue is pushed ahead of the tool and deforms, and tissue "
-            "that is held (the border of the simulated region) or cannot follow without crushing an element stops "
-            "the tool (docs/usage.md has what that changes in the procedure). Measured on one DGX Spark, 2026-11-17: "
-            "the procedure completed with it in 5 of 5 runs with the thread tracks (the default) and in 11 of 11 "
-            "without them (--no-thread-tracks); in the window without the thread tracks and with whole frames "
-            "the 26 s of that procedure take 76 s instead of 58 s on the screen, and 111 instead of 9 of 1750 "
-            "frames take longer than 66.7 ms; with the frame budget (--frame-budget) no step does, in four of "
-            "four window runs (docs/usage.md has the window with the thread tracks). off, "
-            "also --no-tool-tissue-contact: the tools pass through the tissue and exchange no force with it. "
-            "first, also the option without a "
-            "value: the first-version law, sample spheres that press on the tissue and are pushed back one physics "
-            "interval late on both sides; with it the default procedure stops at 6.4 s of simulated time, when the "
-            "tip of a jaw presses on the held border of the simulated tissue region and the tetrahedra beside it "
-            "are rejected.",
+            help="Contact between the tools and the tissue, without friction: 'swept' or 'off' (the scene and "
+            "SutureSceneConfig keep the contact off). swept: the tissue surface nodes that a tool capsule reaches "
+            "in the next physics interval are held on it, so the tool pushes the tissue, and tissue that cannot "
+            "follow stops the tool. off: the tools pass through the tissue (docs/usage.md).",
         )
         parser.add_argument(
             "--no-tool-tissue-contact",
             dest="tool_tissue_contact",
             action="store_false",
-            help="No contact between the tools and the tissue: they pass through it, as the example ran before "
-            "the swept contact became its default (the same as --tool-tissue-contact off).",
-        )
-        parser.add_argument(
-            "--event-search",
-            choices=("tip-path", "puncture"),
-            default=EVENT_SEARCH,
-            help="Surface-event requests that the device trials search past before the host oracle decides the "
-            "event: tip-path, the requests about the path of the tip; puncture, also a contact force at the "
-            "puncture threshold.",
-        )
-        parser.add_argument(
-            "--event-oracle",
-            choices=("restart", "device-trial"),
-            default=EVENT_ORACLE,
-            help="First trial of the host oracle after a device search: restart, a complete host trial from the "
-            "load of the search; device-trial, the host evaluation of the last device trial as it stands.",
-        )
-        parser.add_argument(
-            "--event-budget",
-            choices=("loop", "step"),
-            default=EVENT_BUDGET,
-            help="Trial budget of a step whose device search hands a surface event to the host oracle: loop, the "
-            "oracle loop has a budget of its own; step, the trials of the search count in the oracle loop.",
+            help="No contact between the tools and the tissue (the same as --tool-tissue-contact off).",
         )
         parser.add_argument(
             "--response-basis-nodes",
@@ -922,42 +900,10 @@ class Example:
             default=FRAME_BUDGET_MS,
             metavar="MS",
             help="Frame time budget [ms], with one scene in the window of the OpenGL viewer: the longest time from "
-            "the start of one step to the start of the next that the example plans for (default: 66.7, which "
-            "plans for 15 frames/s). 0 runs whole frames. With a budget a step runs one attempt of a coupled step "
-            "and starts another one (the next substep, or the retry of a rejected attempt) only if a substep that "
-            "uses up its trial budget, the observation and the drawing still fit, each as long as the longest "
-            "that this run has measured on the host clock; otherwise it returns, the window shows the state "
-            "reached and the next step goes on with the same frame: simulated time falls behind by that call. The "
-            "accepted states are those of whole frames. Measured on one DGX Spark, 2026-11-17, with the plan of "
-            "before (mean times, the last observation and drawing; docs/usage.md), in three window "
-            "runs of 1750 frames with the swept tool/tissue contact and the unit host-trial, on the procedure of "
-            "before the thread tracks (--no-thread-tracks; docs/usage.md, which also has the window with the "
-            "thread tracks): no interval from one step to the next over 66.7 ms (the longest 65.4, 60.9 and "
-            "60.4 ms), where whole frames have 111 over it (the longest 470 ms); the 26 s of that procedure take "
-            "100 to 111 s on the screen instead of 76 s (70 s instead of 58 s without the contact). Not a "
-            "guarantee: a trial loop on "
-            "the device is never interrupted, nor is an attempt with the unit attempt, and a piece that alone "
-            "takes longer than the budget still exceeds it (docs/usage.md). Needs the trial budget: without one a "
-            f"loop may run to its limit of {COUPLING_TRIAL_LIMIT} trials and every step runs a single attempt. In "
-            "a paused window a single step finishes its frame. Not used with --test, with any other viewer (null, "
-            "USD, Rerun, Viser, RTX, OpenGL without a window) or with several scenes: those keep whole frames, "
-            "and print why only for a budget other than the default.",
-        )
-        parser.add_argument(
-            "--frame-budget-unit",
-            choices=("attempt", "host-trial"),
-            default=FRAME_BUDGET_UNIT,
-            help="Smallest part of a frame after which a step with a frame budget may return: host-trial "
-            "(default), one attempt of a coupled step or one host-controlled trial inside an attempt (the trials "
-            "of a loop that the host controls at a needle entry or exit); attempt, one attempt of a coupled step. "
-            "With host-trial a step returns before a host-controlled trial if the longest such trial and the "
-            "longest end of an attempt that this run has measured do not end by its deadline; the attempt stays "
-            "open, the window shows the state accepted before it, and the next step goes on with that trial. A "
-            "device trial loop is never interrupted. host-trial is used only with a frame budget in use, on the "
-            "GPU rigid backend, and with --tool-tissue-contact swept or off (not with the first-version law); "
-            "otherwise the unit is the attempt, and with a budget in use the reason is printed. Measured in the "
-            "window with the swept contact and --no-thread-tracks (2026-11-17, docs/usage.md): no interval over "
-            "66.7 ms with either unit, in three runs with host-trial and in one with attempt.",
+            "the start of one step to the start of the next that the example plans for; the default is the time "
+            "of a picture at 15 frames/s. 0 runs whole frames. A step that would not fit returns with its frame "
+            "unfinished and the next step goes on with it. Not a guarantee; not used with --test, another viewer "
+            "or several scenes (docs/usage.md).",
         )
         parser.add_argument("--spacing", type=float, default=0.45, help="Viewer spacing [m]; does not change physics.")
         parser.add_argument("--overview", action="store_true", help="Frame the complete shafts and trocar ports.")

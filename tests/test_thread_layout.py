@@ -125,6 +125,29 @@ class BorderWalkTests(unittest.TestCase):
         points = border_walk(self.LOW, self.HIGH, np.array([0.016, 0.012]), np.array([0.8, 0.6]), TURN, 0.03)
         np.testing.assert_allclose(points[:3], [[0.016, 0.012], [0.03, 0.012], [0.03, -0.03]], atol=1e-15)
 
+    def test_walk_with_room_turns_along_away_one_turn_radius_from_its_start(self):
+        """Fails if the leg runs on to the side, the walk leaves it another way than ``away``, or a line without room is taken."""
+        low, high = np.array([-0.06, -0.06]), np.array([0.06, 0.06])
+        away = np.array([0.6, 0.8])
+        start = np.array([0.02, -0.04])
+        points = border_walk(low, high, start, away, TURN, 0.1)
+        # The side at x = 0.06 is the nearest that is not before the start: one turn radius towards it, then
+        # 50 mm along ``away``, which meets that side at y = 0, and on along it the way ``away`` points.
+        expected = [start, [0.03, -0.04], [0.06, 0.0], [0.06, 0.06], [-0.06, 0.06]]
+        np.testing.assert_allclose(points[:5], expected, atol=1e-15)
+        # The line along ``away`` may meet another side first: that side is followed, and it is the walked one.
+        away = np.array([0.28, 0.96])
+        start = np.array([-0.03, -0.05])
+        points = border_walk(low, high, start, away, TURN, 0.3)
+        met = [-0.02 + 0.28 * 0.11 / 0.96, 0.06]
+        np.testing.assert_allclose(points[:5], [start, [-0.02, -0.05], met, [0.06, 0.06], [0.06, -0.06]], atol=1e-15)
+        np.testing.assert_allclose(points[5:7], [[-0.06, -0.06], [-0.06, 0.04]], atol=1e-15)
+        # A line that meets its side less than two turn radii before the corner leaves no room for the two arcs
+        # of that side: straight to the nearest side, as a line shorter than two turn radii (the test above).
+        start = np.array([0.0, -0.02])
+        points = border_walk(low, high, start, np.array([0.6, 0.8]), TURN, 0.1)
+        np.testing.assert_allclose(points[:3], [start, [0.06, -0.02], [0.06, 0.06]], atol=1e-15)
+
     def test_start_nearer_to_its_side_than_a_turn_radius_is_put_on_it(self):
         """Fails if a leg too short for the arc of its corner is kept."""
         points = border_walk(self.LOW, self.HIGH, np.array([0.025, 0.0]), np.array([1.0, 0.0]), TURN, 0.02)
@@ -242,6 +265,35 @@ class LooseThreadTests(unittest.TestCase):
         first = int(np.flatnonzero(on_side)[0])
         self.assertTrue(np.all(q[laid:first, 1] >= behind[1] - 1e-9))
         self.assertTrue(np.all(np.diff(q[laid:first, 1]) > 0.0))
+
+    def test_on_a_pad_with_room_the_thread_turns_behind_the_stitch_a_turn_radius_beside_its_first_point(self):
+        """Fails if the thread runs on towards the edge to the border, or leaves that leg another way than behind the stitch."""
+        vertices = np.array([[-0.08, -0.08, 0.0], [0.08, 0.08, 0.0]])
+        away = np.array([0.6, 0.8])
+        entry = np.array([0.02, -0.05, 0.0])
+        head = np.r_[entry[:2] - 0.002 * away, 0.015, -away, 0.0]
+        stitch = (entry, entry - np.r_[0.01 * away, 0.0], NEEDLE)
+        q = loose_thread_coordinates(head, vertices, stitch=stitch, turn_radius=TURN)
+        laid = int(np.flatnonzero(np.abs(q[:, 2] - RADIUS) > 1e-9)[-1]) + 1
+        first = entry[:2] + 2.0 * NEEDLE * away
+        self.assertLess(np.linalg.norm(q[laid, :2] - first), ELEMENT)
+        # The nearest side that is not before that point is x = 70 mm, 39 mm off: the leg towards it ends
+        # after one turn radius, in the arc of a corner of 53 degrees, which takes 5 mm of each of its legs.
+        corner = first + np.array([TURN, 0.0])
+        offset = q[laid:, :2] - corner
+        beyond = offset @ away
+        on_line = (np.abs(offset[:, 0] * away[1] - offset[:, 1] * away[0]) < 1e-9) & (beyond > 0.5 * TURN)
+        # Then straight behind the stitch to that side, 48.7 mm on: 40 mm between the two arcs.
+        reach = (0.07 - corner[0]) / away[0]
+        self.assertGreaterEqual(on_line.sum(), 19)
+        self.assertLess(beyond[on_line].max(), reach)
+        self.assertGreater(beyond[on_line].max(), reach - 0.5 * TURN)
+        # And along the side from there on, away from the stitch; nowhere nearer the edge than the side.
+        self.assertAlmostEqual(q[laid:, 0].max(), 0.07, delta=1e-9)
+        on_side = np.isclose(q[:, 0], 0.07, atol=1e-9)
+        self.assertGreaterEqual(on_side.sum(), 8)
+        self.assertGreater(q[on_side, 1].min(), corner[1] + reach * away[1])
+        self.assertTrue(np.all(np.diff(q[on_side, 1]) > 0.0))
 
     def test_without_a_stitch_the_thread_trails_the_way_the_tail_points(self):
         """Fails if a thread with no planned stitch is laid against its tail's tangent."""

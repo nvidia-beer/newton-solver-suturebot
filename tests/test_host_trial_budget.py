@@ -1164,8 +1164,8 @@ class HostTrialSceneTests(unittest.TestCase):
             self.assertEqual(bound.last_loops, coupler.trial_loops)
             self.assertGreaterEqual(bound.last_loops, 1)
             self.assertAlmostEqual(bound.loop_seconds, coupler.loop_seconds, places=12)
-            self.assertGreater(bound.seconds, bound.loop_seconds)
-            self.assertLessEqual(bound.seconds, sum(spent))
+            self.assertGreater(bound.longest_outside, 0.0)
+            self.assertLessEqual(bound.longest_outside + bound.loop_seconds, sum(spent))
 
     def test_the_preparation_of_an_attempt_runs_once(self):
         _, calls, checks, counts, _, _ = _run_inside(script="every", reject=(1, 2), actions=ACTIONS[:3])
@@ -1792,7 +1792,7 @@ def _example(calls_per_frame, budget, unit=None):
 
 def _unit(budget=0.0667, **settings):
     """The unit the example takes for the given arguments, and what it prints."""
-    args = SimpleNamespace(**({"frame_budget_unit": "host-trial", "rigid_backend": "mujoco-warp"} | settings))
+    args = SimpleNamespace(**({"rigid_backend": "mujoco-warp"} | settings))
     output = io.StringIO()
     with contextlib.redirect_stdout(output):
         return grasp_example.Example._frame_unit(args, budget), output.getvalue()
@@ -1849,7 +1849,7 @@ class ExampleUnitTests(unittest.TestCase):
             (_other(newton.viewer.ViewerRerun), {}),
             (window, {"frame_budget": 0.0}),
         ):
-            arguments = {"num_envs": 1, "frame_budget": 66.7, "test": False, "frame_budget_unit": "host-trial"}
+            arguments = {"num_envs": 1, "frame_budget": 66.7, "test": False}
             args = SimpleNamespace(**(arguments | settings | {"rigid_backend": "mujoco-warp"}))
             output = io.StringIO()
             with self.subTest(viewer=type(viewer).__name__, settings=settings), contextlib.redirect_stdout(output):
@@ -1857,8 +1857,7 @@ class ExampleUnitTests(unittest.TestCase):
                 self.assertIsNone(budget)
                 self.assertEqual(grasp_example.Example._frame_unit(args, budget), "attempt")
                 self.assertEqual(output.getvalue(), "")
-                # The same without the two options in the arguments: they are the defaults.
-                del args.frame_budget_unit
+                # The same without the budget in the arguments: it is the default.
                 if args.frame_budget:
                     del args.frame_budget
                 budget = grasp_example.Example._frame_budget(viewer, args)
@@ -1866,9 +1865,7 @@ class ExampleUnitTests(unittest.TestCase):
                 self.assertEqual(grasp_example.Example._frame_unit(args, budget), "attempt")
                 self.assertEqual(output.getvalue(), "")
         # A budget other than the default that is not used says so in its own line; the unit adds none.
-        args = SimpleNamespace(
-            num_envs=1, frame_budget=50.0, test=True, frame_budget_unit="host-trial", rigid_backend="mujoco-warp"
-        )
+        args = SimpleNamespace(num_envs=1, frame_budget=50.0, test=True, rigid_backend="mujoco-warp")
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
             budget = grasp_example.Example._frame_budget(window, args)
@@ -1876,17 +1873,15 @@ class ExampleUnitTests(unittest.TestCase):
         self.assertEqual(output.getvalue().count("\n"), 1)
         self.assertIn("Frame budget not used: the self-test", output.getvalue())
         self.assertNotIn("unit", output.getvalue())
-        # In the window, with a budget, on the GPU rigid backend, the unit is the option's.
-        args = SimpleNamespace(
-            num_envs=1, frame_budget=66.7, test=False, frame_budget_unit="host-trial", rigid_backend="mujoco-warp"
-        )
+        # In the window, with a budget, on the GPU rigid backend, the unit is the host trial.
+        args = SimpleNamespace(num_envs=1, frame_budget=66.7, test=False, rigid_backend="mujoco-warp")
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
             budget = grasp_example.Example._frame_budget(window, args)
             self.assertEqual(grasp_example.Example._frame_unit(args, budget), "host-trial")
         self.assertIn("Frame budget unit host-trial:", output.getvalue())
 
-    def test_the_example_takes_its_unit_from_the_option(self):
+    def test_the_example_takes_its_unit_from_where_its_budget_is_in_use(self):
         pool = SimpleNamespace(
             observe=lambda: [{"diagnostics": {"physical_time_s": 0.0}}],
             geometry=lambda: {},
@@ -1908,18 +1903,13 @@ class ExampleUnitTests(unittest.TestCase):
             contextlib.redirect_stdout(io.StringIO()),
         ):
             for viewer, settings, expected in (
-                # Arguments without the option have the example's default unit.
                 (_GLViewer(), {}, "host-trial"),
-                (_GLViewer(), {"frame_budget_unit": "attempt"}, "attempt"),
-                (_GLViewer(), {"frame_budget_unit": "host-trial"}, "host-trial"),
-                (_GLViewer(), {"frame_budget_unit": "host-trial", "frame_budget": 0.0}, "attempt"),
-                (_GLViewer(), {"frame_budget_unit": "host-trial", "rigid_backend": "native"}, "attempt"),
-                (_GLViewer(), {"frame_budget_unit": "host-trial", "tool_tissue_contact": "swept"}, "host-trial"),
-                (_GLViewer(), {"frame_budget_unit": "host-trial", "tool_tissue_contact": "off"}, "host-trial"),
-                (_GLViewer(), {"frame_budget_unit": "host-trial", "tool_tissue_contact": True}, "attempt"),
-                (_GLViewer(), {"frame_budget_unit": "host-trial", "tool_tissue_contact": "first"}, "attempt"),
-                (_GLViewer(), {"frame_budget_unit": "host-trial", "test": True}, "attempt"),
-                (SimpleNamespace(num_frames=10), {"frame_budget_unit": "host-trial"}, "attempt"),
+                (_GLViewer(), {"frame_budget": 0.0}, "attempt"),
+                (_GLViewer(), {"rigid_backend": "native"}, "attempt"),
+                (_GLViewer(), {"tool_tissue_contact": "swept"}, "host-trial"),
+                (_GLViewer(), {"tool_tissue_contact": "off"}, "host-trial"),
+                (_GLViewer(), {"test": True}, "attempt"),
+                (SimpleNamespace(num_frames=10), {}, "attempt"),
             ):
                 with self.subTest(viewer=type(viewer).__name__, settings=settings):
                     example = grasp_example.Example(viewer, args(**settings))
@@ -1934,9 +1924,8 @@ class ExampleUnitTests(unittest.TestCase):
         self.assertIn("native rigid backend", text)
         self.assertIn("contacts and the clock of a trial", text)
         # Arguments without a backend (other drivers) mean the GPU backend, as for the scene's configuration.
-        args = SimpleNamespace(frame_budget_unit="host-trial")
         with contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(grasp_example.Example._frame_unit(args, 0.0667), "host-trial")
+            self.assertEqual(grasp_example.Example._frame_unit(SimpleNamespace(), 0.0667), "host-trial")
 
     def test_the_swept_contact_between_the_tools_and_the_tissue_takes_the_unit(self):
         # The swept contact changes its state only in the step after an acceptance (ContactHostTrialTests).
@@ -1952,49 +1941,36 @@ class ExampleUnitTests(unittest.TestCase):
         self.assertEqual(_unit(rigid_backend="native", tool_tissue_contact="swept")[0], "attempt")
         # The example's own parser gives the value that the rule reads.
         parser = grasp_example.Example.create_parser()
-        args = parser.parse_args(["--tool-tissue-contact", "swept", "--frame-budget-unit", "host-trial"])
+        args = parser.parse_args(["--tool-tissue-contact", "swept"])
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(grasp_example.Example._frame_unit(args, 0.0667), "host-trial")
 
-    def test_the_first_version_contact_between_the_tools_and_the_tissue_keeps_the_attempt(self):
-        # The first-version law (the option without a value, or "first"), and any value the rule does not
-        # know: no run has left an attempt open with it.
+    def test_the_first_version_contact_is_not_a_contact_of_the_example(self):
+        # The first-version law is a law of the scene; the example hands on the swept law or none,
+        # and refuses any other value when it makes the arguments of its scene.
         for value in (True, "first", "penalty", "on"):
-            with self.subTest(value=value):
-                unit, text = _unit(tool_tissue_contact=value)
-                self.assertEqual(unit, "attempt")
-                self.assertIn("unit host-trial not used, the unit stays the attempt", text)
-                self.assertIn("first-version contact between the tools and the tissue", text)
-        parser = grasp_example.Example.create_parser()
-        for arguments in (["--tool-tissue-contact"], ["--tool-tissue-contact", "first"]):
-            args = parser.parse_args([*arguments, "--frame-budget-unit", "host-trial"])
-            with contextlib.redirect_stdout(io.StringIO()):
-                self.assertEqual(grasp_example.Example._frame_unit(args, 0.0667), "attempt")
-        # The unit attempt says nothing, with or without contact.
-        self.assertEqual(_unit(frame_budget_unit="attempt", tool_tissue_contact=True), ("attempt", ""))
-        self.assertEqual(_unit(frame_budget_unit="attempt", tool_tissue_contact="swept"), ("attempt", ""))
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "'swept' or 'off'"):
+                grasp_example.Example._coupling(SimpleNamespace(tool_tissue_contact=value))
 
-    def test_the_unit_is_host_trial_by_default_and_other_values_are_refused(self):
+    def test_the_unit_is_no_option_and_follows_from_the_budget_and_the_rigid_backend(self):
         parser = grasp_example.Example.create_parser()
-        self.assertEqual(grasp_example.FRAME_BUDGET_UNIT, "host-trial")
-        self.assertEqual(parser.parse_args([]).frame_budget_unit, grasp_example.FRAME_BUDGET_UNIT)
-        self.assertEqual(parser.get_default("frame_budget_unit"), grasp_example.FRAME_BUDGET_UNIT)
-        self.assertEqual(parser.parse_args(["--frame-budget-unit", "host-trial"]).frame_budget_unit, "host-trial")
-        # The switch back to whole attempts.
-        self.assertEqual(parser.parse_args(["--frame-budget-unit", "attempt"]).frame_budget_unit, "attempt")
-        # An example that has not been constructed has the attempt: the constructor decides where the unit applies.
-        self.assertEqual(grasp_example.Example.frame_unit, "attempt")
-        for value in ("trial", "substep", "host_trial"):
+        # The unit attempt was an option while both units were run; the host trial covers it (a
+        # step returns between two attempts as well), so the example has no setting for the unit.
+        self.assertNotIn("frame_budget_unit", vars(parser.parse_args([])))
+        self.assertFalse(hasattr(grasp_example, "FRAME_BUDGET_UNIT"))
+        for value in ("attempt", "host-trial"):
             with (
                 self.subTest(value=value),
                 contextlib.redirect_stderr(io.StringIO()),
                 self.assertRaises(SystemExit),
             ):
                 parser.parse_args(["--frame-budget-unit", value])
-            with self.assertRaisesRegex(ValueError, "'attempt' or 'host-trial'"):
-                _unit(frame_budget_unit=value)
-        # Arguments without the option (other drivers) have the example's default, as the parser's
-        # namespace has it: host-trial with a budget in use, and without one the attempt and no line.
+        # A setting of that name in the arguments of another driver selects nothing.
+        self.assertEqual(_unit(frame_budget_unit="attempt")[0], "host-trial")
+        # An example that has not been constructed has the attempt: the constructor decides where the unit applies.
+        self.assertEqual(grasp_example.Example.frame_unit, "attempt")
+        # Arguments of another driver and the parser's namespace give the same: host-trial with a
+        # budget in use, and without one the attempt and no line.
         for budget, expected in ((0.0667, "host-trial"), (None, "attempt")):
             results = []
             for args in (SimpleNamespace(), parser.parse_args([])):

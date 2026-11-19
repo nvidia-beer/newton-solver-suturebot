@@ -1107,6 +1107,9 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         self.assertEqual(bite["initial_grasp"], grasp_example.Example.deep_bite_grasp)
 
     def test_viewer_defaults_run_the_whole_sequence_on_the_gpu_backend(self):
+        import json
+        from pathlib import Path
+
         parser = grasp_example.Example.create_parser()
         args = parser.parse_args([])
         self.assertEqual(args.rigid_backend, "mujoco-warp")
@@ -1126,8 +1129,12 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         self.assertEqual((example._pull_through(alone), example._tip_lift_height(alone)), (False, 0.0))
         # An argument set without the options (a caller of the class) has neither.
         self.assertEqual((example._pull_through(self.args()), example._tip_lift_height(self.args())), (False, 0.0))
-        # 40 s at 60 Hz: the measured sequence ends before 30 s of simulated time.
+        # 40 s at 60 Hz: the measured sequence ends before 32 s of simulated time, and the clip
+        # recipe records those 32 s with the self-test, which asks for the procedure to be done.
         self.assertEqual(args.num_frames, 2400)
+        recipe = json.loads((Path(__file__).parents[1] / "docs/videos.json").read_text())["fem_needle_grasp"]
+        self.assertEqual((recipe["frames"], recipe["fps"], recipe["args"]), (1920, 60, ["--test"]))
+        self.assertLess(recipe["poster_frame"], recipe["frames"])
         self.assertEqual(parser.parse_args(["--lift-height", "0"]).lift_height, 0)
         self.assertEqual(parser.parse_args(["--rigid-backend", "native"]).rigid_backend, "native")
 

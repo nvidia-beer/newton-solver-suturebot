@@ -588,16 +588,12 @@ class ExampleSweptOptionTests(unittest.TestCase):
         self.assertEqual(
             coupling(parser.parse_args(["--tool-tissue-contact", "swept"])), (*off, "--tool-tissue-contact", "swept")
         )
-        # Without a value, or with "first": the first-version law, as the option selected it before.
-        for arguments in (["--tool-tissue-contact"], ["--tool-tissue-contact", "first"]):
-            self.assertEqual(coupling(parser.parse_args(arguments)), (*off, "--tool-tissue-contact"))
+        # The first-version law is a law of the scene, not of the example (the wrong values below).
         for arguments in (
             ["--tool-tissue-contact", "off"],
             ["--tool-tissue-contact", "swept", "--no-tool-tissue-contact"],
         ):
             self.assertEqual(coupling(parser.parse_args(arguments)), off)
-        # The option before another option takes no value from it.
-        self.assertIs(parser.parse_args(["--tool-tissue-contact", "--overview"]).tool_tissue_contact, True)
         # The default of the example is this law, as the parser and a namespace without the setting take it.
         self.assertEqual(grasp_example.TOOL_TISSUE_CONTACT, "swept")
         self.assertEqual(parser.parse_args([]).tool_tissue_contact, "swept")
@@ -608,14 +604,20 @@ class ExampleSweptOptionTests(unittest.TestCase):
         self.assertEqual(scene_parser.parse_args(["--tool-tissue-contact", "swept"]).tool_tissue_contact, "swept")
         self.assertIs(scene_parser.parse_args(["--tool-tissue-contact"]).tool_tissue_contact, True)
         self.assertIs(scene_parser.parse_args([]).tool_tissue_contact, False)
-        for wrong in (["--tool-tissue-contact", "sweep"], ["--tool-tissue-contact", "on"]):
-            for candidate in (parser, scene_parser):
-                with self.assertRaises(SystemExit), open(os.devnull, "w") as sink:
-                    stderr, os.sys.stderr = os.sys.stderr, sink
-                    try:
-                        candidate.parse_args(wrong)
-                    finally:
-                        os.sys.stderr = stderr
+        refused = [
+            (candidate, ["--tool-tissue-contact", value])
+            for value in ("sweep", "on")
+            for candidate in (parser, scene_parser)
+        ]
+        # The first-version law (the option without a value, or "first") is a law of the scene only.
+        refused += [(parser, ["--tool-tissue-contact", *rest]) for rest in ([], ["first"], ["--overview"])]
+        for candidate, wrong in refused:
+            with self.assertRaises(SystemExit), open(os.devnull, "w") as sink:
+                stderr, os.sys.stderr = os.sys.stderr, sink
+                try:
+                    candidate.parse_args(wrong)
+                finally:
+                    os.sys.stderr = stderr
 
 
 if __name__ == "__main__":

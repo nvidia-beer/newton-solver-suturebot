@@ -40,6 +40,17 @@ mean trial moves by the share that the excess has in all the trials measured. Wh
 is calls, not time between two pictures: fewer attempts start as a further attempt of a
 call, at worst none, and every call still runs one.
 
+What in the bound is a choice, and not a maximum that the run has measured:
+
+- ``trial_limit * per_trial``, the least a loop is taken to be. It is made of a mean, so a
+  loop of ``trial_limit`` trials can take longer (it is ``loop`` from then on).
+- ``loops``: the next substep is taken to repeat the loops of the last one, a prediction.
+- No maximum is forgotten before the reset, as said above.
+
+Measured in the window of the grasp example (2026-11-17, ``docs/usage.md``): after the first
+attempt of the run the bound, the longest observation and the longest drawing were together
+over the budget of 66.7 ms, so every call ran one attempt and none started a second one.
+
 That is the unit ``attempt``. With the unit ``host-trial`` a driver may also stop inside an
 attempt, at one kind of place: between two host-controlled trials, the trials that a loop
 runs under the control of the host at a needle surface event. The attempt then stays open,
@@ -56,11 +67,9 @@ class SubstepBound:
     """Bound [s] for one more substep, from the substeps measured since the scene was reset.
 
     Attributes:
-        substeps: Substeps measured.
+        substeps: Substeps measured: a count, which the bound does not read.
         trials: Trials they evaluated, rejected attempts included.
         loop_seconds: Host-clock time [s] of their trial loops.
-        seconds: Host-clock time [s] of the substeps, each from its start to the start of the
-            next one or to the end of its frame.
         last_loops: Trial loops of the substep measured last.
         longest_loop: Longest time [s] of a trial loop; of a substep with several loops, the
             mean of its loops.
@@ -71,19 +80,21 @@ class SubstepBound:
         self.substeps = 0
         self.trials = 0
         self.loop_seconds = 0.0
-        self.seconds = 0.0
         self.last_loops = 1
         self.longest_loop = 0.0
         self.longest_outside = 0.0
 
     def add(self, trials, loops, loop_seconds, seconds):
-        """Count one substep; a stretch of time without a trial is not a substep and is left out."""
+        """Count one substep; a stretch of time without a trial is not a substep and is left out.
+
+        ``seconds`` is its host-clock time [s], from its start to the start of the next one or to
+        the end of its frame.
+        """
         if trials < 1:
             return
         self.substeps += 1
         self.trials += int(trials)
         self.loop_seconds += float(loop_seconds)
-        self.seconds += float(seconds)
         self.last_loops = max(int(loops), 1)
         self.longest_loop = max(self.longest_loop, float(loop_seconds) / self.last_loops)
         self.longest_outside = max(self.longest_outside, float(seconds) - float(loop_seconds))
@@ -92,11 +103,6 @@ class SubstepBound:
     def per_trial(self):
         """Mean time of a trial [s], or None before the first measured substep."""
         return self.loop_seconds / self.trials if self.trials else None
-
-    @property
-    def outside(self):
-        """Mean time of a substep outside its trial loops [s], or None before the first measured substep."""
-        return (self.seconds - self.loop_seconds) / self.substeps if self.substeps else None
 
     def bound(self, trial_limit):
         """Longest time [s] of a substep with the loops of the last one, each run to ``trial_limit`` trials; infinite before any measurement.

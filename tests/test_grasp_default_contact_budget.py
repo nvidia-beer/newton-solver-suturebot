@@ -1,15 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Defaults of fem_needle_grasp: the swept tool/tissue contact and a frame time budget of 66.7 ms, unit host-trial.
+"""Defaults of fem_needle_grasp: the swept tool/tissue contact and a frame time budget of 66.7 ms.
 
 The example turns both on. The parser of the scene and ``SutureSceneConfig`` keep the contact
 off, and a budget stays an argument of one call of ``LocalSutureScene.step``, so a caller that
 builds scenes through ``SutureSceneConfig.example_arguments`` gets what it got before.
 
 The runs on the device that the defaults rest on (2026-11-17, docs/usage.md) were made with the
-options written out: ``--tool-tissue-contact swept --frame-budget 66.7 --frame-budget-unit
-host-trial``. The first test is therefore that the default namespace of the parser is the
-namespace of those options; the second, that the three switches give back the namespace the
-parser gave before the defaults changed. The thread tracks (``--thread-tracks``, a default of
+options written out: ``--tool-tissue-contact swept --frame-budget 66.7`` and the unit of the
+budget that the example takes by itself today (host-trial, then an option). The first test is
+therefore that the default namespace of the parser is the namespace of those options; the
+second, that the two switches give back the namespace the parser gave before the defaults
+changed. The thread tracks (``--thread-tracks``, a default of
 the example and of the scene since the same day) are not a setting of this change: both
 namespaces have them as the parser has them, and the window runs of the round that measured
 the budget, made before the tracks, are today the runs with ``--no-thread-tracks`` (the third
@@ -30,12 +31,12 @@ from newton_solver_suturebot.examples.grasp import example_fem_needle_grasp as g
 from newton_solver_suturebot.examples.grasp._grasp_scene import GraspScene
 from newton_solver_suturebot.examples.grasp.parallel import LocalSutureScene, ParallelSutureScenes, SutureSceneConfig
 
-# The options of the runs on the device, and the three switches that turn the defaults off.
+# The options of the runs on the device, and the two switches that turn the defaults off.
 # NO_TRACKS: the pull of the runs of before the thread tracks (it ends at the needle's entry).
-WRITTEN_OUT = ("--tool-tissue-contact", "swept", "--frame-budget", "66.7", "--frame-budget-unit", "host-trial")
-SWITCHED_OFF = ("--no-tool-tissue-contact", "--frame-budget", "0", "--frame-budget-unit", "attempt")
-# What the parser gave for the three settings before they became defaults (with no arguments).
-BEFORE = {"tool_tissue_contact": False, "frame_budget": 0.0, "frame_budget_unit": "attempt"}
+WRITTEN_OUT = ("--tool-tissue-contact", "swept", "--frame-budget", "66.7")
+SWITCHED_OFF = ("--no-tool-tissue-contact", "--frame-budget", "0")
+# What the parser gave for the two settings before they became defaults (with no arguments).
+BEFORE = {"tool_tissue_contact": False, "frame_budget": 0.0}
 NO_TRACKS = ("--no-thread-tracks",)
 
 
@@ -63,7 +64,7 @@ def _plan(viewer, args):
 
 
 def _bare(**settings):
-    """Arguments of a caller of the class that names neither the contact nor the budget nor its unit."""
+    """Arguments of a caller of the class that names neither the contact nor the budget."""
     return SimpleNamespace(**({"num_envs": 1} | settings))
 
 
@@ -75,21 +76,19 @@ class DefaultNamespaceTests(unittest.TestCase):
         default = self.parser.parse_args([])
         written = self.parser.parse_args(list(WRITTEN_OUT))
         self.assertEqual(vars(default), vars(written))
-        self.assertEqual(
-            (default.tool_tissue_contact, default.frame_budget, default.frame_budget_unit),
-            ("swept", 66.7, "host-trial"),
-        )
+        self.assertEqual((default.tool_tissue_contact, default.frame_budget), ("swept", 66.7))
         # One source per default: the constants of the module.
-        self.assertEqual(
-            (grasp_example.TOOL_TISSUE_CONTACT, grasp_example.FRAME_BUDGET_MS, grasp_example.FRAME_BUDGET_UNIT),
-            ("swept", 66.7, "host-trial"),
-        )
+        self.assertEqual((grasp_example.TOOL_TISSUE_CONTACT, grasp_example.FRAME_BUDGET_MS), ("swept", 66.7))
         for name, constant in (
             ("tool_tissue_contact", grasp_example.TOOL_TISSUE_CONTACT),
             ("frame_budget", grasp_example.FRAME_BUDGET_MS),
-            ("frame_budget_unit", grasp_example.FRAME_BUDGET_UNIT),
         ):
             self.assertEqual(self.parser.get_default(name), constant)
+        # The unit of the budget is no setting: the example takes it from where the budget is in use.
+        self.assertNotIn("frame_budget_unit", vars(default))
+        self.assertFalse(hasattr(grasp_example, "FRAME_BUDGET_UNIT"))
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            self.parser.parse_args(["--frame-budget-unit", "attempt"])
         # The thread tracks are as the example has them, in both namespaces: on.
         self.assertIs(grasp_example.THREAD_TRACKS, True)
         self.assertIs(default.thread_tracks, True)
@@ -101,10 +100,10 @@ class DefaultNamespaceTests(unittest.TestCase):
         self.assertEqual(coupling(default)[-2:], ("--tool-tissue-contact", "swept"))
         self.assertEqual(GraspScene.create_parser().parse_args(list(coupling(default))).tool_tissue_contact, "swept")
 
-    def test_the_three_switches_give_the_namespace_of_before_the_defaults(self):
+    def test_the_two_switches_give_the_namespace_of_before_the_defaults(self):
         default = vars(self.parser.parse_args([]))
         off = vars(self.parser.parse_args(list(SWITCHED_OFF)))
-        # Every other setting is the default one; the three have the values the parser gave before.
+        # Every other setting is the default one; the two have the values the parser gave before.
         self.assertEqual(off, default | BEFORE)
         # Among the other settings: the thread tracks, as the example has them.
         self.assertIs(off["thread_tracks"], grasp_example.THREAD_TRACKS)
@@ -116,7 +115,6 @@ class DefaultNamespaceTests(unittest.TestCase):
         for arguments, name in (
             (["--no-tool-tissue-contact"], "tool_tissue_contact"),
             (["--frame-budget", "0"], "frame_budget"),
-            (["--frame-budget-unit", "attempt"], "frame_budget_unit"),
         ):
             with self.subTest(arguments=arguments):
                 self.assertEqual(vars(self.parser.parse_args(arguments)), default | {name: BEFORE[name]})
@@ -131,13 +129,13 @@ class DefaultNamespaceTests(unittest.TestCase):
         self.assertEqual(_plan(_Window(), self.parser.parse_args(list(SWITCHED_OFF))), (None, "attempt", []))
 
     def test_the_runs_of_before_the_thread_tracks_are_the_defaults_with_no_thread_tracks(self):
-        # The round's window runs (docs/usage.md) had the three options written out and a pull that
+        # The round's window runs (docs/usage.md) had the options written out and a pull that
         # ended at the entry. Today that is one more switch, which changes its own setting only.
         default = vars(self.parser.parse_args([]))
         round_runs = vars(self.parser.parse_args([*WRITTEN_OUT, *NO_TRACKS]))
         self.assertEqual(round_runs, default | {"thread_tracks": False})
         self.assertEqual(round_runs, vars(self.parser.parse_args(list(NO_TRACKS))))
-        # The example of before both changes: the three switches and that one.
+        # The example of before both changes: the two switches and that one.
         before = vars(self.parser.parse_args([*SWITCHED_OFF, *NO_TRACKS]))
         self.assertEqual(before, default | BEFORE | {"thread_tracks": False})
         # The scene is told so after the contact: the swept law with the pull to the entry.
@@ -150,16 +148,35 @@ class DefaultNamespaceTests(unittest.TestCase):
         self.assertIs(scene.parse_args(list(without_tracks)).thread_tracks, False)
         self.assertEqual(scene.parse_args(list(without_tracks)).tool_tissue_contact, "swept")
 
+    def test_the_first_version_law_is_a_law_of_the_scene_and_not_of_the_example(self):
+        # With it the default procedure stops at 6.4 s (docs/usage.md): the example offers swept or off.
+        for arguments in (["--tool-tissue-contact", "first"], ["--tool-tissue-contact"]):
+            with (
+                self.subTest(arguments=arguments),
+                contextlib.redirect_stderr(io.StringIO()),
+                self.assertRaises(SystemExit),
+            ):
+                self.parser.parse_args(arguments)
+        for value in (True, "first"):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "'swept' or 'off'"):
+                grasp_example.Example._coupling(SimpleNamespace(tool_tissue_contact=value))
+        # The scene keeps both laws for a caller of SutureSceneConfig.example_arguments.
+        scene = GraspScene.create_parser()
+        self.assertIs(scene.parse_args(["--tool-tissue-contact"]).tool_tissue_contact, True)
+        self.assertEqual(scene.parse_args(["--tool-tissue-contact", "first"]).tool_tissue_contact, "first")
+
     def test_the_help_names_the_new_defaults_and_the_switches(self):
         text = " ".join(self.parser.format_help().split())
         self.assertIn("default: swept", text)
         self.assertIn("default: 66.7", text)
-        self.assertIn("host-trial (default)", text)
         self.assertIn("0 runs whole frames", text)
         self.assertIn("--no-tool-tissue-contact", text)
         # The statements of before the defaults changed are gone.
-        for stale in ("default: off", "0 runs whole frames (default)", "attempt (default)", "the tissue (the default)"):
+        for stale in ("default: off", "0 runs whole frames (default)", "the tissue (the default)"):
             self.assertNotIn(stale, text)
+        # Nor are the options that selected a way no longer in use.
+        for gone in ("--frame-budget-unit", "--event-search", "--event-oracle", "--event-budget", "'first'"):
+            self.assertNotIn(gone, text)
 
 
 class SceneKeepsItsDefaultsTests(unittest.TestCase):
@@ -196,7 +213,7 @@ class SceneKeepsItsDefaultsTests(unittest.TestCase):
 
 
 class BareArgumentsTests(unittest.TestCase):
-    """A namespace without the three settings (another driver of the class) behaves like the parser's default."""
+    """A namespace without the two settings (another driver of the class) behaves like the parser's default."""
 
     def setUp(self):
         self.parser = grasp_example.Example.create_parser()
@@ -254,7 +271,7 @@ class BareArgumentsTests(unittest.TestCase):
             example = grasp_example.Example(_Window(), args)
             example.close()
         self.assertEqual(example.frame_budget, 1.0e-3 * grasp_example.FRAME_BUDGET_MS)
-        self.assertEqual(example.frame_unit, grasp_example.FRAME_BUDGET_UNIT)
+        self.assertEqual(example.frame_unit, "host-trial")
         self.assertEqual(made[0].example_arguments[-2:], ("--tool-tissue-contact", "swept"))
 
 
@@ -272,7 +289,6 @@ class PrintedLinesTests(unittest.TestCase):
             (["--headless"], _Window(headless=True)),
             (["--num-envs", "2"], _Window()),
             (["--viewer", "null", "--rigid-backend", "native"], _null()),
-            (["--test", "--tool-tissue-contact", "first"], _Window()),
             # The defaults written out are the defaults.
             (["--viewer", "null", *WRITTEN_OUT], _null()),
             (["--test", *WRITTEN_OUT], _Window()),
@@ -294,16 +310,9 @@ class PrintedLinesTests(unittest.TestCase):
         self.assertEqual(len(lines), 2, lines)
         self.assertTrue(lines[1].startswith("Frame budget unit host-trial:"), lines)
         self.assertFalse([line for line in lines if "not used" in line])
-        # With the unit attempt the budget line is the only one.
-        budget, unit, lines = _plan(_Window(), self.parser.parse_args(["--frame-budget-unit", "attempt"]))
-        self.assertEqual((unit, lines), ("attempt", named))
 
     def test_a_unit_that_cannot_be_used_under_a_budget_in_use_names_its_reason(self):
-        for arguments, reason in (
-            (["--rigid-backend", "native"], "native rigid backend"),
-            (["--tool-tissue-contact", "first"], "first-version contact"),
-            (["--tool-tissue-contact"], "first-version contact"),
-        ):
+        for arguments, reason in ((["--rigid-backend", "native"], "native rigid backend"),):
             with self.subTest(arguments=arguments):
                 budget, unit, lines = _plan(_Window(), self.parser.parse_args(arguments))
                 self.assertAlmostEqual(budget, 0.0667, places=12)

@@ -709,12 +709,13 @@ class ExampleOptionTests(unittest.TestCase):
 
         parser = grasp_example.Example.create_parser()
         self.assertIs(parser.parse_args([]).tool_tissue_contact, grasp_example.TOOL_TISSUE_CONTACT)
-        on = grasp_example.Example._coupling(parser.parse_args(["--tool-tissue-contact"]))
         off = grasp_example.Example._coupling(parser.parse_args(["--no-tool-tissue-contact"]))
-        self.assertEqual(on, (*off, "--tool-tissue-contact"))
         self.assertNotIn("--tool-tissue-contact", off)
-        # The example's default is the swept law, not this one: an argument namespace without the
-        # setting takes it, as the parser does. The first-version law is the option without a value.
+        # The first-version law is a law of the scene: its argument without a value, after the
+        # arguments of the example. The example itself offers the swept law or none.
+        on = (*off, "--tool-tissue-contact")
+        # The example's default is the swept law: an argument namespace without the setting takes
+        # it, as the parser does.
         self.assertEqual(grasp_example.TOOL_TISSUE_CONTACT, "swept")
         default = grasp_example.Example._coupling(SimpleNamespace())
         self.assertEqual(default, (*off, "--tool-tissue-contact", "swept"))

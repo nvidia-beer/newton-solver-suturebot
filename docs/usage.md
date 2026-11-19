@@ -770,6 +770,18 @@ than 66.7 ms after the one before
 ([frame time budget](#frame-time-budget-default); `--frame-budget 0` runs
 whole frames).
 
+What in this example is a choice that runs selected, and not a value that
+follows from the model, is named in one place, the head of
+`examples/grasp/example_fem_needle_grasp.py`: the coupling tolerance and the
+trial budget, the two surface-event arguments it hands to its scene, and the
+response columns per step; each with the section here that has its runs. The
+options that selected a way the example no longer uses were taken out on
+2026-11-19: `--tool-tissue-contact first` (and the option without a value),
+`--event-search`, `--event-oracle`, `--event-budget` and
+`--frame-budget-unit`. A default run is the same as before: the example hands
+its scene the same arguments. The scene keeps its own arguments of those
+names for callers of `SutureSceneConfig.example_arguments`.
+
 No Isaac Lab, Gym, RL policy, training checkpoint or external dataset is required.
 The two dVRK tools use the bundled source trocar layout. The active needle holder
 pivots and slides through its fixed trocar; bounded IK commands its finite joint
@@ -813,6 +825,39 @@ there, so the tip leaves the tissue and enters it again in the middle of the
 bite. `--bite-length 0` restores the recorded stitch. The grasp at reset and the
 grasp at the tip are orientations that a scan of the tool's inverse kinematics
 found reachable from its port for this layout; they are not general.
+
+Which numbers of the procedure are derived and which are choices is written in
+one place: the table at the top of
+[_grasp_procedure.py](../src/newton_solver_suturebot/examples/grasp/_grasp_procedure.py)
+names every number that is not derived, with what chose it, and
+`tests/test_grasp_lift.py` holds each name to its value and its row.
+
+- Measured: the two grasps at the tip (twist, bite and whether the jaws are
+  exchanged, from scans of the tool's joints for this port layout and stitch;
+  the code holds the angles in radians rounded to four digits, -1.0472 and
+  0.5236 for -60 and 30 degrees) and the number of jaw capsules that one
+  controller call of the plan samples (one; it changes the number of calls,
+  not the plan).
+- Set by hand (no run on record compared them with another value): the arc
+  speed (3 mm/s) and its ramp (0.5 s), the least rise time of a lift (0.75 s)
+  and its hold (0.5 s), the part of the action rate limits that a lift or the
+  pull may use (80 %), the times after which the procedure stops (0.25 s
+  without both jaws on the needle or with the pull at its bound, 2 s without
+  a first grasp, 3 s for the jaws to close on the tip or the needle to come
+  to rest), the 3 mm of arc kept before the entry, the 6 mm from the palm
+  origin at which the jaws hold the needle, the 12 mm of the descent and the
+  0.6 rad opening of the regrasp, the resolution of the clearances (a
+  quarter radius, four times finer where it decides; stations half a wire
+  radius apart on the wire; six halvings at the end of a search) and the
+  one thread element of slack beyond the end of the pull.
+- Assumed, not measured: the creep of the needle between the plan of the
+  grasp and the closed jaws, twice the rest tolerance of the plan (it is part
+  of the reach margin below).
+- Derived where they are used: the time of a lift, the angle to which the arc
+  is driven on, the arc speed, the end and the bound of the pull, the reach
+  margin of the joints, the rest tolerance of the needle, the turning radius
+  of the tool (from the capsules and the wrist length of the tool model) and
+  every length of the way from the one grasp to the other.
 
 #### The way to the tip and the pull
 
@@ -881,6 +926,19 @@ of arc of the entry marker (two wire radii, the radius within which the
 needle/tissue interaction takes a point of the surface for the needle's
 opening), because a thread without a track is pressed back out through the
 surface behind a tail that goes in.
+
+A run with a window shows how far the thread is through the tissue: the side
+panel has one line per scene, for example
+`Thread: 5 of 8 eyelets threaded (passage 1: 4 of 4, passage 2: 1 of 4), 4.6 mm inside the tissue`:
+the eyelets that the thread goes through of those that the needle's track has
+made, the same for every passage, and the rest length of thread inside the
+tissue. All of it comes from `thread_diagnostics` of the observation that a
+drawn frame has anyway: no array is read from the device for it. That report
+counts the threaded eyelets and does not say which they are. The line counts
+them to the passages in the order in which the needle made the eyelets, which
+is the order in which the tail passes them; an eyelet that the tail went past
+without threading it would be counted to the wrong passage, while the count
+of all stays right.
 
 For the pull the jaws take the tip with another grasp than the lift by the tip
 did: twist -60 degrees about the needle tangent, bite 30 degrees, and the tool
@@ -974,18 +1032,21 @@ the node. That is unchanged and is an expected failure in
 0.0095 mN).
 
 `loose_thread_coordinates` now lays the spare thread on the pad, behind the
-stitch (without the tool/tissue contact it has stayed there in every run;
-with it, in three runs of four: the end of this paragraph). Every node lies a
+stitch (how often it has stayed there, why not always, and what was changed
+on 2026-11-19: the end of this paragraph). Every node lies a
 thread radius above the pad's surface under it. The
 thread comes down two radii of the needle's circle (18.9 mm) straight behind
 the entry, on the line from the exit to the entry: that is the way it leaves
 its entry hole in the pull, so it is drawn along its own length, and no point
 of the needle on its circle through the entry comes that far. From there it
-goes to the nearest side of the pad's border that is not before that point
-and follows the border away from the stitch, one elasto-gravity length of the
-thread inside the pad's box and round its corners with that radius,
-`(E I / (rho A g))^(1/3)` = 10.0 mm: a thread on the pad holds a bend of that
-radius and is bent aside by a push over about that length. The lead from the
+takes one elasto-gravity length of the thread, `(E I / (rho A g))^(1/3)` =
+10.0 mm, towards the nearest side of the pad's border that is not before that
+point, turns behind the stitch again and runs straight on to the border,
+which it follows away from the stitch, that length inside the pad's box and
+round its corners with that radius: a thread on the pad holds a bend of that
+radius and is bent aside by a push over about that length. (Until 2026-11-19
+it went from that point straight on to the nearest side; the runs of
+2026-11-17 below are on that layout.) The lead from the
 tail is the one of three smooth curves that stays a thread radius clear of
 the needle's and the tools' capsules and bends the thread least. Three
 self-tests without the contact on that layout (2026-11-17, 19:25 to 19:28,
@@ -1027,8 +1088,72 @@ is at -4.2 to -5.0 mm (near the end of the pull the thread was a straight
 line from the entry to the edge, with 9 mN on the needle; it relaxed after
 the stop like the others). In the other three
 default runs and in the two runs without the contact no node is beyond the
-edge at any frame. Four default runs are not a rate; why the lead falls the
-one way or the other was not looked into.
+edge at any frame.
+
+Why, and the change of 2026-11-19. Three more default self-tests on that
+layout (15:21 to 15:25, the three together on the GPU, the thread and the
+tools' capsule forces on it read in every frame; `h1b_base_1` to `_3` under
+`/tmp/suturebot-gpu-work/grasp_small/thread/out/`, a work folder outside
+this repository): two stayed on the pad, in the third the lead again came
+down as the open arc and 46 mm of thread hung over the edge at the end
+(lowest node -20.7 mm). That is 2 of 7 default runs. The records rule out
+the tools and the tissue: up to frame 417 the rigid bodies of the three runs
+are equal to under 1 µm, up to frame 376 the tissue nodes too, and in the
+run that failed no tool capsule touched the thread at any frame. The thread
+alone differs, from the first frame, and by 0.2 to 1.3 mm from frame 10 on.
+What happened in it: the lead did not come down at reset. From the sixth
+frame to frame 350 it stood on the pad as an arch (nodes 14 to 20 about 8 mm
+above the plate), its foot held in its direction by the leg that ran on from
+it to the border. It came down when the tail's tangent had turned through
+the vertical (frames 350 to 420). In the runs that made the loop the turning
+tail lifted the arch once more, to 16 mm at frames 353 to 367, and carried
+it over the top; in the run that failed the arch was not lifted, it sank
+from frame 250 on and was laid down as the open arc, which the pull then
+unbent against the leg and so pushed the row at the border over the edge.
+Which of the two is decided by where the arch's foot rests, to about a
+millimetre, and that is rounding on the device grown in the first twelve
+frames. The
+same fork appears on the CPU with the tool/tissue contact absent: the
+scene's own thread alone under the recorded body poses, the tissue at rest,
+its start moved by noise of 1 µm (13 replays) or 0.1 mm (8): 2 of the 21 end
+with 26 and 27 nodes over the edge. So the contact is not the cause, and the
+five runs without it that stayed on the pad do not show otherwise (a chance
+of 0.19 at 2 in 7).
+
+`border_walk` now cuts the leg to one turn radius and turns the thread
+behind the stitch from there (the line reaches the border 27 mm further
+north; the lead at reset is the same to 0.14 mm). Two other rules were
+tried on the replay and dropped: a turn radius from the thread's friction
+instead of its weight, `(E I / (mu rho A g))^(1/3)` = 17.1 mm, and a walk
+straight behind the stitch with no leg; both put the lead where the tools
+work, and a tool lifts it and throws it over the edge (2 of 2 replays
+each). With the short
+leg the foot of the lead gives way: the lead lies down within 13 frames of
+reset, in the same shape every time, and the loop forms from it as the tail
+turns. Measured: 58 of 58 replays end on the pad, 44 with noise of 1 µm, 8
+with 0.1 mm and 6 under the body poses of five other recorded runs (the loop
+encloses 126 to 135 mm² at the end of the insertion in every one; the old
+layout 103 to 150 mm², and the two open arcs), and three default
+self-tests (15:56 to 16:00, as above; `h2_tree_1` to `_3`) pass with 2
+entries, 2 exits and 8 of 8 eyelets threaded, done at frames 1839 to 1857,
+no capture and no module load after start-up: no node is beyond the plate's
+edge at any frame (the nearest 4.4, 5.2 and 4.5 mm inside, the lowest on the
+plate), the three threads differ by 4.6 mm at most in the whole run and by
+2.6 mm from frame 30 to frame 500 (before: 23 mm by frame 451 and 29 mm in
+the pull), no element is stretched at the end (1.0007 at most),
+the thread is within 0.002 mm of the entry's eyelet and 0.033 mm of every
+eyelet, and it loads the needle with 11.4 to 12.4 mN at most in the pull
+(11.4 to 11.8 mN in the three runs of the same day before the change) and
+0.5 to 1.8 mN at the last frame. New with it: the lead now lies under the
+first tool's jaw when the lift begins, and the jaw presses on elements 16 to
+19 with 1.7 to 2.3 mN at frames 435 to 440 (0.2 mN at most before); the
+thread stays where it is. Unchanged: in the first 30 frames the row at the
+border slides towards the edge where it lies on the foot of a mound, from
+7.7 mm inside to 4.7 to 5.4 mm, with either layout; and a thread that does
+get over an edge is still held there (above). Noise of 1 mm, which
+stretches the elements, throws thread over the edge in the first 20 frames
+with either layout (it ends there in 2 of 8 replays, and in 1 of 8 with the
+old one). Three runs and 58 replays are no rate either.
 
 Since the same day the swept tool/tissue contact is the example's default
 ([below](#tooltissue-contact)). Two self-tests with no option for it
@@ -1204,6 +1329,12 @@ defaults to 2400 frames (40 s of simulated time); the sequence ends before 32 s
 (at 30.4 to 30.9 s with the pull through the tissue). With a lift, `--test`
 fails a run of the default speed and settling time that ends while the
 procedure is under way: a shorter run (`--num-frames`) has to reach its end.
+The clip recipe (`docs/videos.json`) therefore records 1920 frames with
+`--test`: those 32 s, so the pull, the hold of 0.5 s that ends the procedure
+and at least 1 s of the held needle are inside. The stages end on what the
+simulation reaches, not at fixed times, so the length is that bound and not a
+sum of stage times. The clip in `docs/media` is an earlier one of 1700 frames
+(the lift by the tip); it has not been recorded again.
 
 Validate one scene, then display more independent scenes:
 
@@ -1244,22 +1375,23 @@ cache are described in the [method](method.md#physical-distal-grasp-and-worker-o
 uv run --locked python -m newton_solver_suturebot.examples fem_needle_grasp --tool-tissue-contact swept
 # Without the contact, also `--tool-tissue-contact off`: the tools pass through the tissue
 uv run --locked python -m newton_solver_suturebot.examples fem_needle_grasp --no-tool-tissue-contact
-# With the first-version law, also `--tool-tissue-contact first` (the default procedure then stops at 6.4 s, see below):
-uv run --locked python -m newton_solver_suturebot.examples fem_needle_grasp --tool-tissue-contact
 ```
 
-The option takes the law as its value: `swept` (the default of this example),
-`first` (also the option without a value) or `off` (also
+The option of the example takes `swept` (its default) or `off` (also
 `--no-tool-tissue-contact`). `GraspScene`, `SutureSceneConfig` and
 `WorkerThread` keep the contact off; only this example turns it on, by handing
 `--tool-tissue-contact swept` to its scene (`TOOL_TISSUE_CONTACT` in the
 example). A Python caller that builds scenes through `SutureSceneConfig`
 therefore has no contact unless it asks for one, with
 `"--tool-tissue-contact"` (first-version law) or `"--tool-tissue-contact",
-"swept"` among `SutureSceneConfig.example_arguments`. The example
-`fem_tool_tissue` runs both laws with the tools and the tissue alone, on a
-scripted path ([Tool and tissue contact rig](#tool-and-tissue-contact-rig)).
-The first-version law is described first, the law on the sweep of the capsules
+"swept"` among `SutureSceneConfig.example_arguments`. The scene has two laws.
+The first-version law is a law of the scene only: it was an option of this
+example (`--tool-tissue-contact first`, or the option without a value) until
+2026-11-19 and was taken out because the default procedure stops with it at
+6.4 s (below). The example `fem_tool_tissue` runs both laws with the tools and
+the tissue alone, on a scripted path
+([Tool and tissue contact rig](#tool-and-tissue-contact-rig)). The
+first-version law is described first, the law on the sweep of the capsules
 [after it](#on-the-sweep-of-the-capsules).
 
 Why the swept law is the default, and what it costs. With the swept law every
@@ -1701,14 +1833,18 @@ example. Python callers opt in with
 
 ### Surface events on the device and response columns per step (default)
 
-Four options decide what a coupled step of the GPU rigid backend does at a
-surface event (a puncture, an entry or an exit of the needle tip) and how many
-response columns it solves after the track has grown. The insertion example,
-`SutureSceneConfig`, `GraspScene`, `NeedleTissueCoupler` and
+Four arguments of the scene decide what a coupled step of the GPU rigid backend
+does at a surface event (a puncture, an entry or an exit of the needle tip) and
+how many response columns it solves after the track has grown. The insertion
+example, `SutureSceneConfig`, `GraspScene`, `NeedleTissueCoupler` and
 `AffineGuessManager` keep all four off, so Python callers are unaffected. This
-example switches three of them on.
+example switches three of them on: the two surface-event arguments are fixed
+in the example (`SURFACE_EVENTS`), and the response columns per step are its
+option `--response-basis-nodes`. Until 2026-11-19 the example had the three
+event arguments as options of its own; they selected the scene's way, which
+the example does not use, and were taken out. The scene keeps them.
 
-| Option | Scene | This example | The value that is not the scene's |
+| Argument of the scene | Scene | This example | The value that is not the scene's |
 |---|---|---|---|
 | `--event-search` | `tip-path` | `puncture` | `puncture`: the GPU trials also continue past a contact force at the puncture threshold (`NeedleTissueCoupler(search_past_puncture=True)`) |
 | `--event-oracle` | `restart` | `device-trial` | `device-trial`: the host oracle evaluates the last GPU trial as it stands instead of solving it again (`oracle_at_device_trial=True`) |
@@ -1716,13 +1852,16 @@ example switches three of them on.
 | `--response-basis-nodes` | `0` | `1` | `n`: a coupled step solves the response columns of at most `n` support nodes (`AffineGuessManager(nodes_per_attempt=n)`); `0`: every missing column in the step after the track has grown |
 
 ```bash
-# The example's defaults, written out:
-uv run --locked python -m newton_solver_suturebot.examples fem_needle_grasp \
-    --event-search puncture --event-oracle device-trial --event-budget loop --response-basis-nodes 1
-# All four as the scene has them:
-uv run --locked python -m newton_solver_suturebot.examples fem_needle_grasp \
-    --event-search tip-path --event-oracle restart --event-budget loop --response-basis-nodes 0
+# The example's default, written out (the surface events are not an option of the example):
+uv run --locked python -m newton_solver_suturebot.examples fem_needle_grasp --response-basis-nodes 1
+# The response columns as the scene has them, every missing column in one step:
+uv run --locked python -m newton_solver_suturebot.examples fem_needle_grasp --response-basis-nodes 0
 ```
+
+A caller of the scene gets the scene's way of all four by naming them after
+the example's arguments (a later argument replaces an earlier one), as
+`tests/test_needle_event_search.py` does for its comparison on the device:
+`("--event-search", "tip-path", "--event-oracle", "restart", "--response-basis-nodes", "0")`.
 
 What they are for. With the scene's settings a GPU trial whose contact force
 touches the puncture threshold ends the GPU trials, and the host oracle repeats
@@ -1805,11 +1944,11 @@ and 212 took 71 to 87 ms and 64 to 71 ms.
   took 60.8 and 61.5 ms, frame 316 81.1 ms and frame 317 67.1 ms, and 15
   intervals of the lowering were over 66.7 ms.
 
-`--event-budget step` is the option for the event step that uses the budget
-twice: with it a search that the budget ended is kept at the oracle's
+`--event-budget step` is the argument of the scene for the event step that
+uses the budget twice: with it a search that the budget ended is kept at the oracle's
 evaluation of its kept trial, so the step ends after one budget. It changes
 which event steps are accepted unconverged and at which trial, and it was not
-measured on this state of the example, so it stays off. In three runs of all
+measured on this state of the example, so the example does not hand it on. In three runs of all
 four options on the prototype of this change (the same night) the frame of
 the third exit took 48 to 82 ms and frame 316 took 67 to 75 ms.
 
@@ -1824,18 +1963,15 @@ without loading a basis (15). Python callers opt in with
 ### Frame time budget (default)
 
 ```bash
-# The example's defaults, written out: plan for a picture of the window no later than 66.7 ms
+# The example's default, written out: plan for a picture of the window no later than 66.7 ms
 # after the one before (15 frames/s); a step may also return between two host-controlled trials:
-uv run --locked python -m newton_solver_suturebot.examples fem_needle_grasp \
-    --frame-budget 66.7 --frame-budget-unit host-trial
+uv run --locked python -m newton_solver_suturebot.examples fem_needle_grasp --frame-budget 66.7
 # Whole frames, as the example ran before the budget was its default:
 uv run --locked python -m newton_solver_suturebot.examples fem_needle_grasp --frame-budget 0
-# The budget with the attempt as its unit: a step returns only between two attempts
-uv run --locked python -m newton_solver_suturebot.examples fem_needle_grasp --frame-budget-unit attempt
 ```
 
 The budget is a default of this example since 2026-11-17 (`FRAME_BUDGET_MS`
-and `FRAME_BUDGET_UNIT` in the example): no picture of the window is to come
+in the example): no picture of the window is to come
 later than 66.7 ms after the one before. It is used where it was used as an
 option, with one scene in the window of the OpenGL viewer; every other run
 keeps whole frames (the last paragraphs of this section). `LocalSutureScene`,
@@ -1935,6 +2071,12 @@ attempts start as a second attempt of a step, at worst none, and every step
 still runs one. Nothing is forgotten after a time: a worst case that the plan
 forgets can come back as a late picture.
 
+What in this plan is a choice, and not a maximum that the run has measured, is
+listed in one place, the module text of `_src/utils/frame_budget.py`: the mean
+trial that stands for a loop of the trial limit until one has been measured,
+the number of loops taken for the next substep, and that no maximum is
+forgotten before a reset.
+
 **What the worst case costs: replayed here, measured in one window run
 below.** The replay was made before any window run with this plan. Replayed
 on the attempts that five window runs recorded
@@ -1974,9 +2116,14 @@ The budget needs the
 [trial budget](#coupling-tolerance-and-trial-budget-default): without one a
 loop may run to its limit of 160 trials and every step runs a single attempt.
 
-**The unit: `host-trial` (default) or `attempt`.** `--frame-budget-unit` names
-the smallest part of a frame after which a step with a budget may return.
-With `attempt` that is one attempt of a coupled step, as described above. With
+**The unit: `host-trial`, or `attempt` where that cannot be used.** The unit
+is the smallest part of a frame after which a step with a budget may return.
+The example takes it by itself (`Example._frame_unit`); until 2026-11-19 it
+was an option, `--frame-budget-unit`, whose other value `attempt` selected the
+earlier unit. That option was taken out: `host-trial` returns between two
+attempts as well, and the one window run with `attempt` (the table below)
+showed no interval that it avoids. With `attempt` the part is one attempt of
+a coupled step, as described above. With
 `host-trial` a step may also return inside an attempt, at one kind of place:
 between two trials of a host-controlled loop (the loop that the host controls
 where the needle meets, enters or leaves the tissue surface). Before every
@@ -1993,12 +2140,10 @@ measured yet. A trial loop on the device is one piece under either unit.
   trials, without the tool/tissue contact and with the swept one
   (`tests/test_host_trial_budget.py`).
 - Where `host-trial` is not used: it needs a frame budget in use (the last
-  paragraphs of this section), the GPU rigid backend (on the native backend
+  paragraphs of this section) and the GPU rigid backend (on the native backend
   the rigid data hold a trial while an attempt is open, and the observation
-  would read the jaw contact force and the native clock of that trial) and
-  `--tool-tissue-contact` `swept` or off. With the first-version law (`first`)
-  no run has left an attempt open. The unit is then the attempt, and with a
-  budget in use the example prints why. In a paused window a single step
+  would read the jaw contact force and the native clock of that trial). The
+  unit is then the attempt, and with a budget in use the example prints why. In a paused window a single step
   finishes an open attempt and its frame.
 
 **Measured in the window, the procedure as it is now** (the pull through the
@@ -2130,7 +2275,7 @@ the screen until that procedure is done (26.2 to 26.7 s of simulated time):
 | window run, with the pull to the entry | runs | intervals over 66.7 ms, per run | longest interval, per run | median interval | steps for the 1750 frames | to the end | the 1750 frames |
 |---|---|---|---|---|---|---|---|
 | swept contact, 66.7 ms, `host-trial` (the defaults of today) | 3 | **0, 0, 0** | 65.4, 60.9, 60.4 ms | 22.9, 23.3, 22.8 ms | 5073, 4642, 4636 | 111.0, 103.5, 100.4 s | 119.3, 109.9, 107.0 s |
-| `--frame-budget-unit attempt` | 1 | 0 | 59.1 ms | 22.4 ms | 4805 | 103.7 s | 109.9 s |
+| `--frame-budget-unit attempt` (an option until 2026-11-19) | 1 | 0 | 59.1 ms | 22.4 ms | 4805 | 103.7 s | 109.9 s |
 | `--frame-budget 0` (whole frames) | 1 | 111 | 470.3 ms | 41.0 ms | 1750 | 75.6 s | 81.3 s |
 | `--no-tool-tissue-contact` | 1 | 0 | 51.5 ms | 22.9 ms | 3309 | 70.0 s | 75.4 s |
 | `--no-tool-tissue-contact --frame-budget 0` (the example of before) | 1 | 9 | 120.8 ms | 35.6 ms | 1750 | 57.9 s | 63.2 s |
@@ -2229,8 +2374,7 @@ it finishes the frame in progress, or runs a whole frame.
 What a run prints about it. In the window one line names the budget in use
 and the option that turns it off ("Frame budget 66.7 ms: ...
 (--frame-budget 0 runs whole frames)"), and a second line the unit, or why
-`host-trial` is not used there (the native rigid backend, the first-version
-contact). A run that keeps whole frames prints nothing about the default
+`host-trial` is not used there (the native rigid backend). A run that keeps whole frames prints nothing about the default
 budget and nothing about the unit: it did not ask for them. Only a budget
 other than the default, for example `--frame-budget 50`, says why it is not
 used ("Frame budget not used: ...").

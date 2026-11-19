@@ -300,15 +300,20 @@ def _pose(value):
     return value
 
 
+# Where the jaws hold the needle: this far from the palm origin along the jaws (local Y) [m]. A choice,
+# listed with the other numbers of the tool procedure at the top of _grasp_procedure.py.
+GRASP_BITE_DEPTH_M = 0.006
+
+
 def needle_to_gripper_pose(
-    geometry, *, arc_fraction=0.8, config=None, tangent_roll_rad=0.0, bite_angle_rad=0.0, jaws_exchanged=False
+    geometry, *, arc_fraction=0.8, tangent_roll_rad=0.0, bite_angle_rad=0.0, jaws_exchanged=False
 ):
     """Nominal tool frame relative to the needle, for reset/desired commands.
 
     This transform is never enforced as a constraint. By default the jaws
     close normal to the needle plane, with the needle tangent along local Z.
     ``tangent_roll_rad`` twists the tool's X/Y axes about that tangent while
-    preserving the bite point at local (0, 0.006, 0). This lets the articulated
+    preserving the bite point at local (0, ``GRASP_BITE_DEPTH_M``, 0). This lets the articulated
     wrist approach the same grasp from a different orientation.
     ``bite_angle_rad`` then rotates about the resulting jaw-closing X axis,
     keeping the same bite point and closing normal while tilting the tangent
@@ -320,7 +325,6 @@ def needle_to_gripper_pose(
     one was. It is the same grasp of the needle; a fixed-trocar tool reaches
     it with its roll joint half a turn on and both wrist angles reversed.
     """
-    config = config or GrasperConfig()
     if not np.isfinite(arc_fraction) or not 0 < arc_fraction < 1:
         raise ValueError("Grasp location must lie strictly inside the needle arc")
     if not np.isfinite(tangent_roll_rad):
@@ -349,7 +353,7 @@ def needle_to_gripper_pose(
         x, z = -x, -z
     rotation = np.column_stack((x, y, z))
     quaternion = np.asarray(wp.quat_from_matrix(wp.mat33(rotation)))
-    return np.r_[point - 0.006 * y, quaternion]
+    return np.r_[point - GRASP_BITE_DEPTH_M * y, quaternion]
 
 
 def tool_instrument(label, instrument=None):

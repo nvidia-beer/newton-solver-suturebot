@@ -59,7 +59,6 @@ class SubstepBoundTests(unittest.TestCase):
         bound = SubstepBound()
         self.assertEqual(bound.bound(13), math.inf)
         self.assertIsNone(bound.per_trial)
-        self.assertIsNone(bound.outside)
         # A stretch of time without a trial is not a substep.
         bound.add(0, 0, 0.0, 1.0)
         self.assertEqual((bound.substeps, bound.trials, bound.last_loops), (0, 0, 1))
@@ -71,7 +70,7 @@ class SubstepBoundTests(unittest.TestCase):
         bound.add(3, 1, 0.006, 0.0075)
         # Four trials took 9 ms in their loops; two substeps took 3 ms outside them.
         self.assertAlmostEqual(bound.per_trial, 0.00225, places=12)
-        self.assertAlmostEqual(bound.outside, 0.0015, places=12)
+        self.assertAlmostEqual(bound.longest_outside, 0.0015, places=12)
         self.assertAlmostEqual(bound.bound(13), 0.0015 + 13 * 0.00225, places=12)
         self.assertAlmostEqual(bound.bound(160), 0.0015 + 160 * 0.00225, places=12)
 
@@ -84,7 +83,6 @@ class SubstepBoundTests(unittest.TestCase):
         bound.add(8, 2, 0.024, 0.028)
         self.assertEqual((bound.substeps, bound.trials), (3, 12))
         self.assertAlmostEqual(bound.per_trial, 0.003, places=12)
-        self.assertAlmostEqual(bound.outside, 0.002, places=12)
 
     def test_the_time_outside_the_trials_is_the_longest_one_measured_not_the_mean(self):
         bound = SubstepBound()
@@ -92,7 +90,7 @@ class SubstepBoundTests(unittest.TestCase):
         # The end of this substep took 8 ms longer than that of the others.
         bound.add(2, 1, 0.004, 0.013)
         bound.add(2, 1, 0.004, 0.005)
-        self.assertAlmostEqual(bound.outside, 0.011 / 3, places=12)
+        # The mean of the three would be 11 ms / 3.
         self.assertAlmostEqual(bound.longest_outside, 0.009, places=12)
         self.assertAlmostEqual(bound.bound(13), 0.009 + 13 * 0.002, places=12)
         # It is the time outside the loops of one substep, whatever loops the next one is taken to run.
@@ -130,16 +128,16 @@ class SubstepBoundTests(unittest.TestCase):
         bound.add(13, 1, 0.046, 0.058)
         worst = bound.bound(13)
         self.assertAlmostEqual(worst, 0.012 + 0.046, places=12)
-        # A thousand quick substeps after it: the means come down, the bound of the worst case stays.
+        # A thousand quick substeps after it: the mean trial comes down, the bound of the worst case stays.
         for _ in range(1000):
             bound.add(1, 1, 0.002, 0.003)
-        self.assertLess(bound.outside + 13 * bound.per_trial, 0.5 * worst)
+        self.assertLess(13 * bound.per_trial, 0.6 * bound.longest_loop)
         self.assertEqual((bound.longest_loop, bound.longest_outside), (0.046, 0.058 - 0.046))
         self.assertAlmostEqual(bound.bound(13), worst, places=12)
         # A new scene, as after a reset, has measured nothing.
         self.assertEqual((SubstepBound().longest_loop, SubstepBound().longest_outside), (0.0, 0.0))
 
-    def test_the_bound_of_the_worst_case_is_never_below_the_bound_of_the_means(self):
+    def test_the_bound_is_never_below_the_longest_measured_nor_below_the_trial_limit_of_mean_trials(self):
         random, bound = np.random.default_rng(7), SubstepBound()
         for _ in range(400):
             loops = int(random.integers(1, 4))
@@ -147,12 +145,13 @@ class SubstepBoundTests(unittest.TestCase):
             loop_seconds = trials * random.uniform(0.002, 0.004) + loops * random.uniform(0.0, 0.006)
             bound.add(trials, loops, loop_seconds, loop_seconds + random.uniform(0.001, 0.02))
             for limit in (13, 160):
-                # What a step planned with before: the mean time outside the loops, mean trials.
-                means = bound.outside + bound.last_loops * limit * bound.per_trial
+                # Loops of the trial limit of mean trials, which stand for a loop not measured yet.
+                means = bound.longest_outside + bound.last_loops * (limit * bound.per_trial)
                 self.assertGreaterEqual(bound.bound(limit), means)
                 # And never below the longest loop and the longest time outside the loops measured.
                 worst = bound.longest_outside + bound.last_loops * bound.longest_loop
                 self.assertGreaterEqual(bound.bound(limit), worst)
+                self.assertAlmostEqual(bound.bound(limit), max(means, worst), places=12)
 
     def test_one_slow_loop_enters_the_bound_with_its_own_excess_not_with_the_trial_limit_times_it(self):
         bound = SubstepBound()
@@ -334,10 +333,10 @@ class SplitFrameTests(unittest.TestCase):
         for frame in calls:
             self.assertIsNone(frame[-1]["pending"])
             self.assertTrue(all(record["pending"] is not None for record in frame[:-1]))
-        # Every substep was measured: its trials, the time of its loops and its whole time.
+        # Every substep was measured: its trials, the time of its loops and its time outside them.
         self.assertEqual((bound.substeps, bound.trials), (accepted, split[-1]["counters"][3]))
         self.assertGreater(bound.loop_seconds, 0.0)
-        self.assertGreater(bound.seconds, bound.loop_seconds)
+        self.assertGreater(bound.longest_outside, 0.0)
 
     @unittest.skipIf(_CUDA, _BITS)
     def test_frames_split_at_every_attempt_are_the_frames_of_one_call(self):
@@ -432,13 +431,12 @@ class SplitFrameTests(unittest.TestCase):
             self.assertEqual(bound.last_loops, coupler.trial_loops)
             self.assertGreaterEqual(bound.last_loops, 2)
             self.assertAlmostEqual(bound.loop_seconds, coupler.loop_seconds, places=12)
-            self.assertGreater(bound.seconds, bound.loop_seconds)
-            self.assertLessEqual(bound.seconds, first + second)
-            # The bound for the next substep covers as many loops, each to the trial limit. One
-            # substep is measured: its time outside its loops is the longest one, and the limit of
-            # its mean trials is longer than its loops.
+            # One substep is measured: its time is its loops and the longest time outside them.
+            self.assertGreater(bound.longest_outside, 0.0)
+            self.assertLessEqual(bound.longest_outside + bound.loop_seconds, first + second)
+            # The bound for the next substep covers as many loops, each to the trial limit, and
+            # the limit of its mean trials is longer than its loops.
             limit = scene._trial_limit()
-            self.assertEqual(bound.longest_outside, bound.seconds - bound.loop_seconds)
             self.assertEqual(bound.longest_loop, bound.loop_seconds / bound.last_loops)
             self.assertAlmostEqual(
                 bound.bound(limit), bound.longest_outside + bound.last_loops * limit * bound.per_trial, places=12
@@ -472,7 +470,8 @@ class SplitFrameTests(unittest.TestCase):
         # The two maxima are those of the substeps measured ...
         self.assertEqual(bound.longest_outside, max(seconds - loop for _, _, loop, seconds in measured))
         self.assertEqual(bound.longest_loop, max(loop / loops for _, loops, loop, _ in measured))
-        self.assertGreater(bound.longest_outside, bound.outside)
+        mean_outside = sum(seconds - loop for _, _, loop, seconds in measured) / len(measured)
+        self.assertGreater(bound.longest_outside, mean_outside)
         for _trials, loops, _loop_seconds, seconds in measured:
             # ... so no substep took longer than the bound of a substep with its loops, whatever
             # the trial limit: the worst case measured is inside the bound.
@@ -1247,10 +1246,11 @@ class RecordedCallTests(unittest.TestCase):
     """The one interval over 66.7 ms of the window run w_def_1950 (2026-11-17, docs/usage.md): its call 2352.
 
     The call ran an attempt of 5 trials and asked for one more 14.007 ms after its start. By the plan
-    of then (mean times, the last observation and the last drawing) the attempt fitted, by 0.87 ms.
-    It ran 13 trials and ended inside its bound; the observation after it took 4.66 ms longer than
-    the last one, and the next call started 67.12 ms after this one. Times in seconds of the host
-    clock of that run, the call starting at 0; the measurements are those the run had made by then.
+    of then (mean times, the last observation and the last drawing; no code of it is left) the
+    attempt fitted, by 0.87 ms. It ran 13 trials and ended inside its bound; the observation after
+    it took 4.66 ms longer than the last one, and the next call started 67.12 ms after this one.
+    Times in seconds of the host clock of that run, the call starting at 0; the measurements are
+    those the run had made by then.
     """
 
     BUDGET = 0.0667
@@ -1266,11 +1266,13 @@ class RecordedCallTests(unittest.TestCase):
     LONGEST_HOST, LONGEST_TAIL = 0.005680, 0.015915
     # What followed the question in the run: the attempt to its end, the observation, the drawing.
     ATTEMPT, OBSERVATION, DRAWING = 0.042569, 0.005827, 0.004663
+    # What the plan of then took one more attempt to be: the mean time of a substep outside its
+    # loops and 13 mean trials (46.094 ms).
+    MEAN_PLAN = (SECONDS - LOOP_SECONDS) / SUBSTEPS + TRIAL_LIMIT * LOOP_SECONDS / TRIALS
 
     def measured(self):
         bound = SubstepBound()
-        bound.substeps, bound.trials = self.SUBSTEPS, self.TRIALS
-        bound.loop_seconds, bound.seconds = self.LOOP_SECONDS, self.SECONDS
+        bound.substeps, bound.trials, bound.loop_seconds = self.SUBSTEPS, self.TRIALS, self.LOOP_SECONDS
         bound.longest_loop, bound.longest_outside = self.LONGEST_LOOP, self.LONGEST_OUTSIDE
         return bound
 
@@ -1302,18 +1304,6 @@ class RecordedCallTests(unittest.TestCase):
         (deadline,) = deadlines
         return deadline
 
-    def test_the_plan_of_then_let_the_attempt_start_and_the_picture_came_late(self):
-        bound = self.measured()
-        mean = bound.outside + self.TRIAL_LIMIT * bound.per_trial
-        self.assertAlmostEqual(mean, 0.046094, places=6)
-        fitted = self.BUDGET - self.LAST_DRAWING - self.LAST_OBSERVATION - (self.QUESTION + mean)
-        self.assertAlmostEqual(fitted, 0.00087, places=5)
-        # The attempt stayed inside that bound. The picture was late by what the observation and the
-        # drawing took longer than the last ones (4.76 ms), less that margin and what the attempt left.
-        self.assertLess(self.ATTEMPT, mean)
-        self.assertGreater(self.QUESTION + self.ATTEMPT + self.OBSERVATION + self.DRAWING, self.BUDGET)
-        self.assertLess(self.QUESTION + self.ATTEMPT + self.LAST_OBSERVATION + self.LAST_DRAWING, self.BUDGET)
-
     def test_the_worst_case_measured_refuses_the_attempt(self):
         bound, start = self.measured(), 100.0
         # The bound of one more attempt: 18.495 ms outside its loops and a loop of 13 mean trials
@@ -1337,9 +1327,12 @@ class RecordedCallTests(unittest.TestCase):
         # The same question fits where the worst case leaves room for it, to the last second of the clock.
         self.assertTrue(fits(asked, deadline - worst, deadline))
         self.assertFalse(fits(asked, np.nextafter(deadline - worst, np.inf), deadline))
-        # Each of the three terms alone refuses the recorded attempt: the longest observation, the
-        # longest drawing, the worst case of the substep.
-        mean = bound.outside + self.TRIAL_LIMIT * bound.per_trial
+        # Each of the three terms alone refuses the recorded attempt, which the plan of then let
+        # start (it fitted by 0.87 ms): the longest observation, the longest drawing, the worst
+        # case of the substep.
+        mean = self.MEAN_PLAN
+        self.assertAlmostEqual(mean, 0.046094, places=6)
+        self.assertLess(self.QUESTION + mean, self.BUDGET - self.LAST_DRAWING - self.LAST_OBSERVATION)
         self.assertGreater(self.QUESTION + mean, self.BUDGET - self.LAST_DRAWING - self.LONGEST_OBSERVATION)
         self.assertGreater(self.QUESTION + mean, self.BUDGET - self.LONGEST_DRAWING - self.LAST_OBSERVATION)
         self.assertGreater(self.QUESTION + worst, self.BUDGET - self.LAST_DRAWING - self.LAST_OBSERVATION)

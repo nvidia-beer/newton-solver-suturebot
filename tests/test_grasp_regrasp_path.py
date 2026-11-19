@@ -213,6 +213,17 @@ class ToolCapsuleTests(unittest.TestCase):
         # With the bound of a drawn part the capsule counts for more.
         bounded = {**tool(), "capsule_bounds": np.array([0.0, 0.0025, 0.0, 0.0])}
         self.assertAlmostEqual(controller_for(straight_needle(), bounded).turning_radius, wrist + 0.0025, delta=1e-9)
+        # The wrist length is that of the tool model, and the wrist link holds the palm origin that far
+        # along its own X axis: the radius is not measured at a pose and is the same wherever the trocar is.
+        self.assertEqual(controller.wrist_length, WRIST_LENGTH_M)
+        elsewhere = {**tool(), "trocar_pose": TROCAR + np.r_[0.02, -0.03, 0.05, np.zeros(4)]}
+        self.assertEqual(controller_for(straight_needle(), elsewhere).turning_radius, controller.turning_radius)
+        # The links of a posed tool give the same lengths, to the rounding of the pose.
+        palm = np.r_[TROCAR[:3] - [0.03, 0.02, 0.1], 0.0, 0.0, 0.0, 1.0]
+        roll, pitch = arm_link_poses(TROCAR, palm)
+        self.assertAlmostEqual(np.linalg.norm(roll[:3] - palm[:3]), WRIST_LENGTH_M, delta=1e-15)
+        ends = np.stack(tool_capsules(tool())[1][:2]) @ rotation_of(pitch).T + pitch[:3] - palm[:3]
+        self.assertAlmostEqual(np.linalg.norm(ends, axis=1).max() + 0.003, wrist, delta=1e-8)
 
 
 class SweepClearanceTests(unittest.TestCase):

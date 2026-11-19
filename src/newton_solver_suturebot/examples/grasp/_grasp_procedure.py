@@ -4,6 +4,74 @@ The source example supplies the desired needle arc. A settled, measured grasp
 frame converts that arc to gripper targets. The scene solves bounded joint IK
 for the fixed-trocar tools; finite actuators and contact determine actual motion.
 No policy or needle pose drive is used.
+
+The numbers of the procedure
+----------------------------
+A number that follows from the scene stands with its derivation where it is used: the time of a
+lift and the angle to which the arc is driven on (``ProceduralGraspController.__init__``), the arc
+speed, the end and the bound of the pull (``_begin_pull``, ``_pull_target``, ``_pull_out_span``), the
+reach margin of the joints (``_read_joints``), the rest tolerance of the needle (``_rest_tolerance``),
+the turning radius of the tool and every length of the way from the one grasp to the other
+(``_read_tool``, ``_rise``, ``_strip``, ``_transfer``, ``_plan_route``), and where on the needle the jaws
+take it (``_plan_tip_grasp``).
+
+The numbers below are not derived. They are choices, each named once; this table is the one place
+that says what chose them. "by hand" means: set once; neither this file nor docs/usage.md records a
+scan or a run that compared it with another value. Angles are written in radians rounded to four
+digits; the degrees are what was scanned.
+
+======================================  ==========  ===============================================================
+name                                    value       what chose it
+======================================  ==========  ===============================================================
+``speed`` (argument, ``--speed``)       3 mm/s      by hand: the arc speed of the insertion and of the pull
+``settle_seconds`` (argument)           0.5 s       by hand: closed jaws before the grasp frame is measured
+``RAMP_SECONDS``                        0.5 s       by hand: start and stop of an arc without a step in speed
+``REACHED_STEPS``                       1e-3        by hand: above the rounding of a pose difference
+``CLEARANCE_SPACING_RADII``             0.25        the spacing at which the tool/tissue contact samples its own
+                                                    capsules (``STATION_RADII``); coarser moves the grasp away
+``CLEARANCE_REFINEMENT``                4           by hand: the grasp point is then within 0.1 mm of needle of
+                                                    the exact one (docs/usage.md, the grasp at the needle tip)
+``PLAN_CAPSULES_PER_STEP``              1           measured: largest controller call of the regrasp 5.9 ms in
+                                                    the runs of 2026-11-17 (docs/usage.md); it changes how
+                                                    many calls a plan takes, not the plan
+``ROUTE_CAPSULES_PER_STEP``             4           by hand, for the same call time; changes no answer either
+``WIRE_STATION_RADII``                  0.5         by hand: stations on the wire half a wire radius apart
+``SEARCH_HALVINGS``                     6           by hand: 1/64 of a search step
+``ABOVE_SEARCH_RADII``                  2           by hand: jaws at thirty degrees or more to the tissue
+``lift_rise_seconds``                   0.75 s      by hand: the least time of a rise (the rate limit can ask more)
+``lift_hold_seconds``                   0.5 s       by hand: hold of a lift, and of the needle after the pull
+``lift_height_limit``                   10 mm       by hand: the highest lift that is accepted
+``rate_fraction``                       0.8         by hand: a lift or pull that the gripper follows
+``contact_force_n``                     1e-5 N      by hand: a jaw contact that counts
+``contact_loss_seconds``                0.25 s      by hand; ``pull_wait_seconds`` is the same time
+``grasp_wait_seconds``                  2 s         by hand
+``stage_wait_seconds``                  3 s         by hand; the jaws close in 0.5 s in the runs (docs/usage.md)
+``entry_clearance``                     3 mm        by hand
+``transfer_clearance``                  12 mm       by hand; the scan of the grasps below asked for the points
+                                                    6 and 12 mm behind the grasp to be reachable
+``release_opening_rad``                 0.6 rad     by hand
+``GRASP_BITE_DEPTH_M``                  6 mm        by hand (``_dvrk_grasper.needle_to_gripper_pose``): where
+                                                    the jaws hold the needle, from the palm along the jaws
+``pull_grasp_roll_rad``                 -1.0472     measured, the pull (default): -60 and 30 degrees with the jaws
+``pull_grasp_bite_rad``                 0.5236      exchanged, from a grid of 15 degrees with the reach test of
+``pull_grasp_jaws_exchanged``           True        the plan for the dVRK port layout and the default stitch
+                                                    (docs/usage.md, the way to the tip and the pull, has the
+                                                    numbers that bound twist and bite)
+``tip_grasp_roll_rad``                  -2.618      measured, the lift by the tip (without the pull): -150 and 45
+``tip_grasp_bite_rad``                  0.7854      degrees, from a scan of the tool's inverse kinematics for
+``tip_grasp_jaws_exchanged``            False       the dVRK port layout; at the edge of the range (roll joint
+                                                    0.002 to 0.03 rad from its limit); -155 and -160 degrees
+                                                    took the needle into tissue that does not move, 4 runs of 4
+``pull_slack_radii``                    4           by hand, the pull to the entry (without thread tracks): twice
+                                                    the hole; a coupled run needed 0.38 mm, this allows 1.12 mm
+slack of the pull through the tissue    1 element   by hand (``_pull_out_span``): the bound is one thread element
+                                                    beyond the end of the pull
+plans repeated at the pregrasp          1           by hand (``_approach``)
+creep of the needle between the plan    2 rest      assumed, not measured (``_read_joints``): a plan is given up
+of the grasp and the closed jaws        tolerances  beyond one; the descent and the closing get as much again
+grasp at reset (arc fraction, twist,    the scene   demonstration settings of the scene, not of this file
+bite of the driving grasp)                          (``_grasp_scene._initial_grasp_parameters``)
+======================================  ==========  ===============================================================
 """
 
 from __future__ import annotations
@@ -58,13 +126,20 @@ def line_to(old, target, config):
     return raw
 
 
-def ramp_distance(time, speed, ramp_time=0.5):
+# Time over which an arc speed ramps up from rest and, run backwards, down to rest [s]: a choice (table at the top).
+RAMP_SECONDS = 0.5
+# A gripper target stands at a pose when less than this is left to it, in units of the rate limits of the
+# actions: the quaternion arithmetic of a pose difference leaves a remainder above zero (a choice).
+REACHED_STEPS = 1e-3
+
+
+def ramp_distance(time, speed, ramp_time=RAMP_SECONDS):
     """Integrated smoothstep speed ramp: zero initial speed and acceleration."""
     u = np.clip(time / ramp_time, 0.0, 1.0)
     return speed * (ramp_time * (u**3 - 0.5 * u**4) + np.maximum(0.0, time - ramp_time))
 
 
-def ramp_speed(distance, speed, ramp_time=0.5):
+def ramp_speed(distance, speed, ramp_time=RAMP_SECONDS):
     """Speed of the smoothstep ramp of :func:`ramp_distance`, run backwards, with ``distance`` left to its stop.
 
     The ramp covers ``speed * ramp_time / 2`` while its speed goes from zero to ``speed`` as
@@ -165,8 +240,8 @@ def line_targets(start, goal, config):
     start, goal = _pose(start), _pose(goal)
     raw = _pose_step(start, goal, config)
     travel, turn = float(np.max(np.abs(raw[:3]))), float(np.max(np.abs(raw[3:])))
-    # A remainder below a thousandth of the rate limits is no way (as in ProceduralGraspController._reached).
-    steps = np.arange(int(np.ceil(max(travel, turn) - 1e-3)) + 1, dtype=float)
+    # A remainder below REACHED_STEPS is no way (as in ProceduralGraspController._reached).
+    steps = np.arange(int(np.ceil(max(travel, turn) - REACHED_STEPS)) + 1, dtype=float)
     moved = np.minimum(steps / travel, 1.0) if travel > 0 else np.ones_like(steps)
     turned = np.minimum(steps / turn, 1.0) if turn > 0 else np.ones_like(steps)
     vector = raw[3:] * config.rotation_step
@@ -195,6 +270,19 @@ PLAN_CAPSULES_PER_STEP = 1
 # (ProceduralGraspController._rise_blocked): a choice of the same kind; the tool stands while capsules
 # are left to ask at its target.
 ROUTE_CAPSULES_PER_STEP = 4
+# Stations on the centre line of the needle wire are at most this many wire radii apart, so a point of
+# the wire is within half of that of a station (a choice). A sample of the tissue matters to a station
+# if it is within the wire radius, that half spacing and its own cover of it: WIRE_REACH_RADII in all.
+WIRE_STATION_RADII = 0.5
+WIRE_REACH_RADII = 1.0 + 0.5 * WIRE_STATION_RADII + CLEARANCE_SPACING_RADII
+# Halvings that end a search between a point that is clear and one that is not (the grasp point on the
+# wire, the point above the pregrasp): to 1/64 of the step of the search, a quarter of the finest
+# spacing of the clearance where the step is a radius (a choice).
+SEARCH_HALVINGS = 6
+# How far beyond the transfer clearance the point above the pregrasp is looked for, in turning radii of
+# the tool: jaws that point at the tissue at thirty degrees or more gain one turning radius of height
+# on two of length (2 sin 30 = 1). The thirty degrees are a choice.
+ABOVE_SEARCH_RADII = 2.0
 
 
 def _rotation(pose):
@@ -402,16 +490,28 @@ def _search_margin(capsule, half_opening):
     return radius + 2.0 * CLEARANCE_SPACING_RADII * radius + arm * (1.0 - np.cos(0.5 * half_opening))
 
 
+def _contact_axis(start, end, radius, reach):
+    """The two ends of the axis of a capsule of contact radius ``reach`` on a model capsule of radius ``radius`` [m].
+
+    The axis from ``start`` to ``end`` is shortened by ``reach - radius`` at each end, so that the caps
+    reach as far as those of the model capsule (``capsule_samples``, the rule of the tool/tissue
+    contact); an axis shorter than that is its middle.
+    """
+    length = float(np.linalg.norm(end - start))
+    inset = (reach - radius) / length
+    if length - 2.0 * (reach - radius) > 0.0:
+        return start + inset * (end - start), end - inset * (end - start)
+    return 0.5 * (start + end), 0.5 * (start + end)
+
+
 def jaw_capsules(tool):
     """The capsules with which the jaws of a tool touch the tissue, in the frame of the closed jaws.
 
     ``tool`` is one entry of the scene's ``grippers`` (``GraspScene.grasp_geometry``): ``capsule_bodies``,
     ``capsule_endpoints`` [m] and ``capsule_radii`` [m] of its capsule set, ``jaw_body_indices``, and
     ``capsule_contact_radii`` [m] where the tool touches the tissue with other radii than those of its
-    capsule set (without that entry the capsule radii are the contact radii). A capsule of contact radius
-    R on a model capsule of radius r is the axis shortened by R - r at each end, so that its caps reach as
-    far as those of the model capsule (``capsule_samples``, the rule of the tool/tissue contact); an axis
-    shorter than that is its middle.
+    capsule set (without that entry the capsule radii are the contact radii). The axis of a capsule of
+    another contact radius is that of :func:`_contact_axis`.
 
     A jaw body is the palm turned about the palm's Z axis through its origin by the jaw angle
     (``add_rcm_grasper``): positive for the first jaw, negative for the second.
@@ -439,15 +539,9 @@ def jaw_capsules(tool):
     for body, (start, end), radius, reach in zip(bodies, endpoints, radii, contact, strict=True):
         if body not in jaws:
             continue
-        length = float(np.linalg.norm(end - start))
-        if length <= 1.0e-12:
+        if float(np.linalg.norm(end - start)) <= 1.0e-12:
             raise ValueError("Capsule axes must have nonzero length")
-        inset = (reach - radius) / length
-        if length - 2.0 * (reach - radius) > 0.0:
-            ends = start + inset * (end - start), end - inset * (end - start)
-        else:
-            ends = 0.5 * (start + end), 0.5 * (start + end)
-        result.append((ends[0], ends[1], float(reach), 1.0 if body == jaws[0] else -1.0))
+        result.append((*_contact_axis(start, end, radius, reach), float(reach), 1.0 if body == jaws[0] else -1.0))
     if not result:
         raise ValueError("The tool has no capsule on a jaw body")
     return result
@@ -503,13 +597,7 @@ def tool_capsules(tool):
     links.update({jaws[0]: "jaw1", jaws[1]: "jaw2"})
     rows = []
     for body, (start, end), radius, reach, bound in zip(bodies, endpoints, radii, contact, bounds, strict=True):
-        length = float(np.linalg.norm(end - start))
-        inset = (reach - radius) / length
-        if length - 2.0 * (reach - radius) > 0.0:
-            ends = start + inset * (end - start), end - inset * (end - start)
-        else:
-            ends = 0.5 * (start + end), 0.5 * (start + end)
-        rows.append((ends[0], ends[1], float(reach), float(bound), links.get(body)))
+        rows.append((*_contact_axis(start, end, radius, reach), float(reach), float(bound), links.get(body)))
     return rows
 
 
@@ -678,7 +766,7 @@ def wire_clearance(cover, wire, wire_radius, half_opening):
     return float(np.min(_segments_distance(np.asarray(axes), segments) - np.asarray(reach)))
 
 
-def jaw_clearance(surface, capsules, pose, bite, half_opening, descent, *, among=None):
+def jaw_clearance(surface, capsules, pose, bite, half_opening, descent):
     """How far the jaws of a tool stay from a tissue surface while they come down on a grasp and close [m].
 
     The tool comes down on the grasp pose ``pose`` along its own Y axis, from ``descent`` further back,
@@ -707,7 +795,6 @@ def jaw_clearance(surface, capsules, pose, bite, half_opening, descent, *, among
         bite: Grasp point [m] in the frame of the tool: the point of the needle between the jaws.
         half_opening: Angle of each open jaw [rad], nonnegative.
         descent: Length of the descent along the tool's Y axis [m], nonnegative.
-        among: Triangle indices to which the search is restricted (those that can matter).
 
     Returns:
         The lower bound of the clearance [m]; ``inf`` if no triangle has a point within about one and a
@@ -716,12 +803,11 @@ def jaw_clearance(surface, capsules, pose, bite, half_opening, descent, *, among
     rotation, translation = _rotation(pose), np.asarray(pose[:3], dtype=float)
     bite = np.asarray(bite, dtype=float)
     return min(
-        _capsule_clearance(surface, capsule, rotation, translation, bite, half_opening, descent, among)
-        for capsule in capsules
+        _capsule_clearance(surface, capsule, rotation, translation, bite, half_opening, descent) for capsule in capsules
     )
 
 
-def _capsule_clearance(surface, capsule, rotation, translation, bite, half_opening, descent, among, decide=False):
+def _capsule_clearance(surface, capsule, rotation, translation, bite, half_opening, descent, decide=False):
     """The clearance of one jaw capsule (:func:`jaw_clearance`), for a tool at ``rotation`` and ``translation``.
 
     With ``decide`` the finer samples are left out when the first ones already show the capsule clear:
@@ -744,9 +830,7 @@ def _capsule_clearance(surface, capsule, rotation, translation, bite, half_openi
     extent = np.stack((start, end, opened @ start, opened @ end, opened @ start + back, opened @ end + back, bite))
     low, high = extent.min(axis=0), extent.max(axis=0)
     margin = _search_margin(capsule, half_opening)
-    indices = surface.near(
-        rotation @ (0.5 * (low + high)) + translation, 0.5 * np.linalg.norm(high - low) + margin, among
-    )
+    indices = surface.near(rotation @ (0.5 * (low + high)) + translation, 0.5 * np.linalg.norm(high - low) + margin)
     centres = (surface.centres[indices] - translation) @ rotation
     outside = np.maximum(np.maximum(low - centres, centres - high), 0.0)
     indices = indices[np.linalg.norm(outside, axis=1) <= margin + surface.radii[indices]]
@@ -858,7 +942,7 @@ class ProceduralGraspController:
     """Follow one source entry/exit arc using a fixed measured grasp frame.
 
     Each world settles independently before starting. Loss of bilateral jaw
-    contact pauses its commands; 0.25 seconds of continuous loss stops it until
+    contact pauses its commands; ``contact_loss_seconds`` of continuous loss stop it until
     reset. The grasp frame stays fixed even if the needle slips. Completion of
     the commanded arc is reported separately from actual entry and exit events.
     An optional inspection lift follows the arc, which then continues past the plan
@@ -895,54 +979,53 @@ class ProceduralGraspController:
     ``env_id`` and ``reset_count`` keep reset and contact history independent.
     """
 
+    # The choices of the procedure: the table at the top of this file says what chose each of them.
     lift_rise_seconds = 0.75
     lift_hold_seconds = 0.5
+    # The highest lift that is accepted [m].
+    lift_height_limit = 0.01
+    # Part of the rate limits of the actions that a commanded lift or pull may use, so that the gripper follows it.
+    rate_fraction = 0.8
+    # A jaw holds the needle while it reports a contact with more than this normal force [N].
+    contact_force_n = 1e-5
+    # Time without both jaws on the needle that stops the procedure [s], time after settling that the first
+    # grasp is waited for [s], and time a stage waits for what it cannot command: the jaws to close on the
+    # tip, the needle to come to rest for the plan of the grasp [s].
+    contact_loss_seconds = 0.25
+    grasp_wait_seconds = 2.0
+    stage_wait_seconds = 3.0
     # Arc length kept between the jaws and the entry point when the drive continues past the plan [m].
     entry_clearance = 0.003
-    # Regrasp at the tip: twist of the tool about the needle tangent and bite angle there [rad]
-    # (the parameters of needle_to_gripper_pose), length of the descent of the open jaws along
-    # their own axis onto the wire [m], which is also the furthest they back away along it from
-    # where they let go, and their opening [rad]. Twist and bite are where a scan of the tool's
-    # inverse kinematics for the dVRK port layout finds the grasp and the points 6 and 12 mm
-    # behind it reachable, coming from above the tissue. That twist is at the edge of the range
-    # (measured): the roll joint of the tool stands 0.002 to 0.03 rad from its limit at the
-    # pregrasp, and beyond it for a grasp point one piece of the needle's centre line (0.7 mm)
-    # nearer the tip, where the scene then fails with an unreachable tool pose. Twists of -155
-    # and -160 degrees keep the roll joint clear, but with them the lift by the tip takes the
-    # needle into tissue that does not move (four runs of four). Where on the needle the jaws
-    # take it is not a setting, and neither is the way there: both follow from the capsules of
-    # the tool, its trocar, the tissue, the wire and where the needle rests (_plan_tip_grasp,
-    # _transfer).
+    # Regrasp at the tip: length of the descent of the open jaws along their own axis onto the wire
+    # [m], which is also the furthest they back away along it from where they let go, and their
+    # opening [rad]. Where on the needle the jaws take it is not a setting, and neither is the way
+    # there: both follow from the capsules of the tool, its trocar, the tissue, the wire and where
+    # the needle rests (_plan_tip_grasp, _transfer).
+    transfer_clearance = 0.012
+    release_opening_rad = 0.6
+    # The grasp at the tip from which the tool lifts by it (without the pull): twist of the tool
+    # about the needle tangent and bite angle there [rad], -150 and 45 degrees (the parameters of
+    # needle_to_gripper_pose). It cannot pull: its roll joint stands at its limit at the pregrasp,
+    # and beyond it for a grasp point one piece of the needle's centre line (0.7 mm) nearer the tip,
+    # and the pull turns it further.
     tip_grasp_roll_rad = -2.618
     tip_grasp_bite_rad = 0.7854
     tip_grasp_jaws_exchanged = False
-    transfer_clearance = 0.012
-    release_opening_rad = 0.6
     # The grasp at the tip from which the tool pulls the needle on along its curve (pull_through):
     # twist -60 degrees, bite 30 degrees, and the tool turned half a turn about its jaw axis (the
-    # jaws exchanged, needle_to_gripper_pose). Measured choices for the dVRK port layout and the
-    # default stitch, from scans of the tool's joints over the way to the grasp and the arc that
-    # takes the needle out of the tissue (docs/usage.md has the numbers). The grasp above cannot
-    # pull: its roll joint stands at its limit and the pull turns it further. Without the exchange
-    # of the jaws the roll joint would have to pass its limit on the way over to the tip. What
-    # bounds twist and bite, on a grid of 15 degrees with the reach test of the plan: a twist of
-    # -90 degrees has no point that is reached, and a bite of 15 degrees none or no way down at
-    # twists of -60, -30 and -15 degrees; over the arc out of the tissue the wrist joints stay
-    # 0.39 rad inside their limits with this grasp, 0.33 rad with a bite of 45 degrees and 0.20
-    # to 0.23 rad with twists of -75 and -45 degrees.
+    # jaws exchanged, needle_to_gripper_pose): without the exchange the roll joint would have to
+    # pass its limit on the way over to the tip.
     pull_grasp_roll_rad = -1.0472
     pull_grasp_bite_rad = 0.5236
     pull_grasp_jaws_exchanged = True
     # Arc by which the pull to the entry may go on beyond what the resting needle needs, in wire
-    # radii: the tissue goes along with the needle a little and the tool is behind its target. A
-    # choice: four radii, twice the radius of the hole. A coupled run needed 0.38 mm (2.3 degrees)
-    # more for the tail to arrive at the entry than the pose at rest says; this allows 1.12 mm.
+    # radii: the tissue goes along with the needle a little and the tool is behind its target.
     # The pull through the tissue ends one thread element past the exit marker (the element that
     # hangs on the tail is then outside, and the eyelet at the exit holds a free one) and may go
-    # on by one more element: twice that clearance beyond the marker, a choice of the same kind.
+    # on by one more element (_pull_out_span).
     pull_slack_radii = 4.0
     # Time the pull waits at its bound for the tail to arrive [s]: as long as a lost contact.
-    pull_wait_seconds = 0.25
+    pull_wait_seconds = contact_loss_seconds
 
     def __init__(
         self,
@@ -968,8 +1051,8 @@ class ProceduralGraspController:
         if not np.isfinite(values).all() or speed <= 0 or settle_seconds < 0 or min(values[2:]) <= 0:
             raise ValueError("Speed and action scales must be positive and finite; settling time must be nonnegative")
         self.config, self.speed, self.settle_seconds = config, float(speed), float(settle_seconds)
-        if not np.isfinite(lift_height) or not 0 <= lift_height <= 0.01:
-            raise ValueError("Lift height must be finite and between 0 and 0.01 metres")
+        if not np.isfinite(lift_height) or not 0 <= lift_height <= self.lift_height_limit:
+            raise ValueError(f"Lift height must be finite and between 0 and {self.lift_height_limit:g} metres")
         if not np.isfinite(tip_lift_height) or not 0 <= tip_lift_height <= lift_height:
             raise ValueError("The lift at the tip must be finite and between 0 and the lift after the insertion")
         self.lift_height = float(lift_height)
@@ -1027,9 +1110,9 @@ class ProceduralGraspController:
         _pose(pose_at(self.plan, self.initial_angle))
         _pose(pose_at(self.plan, self.finish_angle))
         self.scenes = {}
-        # A smoothstep rise of height h in time T peaks at 1.5 h / T. Keep that within 80 % of
-        # the translation rate limit of the actions, so the gripper follows the commanded lift.
-        limit = 0.8 * config.translation_step / config.frame_dt
+        # A smoothstep rise of height h in time T peaks at 1.5 h / T. Keep that within rate_fraction
+        # of the translation rate limit of the actions, so the gripper follows the commanded lift.
+        limit = self.rate_fraction * config.translation_step / config.frame_dt
         self.rise_seconds = max(self.lift_rise_seconds, 1.5 * self.lift_height / limit)
         # A lift pulls on the needle, and a needle that has only just come out slips back out
         # of the tissue. Before a lift the drive therefore continues until the middle of the
@@ -1089,28 +1172,28 @@ class ProceduralGraspController:
         self.shaft_shortest = 0.0
         if "nominal_insertion_m" in tool and "insertion_limits_m" in tool:
             self.shaft_shortest = max(0.0, float(tool["nominal_insertion_m"]) + float(tool["insertion_limits_m"][0]))
-        # Stations on the centre line of the wire, half a wire radius apart at most: a point between two
-        # of them is within a quarter radius of one.
+        # Stations on the centre line of the wire, WIRE_STATION_RADII wire radii apart at most: a point
+        # between two of them is within half of that of one.
         lengths = np.r_[0.0, np.cumsum(np.linalg.norm(np.diff(self.centerline, axis=0), axis=1))]
-        count = max(1, int(np.ceil(lengths[-1] / (0.5 * self.needle_radius))))
+        count = max(1, int(np.ceil(lengths[-1] / (WIRE_STATION_RADII * self.needle_radius))))
         along = lengths[-1] * np.arange(count + 1) / count
         self.stations = np.stack([np.interp(along, lengths, self.centerline[:, axis]) for axis in range(3)], axis=1)
         self.station_slack = 0.5 * lengths[-1] / count
         if not self.routable:
             return
-        from ._dvrk_rcm_grasper import arm_link_poses
+        from ._dvrk_rcm_grasper import WRIST_LENGTH_M
 
         # No point of the tissue is nearer the trocar than this: its corners less the largest cover.
         corners = self.tissue.corners.reshape(-1, 3)
         self.trocar_gap = float(np.linalg.norm(corners - self.trocar[:3], axis=1).min() - self.tissue.cover.max())
         # Turning radius of the tool: no point of it, drawn parts included, is further from the strip of
         # _strip, whatever the orientation of the palm and the opening of the jaws. A jaw turns about the
-        # palm origin, the wrist link holds the palm origin at a fixed point of its own frame, and a
-        # point of the shaft the fraction t of the way from the wrist joint W to the trocar C lies
-        # (1 - t) |W - palm| from the point that far from the palm origin to C.
-        palm = np.r_[self.trocar[:3] - np.array([0.03, 0.02, 0.1]), 0.0, 0.0, 0.0, 1.0]
-        roll, pitch = arm_link_poses(self.trocar, palm)
-        self.wrist_length = float(np.linalg.norm(roll[:3] - palm[:3]))
+        # palm origin, the wrist link holds the palm origin at a fixed point of its own frame (the wrist
+        # length along its X axis, arm_link_poses), and a point of the shaft the fraction t of the way
+        # from the wrist joint W to the trocar C lies (1 - t) |W - palm| from the point that far from
+        # the palm origin to C.
+        self.wrist_length = WRIST_LENGTH_M
+        palm = np.array([WRIST_LENGTH_M, 0.0, 0.0])
         self.turning_radius, self.shaft_cover = 0.0, None
         for ends, cover, link in zip(self.tool_ends, self.tool_cover, self.tool_links, strict=True):
             if link == "roll":
@@ -1118,7 +1201,7 @@ class ProceduralGraspController:
                 far = self.wrist_length + max(np.hypot(end[0], end[1]) + max(end[2], 0.0) for end in ends)
                 self.shaft_cover = cover if self.shaft_cover is None else max(self.shaft_cover, cover)
             elif link == "pitch":
-                far = np.linalg.norm(ends @ _rotation(pitch).T + pitch[:3] - palm[:3], axis=1).max()
+                far = np.linalg.norm(ends - palm, axis=1).max()
             else:
                 far = np.linalg.norm(ends, axis=1).max()
             self.turning_radius = max(self.turning_radius, float(far + cover))
@@ -1242,6 +1325,19 @@ class ProceduralGraspController:
         tail, mark = tail - (tail @ axis) * axis, mark - (mark @ axis) * axis
         return self.radius * float(np.arctan2(_cross(mark, tail) @ axis, tail @ mark))
 
+    def _follow_tail(self, state, needle_pose, item):
+        """Keep the arcs by which the tail of the needle is past the entry and the exit marker of an observation [m]."""
+        state.tail_past_entry = self._tail_past(needle_pose, item["entry_position"])
+        state.tail_past_exit = self._tail_past(needle_pose, item["exit_position"])
+
+    def _pull_row(self, needle_pose, held, span):
+        """Palm poses of a pull over the angle ``span`` [rad], one every rotation step of the actions (:func:`pull_targets`).
+
+        ``held`` is the needle pose in the frame of the tool, as the needle is held through the pull.
+        """
+        angles = np.linspace(0.0, span, int(np.ceil(span / self.config.rotation_step)) + 1)
+        return pull_targets(needle_pose, held, self.arc_center_local, self.arc_axes[2], angles)
+
     def _pull_span(self, needle_pose, marker, short=0.0, slack=None):
         """Angle [rad] of the pull that takes the tail of the needle to ``short`` [m] of arc before a marker, with the slack beyond.
 
@@ -1286,9 +1382,7 @@ class ProceduralGraspController:
         rows = [("the descent", descent)]
         held = wp.transform_multiply(wp.transform_inverse(wp.transform(*grasp)), wp.transform(*_pose(needle_pose)))
         span = self._pull_out_span(needle_pose, exit_position)
-        angles = np.linspace(0.0, span, int(np.ceil(span / self.config.rotation_step)) + 1)
-        pull = pull_targets(needle_pose, np.asarray(held, dtype=float), self.arc_center_local, self.arc_axes[2], angles)
-        rows.append(("the pull", pull))
+        rows.append(("the pull", self._pull_row(needle_pose, np.asarray(held, dtype=float), span)))
         refusal, rotary, slide = None, np.inf, np.inf
         for name, poses in rows:
             why, least_rad, least_m = self._reach(poses)
@@ -1350,7 +1444,7 @@ class ProceduralGraspController:
             return free
         # A triangle within reach of a station has a point in the box of the wire, grown by that reach.
         wire = self.centerline @ rotation.T + translation
-        grown = 1.5 * radius + 0.5 * np.diff(lengths).max()
+        grown = WIRE_REACH_RADII * radius + 0.5 * np.diff(lengths).max()
         centres, radii = self.tissue.centres[among], self.tissue.radii[among][:, None]
         among = among[
             np.all(
@@ -1361,13 +1455,13 @@ class ProceduralGraspController:
             # Stations of each piece of the centre line, in the frame of the needle: made once.
             self._wire_pieces = []
             for start, end in zip(lengths[:-1], lengths[1:], strict=True):
-                count = max(1, int(np.ceil((end - start) / (0.5 * radius))))
+                count = max(1, int(np.ceil((end - start) / (WIRE_STATION_RADII * radius))))
                 offsets = start + (end - start) * np.arange(count + 1) / count
                 self._wire_pieces.append((offsets, np.asarray([self._wire_point(offset) for offset in offsets])))
         for (offsets, local), end in zip(self._wire_pieces, lengths[1:], strict=True):
             stations = local @ rotation.T + translation
             centre = 0.5 * (stations[0] + stations[-1])
-            reach = 0.5 * np.linalg.norm(stations[-1] - stations[0]) + 1.5 * radius
+            reach = 0.5 * np.linalg.norm(stations[-1] - stations[0]) + WIRE_REACH_RADII * radius
             points, cover = self.tissue.samples(
                 self.tissue.near(centre, reach, among), CLEARANCE_SPACING_RADII * radius
             )
@@ -1480,7 +1574,7 @@ class ProceduralGraspController:
             local = field.subset(field.near(origin - 0.5 * descent * frame[:, 1], 0.5 * descent + reach))
             sampled = 0
             for index in tuple(order):
-                value = _capsule_clearance(local, self.jaws[index], frame, origin, bite, half, descent, None, True)
+                value = _capsule_clearance(local, self.jaws[index], frame, origin, bite, half, descent, decide=True)
                 if value < 0.0:
                     order.remove(index)
                     order.insert(0, index)
@@ -1514,7 +1608,7 @@ class ProceduralGraspController:
                 return None
             else:
                 blocked, offset = offset, max(offset - step, lowest)
-        for _ in range(6 if blocked is not None else 0):
+        for _ in range(SEARCH_HALVINGS if blocked is not None else 0):
             offset = 0.5 * (found + blocked)
             passed = yield from clear(offset)
             yield
@@ -1541,13 +1635,47 @@ class ProceduralGraspController:
         result[:3] += shift
         return result
 
+    @staticmethod
+    def _stop(state, reason):
+        """End the procedure of a scene, until its reset, with the reason why."""
+        state.status, state.reason = "stopped", reason
+
+    def _reaches(self, state, poses, refusal, keep=True):
+        """Whether the tool reaches a row of palm poses (:meth:`_reach`); if not, the procedure stops.
+
+        The reason is ``refusal`` and the joint that is not inside its limits. With ``keep`` the smallest
+        distances from a joint limit over a row that is reached go into the joint margins of the scene,
+        which the plan of the grasp has begun (:meth:`_tip_grasp_planned`).
+        """
+        why, least_rad, least_m = self._reach(poses)
+        if why is not None:
+            self._stop(state, f"{refusal}: {why}")
+            return False
+        if keep:
+            state.reach_rad, state.reach_m = min(state.reach_rad, least_rad), min(state.reach_m, least_m)
+        return True
+
+    @staticmethod
+    def _ask_rise(state, leg):
+        """Start a leg in which the rise of the tool is asked afresh: what was found in its way is forgotten."""
+        state.leg, state.rise_witness, state.rise_rows, state.region = leg, None, None, None
+
+    def _begin_rise(self, state, palm_pose):
+        """Start the rise along the shaft from ``palm_pose``, during which the grasp at the tip is planned afresh."""
+        state.via, state.leg, state.rise = palm_pose.copy(), "rise", self._rise(palm_pose)
+        state.plan, state.route, state.planned, state.plan_since = None, None, False, None
+        state.turn_witness, state.turn_region, state.turn_clear = None, None, None
+
+    def _closing(self, jaw_target):
+        """Jaw action that takes the commanded opening of the jaws to zero, at their rate limit at most."""
+        return np.clip(-(jaw_target[0] - jaw_target[1]) / self.config.jaw_step_rad, -1, 0)
+
     def _reached(self, old, target):
         """Whether a gripper target stands at ``target``.
 
-        A remainder below a thousandth of the rate limits means the target is reached; the quaternion
-        arithmetic of the pose difference leaves a remainder above zero.
+        A remainder below ``REACHED_STEPS`` of the rate limits means the target is reached.
         """
-        return bool(np.max(np.abs(_pose_step(old, target, self.config))) < 1e-3)
+        return bool(np.max(np.abs(_pose_step(old, target, self.config))) < REACHED_STEPS)
 
     def _rest_tolerance(self):
         """How far an end of the wire may move for the needle to count as at rest [m]: the finest spacing of the clearance."""
@@ -1732,7 +1860,7 @@ class ProceduralGraspController:
         state.rise_witness, state.rise_rows = None, None
         return False
 
-    def _leave_field(self, state, item, target, begin=False):
+    def _leave_field(self, state, target, begin=False):
         """Take the tissue near the way on which the tool will back away from ``target`` (:meth:`_tissue_near`)."""
         self._tissue_near(state, *self._rise_field(state, target, None), begin)
 
@@ -1850,10 +1978,10 @@ class ProceduralGraspController:
         if state.stage == "release":
             action[6] = np.clip((self.release_opening_rad - opening) / self.config.jaw_step_rad, 0, 1)
             if not self.routable:
-                state.status = "stopped"
-                state.reason = (
+                self._stop(
+                    state,
                     "The regrasp needs the trocar of the tool and the link of each of its capsules "
-                    "(trocar_pose, part_body_indices) to keep the tool out of the tissue"
+                    "(trocar_pose, part_body_indices) to keep the tool out of the tissue",
                 )
                 action[:] = 0
             elif state.released is None:
@@ -1861,27 +1989,28 @@ class ProceduralGraspController:
                 # one of them: the tissue near that way is taken now, in a call that has nothing else to do.
                 state.released = old_target.copy()
                 state.leave_axis = self._leave_axis(old_target, 0.5 * self.release_opening_rad)
-                state.leg, state.rise_witness, state.rise_rows, state.region = "leave", None, None, None
-                self._leave_field(state, item, old_target, begin=True)
+                self._ask_rise(state, "leave")
+                self._leave_field(state, old_target, begin=True)
             elif state.region is None:
-                self._leave_field(state, item, old_target)
+                self._leave_field(state, old_target)
             elif opening >= self.release_opening_rad - 1e-9 and not contact:
-                why = None
+                reached = True
                 if self.pull_through:
                     # The joints of the tool on the whole way back, frame by frame as it can be commanded.
                     end = self._shifted(state.released, self.transfer_clearance * state.leave_axis)
-                    why = self._reach(line_targets(state.released, end, self.config))[0]
-                if why is None:
+                    reached = self._reaches(
+                        state,
+                        line_targets(state.released, end, self.config),
+                        "The open jaws cannot back away from the needle within the joint limits of the tool",
+                        keep=False,
+                    )
+                if reached:
                     state.stage, state.stage_time = "retreat", 0.0
                 else:
-                    state.status = "stopped"
-                    state.reason = (
-                        f"The open jaws cannot back away from the needle within the joint limits of the tool: {why}"
-                    )
                     action[:] = 0
             return action
         if state.stage == "close":
-            action[6] = np.clip(-opening / self.config.jaw_step_rad, -1, 0)
+            action[6] = self._closing(jaw_target)
             if contact and opening <= 1e-9:
                 # The measured grasp at the tip is the frame of everything that follows.
                 state.grasp = relative.copy()
@@ -1891,8 +2020,8 @@ class ProceduralGraspController:
                 else:
                     state.stage, state.lift_origin, state.lift_time = "tip_lift", old_target.copy(), 0.0
                     state.lift_complete = False
-            elif state.stage_time > 3.0:
-                state.status, state.reason = "stopped", "The jaws did not close on the needle tip"
+            elif state.stage_time > self.stage_wait_seconds:
+                self._stop(state, "The jaws did not close on the needle tip")
             return action
         if state.stage == "retreat":
             target = self._retreat(state, item, old_target, 0.5 * opening)
@@ -1903,7 +2032,7 @@ class ProceduralGraspController:
         if state.status == "stopped":
             return action
         action[:6] = line_to(old_target, target, self.config)
-        if state.stage == "descend" and np.max(np.abs(action[:6])) < 1e-3:
+        if state.stage == "descend" and np.max(np.abs(action[:6])) < REACHED_STEPS:
             state.stage, state.stage_time = "close", 0.0
         return action
 
@@ -1914,15 +2043,14 @@ class ProceduralGraspController:
             if blocked:
                 end = self._shifted(state.released, self.transfer_clearance * state.leave_axis)
                 if self._reached(old_target, end):
-                    state.status = "stopped"
-                    state.reason = (
-                        "The open jaws cannot leave the needle and the tissue by backing away along their own axis"
+                    self._stop(
+                        state,
+                        "The open jaws cannot leave the needle and the tissue by backing away along their own axis",
                     )
                 return end
             if blocked is None:
                 return old_target
-            state.via, state.leg, state.rise = old_target.copy(), "rise", self._rise(old_target)
-            state.turn_witness, state.turn_region, state.turn_clear, state.plan_since = None, None, None, None
+            self._begin_rise(state, old_target)
             return old_target
         # The tool is clear of the tissue and rises: the needle comes to rest and the grasp is planned.
         # A plan that stands is given up if the needle has moved since: the tissue it was pressed into
@@ -1939,28 +2067,26 @@ class ProceduralGraspController:
         if blocked:
             top = self._shifted(state.via, state.rise)
             if self._reached(old_target, top):
-                state.status = "stopped"
-                state.reason = "The tool cannot rise far enough to turn towards the needle tip clear of the tissue"
+                self._stop(state, "The tool cannot rise far enough to turn towards the needle tip clear of the tissue")
             elif self.pull_through:
                 # The rise ends at the limit of the slide: the joints of the tool on its next step.
-                why = self._reach(line_targets(old_target, top, self.config)[:2])[0]
-                if why is not None:
-                    state.status = "stopped"
-                    state.reason = (
-                        f"The tool cannot rise far enough to turn towards the needle tip within its joint limits: {why}"
-                    )
+                self._reaches(
+                    state,
+                    line_targets(old_target, top, self.config)[:2],
+                    "The tool cannot rise far enough to turn towards the needle tip within its joint limits",
+                    keep=False,
+                )
             return top
         if not state.planned:
             # High enough to turn: the tool waits here for the plan.
             return old_target
-        if self.pull_through:
-            # The joints of the tool on the straight way over, frame by frame as it will be commanded.
-            why, least_rad, least_m = self._reach(line_targets(old_target, state.above, self.config))
-            if why is not None:
-                state.status = "stopped"
-                state.reason = f"The tool cannot turn over to the needle tip within its joint limits: {why}"
-                return old_target
-            state.reach_rad, state.reach_m = min(state.reach_rad, least_rad), min(state.reach_m, least_m)
+        # With the pull: the joints of the tool on the straight way over, frame by frame as it will be commanded.
+        if self.pull_through and not self._reaches(
+            state,
+            line_targets(old_target, state.above, self.config),
+            "The tool cannot turn over to the needle tip within its joint limits",
+        ):
+            return old_target
         state.turn = old_target.copy()
         state.stage, state.stage_time, state.leg = "approach", 0.0, "traverse"
         state.status = state.stage
@@ -1994,22 +2120,20 @@ class ProceduralGraspController:
                 state.status = state.stage
                 return state.tip_grasp
             if state.plans_repeated:
-                state.status, state.reason = "stopped", "The needle did not stay at rest for the grasp at its tip"
+                self._stop(state, "The needle did not stay at rest for the grasp at its tip")
                 return old_target
-            state.leg, state.rise_witness, state.rise_rows, state.region = "again", None, None, None
+            self._ask_rise(state, "again")
         # The needle has moved: the tool rises from where it stands, if that is clear, and plans again.
         blocked = self._rise_blocked(state, item, old_target, half_opening)
         if blocked:
-            state.status = "stopped"
-            state.reason = (
-                "The needle moved after the grasp at its tip was planned, and the tool cannot rise to plan it again"
+            self._stop(
+                state,
+                "The needle moved after the grasp at its tip was planned, and the tool cannot rise to plan it again",
             )
         elif blocked is not None:
             state.plans_repeated += 1
-            state.via, state.rise = old_target.copy(), self._rise(old_target)
-            state.plan, state.route, state.planned, state.plan_since = None, None, False, None
-            state.turn_witness, state.turn_region, state.turn_clear = None, None, None
-            state.stage, state.stage_time, state.leg = "retreat", 0.0, "rise"
+            self._begin_rise(state, old_target)
+            state.stage, state.stage_time = "retreat", 0.0
             state.status = state.stage
         return old_target
 
@@ -2046,7 +2170,7 @@ class ProceduralGraspController:
         safe = self._safe_reach(wire)
         along = _rotation(grasp)[:, 1]
         radius, margin = self.turning_radius, self.needle_radius + self.station_slack
-        nearest, furthest = self.transfer_clearance, self.transfer_clearance + 2.0 * radius
+        nearest, furthest = self.transfer_clearance, self.transfer_clearance + ABOVE_SEARCH_RADII * radius
         # The tissue that a strip of this search can come near, taken once.
         strip = np.stack(self._strip(grasp[:3] - nearest * along, grasp[:3] - furthest * along, safe))
         centre = 0.5 * (strip.min(axis=0) + strip.max(axis=0))
@@ -2067,7 +2191,7 @@ class ProceduralGraspController:
                 return "There is no room above the needle tip for the tool to turn towards it"
             inner, distance = distance, min(distance + CLEARANCE_SPACING_RADII * radius, furthest)
         yield
-        for _ in range(6 if inner is not None else 0):
+        for _ in range(SEARCH_HALVINGS if inner is not None else 0):
             middle = 0.5 * (inner + distance)
             if blocked(middle):
                 inner = middle
@@ -2135,7 +2259,7 @@ class ProceduralGraspController:
         is given up in the same way when the needle is found further than that from its pose while the
         tool still rises (:meth:`_retreat`). The procedure stops when the wire has no point for the
         jaws (with the pull: none that is clear and that the tool reaches), when the needle has not
-        come to rest 3 s after the first plan was begun (the time the closing jaws are given as well),
+        come to rest ``stage_wait_seconds`` after the first plan was begun (the time the closing jaws are given as well),
         or when there is no clear way down to the grasp (:meth:`_plan_route`, which follows the plan
         of the grasp).
         """
@@ -2149,7 +2273,7 @@ class ProceduralGraspController:
                 if routed.value is None:
                     state.planned = True
                 else:
-                    state.status, state.reason = "stopped", routed.value
+                    self._stop(state, routed.value)
             return state.planned
         if state.plan is None:
             state.plan_pose = _pose(item["needle_pose"])
@@ -2166,21 +2290,22 @@ class ProceduralGraspController:
             state.plan = None
             result = planned.value
         if self._needle_moved(state, item):
-            if state.stage_time - state.plan_since > 3.0:
-                state.status, state.reason = "stopped", "The needle did not come to rest for the grasp at its tip"
+            if state.stage_time - state.plan_since > self.stage_wait_seconds:
+                self._stop(state, "The needle did not come to rest for the grasp at its tip")
             return False
         if result is None:
-            state.status = "stopped"
-            state.reason = (
-                "The needle tip does not stick out of the tissue far enough for the jaws to take it "
-                "without reaching into the tissue"
-            )
             unreachable = state.plan_notes.get("unreachable")
-            if unreachable is not None:
-                state.reason = (
+            if unreachable is None:
+                reason = (
+                    "The needle tip does not stick out of the tissue far enough for the jaws to take it "
+                    "without reaching into the tissue"
+                )
+            else:
+                reason = (
                     "No point of the needle tip is both clear of the tissue for the jaws and within the reach "
                     f"of the tool: {unreachable}"
                 )
+            self._stop(state, reason)
             return False
         state.tip_grasp, state.tip_grasp_offset = result
         state.reach_rad, state.reach_m = state.plan_notes.get("reach_rad"), state.plan_notes.get("reach_m")
@@ -2193,10 +2318,10 @@ class ProceduralGraspController:
 
         The needle pose ``N0`` and the needle pose in the tool frame ``G`` of this observation are kept
         for the whole pull, as the arc keeps its measured grasp. The arc speed is the speed of the
-        insertion, with the palm kept within 80 % of the rate limits of the actions (the rule of
-        the lift):
+        insertion, with the palm kept within the part ``f`` of the rate limits of the actions that
+        the lift uses (``rate_fraction``):
 
-            v = min( speed,  0.8 (translation_step / frame_dt) R / r_palm,  0.8 (rotation_step / frame_dt) R )
+            v = min( speed,  f (translation_step / frame_dt) R / r_palm,  f (rotation_step / frame_dt) R )
 
         ``R`` the radius of the needle and ``r_palm`` the distance of the palm origin from the
         needle's axis, from ``G``. The commanded angle is bounded by the arc that takes the tail to
@@ -2209,8 +2334,7 @@ class ProceduralGraspController:
         state.grasp = relative.copy()
         state.pull_needle = _pose(item["needle_pose"])
         state.pull_time = state.pull_angle = state.pull_wait = 0.0
-        state.tail_past_entry = self._tail_past(state.pull_needle, item["entry_position"])
-        state.tail_past_exit = self._tail_past(state.pull_needle, item["exit_position"])
+        self._follow_tail(state, state.pull_needle, item)
         if self.thread_tracks:
             state.pull_bound = self._pull_out_span(state.pull_needle, item["exit_position"])
         else:
@@ -2221,20 +2345,15 @@ class ProceduralGraspController:
         config = self.config
         state.pull_speed = min(
             self.speed,
-            0.8 * config.translation_step / config.frame_dt * self.radius / max(arm, 1e-9),
-            0.8 * config.rotation_step / config.frame_dt * self.radius,
+            self.rate_fraction * config.translation_step / config.frame_dt * self.radius / max(arm, 1e-9),
+            self.rate_fraction * config.rotation_step / config.frame_dt * self.radius,
         )
-        angles = np.linspace(0.0, state.pull_bound, int(np.ceil(state.pull_bound / config.rotation_step)) + 1)
-        targets = pull_targets(state.pull_needle, state.grasp, self.arc_center_local, self.arc_axes[2], angles)
-        why, least_rad, least_m = self._reach(targets)
-        if why is not None:
-            state.status = "stopped"
-            state.reason = (
-                f"The tool cannot pull the needle on from where its jaws closed within its joint limits: {why}"
-            )
-            return
-        state.reach_rad, state.reach_m = min(state.reach_rad, least_rad), min(state.reach_m, least_m)
-        state.stage, state.stage_time = "pull", 0.0
+        if self._reaches(
+            state,
+            self._pull_row(state.pull_needle, state.grasp, state.pull_bound),
+            "The tool cannot pull the needle on from where its jaws closed within its joint limits",
+        ):
+            state.stage, state.stage_time = "pull", 0.0
 
     def _pull_target(self, state, item, old_target, elapsed):
         """Target of the pull: the tool turns the needle about the needle's own centre of curvature.
@@ -2264,9 +2383,7 @@ class ProceduralGraspController:
         holds its last target for the hold time of a lift (stage ``clear``), and the procedure
         is done.
         """
-        needle = item["needle_pose"]
-        state.tail_past_entry = self._tail_past(needle, item["entry_position"])
-        state.tail_past_exit = self._tail_past(needle, item["exit_position"])
+        self._follow_tail(state, item["needle_pose"], item)
         if state.stage == "clear":
             state.hold_time += elapsed
             state.status = "holding"
@@ -2295,13 +2412,12 @@ class ProceduralGraspController:
         if state.pull_angle >= state.pull_bound:
             state.pull_wait += elapsed
             if state.pull_wait >= self.pull_wait_seconds - 1e-9:
-                state.status = "stopped"
                 if not self.thread_tracks:
-                    state.reason = "The needle did not follow the pull to the entry of its track"
+                    self._stop(state, "The needle did not follow the pull to the entry of its track")
                 elif held:
-                    state.reason = "The needle did not come free of the tissue"
+                    self._stop(state, "The needle did not come free of the tissue")
                 else:
-                    state.reason = "The needle did not follow the pull out of its track"
+                    self._stop(state, "The needle did not follow the pull out of its track")
                 return old_target
         center, axis = self.arc_center_local, self.arc_axes[2]
         return pull_targets(state.pull_needle, state.grasp, center, axis, state.pull_angle)[0]
@@ -2349,7 +2465,7 @@ class ProceduralGraspController:
             state.exits = int(diagnostics.get("exit_count", 0))
             failure = diagnostics.get("failure_reason")
             if failure or diagnostics.get("status") == "failed" or diagnostics.get("task_status") == "failed":
-                state.status, state.reason = "stopped", str(failure or "Physics reported failure")
+                self._stop(state, str(failure or "Physics reported failure"))
             if state.status == "stopped":
                 continue
 
@@ -2359,15 +2475,15 @@ class ProceduralGraspController:
             jaw_target = np.asarray(item["jaw_target_rad"], dtype=float)
             if any(value.shape != (2,) or not np.isfinite(value).all() for value in (counts, forces, jaw_target)):
                 raise ValueError("Procedural control needs two finite jaw counts, forces and targets")
-            contact = bool(np.all(counts > 0) and np.all(forces > 1e-5))
+            contact = bool(np.all(counts > 0) and np.all(forces > self.contact_force_n))
             if state.grasp is None:
-                actions[index, 6] = np.clip(-(jaw_target[0] - jaw_target[1]) / self.config.jaw_step_rad, -1, 0)
+                actions[index, 6] = self._closing(jaw_target)
                 if now - state.started < self.settle_seconds:
                     continue
                 if not contact:
                     state.status = "waiting_for_grasp"
-                    if now - state.started >= self.settle_seconds + 2.0:
-                        state.status, state.reason = "stopped", "Bilateral needle grasp was not established"
+                    if now - state.started >= self.settle_seconds + self.grasp_wait_seconds:
+                        self._stop(state, "Bilateral needle grasp was not established")
                         actions[index] = 0
                     continue
                 state.grasp = relative.copy()
@@ -2395,8 +2511,8 @@ class ProceduralGraspController:
                     state.lost_since = now
                 state.status = "grasp_lost"
                 state.had_contact = False
-                if now - state.lost_since >= 0.25 - 1e-9:
-                    state.status, state.reason = "stopped", "Bilateral needle contact lost for 0.25 seconds"
+                if now - state.lost_since >= self.contact_loss_seconds - 1e-9:
+                    self._stop(state, f"Bilateral needle contact lost for {self.contact_loss_seconds:g} seconds")
                 continue
             contact_elapsed = elapsed if state.had_contact else 0.0
             state.had_contact, state.lost_since = True, None
@@ -2434,10 +2550,9 @@ class ProceduralGraspController:
                 target = old_target
                 if state.pull_complete:
                     # The procedure is done and the tool holds the needle: the report follows the tail.
-                    state.tail_past_entry = self._tail_past(item["needle_pose"], item["entry_position"])
-                    state.tail_past_exit = self._tail_past(item["needle_pose"], item["exit_position"])
+                    self._follow_tail(state, item["needle_pose"], item)
             actions[index, :6] = action_to(old_target, target, self.config)
-            actions[index, 6] = np.clip(-(jaw_target[0] - jaw_target[1]) / self.config.jaw_step_rad, -1, 0)
+            actions[index, 6] = self._closing(jaw_target)
         return actions
 
     @staticmethod

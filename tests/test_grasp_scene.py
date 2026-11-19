@@ -1154,13 +1154,14 @@ class GraspSceneCensusTests(unittest.TestCase):
         from newton_solver_suturebot.examples.grasp import example_fem_needle_grasp as grasp_example
         from newton_solver_suturebot.examples.grasp._grasp_procedure import ProceduralGraspController
 
-        defaults = grasp_example.Example.create_parser().parse_args(list(options))
+        # ``options`` are arguments of the scene: named after those of the example, they replace them.
+        defaults = grasp_example.Example.create_parser().parse_args([])
         config = SutureSceneConfig(
             device=os.environ["NEWTON_TEST_DEVICE"],
             control_mode="physical_grasp",
             rigid_backend=defaults.rigid_backend,
             substeps=defaults.substeps,
-            example_arguments=grasp_example.Example._coupling(defaults),
+            example_arguments=(*grasp_example.Example._coupling(defaults), *options),
             **grasp_example.Example._bite(defaults.bite_length),
         )
         self.assertEqual(config.rigid_backend, "mujoco-warp")

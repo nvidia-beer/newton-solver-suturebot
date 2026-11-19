@@ -123,13 +123,18 @@ def surface_top(points, vertices, triangles):
 
 
 def border_walk(low, high, start, away, turn_radius, length):
-    """Corner points of a walk from ``start`` to the nearest side of a box and on along its sides.
+    """Corner points of a walk from ``start`` to a side of a box and on along its sides.
 
-    The walk joins the nearest side that does not lie before ``start`` along ``away``, follows it the way
-    ``away`` points (towards the farther corner where ``away`` is square to the side or the nearer corner is
-    less than two turn radii off), and turns onto the next side at every corner. A side that has been walked
-    moves in by two turn radii, so a walk longer than the box goes round again inside itself. A ``start``
-    nearer to its side than one turn radius is put on the side.
+    The walk takes one turn radius towards the nearest side that does not lie before ``start`` along ``away``,
+    then runs along ``away`` to the side that this line meets. It follows that side the way ``away`` points
+    (towards the farther corner where ``away`` is square to the side or the nearer corner is less than two
+    turn radii off), and turns onto the next side at every corner. A side that has been walked moves in by
+    two turn radii, so a walk longer than the box goes round again inside itself.
+
+    The arc of a corner of up to a right angle takes at most one turn radius of each of its legs. Where the
+    line along ``away`` or the side beyond it is shorter than two, or ``away`` points straight at the nearest
+    side, the walk goes straight to the nearest side and follows that. A ``start`` nearer to its side than one
+    turn radius is put on the side.
 
     Args:
         low: Lower corner of the box (x, y) [m].
@@ -156,6 +161,20 @@ def border_walk(low, high, start, away, turn_radius, length):
                 sides.append((abs(foot[across] - start[across]), across, inward, foot))
     distance, across, inward, position = min(sides, key=lambda side: side[0])
     points = [start, position] if distance >= turn_radius else [position]
+    if distance >= turn_radius and away[1 - across] != 0.0:
+        # One turn radius towards that side, then along ``away`` to the side that this line meets.
+        leg = start + turn_radius * (position - start) / distance
+        reach, met = min(
+            (((high if away[axis] > 0.0 else low)[axis] - leg[axis]) / away[axis], axis)
+            for axis in (0, 1)
+            if away[axis] != 0.0
+        )
+        end = leg + reach * away
+        end[met] = (high if away[met] > 0.0 else low)[met]
+        room = np.sign(away[1 - met]) * ((high if away[1 - met] > 0.0 else low)[1 - met] - end[1 - met])
+        # Only where that line and the side beyond it hold the arcs of the corners at both their ends.
+        if reach >= 2.0 * turn_radius and (away[1 - met] == 0.0 or room >= 2.0 * turn_radius):
+            points, position, across, inward = [start, leg, end], end, met, -np.sign(away[met])
     along = 1 - across
     ahead, back = high[along] - position[along], position[along] - low[along]
     sign = np.sign(away[along])
@@ -250,9 +269,18 @@ def loose_thread_coordinates(
       drawn along its own length; one that lies beside or before the stitch must first swing round the entry,
       which throws its slack outward. No point of a needle that turns through the entry on its circle is
       farther from the entry than ``2 R``.
-    - From there it goes to the nearest side of the pad's border that is not before that point, and along the
-      border away from the stitch (:func:`border_walk`). The walk keeps one turn radius from the pad's
-      bounding box, and its corners are arcs of the turn radius.
+    - From there it takes one turn radius towards the nearest side of the pad's border that is not before
+      that point, turns behind the stitch again and runs straight on to the border, then along the border
+      away from the stitch (:func:`border_walk`). The walk keeps one turn radius from the pad's bounding
+      box, and its corners are arcs of the turn radius.
+    - That step towards the side is a choice, kept for the lead: a lead that reaches the pad across the
+      stitch lays its slack on the far side of the stitch from that side of the pad; one that reached it
+      heading behind the stitch dropped the slack beside the stitch, where the tools of the grasp scene
+      work. Its length is the most that the arc of its corner can take, and no more: a leg that ran on to
+      the side held the foot of the lead in its direction, the lead then stood on the pad as an arch until
+      the needle's tail had turned, and came down one of two ways, one of which pushed the border row over
+      the pad's edge in the pull. With the short step the foot gives way and the lead lies down in the
+      first frames, the same way every time (records and counts: docs/usage.md, the spare thread).
     - The turn radius is the thread's elasto-gravity length ``(E I / (rho A g))^(1/3)``: a thread that lies
       on the pad holds bends down to that radius, tighter ones spring open. It is also the length over which a
       push at one point bends the thread aside, which is why the walk keeps that distance from the edge. A

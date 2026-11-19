@@ -14,7 +14,8 @@ import warp as wp
 from test_grasp_procedure import fixture, snapshot
 from test_grasp_tip_clearance import TROCAR, flat_tissue, tool
 
-from newton_solver_suturebot.examples.grasp._dvrk_grasper import needle_to_gripper_pose
+from newton_solver_suturebot.examples.grasp import _grasp_procedure as procedure
+from newton_solver_suturebot.examples.grasp._dvrk_grasper import GRASP_BITE_DEPTH_M, needle_to_gripper_pose
 from newton_solver_suturebot.examples.grasp._dvrk_rcm_grasper import arm_link_poses
 from newton_solver_suturebot.examples.grasp._grasp_procedure import (
     ProceduralGraspController,
@@ -800,6 +801,63 @@ class GraspLiftTests(unittest.TestCase):
             self.assertFalse(original.report()[0]["lift_started"])
         self.assertGreater(original.report()[0]["commanded_angle_rad"], geometry["insertion_plan"]["initial_angle"])
         self.assertEqual(original.lift_duration, 0.0)
+
+    def test_every_choice_of_the_procedure_has_one_name_its_value_and_a_row_in_the_table(self):
+        # The numbers that are not derived, as they are in use. A change of one is a change of the
+        # commanded procedure and needs its own proof; the table at the top of the module says what
+        # chose each of them.
+        module = {
+            "RAMP_SECONDS": 0.5,
+            "REACHED_STEPS": 1e-3,
+            "CLEARANCE_SPACING_RADII": 0.25,
+            "CLEARANCE_REFINEMENT": 4,
+            "PLAN_CAPSULES_PER_STEP": 1,
+            "ROUTE_CAPSULES_PER_STEP": 4,
+            "SEARCH_HALVINGS": 6,
+            "ABOVE_SEARCH_RADII": 2.0,
+            "WIRE_STATION_RADII": 0.5,
+        }
+        controller = {
+            "lift_rise_seconds": 0.75,
+            "lift_hold_seconds": 0.5,
+            "lift_height_limit": 0.01,
+            "rate_fraction": 0.8,
+            "contact_force_n": 1e-5,
+            "contact_loss_seconds": 0.25,
+            "grasp_wait_seconds": 2.0,
+            "stage_wait_seconds": 3.0,
+            "entry_clearance": 0.003,
+            "transfer_clearance": 0.012,
+            "release_opening_rad": 0.6,
+            "tip_grasp_roll_rad": -2.618,
+            "tip_grasp_bite_rad": 0.7854,
+            "tip_grasp_jaws_exchanged": False,
+            "pull_grasp_roll_rad": -1.0472,
+            "pull_grasp_bite_rad": 0.5236,
+            "pull_grasp_jaws_exchanged": True,
+            "pull_slack_radii": 4.0,
+        }
+        for name, value in module.items():
+            with self.subTest(name=name):
+                self.assertEqual(getattr(procedure, name), value)
+                self.assertIn(f"``{name}``", procedure.__doc__)
+        for name, value in controller.items():
+            with self.subTest(name=name):
+                self.assertEqual(getattr(ProceduralGraspController, name), value)
+                self.assertIn(f"``{name}``", procedure.__doc__)
+        # The bite point of every grasp lives with the grasp pose and has its row as well.
+        self.assertEqual(GRASP_BITE_DEPTH_M, 0.006)
+        self.assertIn("``GRASP_BITE_DEPTH_M``", procedure.__doc__)
+        # Two numbers that follow from the choices are written as what they follow from.
+        self.assertEqual(ProceduralGraspController.pull_wait_seconds, ProceduralGraspController.contact_loss_seconds)
+        self.assertEqual(procedure.WIRE_REACH_RADII, 1.5)
+        # The defaults of the arguments are the two choices that the example offers as options.
+        geometry, config = fixture()
+        default = ProceduralGraspController(geometry, config)
+        self.assertEqual((default.speed, default.settle_seconds), (0.003, 0.5))
+        # The rounded radians of the two grasps at the tip are the degrees of their scans.
+        angles = np.rad2deg([-2.618, 0.7854, -1.0472, 0.5236])
+        np.testing.assert_allclose(angles, [-150.0, 45.0, -60.0, 30.0], atol=5e-4)
 
     def test_height_and_positive_lift_normal_validation(self):
         geometry, config = lift_fixture()
