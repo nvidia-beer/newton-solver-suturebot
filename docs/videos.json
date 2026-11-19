@@ -34,7 +34,7 @@
     "caption": "Replay measured da Vinci Research Kit (dVRK) tissue3 tool motion with prepared USD tools, cameras, fixture and the original static phantom. Four synchronized views compare the model with source video; green point labels stay on the mesh. Camera and pad placement remain fitted estimates."
   },
   "fem_surgical_incision": {
-    "frames": 360,
+    "frames": 480,
     "fps": 60,
     "poster_frame": 240,
     "show_ui": true,

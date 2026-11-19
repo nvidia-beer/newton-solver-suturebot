@@ -1,0 +1,146 @@
+{
+  "example": "fem_surgical_incision",
+  "module": "newton_solver_suturebot.examples.incision.example_fem_surgical_incision",
+  "caption": "Simulation-time playback, seen from straight above: the 38,730-tetrahedron Baymax body, 135 mm across, lies on its back; a planar blade cuts the belly along the midline, 28.5 mm long and 13.5 mm deep where the body is 42 mm thick (not through: the Line tool of the window cuts through the whole depth of the view, this blade goes through the same cut call), and two right-drag grips, one on each side, are pulled 4 mm and 8 mm outward and stay as spring holds (green markers) that keep the wound 7.5 mm open. Nothing holds the body: it follows the first grip, and in the first half second it sinks 13 mm into the floor, a known defect that this view shows only as the body getting a tenth smaller. The picture is the middle 800x660 of the 1280x720 recording: the side panel and the counters are cut off. Playback at 60 frames/s does not measure live FPS.",
+  "arguments": [
+    "--test"
+  ],
+  "device": "cuda:0",
+  "frames": 480,
+  "fps": 60,
+  "width": 800,
+  "height": 660,
+  "crop": {
+    "recorded_width": 1280,
+    "recorded_height": 720,
+    "x": 322,
+    "y": 50,
+    "width": 800,
+    "height": 660,
+    "tool": "ffmpeg crop=800:660:322:50, libx264 crf 17"
+  },
+  "show_ui": true,
+  "recording_wall_seconds": 16.595232183999542,
+  "playback_is_performance_benchmark": false,
+  "simulation_time": [
+    {
+      "attribute": "sim_time",
+      "end": 7.999999999999977
+    }
+  ],
+  "dependencies": {
+    "newton_solver_suturebot": "0.1.0",
+    "newton": "1.8.0",
+    "warp-lang": "1.17.0+cu13"
+  },
+  "camera": {
+    "position": [
+      0.02556,
+      -0.03912,
+      0.12718
+    ],
+    "target": [
+      0.02556,
+      -0.03485,
+      -0.03587
+    ],
+    "fov": 45.0
+  },
+  "camera_view": [
+    {
+      "frame": 0,
+      "position": [
+        0.02556000091135502,
+        -0.03911999985575676,
+        0.12717999517917633
+      ],
+      "view_direction": [
+        1.6030204165483786e-18,
+        0.026179310110710514,
+        -0.9996572631267816
+      ],
+      "pitch": -88.49986463227405,
+      "yaw": 90.0,
+      "fov": 45.0,
+      "near": 0.000135,
+      "far": 2.0
+    },
+    {
+      "frame": 479,
+      "position": [
+        0.02556000091135502,
+        -0.03911999985575676,
+        0.12717999517917633
+      ],
+      "view_direction": [
+        1.6030204165483786e-18,
+        0.026179310110710514,
+        -0.9996572631267816
+      ],
+      "pitch": -88.49986463227405,
+      "yaw": 90.0,
+      "fov": 45.0,
+      "near": 0.000135,
+      "far": 2.0
+    }
+  ],
+  "scenario": {
+    "original_vertices": 8965,
+    "original_tetrahedra": 38730,
+    "all_material_active": true,
+    "fixed_nodes": 0,
+    "cuts": 1,
+    "grips": 2,
+    "wound_opening_m": 0.007517699152231216,
+    "grip_distance_m": 0.019509758800268173,
+    "volume_guard_limited_steps": 0,
+    "cut_error": "",
+    "events": [
+      {
+        "frame": 38,
+        "action": "planar_cut_of_limited_depth",
+        "length_m": 0.0285,
+        "depth_below_skin_m": 0.013500000000000002,
+        "sunk_since_start_m": 0.013609083523776534,
+        "material_components": 1,
+        "mass_before_kg": 0.09245118498802185,
+        "mass_after_kg": 0.09245118498802185
+      },
+      {
+        "frame": 70,
+        "action": "begin_right_drag",
+        "side": "-x",
+        "point_m": [
+          0.03273417006368746,
+          -0.03827656882820808,
+          -0.01247640018024021
+        ]
+      },
+      {
+        "frame": 167,
+        "action": "release_to_hold",
+        "side": "-x",
+        "pull_m": 0.004,
+        "wound_opening_m": 4.820898175239563e-05
+      },
+      {
+        "frame": 187,
+        "action": "begin_right_drag",
+        "side": "+x",
+        "point_m": [
+          0.040531986011810725,
+          -0.03827735110610667,
+          -0.012647266114429373
+        ]
+      },
+      {
+        "frame": 380,
+        "action": "release_to_hold",
+        "side": "+x",
+        "pull_m": 0.008,
+        "wound_opening_m": 0.007510516792535782
+      }
+    ],
+    "interaction": "a planar cut of limited depth through Example.cut; two right-drags through the mouse handlers of the screen pick tool (through its callbacks where there is no window)"
+  }
+}

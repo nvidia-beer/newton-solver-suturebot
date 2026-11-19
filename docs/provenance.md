@@ -115,12 +115,28 @@ physical contact or live FPS.
 The [full-pad cutting movie](media/fem_phantom_cut.mp4) is a new standalone
 capture, rather than an imported clip. It shows the pad example
 `fem_phantom_cut` as it was before 2026-11-17; the example that replaced it,
-`fem_surgical_incision`, has no recorded clip yet. The movie's [sidecar](media/fem_phantom_cut.json)
+`fem_surgical_incision`, has its own clip, described in the next paragraph. The movie's [sidecar](media/fem_phantom_cut.json)
 records this package's module, 360 frames, six simulated seconds and the
 slice/grip/release sequence. The encoding rate is 60 FPS; the 199.447-second
 capture wall time includes setup, rendering and encoding and is not live FPS.
 The new [cutting validation report](validation/standalone/phantom-cut.json)
 keeps its evidence separate from the original imported artifact hashes.
+
+The [Baymax cutting movie](media/fem_surgical_incision.mp4) is a standalone
+capture of 2026-11-19, seen from straight above. Its
+[sidecar](media/fem_surgical_incision.json) records 480 frames, eight
+simulated seconds: a planar blade cuts the belly along the midline, 28.5 mm
+long and 13.5 mm deep, and two right-drag grips, one on each side, are pulled
+4 mm and 8 mm outward and stay as spring holds (green markers) that keep the
+wound 7.5 mm open. The picture is the middle 800×660 of the 1280×720
+recording; the side panel and the counters are cut off. Nothing holds the
+body: in the first half second it sinks 13 mm into the floor, a known defect
+that the top view shows only as the body getting about a tenth smaller. The
+blade, the two grips and the camera of this capture are not in
+`tools/video_scenarios.py` and `tools/record_examples.py` yet: the recipe in
+`docs/videos.json` still scripts a slice through a hand, so it records
+another scene than this clip shows; only its frame count follows the clip.
+The encoding rate is 60 FPS and is not live FPS.
 
 The [grasp movie](media/fem_needle_grasp.mp4) and the
 [tool/tissue contact movie](media/fem_tool_tissue.mp4) are standalone captures
