@@ -910,6 +910,20 @@ class Example(PhantomExample):
         self._substep_bound.add(now[1] - mark[1], now[2] - mark[2], now[3] - mark[3], now[0] - mark[0])
         return now
 
+    def _wait_for_device(self):
+        """Wait until the device has finished what was issued; nothing crosses to the host.
+
+        A call with a deadline measures a substep on the host clock, and what a substep issues
+        without waiting for it is part of that substep: the hook of an accepted step (the thread
+        step of a scene with a thread), the tangent of a retry and the start of an attempt that
+        the call leaves open. Waited for here, that time is
+        in the substep, in the bound of the next one (:class:`SubstepBound`) and in the tail of
+        its attempt (:class:`HostTrialBudget`). Left for the caller, the first read of the
+        observation that follows the call waits for it, and the caller plans for the longest
+        observation in every deadline: the same time would be planned for twice.
+        """
+        wp.synchronize_device(self.device)
+
     def _attempt_fits(self, now, deadline):
         """The rule of a call with a deadline: whether one more attempt may start at the host time ``now`` [s].
 
@@ -954,7 +968,13 @@ class Example(PhantomExample):
                 by the call that finishes it. A rejected attempt halves the time step and
                 builds the tangent for it before the call returns, as it does before a retry in
                 the same call: an unfinished frame always holds the tangent of its next
-                attempt. Without ``inside`` a call never leaves an attempt that it started with
+                attempt. A substep ends when the device has finished what it issued: before
+                a substep is measured, before the question for a retry and before it leaves
+                an attempt open, the call waits for the accepted-step hook, for the tangent
+                of the retry and for what the open attempt has issued
+                (:meth:`_wait_for_device`), so a call that returns leaves nothing for the
+                caller's observation to wait for. Without ``inside`` a call never leaves an
+                attempt that it started with
                 nothing open: one that takes longer than the bound (a trial loop handed over to
                 the host-controlled loop) ends after the deadline. A call that goes on with an
                 attempt that the call before left open is the exception (see ``inside``).
@@ -1048,8 +1068,9 @@ class Example(PhantomExample):
                     if not ended:
                         # Inside an attempt, before a host-controlled trial that does not fit: the
                         # next call goes on with that trial and measures the substep on from what
-                        # this call spent on it.
+                        # this call spent on it (with what the attempt has issued so far).
                         if substep is not None:
+                            self._wait_for_device()
                             now = self._substep_mark()
                             spent = tuple(after - before for after, before in zip(now, substep, strict=True))
                         self._pending_frame = (step_dt, remaining, quick_steps, spent)
@@ -1071,8 +1092,10 @@ class Example(PhantomExample):
                     # Between a rejected attempt and its retry: the retry starts in this call
                     # only if a substep that uses up its trials ends by the deadline. The
                     # coupler has restored the accepted state, the time step is halved and
-                    # its tangent is built; the next call starts with the retry and measures
-                    # the substep on from what this call spent on it.
+                    # its tangent is built (waited for: it is part of what this call spent);
+                    # the next call starts with the retry and measures the substep on from
+                    # what this call spent on it.
+                    self._wait_for_device()
                     now = self._substep_mark()
                     if not self._attempt_fits(now[0], deadline):
                         spent = tuple(after - before for after, before in zip(now, substep, strict=True))
@@ -1096,7 +1119,8 @@ class Example(PhantomExample):
                 self.manual_position = position
             # The state check reads a few bytes back, which waits for everything issued
             # before it. Issue it first: the device work of the accepted-step hook then
-            # runs while the host prepares the next interval instead of being waited for.
+            # runs while the host prepares the next interval instead of being waited for
+            # (a call with a deadline waits for it where the substep ends, below).
             pose_error = self._observe_state(desired)
             self._accepted_step(step_dt)
             if pose_error is None:
@@ -1137,6 +1161,10 @@ class Example(PhantomExample):
                 if next_dt != step_dt:
                     step_dt = next_dt
                     self.solver.refresh_tangent(self._frame_particle_q, step_dt)
+                if deadline is not None:
+                    # The substep ends when the device has finished what it issued above (the
+                    # accepted-step hook): before its attempt's tail and the substep are measured.
+                    self._wait_for_device()
                 if budget is not None:
                     # The tail of the attempt (checks, commit, the work after the acceptance) ends here.
                     budget.close()

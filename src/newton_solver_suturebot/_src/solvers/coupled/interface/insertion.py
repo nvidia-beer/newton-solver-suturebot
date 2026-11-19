@@ -907,6 +907,9 @@ class NeedleTissueInteraction:
             raise ValueError("reference_to_active must contain active particle indices or -1")
         self._live_surface_vertices = np.flatnonzero(self.mapping >= 0)
         self._dynamic_surface_faces = np.flatnonzero(np.any(self.mapping[self.surface_triangles] >= 0, axis=1))
+        # Bounds of every face of the reference surface as it is built. A face without an active
+        # vertex never moves, so these are its bounds for good (_swept_surface_bounds).
+        self._reference_surface_bounds = _vertex_bounds(self.surface_vertices[self.surface_triangles])
         self._surface_geometry = None
         self._surface_bounds = None
         self.fixed = np.zeros(len(self.vertices), np.int32)
@@ -1343,6 +1346,25 @@ class NeedleTissueInteraction:
             return None, "start difference not finite"
         return growth, None
 
+    def _swept_surface_bounds(self, old_points, points):
+        """Bounds of every surface face over a step from ``old_points`` to ``points``, for the complete host test.
+
+        The numbers that :func:`_surface_crossings` takes for itself without bounds, so the test
+        selects the same faces and returns the same crossings. Without bounds it gathers both
+        position sets of every face of the reference surface, of which only the faces with an
+        active vertex move: the others keep the bounds they were built with
+        (``_reference_surface_bounds``), and only the moving ones are taken from the positions.
+        The complete test is that of a step whose start is not the committed copy, which the
+        first step after a reset always is.
+        """
+        low, high = (bound.copy() for bound in self._reference_surface_bounds)
+        faces = self._dynamic_surface_faces
+        triangles = self.surface_triangles[faces]
+        old_low, old_high = _vertex_bounds(old_points[triangles])
+        new_low, new_high = _vertex_bounds(points[triangles])
+        low[faces], high[faces] = np.minimum(old_low, new_low), np.maximum(old_high, new_high)
+        return low, high
+
     def _material_crossings(self, start, end, old_q, q, *, active=False):
         triangles = self._active_triangles if active else self.surface_triangles
         if active:
@@ -1394,6 +1416,9 @@ class NeedleTissueInteraction:
                 bounds = current
             elif previous is not None and np.array_equal(old_q, self._previous_q):
                 bounds = (np.minimum(previous[0], current[0]), np.maximum(previous[1], current[1]))
+        if bounds is None and candidates is None and not active:
+            # The complete host test of the reference surface.
+            bounds = self._swept_surface_bounds(old_points, points)
         return _surface_crossings(start, end, old_points, points, triangles, bounds=bounds, candidates=candidates)
 
     @property
@@ -2147,6 +2172,9 @@ class NeedleTissueInteraction:
                 np.minimum(self._previous_active_bounds[0], self._active_bounds[0]),
                 np.maximum(self._previous_active_bounds[1], self._active_bounds[1]),
             )
+        if bounds is None:
+            # The complete host test of the reference surface.
+            bounds = self._swept_surface_bounds(old_points, points)
         crossings = _surface_crossings(start, tip, old_points, points, self.surface_triangles, bounds=bounds)
         active_crossings = _surface_crossings(start, tip, old_q, q, self._active_triangles, bounds=active_bounds)
         return crossings, active_crossings

@@ -2029,10 +2029,13 @@ that run 12 or 13 trials, up to five per run took longer than 13 mean trials,
 by up to 11 ms.)
 
 - the drawing: as long as the longest `render()`;
-- the observation after the scene has stepped: as long as the longest one;
+- the observation after the scene has stepped: as long as the longest one. It
+  waits for nothing that the step issued on the device (since 2026-11-19,
+  "The two times of the plan that were not explained" below);
 - one more attempt:
   `outside + loops * max((trial budget + 1) * time per trial, loop)`.
   `outside` is the longest time a substep has taken outside its trial loops,
+  with the wait for what it issued on the device (the step of the thread),
   `loop` the longest time of a trial loop (of a substep with several loops,
   their mean). The time per trial is the time spent in the coupling's trial
   loops divided by the trials evaluated, a mean over the run: a loop is taken
@@ -2187,7 +2190,8 @@ completed; the last step of the run has no interval after it.)
   frame (2.0 ms at most) and 3.5 ms in the median, 8.4 ms at most, after one
   that does not; the plan of that run took it as long as the last one, and
   in 348 of the 4,271 steps it was over 4 ms longer than that. Why it differs
-  was not looked into. It
+  was not looked into then (it is the wait for the step of the thread: "The
+  two times of the plan that were not explained" below). It
   is the only interval over 60 ms of the run (the next are 59.7, 59.0 and
   57.9 ms, in the retreat, each with an observation 4.5 to 6 ms longer than
   the last one; 34 are over 50 ms, all in the release and the retreat). So
@@ -2260,6 +2264,47 @@ there). One run is not a rate. In brackets, the run above (`w_def_1950`):
   the tail 2.1 mm past the exit marker; 5 attempts are rejected, the
   tetrahedron guard rejects no tissue step, nothing is captured or loaded
   after start-up. The window run does not read the thread.
+
+**The two times of the plan that were not explained (2026-11-19).** Two
+window runs of the default, 1950 frames each, alone on the GPU, the monitor
+woken, machine load 0.3 to 1.1: `w_base_1` (17:19:30 to 17:21:53, commit
+`640000d`) and `w_tree_1` (17:46:46 to 17:49:09, with the two changes below);
+records and tools in `/tmp/suturebot-gpu-work/pace_cheap/build/`, a work
+folder outside this repository. One run each is not a rate.
+
+- The observation after a step that leaves its frame unfinished waited for
+  the step of the thread, which an accepted substep issues on the device
+  without waiting for it (1.5 ms in the median, 7.0 ms at most, timed as a
+  wait placed right after that step in a third run, 400 frames without a
+  window; a step that completes its frame waits for it in the tip sample).
+  The work is real, but the plan left it free twice: in `outside` and in the
+  longest observation. A step with a budget now waits for the device before
+  it measures a substep (`_wait_for_device` in `simulate` of the insertion
+  example; no data crosses and nothing is launched: the wait moves from the
+  observation into the step), and the observation takes 1.2 ms in the median
+  and 2.2 ms at most after either kind of step (before: 2.7 and 8.1 ms after
+  a step that leaves its frame unfinished, 1.2 and 2.3 ms after one that
+  completes it).
+- The end of the run's first attempt was the swept test of the needle tip:
+  the first step after a reset has no committed copy of the tissue, and its
+  complete host test gathered all 110,956 faces of the reference surface
+  (13.4 ms), of which only those with an active vertex move. The bounds of
+  the others are now taken once, when the interaction is built
+  (`_swept_surface_bounds`; the same faces selected, the same crossings):
+  2.3 ms, and the first substep is no longer the longest of the run.
+
+| | `w_base_1` | `w_tree_1` |
+|---|---|---|
+| steps for the 1950 frames; with a second attempt | 7829; 0 | 7722; 103, all in frames 20 to 87 |
+| intervals over 66.7 ms; longest; median | 0; 57.8 ms; 15.5 ms | 0; 56.8 ms; 15.8 ms |
+| done at frame; after; the 1950 frames | 1838; 124.1 s; 129.7 s | 1852; 125.2 s; 130.3 s |
+| at the end: `outside` + `loop`; longest observation; longest drawing | 17.5 + 43.0; 8.1; 7.4 ms | 12.6 + 43.5; 2.2; 6.4 ms |
+| the plan after a step, least / at the end | 70.5 / 76.0 ms | 56.8 / 64.7 ms |
+
+The pace did not change: the plan stands 11 to 14 ms lower, but a step's
+first attempt takes 10 ms in the median and the loop term alone is 39 to
+43.5 ms. A replay of the plan on the record of `w_base_1` had predicted that
+(7,829 steps, 124.1 s). The pace needs a device loop that a step can leave.
 
 **Measured in the window, the procedure of before the thread tracks** (the
 pull ended at the needle's entry; today every row is with

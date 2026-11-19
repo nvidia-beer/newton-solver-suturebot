@@ -21,11 +21,14 @@ loop and for every rejected attempt. Such substeps come in rows (a needle entry 
 tip that leaves the tissue), so the next substep is taken to run as many loops as the last
 one did, each to the trial limit. Nothing is read from a device: the scene takes the host
 clock where a substep starts and ends, and the coupler counts its trial loops and takes the
-clock around them.
+clock around them. A substep ends when the device has finished what the substep issued: the
+scene waits for it before it takes the clock (the step of the thread that an acceptance
+issues; no data crosses), so that time is in ``outside`` and not in what follows the call.
 
 What follows the scene's step in a call of the driver (the observation of the accepted state,
 the drawing) is the driver's to take off the deadline it gives, by the same rule: as long as
-the longest it has measured, not as long as the last one.
+the longest it has measured, not as long as the last one. The observation then waits for
+nothing that the step issued: a wait counted there as well would be left free twice.
 
 An attempt can still take longer than the bound: one that is slower than everything measured
 before it (it is in the bound from then on), and one that runs more loops than the substep
@@ -124,7 +127,8 @@ class HostTrialBudget:
     call runs: the attempt stays open in between.
 
     A host-controlled trial can be the last of its loop. The checks and the commit of the
-    attempt, the scene's work after an acceptance and, in the last substep of a frame, the end
+    attempt, the scene's work after an acceptance (with the wait for what it issued on the
+    device) and, in the last substep of a frame, the end
     of the frame then follow without a question. The bound of a trial is therefore the
     longest host-controlled trial plus the longest such tail that this object has measured,
     both on the host clock, since the scene was reset. Before both have been measured a
