@@ -198,8 +198,11 @@ the middle 800×660 of the 1280×720 recording, the part that the `crop` keeps.
 The grip markers are drawn by the viewer's interface, so the recording has the
 interface on (`show_ui`), and the crop cuts off its side panel, the counters
 and the recorder's title bar. Nothing holds the body: it follows the first
-grip, and in the first half second it sinks 13 mm into the floor, a known
-defect that the top view shows only as the body getting about a tenth smaller.
+grip. In the first half second of the clip it sinks 13 mm into the floor,
+which the top view shows only as the body getting about a tenth smaller: the
+clip was recorded before the floor contact was corrected on 2026-11-20. The
+example now rests on the floor, 0.27 mm under its plane at the deepest point,
+and has not been recorded again.
 The encoding rate is 60 frames per second: simulation-time playback, not live
 FPS. The clip of commit `4b9fe78` showed the same scene with the same crop,
 cut with ffmpeg from an earlier recording of this scenario and camera, without

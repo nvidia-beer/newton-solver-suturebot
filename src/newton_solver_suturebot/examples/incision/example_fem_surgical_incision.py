@@ -548,7 +548,10 @@ class Example:
             current, following = (self.state_0, self.state_1) if substep % 2 == 0 else (self.state_1, self.state_0)
             forces = self.contact.evaluate(current.particle_q, current.particle_qd, self.sim_dt, piece_contact=True)
             self.holds.add_forces(current.particle_q, current.particle_qd, forces, self.sim_dt)
+            # The contact rows of this substep are in the solver's matrix for its solve.
+            self.contact.add_matrix(self.solver)
             self.solver.step(current, following, self.control, None, self.sim_dt, external_forces=forces)
+            self.contact.remove_matrix(self.solver)
             self.volume_guard.apply(
                 following.particle_q, following.particle_qd, self.sim_dt, previous_q=current.particle_q
             )

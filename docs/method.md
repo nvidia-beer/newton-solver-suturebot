@@ -173,6 +173,24 @@ guarantees freedom from inversion or self-intersection. The prepared-step and
 fixed-particle projection APIs described above do not support streaming cut
 topology.
 
+The floor and the contact between cut pieces
+([CutSurfaceContact](../src/newton_solver_suturebot/_src/cutting/contact.py))
+are area-weighted penalties on the corners of the boundary triangles: a row
+with stiffness $k$ [N/m] (the penalty per area times a third of its triangle)
+and damper $c$ pushes with $-k\,(g + h\,\dot g) - c\,\dot g$ for its gap $g$ and
+time step $h$. Like a grip, the row is linearly implicit in the step: its
+tangent $h^2 k + h c$ along the contact normal stands on the diagonal of the
+system matrix for the solve, as a bound by row sums
+([SolveDiagonal](../src/newton_solver_suturebot/_src/solvers/fem/solve_diagonal.py)),
+and multiplies the velocity change there. A body at rest is therefore carried
+at the depth of its contact pressure over the penalty per area, whatever the
+time step. A row is in a step while its point is under the surface at the
+start of the step or would be at its end; within the step it is linear and is
+not clamped, so it pulls for the rest of the one step in which its point
+leaves. Dividing the row's force by $1 + h^2 k/m + h c/m$ instead (the form
+until 2026-11-20) leaves the balance of a resting body wrong by that factor,
+about 500 for the Baymax body.
+
 Material grips are finite spring loads attached to material coordinates. They
 follow the cut fragments rather than prescribing every node's position.
 The [full-pad guide](phantom-cut.md) records the example's controls and support

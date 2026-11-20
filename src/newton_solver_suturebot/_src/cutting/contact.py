@@ -7,16 +7,29 @@ Virtual tetrahedron corners can lie outside their remaining material. Only
 the actual exterior and incision triangles participate in contact. Contact
 forces are mapped back with the transpose of the surface interpolation.
 
-The Linear FEM integrator consumes these forces explicitly. A local implicit
-penalty denominator, bounded by assembled nodal contact row sums, limits the
-stiffness seen by its timestep. This is discrete, frictionless contact, not a
-converged contact solve or continuous collision detection.
+Each contact row is a spring with a damper along its normal, and the Linear FEM
+step takes it linearly implicitly, like a grip: the force is that of the row at
+the end of the step if its normal velocity stayed as it is, and the row's
+tangent, dt² k + dt c along the normal, stands in the solver's matrix during the
+solve, where it multiplies the velocity change (``add_matrix`` before the solve,
+``remove_matrix`` after it). A body at rest has no velocity change: the reaction
+that balances its weight is the plain penalty, k times the penetration, whatever
+the timestep. The tangent enters as a block-diagonal bound by row sums, so it
+needs no matrix entry between the nodes of two pieces.
+
+A row is in a step when its point is under the other surface at the start of
+the step, or would be at its end at its present velocity. Within that step it is
+linear: it pushes while the point is under the surface and pulls for what is
+left of the step once the point is out, and it is gone in the next. This is
+discrete, frictionless contact, not a converged contact solve or continuous
+collision detection.
 """
 
 import math
 
 import warp as wp
 
+from ..solvers.fem.solve_diagonal import SolveDiagonal
 from ..utils.step_time import StepTime
 
 
@@ -265,8 +278,7 @@ def _contact_bounds(
     stiffness: wp.array[float],
     damping: wp.array[float],
     normal_velocity: wp.array[float],
-    node_stiffness: wp.array[float],
-    node_damping: wp.array[float],
+    node_tangent: wp.array[wp.mat33],
 ):
     # dt holds the timestep [s] in its one element (StepTime.seconds).
     row = wp.tid()
@@ -296,14 +308,17 @@ def _contact_bounds(
             c = 2.0 * damping_ratio * wp.sqrt(k / inverse)
             damping[row] = c
             normal_velocity[row] = rate
-            # Absolute row sums include all samples sharing a basis node.
-            # Independently limiting each sample would become stiffer when
-            # the surface is subdivided, even with area-weighted penalties.
+            # The row's tangent in the solver's matrix is (dt² k + dt c) (w n)(w n)ᵀ over its
+            # coefficients w. Its blocks between different nodes are replaced by their absolute
+            # row sums on the diagonal, |w_i| sum_j |w_j| n nᵀ, which is never less than the
+            # tangent itself: the step stays stable, and a row between two pieces needs no
+            # matrix entry between their nodes. For a surface corner that is a node (w = 1 on
+            # one node) the bound is the tangent. The sums include all samples sharing a node.
+            tangent = (dt[0] * dt[0] * k + dt[0] * c) * weight_sum * wp.outer(normals[row], normals[row])
             for i in range(24):
-                w = wp.abs(coefficients[row, i]) * weight_sum
+                w = wp.abs(coefficients[row, i])
                 if w > 0.0:
-                    wp.atomic_add(node_stiffness, indices[row, i], k * w)
-                    wp.atomic_add(node_damping, indices[row, i], c * w)
+                    wp.atomic_add(node_tangent, indices[row, i], w * tangent)
 
 
 @wp.kernel(enable_backward=False)
@@ -312,12 +327,9 @@ def _scatter_contacts(
     coefficients: wp.array2d[float],
     normals: wp.array[wp.vec3],
     gaps: wp.array[float],
-    inverse_mass: wp.array[float],
     stiffness: wp.array[float],
     damping: wp.array[float],
     normal_velocity: wp.array[float],
-    node_stiffness: wp.array[float],
-    node_damping: wp.array[float],
     dt: wp.array[float],
     piece_row_offset: int,
     active_rows: wp.array[int],
@@ -326,17 +338,13 @@ def _scatter_contacts(
     # dt holds the timestep [s] in its one element (StepTime.seconds).
     row = wp.tid()
     if stiffness[row] > 0.0:
-        stiffness_bound, damping_bound = float(0.0), float(0.0)
-        for i in range(24):
-            index = indices[row, i]
-            if coefficients[row, i] != 0.0:
-                stiffness_bound = wp.max(stiffness_bound, inverse_mass[index] * node_stiffness[index])
-                damping_bound = wp.max(damping_bound, inverse_mass[index] * node_damping[index])
+        # The row at the end of the step if its normal velocity stayed as it is; the matrix holds
+        # what the velocity change adds (_contact_bounds). Not clamped: a row is linear within its
+        # step. A row that only pushed would be dropped in every step in which its point moves out,
+        # and a body then bounces between two states once dt² k exceeds four times its mass.
         rate = normal_velocity[row]
-        magnitude = wp.max(0.0, -stiffness[row] * (gaps[row] + dt[0] * rate) - damping[row] * rate)
-        magnitude /= 1.0 + dt[0] * dt[0] * stiffness_bound + dt[0] * damping_bound
-        if magnitude > 0.0:
-            wp.atomic_add(active_rows, int(row >= piece_row_offset), 1)
+        magnitude = -stiffness[row] * (gaps[row] + dt[0] * rate) - damping[row] * rate
+        wp.atomic_add(active_rows, int(row >= piece_row_offset), 1)
         value = magnitude * normals[row]
         for i in range(24):
             if coefficients[row, i] != 0.0:
@@ -349,6 +357,12 @@ class CutSurfaceContact:
     Recreate this helper when surface or particle capacity changes. The surface
     count and mappings can change in place between captured steps. ``evaluate``
     returns forces; it does not modify positions or the integrator's state.
+
+    A step with contact is ``evaluate``, :meth:`add_matrix`, the solver's step
+    with the returned forces, :meth:`remove_matrix`: the rows of ``evaluate``
+    are linearly implicit in that step (see the module's text). The stiffnesses
+    are penalties per area [N/m³]: a contact in balance is as deep as its
+    pressure over the stiffness.
 
     The kernels read the timestep from ``step_time`` (:class:`StepTime`), which
     ``evaluate`` writes; inside a CUDA graph capture it must already hold its
@@ -406,8 +420,10 @@ class CutSurfaceContact:
         self.stiffness = wp.zeros(rows, dtype=float, device=self.device)
         self.damping = wp.zeros(rows, dtype=float, device=self.device)
         self.normal_velocity = wp.zeros(rows, dtype=float, device=self.device)
-        self.node_stiffness = wp.zeros(particle_q.shape[0], dtype=float, device=self.device)
-        self.node_damping = wp.zeros_like(self.node_stiffness)
+        # The rows' tangent of the last evaluate, dt² k + dt c along the normals [kg], as one block
+        # per node; add_matrix puts it on the diagonal of the solver's system for one solve.
+        self.node_tangent = wp.zeros(particle_q.shape[0], dtype=wp.mat33, device=self.device)
+        self._solve_diagonal = SolveDiagonal(particle_q.shape[0], self.device)
         # Device-side diagnostics: ground rows, then inter-piece rows.
         self.active_rows = wp.zeros(2, dtype=int, device=self.device)
         self.forces = wp.zeros_like(particle_q)
@@ -491,11 +507,10 @@ class CutSurfaceContact:
         self.step_time.set(dt)
         self.forces.zero_()
         self.active_rows.zero_()
+        self.node_tangent.zero_()
         if not self.capacity:
             return self.forces
         self.stiffness.zero_()
-        self.node_stiffness.zero_()
-        self.node_damping.zero_()
         self._update_surface(q)
         if self.ground_stiffness:
             wp.launch(
@@ -558,8 +573,7 @@ class CutSurfaceContact:
                 self.stiffness,
                 self.damping,
                 self.normal_velocity,
-                self.node_stiffness,
-                self.node_damping,
+                self.node_tangent,
             ],
             device=self.device,
         )
@@ -571,12 +585,9 @@ class CutSurfaceContact:
                 self.coefficients,
                 self.contact_normals,
                 self.gaps,
-                self.inverse_mass,
                 self.stiffness,
                 self.damping,
                 self.normal_velocity,
-                self.node_stiffness,
-                self.node_damping,
                 self.step_time.seconds,
                 3 * self.capacity,
                 self.active_rows,
@@ -585,3 +596,18 @@ class CutSurfaceContact:
             device=self.device,
         )
         return self.forces
+
+    def add_matrix(self, solver):
+        """Put the tangent of the rows of the last :meth:`evaluate` into the solver's system, for one solve.
+
+        Call after ``evaluate`` and after everything else that changes the matrix in this step
+        (the tangent refresh, the grips), directly before the solver's step; call
+        :meth:`remove_matrix` directly after that step. One launch, without allocation or
+        synchronization: the diagonal blocks that the solve reads are saved and replaced here
+        and put back there (:class:`SolveDiagonal`).
+        """
+        self._solve_diagonal.add(solver, self.node_tangent)
+
+    def remove_matrix(self, solver):
+        """Take the rows' tangent out of the solver's system again, to the bit."""
+        self._solve_diagonal.remove(solver)

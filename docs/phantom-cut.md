@@ -9,8 +9,15 @@
 > The grip defaults and the `--asset` option named below are the pad's as well:
 > on the body a grip is 3.0 mm in radius, 2.06 kN/m stiff and follows the mouse
 > at no more than 3.0 mm/s by default, and `--asset` takes one tetrahedral body.
-> At rest the body's back lies about 13 mm below the floor plane (measured): the
-> floor contact of the cut scene carries a body of this shape only at that depth.
+> The body rests on the floor. At rest its back is 0.27 mm under the floor plane
+> at its deepest point and 0.10 mm on average over the 4.4 cm² that touch: the
+> pressure there over the floor's penalty of 2e7 N/m³ (`--ground_stiffness`), at
+> any number of substeps. The top of the belly comes down 2.2 mm as the body
+> settles, because a body of 30 kPa flattens on its round back and its arms come
+> to lie on the floor (measured on 2026-11-20, on `cuda:0` and on the CPU alike).
+> Until 2026-11-20 the floor's force was divided by an implicit denominator that
+> was not part of the solve, and the body lay 13 mm deep; the recorded clip
+> still shows that.
 
 `fem_phantom_cut` simulated the entire bundled tissue pad using the local FEM
 and embedded cutting implementation. All 97,489 original vertices and 413,405
@@ -211,10 +218,12 @@ the capture metadata differ by one unit in the last place, 7.5e-9 kg. The
 capture has 480 frames over eight simulated
 seconds; the volume guard shortened no step, the finite-state and
 positive-volume checks passed every 60 frames and at the end, and the
-self-test of `--test` found no graph capture after start-up. In the first
-half second the body sinks about 13 mm into the floor (the depth named at the
-top of this guide), which the view from above shows only as the body getting
-a tenth smaller. The [capture metadata](media/fem_surgical_incision.json)
+self-test of `--test` found no graph capture after start-up. The clip was
+recorded before the floor contact was corrected on 2026-11-20: in it the body
+sinks about 13 mm into the floor in the first half second, which the view from
+above shows only as the body getting a tenth smaller. The example itself now
+rests on the floor (the top of this guide), and the same scenario run on it
+opens the wound to 7.6 mm. The [capture metadata](media/fem_surgical_incision.json)
 holds the events; the 15.1-second recording wall time includes initialization,
 rendering and encoding and is not a live-performance benchmark.
 

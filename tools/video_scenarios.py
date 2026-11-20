@@ -251,7 +251,7 @@ def _incision_cut(example, frame):
     lower, upper = example.reference_positions.min(axis=0), example.reference_positions.max(axis=0)
     middle, span = 0.5 * (lower + upper), upper - lower
     half = 0.5 * INCISION["wound_length"]
-    # The skin at the middle of the cut, where the body lies now (it sinks into the floor in the first
+    # The skin at the middle of the cut, where the body lies now (it settles on the floor in the first
     # frames): the highest point of the surface within a tenth of the cut's length of it.
     surface = _incision_surface(example)
     near = np.linalg.norm(surface[:, :2] - middle[:2], axis=1) < 0.1 * INCISION["wound_length"]
