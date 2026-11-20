@@ -21,8 +21,22 @@ A row is in a step when its point is under the other surface at the start of
 the step, or would be at its end at its present velocity. Within that step it is
 linear: it pushes while the point is under the surface and pulls for what is
 left of the step once the point is out, and it is gone in the next. This is
-discrete, frictionless contact, not a converged contact solve or continuous
-collision detection.
+discrete contact, not a converged contact solve or continuous collision
+detection.
+
+The floor has Coulomb friction (``ground_friction``), with the law of the suture
+thread on its contact planes (``solvers/thread/kernels.py``, docs/method.md,
+"Friction on a contact plane"): a floor row that pushes is tied to an anchor on
+the floor by a spring of the row's own stiffness k, whose force stops at mu times
+the row's push N. The row sticks within the reach mu N / k of its anchor and
+slides beyond it, and the anchor of a row that has slid follows it at that reach.
+Like the push, the friction is linearly implicit: its force is that of the offset
+at the end of the step if the row's velocity stayed as it is, and the spring that
+has this force at this offset, k min(1, reach / offset) across the normal, stands
+in the solver's matrix with dt² (the same bound by row sums). The anchors and
+reaches carry over from step to step (``state``) and follow the surface through a
+cut (``update_topology``, ``take_over``). The contact between cut pieces has no
+friction.
 """
 
 import math
@@ -351,6 +365,136 @@ def _scatter_contacts(
                 wp.atomic_add(force, indices[row, i], coefficients[row, i] * value)
 
 
+@wp.func
+def _plane_offset(position: wp.vec3, anchor: wp.vec3, normal: wp.vec3) -> wp.vec3:
+    """From a row's friction anchor to the row's point, along its contact plane."""
+    relative = position - anchor
+    return relative - wp.dot(relative, normal) * normal
+
+
+@wp.func
+def _friction_scale(slip: float, stiffness: float, limit: float) -> float:
+    """Friction force per slip distance: the spring's stiffness while sticking, the limit over the slip while sliding.
+
+    The thread's function of this name in single precision (``solvers/thread/kernels.py``): also
+    the stiffness of the spring that has the same force at this slip, which is the row's tangent.
+    """
+    if stiffness * slip <= limit:
+        return stiffness
+    return limit / slip
+
+
+@wp.kernel(enable_backward=False)
+def _floor_friction(
+    indices: wp.array2d[int],
+    coefficients: wp.array2d[float],
+    normals: wp.array[wp.vec3],
+    gaps: wp.array[float],
+    stiffness: wp.array[float],
+    damping: wp.array[float],
+    normal_velocity: wp.array[float],
+    points: wp.array[wp.vec3],
+    velocity: wp.array[wp.vec3],
+    dt: wp.array[float],
+    friction: float,
+    anchor: wp.array[wp.vec3],
+    reach: wp.array[float],
+    force: wp.array[wp.vec3],
+    node_tangent: wp.array[wp.mat33],
+):
+    # One floor row; launch over the floor rows, after _contact_bounds and _scatter_contacts.
+    # dt holds the timestep [s] in its one element (StepTime.seconds).
+    row = wp.tid()
+    k = stiffness[row]
+    held = reach[row]
+    # A row that is not in this step, or pulls in it, has no grip: its next anchor is its own point.
+    reach[row] = 0.0
+    if k > 0.0:
+        normal, point = normals[row], points[row]
+        if held > 0.0:
+            # The anchor of a row that slid in the last step follows it at that step's reach.
+            offset = _plane_offset(point, anchor[row], normal)
+            slip = wp.length(offset)
+            if slip > held:
+                anchor[row] = point - (held / slip) * offset
+        else:
+            anchor[row] = point
+        # The row's push, as _scatter_contacts applies it.
+        rate = normal_velocity[row]
+        push = -k * (gaps[row] + dt[0] * rate) - damping[row] * rate
+        if push > 0.0:
+            limit = friction * push
+            reach[row] = limit / k
+            moved, weight_sum = wp.vec3(0.0), float(0.0)
+            for i in range(4):
+                w = coefficients[row, i]
+                moved += w * velocity[indices[row, i]]
+                weight_sum += wp.abs(w)
+            # The offset at the end of the step if the row's velocity stayed as it is. The matrix
+            # holds what the velocity change adds: dt² times the spring that has this force at this
+            # offset, across the normal. It is positive semidefinite, and its blocks between
+            # different nodes are bounded by row sums on the diagonal like those of the push.
+            offset = _plane_offset(point + dt[0] * moved, anchor[row], normal)
+            scale = _friction_scale(wp.length(offset), k, limit)
+            value = -scale * offset
+            tangent = (dt[0] * dt[0] * scale * weight_sum) * (wp.identity(n=3, dtype=float) - wp.outer(normal, normal))
+            for i in range(4):
+                w = coefficients[row, i]
+                if w != 0.0:
+                    wp.atomic_add(force, indices[row, i], w * value)
+                    wp.atomic_add(node_tangent, indices[row, i], wp.abs(w) * tangent)
+
+
+@wp.kernel(enable_backward=False)
+def _carry_friction(
+    bvh: wp.uint64,
+    old_points: wp.array[wp.vec3],
+    old_areas: wp.array[float],
+    old_anchor: wp.array[wp.vec3],
+    old_reach: wp.array[float],
+    q: wp.array[wp.vec3],
+    nodes: wp.array2d[int],
+    weights: wp.array[wp.vec4],
+    count: wp.array[int],
+    radius: float,
+    anchor: wp.array[wp.vec3],
+    reach: wp.array[float],
+):
+    # One floor row of the new surface; launch over its floor rows. ``bvh`` and the old arrays are
+    # those of the surface as it was, at the positions ``q``.
+    row = wp.tid()
+    anchor[row] = wp.vec3(0.0)
+    reach[row] = 0.0
+    if row < 3 * count[0]:
+        p = wp.vec3(0.0)
+        for k in range(4):
+            p += weights[row][k] * q[nodes[row, k]]
+        query = wp.bvh_query_aabb(bvh, p - wp.vec3(radius), p + wp.vec3(radius))
+        candidate, target = int(0), int(-1)
+        best = radius * radius
+        barycentric = wp.vec3(0.0)
+        while wp.bvh_query_next(query, candidate):
+            if old_areas[candidate] > 0.0:
+                a, b, c = old_points[3 * candidate], old_points[3 * candidate + 1], old_points[3 * candidate + 2]
+                bary = _closest_barycentric(p, a, b, c)
+                delta = p - (bary[0] * a + bary[1] * b + bary[2] * c)
+                distance = wp.dot(delta, delta)
+                if distance < best:
+                    target, best, barycentric = candidate, distance, bary
+        if target >= 0:
+            # The offset from the anchor and the reach are fields on the surface: a row of the new
+            # surface takes them from the triangle of the old one that it lies on. A corner of
+            # that triangle without grip has neither.
+            offset, grip = wp.vec3(0.0), float(0.0)
+            for corner in range(3):
+                old = 3 * target + corner
+                if old_reach[old] > 0.0:
+                    offset += barycentric[corner] * (old_points[old] - old_anchor[old])
+                    grip += barycentric[corner] * old_reach[old]
+            anchor[row] = p - offset
+            reach[row] = grip
+
+
 class CutSurfaceContact:
     """Persistent GPU buffers for area-weighted surface contact.
 
@@ -363,6 +507,13 @@ class CutSurfaceContact:
     are linearly implicit in that step (see the module's text). The stiffnesses
     are penalties per area [N/m³]: a contact in balance is as deep as its
     pressure over the stiffness.
+
+    ``ground_friction`` is the Coulomb coefficient between the surface and the
+    floor; zero, the default, is a floor without friction. With friction the
+    contact carries the anchors of the floor rows from one ``evaluate`` to the
+    next (:attr:`state`): a new contact starts without grip, ``update_topology``
+    carries the anchors over to the surface it publishes, and a contact that
+    replaces another takes them over with :meth:`take_over`.
 
     The kernels read the timestep from ``step_time`` (:class:`StepTime`), which
     ``evaluate`` writes; inside a CUDA graph capture it must already hold its
@@ -383,11 +534,13 @@ class CutSurfaceContact:
         damping_ratio: float = 0.5,
         search_radius: float = 0.03,
         step_time: StepTime | None = None,
+        ground_friction: float = 0.0,
     ):
         for name, value in (
             ("ground_stiffness", ground_stiffness),
             ("piece_stiffness", piece_stiffness),
             ("damping_ratio", damping_ratio),
+            ("ground_friction", ground_friction),
         ):
             if not math.isfinite(value) or value < 0.0:
                 raise ValueError(f"{name} must be finite and nonnegative")
@@ -399,6 +552,7 @@ class CutSurfaceContact:
         self.ground_height, self.ground_stiffness = float(ground_height), float(ground_stiffness)
         self.piece_stiffness, self.damping_ratio = float(piece_stiffness), float(damping_ratio)
         self.search_radius = float(search_radius)
+        self.ground_friction = float(ground_friction)
         self.capacity = surface.components.shape[0]
         rows = 4 * self.capacity
         self.points = wp.zeros(3 * self.capacity, dtype=wp.vec3, device=self.device)
@@ -424,6 +578,13 @@ class CutSurfaceContact:
         # per node; add_matrix puts it on the diagonal of the solver's system for one solve.
         self.node_tangent = wp.zeros(particle_q.shape[0], dtype=wp.mat33, device=self.device)
         self._solve_diagonal = SolveDiagonal(particle_q.shape[0], self.device)
+        # Friction of the floor rows, from the last evaluate: each row's anchor on the floor [m] and
+        # its reach [m], the slip mu N / k at which it slides; a row with reach zero has no grip.
+        self.anchor = wp.zeros(3 * self.capacity, dtype=wp.vec3, device=self.device)
+        self.reach = wp.zeros(3 * self.capacity, dtype=float, device=self.device)
+        # What update_topology carries over to the rows of the surface it publishes.
+        self._carried_anchor = wp.zeros_like(self.anchor)
+        self._carried_reach = wp.zeros_like(self.reach)
         # Device-side diagnostics: ground rows, then inter-piece rows.
         self.active_rows = wp.zeros(2, dtype=int, device=self.device)
         self.forces = wp.zeros_like(particle_q)
@@ -470,14 +631,79 @@ class CutSurfaceContact:
         _copy_topology(surface, source, triangle_count)
         return surface
 
+    @property
+    def state(self) -> tuple:
+        """The contact's arrays that carry over from one step to the next: the anchors and reaches of the floor rows.
+
+        Whoever runs a step that must leave the scene as it was (a warm-up, a graph capture)
+        saves and restores them with the states of the step.
+        """
+        return (self.anchor, self.reach)
+
+    def _has_friction(self) -> bool:
+        return self.ground_friction > 0.0 and self.ground_stiffness > 0.0 and self.capacity > 0
+
+    def _carry(self, previous, particle_q, anchor, reach):
+        """Write the friction of ``previous``, on its surface as it was, for the rows of this contact's surface.
+
+        A cut renumbers the surface triangles, and a row is a corner of one. The offset of a row
+        from its anchor and its reach are taken from the triangle of the old surface on which the
+        row's point lies (the nearest one within the search radius), at the positions
+        ``particle_q``; a row with no old triangle that near starts without grip. The points and
+        the search structure of ``previous`` must be those of its surface at ``particle_q``.
+        """
+        wp.launch(
+            _carry_friction,
+            dim=3 * self.capacity,
+            inputs=[
+                previous.bvh.id,
+                previous.points,
+                previous.areas,
+                previous.anchor,
+                previous.reach,
+                particle_q,
+                self.surface.vertex_nodes,
+                self.surface.weights,
+                self.surface.count,
+                self.search_radius,
+                anchor,
+                reach,
+            ],
+            device=self.device,
+        )
+
+    def take_over(self, previous: "CutSurfaceContact", particle_q: wp.array):
+        """Take over the friction anchors of the contact that this one replaces.
+
+        Call once, between steps, before the first ``evaluate`` of this contact: its surface
+        is that of ``previous`` after an edit, in other storage. ``previous`` keeps its state.
+        """
+        if self._has_friction() and previous.capacity:
+            previous._update_surface(particle_q)
+            previous.bvh.refit()
+            self._carry(previous, particle_q, self.anchor, self.reach)
+
     def update_topology(self, source, triangle_count: int, particle_q: wp.array):
         """Publish validated triangle mappings without invalidating a graph.
 
         Call between graph replays, after cloning particle coordinates. Capacity
         errors leave the current surface unchanged. Particle inverse masses
         must also be updated in their original buffer by the owning model.
+        The friction anchors of the floor rows go over to the rows of the
+        published surface: ``particle_q`` must hold the nodes of the surface
+        as it was as well as those of the published one.
         """
+        friction = self._has_friction()
+        if friction:
+            # The surface as it was, at these positions: the points and the search structure that
+            # _carry reads stay those of the old surface until _update_surface below.
+            self._update_surface(particle_q)
+            self.bvh.refit()
         _copy_topology(self.surface, source, triangle_count)
+        if friction:
+            self._carry(self, particle_q, self._carried_anchor, self._carried_reach)
+            wp.copy(self.anchor, self._carried_anchor)
+            wp.copy(self.reach, self._carried_reach)
         self._update_surface(particle_q)
         if self.bvh is not None:
             # A refit preserves the original leaf order. Newly active triangles
@@ -595,6 +821,29 @@ class CutSurfaceContact:
             ],
             device=self.device,
         )
+        if self._has_friction():
+            wp.launch(
+                _floor_friction,
+                dim=3 * self.capacity,
+                inputs=[
+                    self.indices,
+                    self.coefficients,
+                    self.contact_normals,
+                    self.gaps,
+                    self.stiffness,
+                    self.damping,
+                    self.normal_velocity,
+                    self.points,
+                    qd,
+                    self.step_time.seconds,
+                    self.ground_friction,
+                    self.anchor,
+                    self.reach,
+                    self.forces,
+                    self.node_tangent,
+                ],
+                device=self.device,
+            )
         return self.forces
 
     def add_matrix(self, solver):

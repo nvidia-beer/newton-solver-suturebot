@@ -6,7 +6,8 @@
 The body is the bundled tetrahedral Baymax mesh (assets/baymax), scaled and
 placed at load (_baymax_body.py): 135 mm from hand to hand, lying on its back
 on the floor, belly up, arm span along x. All of it is active; nothing is
-held and nothing is cut by itself. It rests on the floor under gravity.
+held and nothing is cut by itself. It rests on the floor under gravity, and
+the floor holds it and its cut pieces by Coulomb friction.
 
 Line is the default cutter: left-drag and release to slice through the depth
 of the view. Cylinder drills on left-click; Sphere carves while the left
@@ -409,6 +410,7 @@ class Example:
             piece_stiffness=self.args.piece_contact_stiffness,
             search_radius=body.CONTACT_SEARCH_RADIUS,
             step_time=self.solver.step_time,
+            ground_friction=self.args.ground_friction,
         )
         self.surface = surface
         self._surface_count = int(surface.count.numpy()[0])
@@ -440,15 +442,20 @@ class Example:
     def _frame_snapshot(self):
         """Keep what a frame changes; the returned call puts it back.
 
-        The two states, the solver's velocity increment, the driven grip targets and the count
-        of the volume guard: a frame that runs outside the run, eager or as a graph, leaves the
-        scene as it found it.
+        The two states, the solver's velocity increment, the driven grip targets, the count of
+        the volume guard and the friction anchors of the floor: a frame that runs outside the
+        run, eager or as a graph, leaves the scene as it found it.
         """
         states = (self.state_0, self.state_1)
         saved_states = tuple(self.model.state() for _ in states)
         for saved, state in zip(saved_states, states, strict=True):
             saved.assign(state)
-        persistent = (self.solver.velocity_increment, self.holds.driven, self.volume_guard.limited_steps)
+        persistent = (
+            self.solver.velocity_increment,
+            self.holds.driven,
+            self.volume_guard.limited_steps,
+            *self.contact.state,
+        )
         saved_persistent = tuple(wp.clone(array) for array in persistent)
 
         def restore():
@@ -533,7 +540,9 @@ class Example:
             damping_ratio=previous.damping_ratio,
             search_radius=previous.search_radius,
             step_time=previous.step_time,
+            ground_friction=previous.ground_friction,
         )
+        contact.take_over(previous, self.state_0.particle_q)
         indices = wp.array(np.arange(surface.indices.size, dtype=np.int32), device=self.device)
         self.contact, self.surface, self._render_indices = contact, surface, indices
         # The FEM model, states, solver and sparse storage retain their addresses.
@@ -791,7 +800,10 @@ class Example:
                 self.solver.refresh_component_scaling()
                 self.solver.refresh_topology(self.state_0.particle_q, self.sim_dt)
                 wp.copy(self.solver.velocity_increment, self._backup_velocity_increment)
-                self.contact.update_topology(self.cutter.surface, previous_surface_count, self.state_0.particle_q)
+                # The staged positions: the contact may hold the surface of the refused edit, whose
+                # cloned nodes have no place in the restored state. The nodes of the restored surface
+                # are where they were in both.
+                self.contact.update_topology(self.cutter.surface, previous_surface_count, self._staged_state.particle_q)
             self.fragment_count, self._surface_count = previous_count, previous_surface_count
             self.cut_error = rejection_message(error, self.cutter.geometry.capacity, fixed=self.reserve is not None)
             return False
@@ -1339,6 +1351,12 @@ class Example:
         parser.add_argument("--drop_height", type=float, default=0.0, help="Initial clearance above the floor [m].")
         parser.add_argument("--gravity", type=float, default=9.81, help="Gravity magnitude [m/s^2].")
         parser.add_argument("--ground_stiffness", type=float, default=2.0e7, help="Surface floor penalty [N/m^3].")
+        parser.add_argument(
+            "--ground_friction",
+            type=float,
+            default=body.FLOOR_FRICTION,
+            help="Coulomb friction coefficient between the body and the floor; zero is a floor without friction.",
+        )
         parser.add_argument(
             "--piece_contact_stiffness", type=float, default=2.0e7, help="Cut-piece contact penalty [N/m^3]."
         )

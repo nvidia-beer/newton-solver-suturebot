@@ -17,6 +17,58 @@
 > to lie on the floor (measured on 2026-11-20, on `cuda:0` and on the CPU alike).
 > Until 2026-11-20 the floor's force was divided by an implicit denominator that
 > was not part of the solve, and the body lay 13 mm deep.
+>
+> The floor holds the body by Coulomb friction with the coefficient 0.5
+> (`--ground_friction`; a choice, named in `_baymax_body.py`; 0 is the floor
+> without friction that the example had before). A point of the back sticks
+> within 0.5 times its depth of where it took hold, at most 0.13 mm, and
+> slides beyond that against 0.5 times the floor's push on it
+> ([method](method.md#embedded-cuts-and-material-grips)). With friction the
+> deepest point is 0.265 mm under the floor and the mean depth 0.104 mm over
+> 4.36 cm² at four substeps; the floor's force over the weight is 1.0000 at 1,
+> 2, 4 and 8 substeps (deepest point 0.274, 0.266, 0.265 and 0.265 mm), and
+> what the floor holds along itself adds up to less than 0.00001 of the
+> weight. Between 3 s and 10 s no point under the floor moves more than
+> 0.03 µm along it; on the floor without friction the body drifts 1.3 µm in
+> that time.
+>
+> A line through the whole body along its midline (the first line of
+> `--test`) leaves two halves that do not lie in balance: the centre of mass
+> of each is 14 mm from the cut and the middle of what carries it 4 to 5 mm.
+> Each half rolls outward on its round back until it lies over its own centre
+> of mass, 22 to 23 mm from the cut, and that takes its centre 8.2 and 7.8 mm
+> outward, most of it in the first second. Friction does not stop a roll: in
+> the frame of the cut the floor holds each half with 0.12 to 0.27 of the
+> half's weight along itself (per substep, 0.19 on average; the contact
+> between the two pieces pushes with 0.30 on average meanwhile), with up to
+> 0.13 in a substep of the next frame and with at most 0.054 in the five
+> frames after that,
+> where 0.5 would let it slide; single rows that carry little slide meanwhile
+> (the anchor of one travels 4.1 mm). On the floor without friction the same
+> halves slide 50 and 51 mm outward in four seconds and still move at
+> 0.9 mm/s. From 7 s to 10 s after the cut the rolled halves stay within
+> 2 µm. Where they rest against each other, at the lower lips of the cut,
+> single rows of the contact between the pieces come and go from substep to
+> substep, and nodes there move at up to 8 mm/s, some tens of micrometres at
+> most; without that contact (`--piece_contact_stiffness 0`) nothing moves
+> faster than 0.07 mm/s three seconds after the cut. The contact between
+> pieces is as it was (measured on the CPU on 2026-11-20).
+>
+> On `cuda:0` the self-test (`--test`, null viewer, 1200 frames) passes with
+> friction (four of four runs on 2026-11-20). Its first line leaves the halves
+> where the CPU has them, to 1 µm, in the six frames before the scripted grip
+> takes one. In three of those four runs the scripted cylinder makes the
+> polygon storage grow from 12 to 48 vertices per fragment in its frame (190
+> to 250 ms, three captures inside that listed growth); in the fourth, and in
+> three of three runs of the floor without friction, nothing grows. (One
+> earlier run without friction, in which the first line was refused and the
+> body stayed in one piece, grew the same storage in the same frame.) With the
+> fixed storage of `--cut_reserve 1` the run with friction has no growth and
+> no capture after a start-up (one run). Nothing else is captured or loaded
+> after a start-up. A frame before the
+> first cut takes 8.9 ms with friction and 9.3 ms without (medians of frames
+> 1 to 39, one run each), and 15.3 to 15.8 ms once the two halves lie in
+> contact.
 
 `fem_phantom_cut` simulated the entire bundled tissue pad using the local FEM
 and embedded cutting implementation. All 97,489 original vertices and 413,405
@@ -201,9 +253,9 @@ belly along the midline, 28.5 mm long and 13.5 mm deep where the body is 42 mm
 thick: the scripted cut goes through the call that a stroke of the Line tool
 ends in, because the Line tool itself cuts through the whole depth of the
 view. Two right-drags, one on each side of the wound, are pulled 4 mm and 8 mm
-outward and released as spring holds. Nothing holds the body, so it follows
-the first grip and the second pull opens the wound, to about 7.6 mm at the
-skin (7.59 mm in this recording). From 3.5 s to 6.5 s of the clip, while the
+outward and released as spring holds. The floor holds the body against the
+grips by its friction, and the two pulls open the wound to about 8.5 mm at
+the skin (8.51 mm in this recording). From 3.5 s to 6.5 s of the clip, while the
 second grip pulls, the viewer's Show Edges option is on (the `edges` of the
 recipe): the dark lines are the edges of the triangles that the example
 draws, which are the surface of the simulated tetrahedral mesh itself, not a
@@ -218,10 +270,15 @@ capture has 480 frames over eight simulated
 seconds; the volume guard shortened no step, the finite-state and
 positive-volume checks passed every 60 frames and at the end, and the
 self-test of `--test` found no graph capture after start-up. The clip was
-recorded on 2026-11-20 from commit `a67249d`, after the floor contact was
-corrected: the body rests on the floor (the top of this guide), and the top
-of its belly comes down 2.4 mm before the cut as it settles. The [capture metadata](media/fem_surgical_incision.json)
-holds the events; the 15.1-second recording wall time includes initialization,
+recorded on 2026-11-20 with the code of the commit that brought the floor's
+friction (its parent is `6655550`): the body rests on the floor and the floor
+holds it against the grips (the top of this guide). The clip before it, from
+commit `a67249d`, was of the floor without friction: there the body followed
+the first grip and the wound opened to 7.59 mm, and the top of the belly came
+down 2.4 mm before the cut as the body settled. The same scenario through the
+null viewer on the CPU opens the wound to 8.50 mm with friction and to
+7.62 mm with `--ground_friction 0`. The [capture metadata](media/fem_surgical_incision.json)
+holds the events; the 14.5-second recording wall time includes initialization,
 rendering and encoding and is not a live-performance benchmark.
 
 The rest of this section describes the full-pad movie of the pad example,

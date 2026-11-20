@@ -203,8 +203,9 @@ INCISION = {
     # Where a grip takes the skin: this far from the wound, at its mid-length.
     "grip_offset": 0.0059,
     # How far each grip is dragged away from the wound: the first one (-x) half as far as the second (+x).
-    # Nothing holds the body, so it follows the first grip; the second pull opens the wound and brings
-    # the body back to where it lay. The wound opens by about as much as the second pull.
+    # The floor holds the body against the grips by its friction, and the two pulls open the wound to
+    # about 8.5 mm (measured; on a floor without friction the body follows the first grip and the wound
+    # opens by about as much as the second pull, 7.6 mm).
     "pull": (0.004, 0.008),
     # Speed of a drag [m/s]: below the speed limit of a grip's target (2.96 mm/s), so that the marker
     # and the grip stay together.
@@ -313,7 +314,7 @@ def _incision_wound(example):
 def _incision_press(example, side, frame):
     """Right button down on the skin beside the wound: ``side`` -1 toward -x, +1 toward +x."""
     lower, upper = example.reference_positions.min(axis=0), example.reference_positions.max(axis=0)
-    # Nothing holds the body, and it follows the grip that came before: the press is placed from the wound.
+    # The body may have moved with the grip that came before: the press is placed from the wound.
     wound, _ = _incision_wound(example)
     # A ray straight down, from half the body's thickness above its top as it was loaded.
     origin = np.array((wound[0] + side * INCISION["grip_offset"], wound[1], upper[2] + 0.5 * (upper[2] - lower[2])))

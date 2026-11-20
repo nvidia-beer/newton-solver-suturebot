@@ -97,6 +97,9 @@ the recipes in `docs/videos.json` were committed together with the clips.
 The ninth, `fem_surgical_incision`, was recorded again on 2026-11-20 from
 commit `a67249d`, after the floor contact of that example was corrected,
 and replaced the clip of 2026-11-19 in which the body sank into the floor.
+It was recorded once more the same day, with the code of the commit that
+brought the floor's friction (its parent is `6655550`): the floor now holds
+the body against the grips.
 `fem_needle_grasp` was recorded once more on 2026-11-20, with the code of
 the commit that brought the draw of the thread through the tissue (its
 parent is `c2edf1e`), and replaced the clip of `fe9306e`, whose procedure
@@ -115,7 +118,7 @@ shows, and its JSON sidecar.
 | [fem_tool_tissue](media/fem_tool_tissue.mp4), [JSON](media/fem_tool_tissue.json) | 960×540 | 1,668 | 27.7 s | `--contact swept --test` | 2.37 MB |
 | [fem_needle_suture](media/fem_needle_suture.mp4), [JSON](media/fem_needle_suture.json) | 960×540 | 2,220 | 33.5 s | `--test` | 3.43 MB |
 | [fem_needle_insertion](media/fem_needle_insertion.mp4), [JSON](media/fem_needle_insertion.json) | 960×540 | 420 | 3.8 s | `--regions 1 --transparent-pad --test` | 0.76 MB |
-| [fem_surgical_incision](media/fem_surgical_incision.mp4), [JSON](media/fem_surgical_incision.json) | 800×660, cut from 1280×720 with the panel | 480 | 8.0 s | `--test` | 2.11 MB |
+| [fem_surgical_incision](media/fem_surgical_incision.mp4), [JSON](media/fem_surgical_incision.json) | 800×660, cut from 1280×720 with the panel | 480 | 8.0 s | `--test` | 2.12 MB |
 | [fem_dvrk](media/fem_dvrk.mp4), [JSON](media/fem_dvrk.json) | 1920×1080, with the panel | 1,202 | 20.0 s | none | 6.85 MB |
 | [fem_versius](media/fem_versius.mp4), [JSON](media/fem_versius.json) | 1920×1080, with the panel | 240 | 4.0 s | none | 0.68 MB |
 | [needle_thread](media/needle_thread.mp4), [JSON](media/needle_thread.json) | 1280×720 | 300 | 5.0 s | `--test` | 0.37 MB |
@@ -159,8 +162,9 @@ shows, and its JSON sidecar.
   picture from frame to frame than the wide view did. `fem_needle_suture.mp4`
   is 3.43 MB: its 180 frames with the mesh edges take 1.60 MB of it, because
   the fine lines over the whole picture compress badly. For the same reason
-  the frames with the edges take 1.87 MB of the 2.11 MB of
-  `fem_surgical_incision.mp4` and 0.58 MB of the 0.76 MB of
+  the frames with the edges take most of the 2.12 MB of
+  `fem_surgical_incision.mp4` (1.87 MB of 2.11 MB in the recording before
+  this one) and 0.58 MB of the 0.76 MB of
   `fem_needle_insertion.mp4`. `fem_needle_grasp.mp4` is 3.60 MB, 0.63 MB
   more than before for its 420 frames more.
 - The clips have no GIF preview. The README shows the JPG poster and links
@@ -201,19 +205,23 @@ straight above. Its [sidecar](media/fem_surgical_incision.json) records 480
 frames, eight simulated seconds: a planar blade cuts the belly along the
 midline, 28.5 mm long and 13.5 mm deep, and two right-drag grips, one on each
 side, are pulled 4 mm and 8 mm outward and stay as spring holds (green
-markers) that keep the wound about 7.6 mm open (7.59 mm in this recording).
+markers) that keep the wound about 8.5 mm open (8.51 mm in this recording).
 The clip is the recorder's own output: the blade and the two grips are
 scripted in `tools/video_scenarios.py`, and the camera, the `edges` interval
 and the `crop` are entries of the recipe in `docs/videos.json`. The picture is
 the middle 800×660 of the 1280×720 recording, the part that the `crop` keeps.
 The grip markers are drawn by the viewer's interface, so the recording has the
 interface on (`show_ui`), and the crop cuts off its side panel, the counters
-and the recorder's title bar. Nothing holds the body: it follows the first
-grip. It rests on the floor, 0.27 mm under its plane at the deepest point;
-the top of the belly comes down 2.4 mm before the cut as the soft body
-settles on its round back. The clip was recorded on 2026-11-20 from commit
-`a67249d`, after the floor contact was corrected; the clip before it showed
-the body sinking 13 mm into the floor.
+and the recorder's title bar. The floor holds the body against the grips by
+friction (coefficient 0.5). It rests on the floor, 0.27 mm under its plane at
+the deepest point. The clip was recorded on 2026-11-20 with the code of the
+commit that brought that friction (its parent is `6655550`). The clip before
+it, from commit `a67249d`, was of the floor without friction, on which the
+body followed the first grip (wound 7.59 mm open; the top of the belly came
+down 2.4 mm before the cut as the soft body settled on its round back), and
+the one before that showed the body sinking 13 mm into the floor. The recorder
+is run from a folder without a saved viewer layout (`imgui.ini`): the crop
+assumes the panel where the viewer puts it by default.
 The encoding rate is 60 frames per second: simulation-time playback, not live
 FPS. The clip of commit `4b9fe78` showed the same scene with the same crop,
 cut with ffmpeg from an earlier recording of this scenario and camera, without

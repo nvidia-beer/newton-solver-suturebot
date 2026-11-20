@@ -91,9 +91,13 @@ class PhantomGraphTimestepTests(unittest.TestCase):
 
     def test_cut_frame_graph_replays_at_every_time_step(self):
         # A solver prepared for streamed topology keeps its construction time step; the
-        # sorted assembly accepts another one.
+        # sorted assembly accepts another one. The floor has no friction here: the cube bulges as
+        # its weight comes on, its bottom nodes slide outward meanwhile, and a sliding node has no
+        # stiffness along the floor that would keep two runs within these tolerances of each other
+        # (the floor with friction: the next test).
         with ExitStack() as stack:
-            captured, eager = (stack.enter_context(_cut_example("--no-streaming_topology")) for _ in range(2))
+            options = ("--no-streaming_topology", "--ground_friction", "0")
+            captured, eager = (stack.enter_context(_cut_example(*options)) for _ in range(2))
             graph = captured.graph
             self.assertIsNotNone(graph)
             eager.graph = None
@@ -142,6 +146,71 @@ class PhantomGraphTimestepTests(unittest.TestCase):
                     # The floor carries the cube in every frame.
                     self.assertGreater(np.abs(force).max(), 1.0)
                     self.assertGreater(int(captured.contact.active_rows.numpy().sum()), 0)
+            captured.test_final()
+
+    def test_cut_frame_graph_with_floor_friction_replays_at_every_time_step(self):
+        # The floor of the example's default, with friction, once the cube has come to rest on it: its
+        # bottom rows stick, each within its reach of its anchor, and stay stuck while a grip pulls at
+        # its surface as in the test above. A cube that still settles or slides is not compared here:
+        # a sliding row has no stiffness along the floor that would keep two runs this close.
+        with ExitStack() as stack:
+            captured, eager = (stack.enter_context(_cut_example("--no-streaming_topology")) for _ in range(2))
+            graph = captured.graph
+            self.assertIsNotNone(graph)
+            eager.graph = None
+            self.assertGreater(captured.contact.ground_friction, 0.0)
+            self.assertEqual(captured.contact.ground_friction, cutting.body.FLOOR_FRICTION)
+            base = captured.sim_dt
+            for _ in range(180):
+                _frame(captured, eager, base)
+            anchors = captured.contact.anchor.numpy().copy()
+            for frame, dt in enumerate((base, base, base, base / 2, base, REMAINDER, base / 3, base)):
+                with self.subTest(frame=frame, dt=dt):
+                    if frame == 2:
+                        for example in (captured, eager):
+                            points = example.contact.update_surface(example.state_0.particle_q).numpy()
+                            point = points[:3].mean(axis=0)
+                            self.assertTrue(
+                                example.holds.begin(
+                                    example.surface,
+                                    example.cutter.geometry,
+                                    0,
+                                    (1.0 / 3.0,) * 3,
+                                    point,
+                                    example.state_0.particle_q,
+                                )
+                            )
+                            example.holds.move(point + np.asarray((0.002, 0, 0.004), dtype=np.float32))
+                            example.holds.finish()
+                    _frame(captured, eager, dt)
+                    self.assertIs(captured.graph, graph)
+                    self.assertEqual(captured.solver.step_time.value, dt)
+                    np.testing.assert_allclose(
+                        captured.state_0.particle_q.numpy(), eager.state_0.particle_q.numpy(), rtol=0, atol=1.0e-7
+                    )
+                    np.testing.assert_allclose(
+                        captured.state_0.particle_qd.numpy() * dt,
+                        eager.state_0.particle_qd.numpy() * dt,
+                        rtol=0,
+                        atol=5.0e-8,
+                    )
+                    force, other = captured.contact.forces.numpy(), eager.contact.forces.numpy()
+                    np.testing.assert_allclose(force[:, 2], other[:, 2], rtol=0, atol=3.0e-4)
+                    # Along the floor the friction of a node's rows is a spring on its position, of the
+                    # rows' own stiffness (it stands in the contact's tangent with dt²), and the
+                    # positions agree to 1e-7 m: the forces along the floor agree to that stiffness
+                    # times that distance more.
+                    tangent = captured.contact.node_tangent.numpy()
+                    along = float(max(tangent[:, 0, 0].max(), tangent[:, 1, 1].max())) / dt**2
+                    self.assertGreater(along, 0.0)
+                    tolerance = 3.0e-4 + along * 1.0e-7
+                    np.testing.assert_allclose(force[:, :2], other[:, :2], rtol=0, atol=tolerance)
+                    # That tolerance is small against what is compared: the floor holds the bottom of the
+                    # cube, which bulges under its weight, with 0.69 N on a node along itself (measured).
+                    self.assertGreater(float(np.abs(force[:, :2]).max()), 10.0 * tolerance)
+                    # The rows have grip, and none has slid: every anchor is where it was at rest.
+                    self.assertGreater(float(captured.contact.reach.numpy().max()), 0.0)
+                    np.testing.assert_array_equal(captured.contact.anchor.numpy(), anchors)
             captured.test_final()
 
     def test_volume_guard_graph_replays_at_every_time_step(self):

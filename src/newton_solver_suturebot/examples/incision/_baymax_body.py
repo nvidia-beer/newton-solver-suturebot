@@ -121,6 +121,13 @@ MIN_STRETCH, MAX_STRETCH = 0.2, 5.0
 # stretch limit (_src/solvers/coupled/interface/swept_tool_tissue_contact.py, "Allowed move").
 MOVE_FRACTION = 0.125
 
+# ---------------------------------------------------------------------------- floor of the cut scene
+# Coulomb friction coefficient between the body and the floor. A choice, not a measurement of
+# this body on a surface: the middle of the range that this repository's source for tissue held
+# against steel gives, 0.11 to 0.83 (examples/grasp/_dvrk_grasper.py, ``tissue_friction``),
+# (0.11 + 0.83) / 2 = 0.47, to one digit.
+FLOOR_FRICTION = 0.5
+
 # ---------------------------------------------------------------------------- start view
 # The viewer's picture: 45 degrees of vertical field of view, 16 to 9, 1080 pixels high (the
 # defaults of the OpenGL viewer). The screen tools size a cylinder or a sphere as 8 pixels across

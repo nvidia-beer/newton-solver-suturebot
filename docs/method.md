@@ -191,6 +191,59 @@ leaves. Dividing the row's force by $1 + h^2 k/m + h c/m$ instead (the form
 until 2026-11-20) leaves the balance of a resting body wrong by that factor,
 about 500 for the Baymax body.
 
+The floor has Coulomb friction with the coefficient $\mu$ of the scene
+(`ground_friction`; zero is a floor without friction and the contact as it was,
+bit for bit). The law is that of the thread on its contact planes
+([Friction on a contact plane](#suture-thread-and-its-needle-attachment)). A
+floor row whose push $N=-k\,(g+h\,\dot g)-c\,\dot g$ is positive is tied to an
+anchor $\mathbf a$ on the floor by a spring of the row's own stiffness $k$, whose
+force stops at $\mu N$. The row sticks within the reach $\rho=\mu N/k$ of its
+anchor, which at rest is $\mu$ times its depth, and slides beyond it. With the
+row's point $\mathbf p$, its velocity $\mathbf u$ and the offset at the end of
+the step if that velocity stayed,
+$\mathbf d=(\mathbf I-\mathbf n\mathbf n^T)(\mathbf p+h\,\mathbf u-\mathbf a)$,
+
+$$
+\mathbf f=-s\,\mathbf d,\qquad s=k\,\min\!\big(1,\;\rho/|\mathbf d|\big),
+$$
+
+and $h^2 s\,(\mathbf I-\mathbf n\mathbf n^T)$ stands in the system matrix beside
+the push's $(h^2k+hc)\,\mathbf n\mathbf n^T$, with the same bound by row sums. It
+is the tangent of the spring that has the force $\mathbf f$ at the offset
+$\mathbf d$, as in the thread's Newton matrix, and positive semidefinite, so the
+system matrix stays positive definite. Before the force, the anchor of a row
+that the last step left further from it than that step's reach is moved to that
+reach behind the row, and a row that had no grip is anchored at its own point.
+
+Three things differ from the thread. The thread iterates to the minimum of its
+potential with the limit of the previous step; here a step is one solve, the
+limit is that of the step's own push, and the tangent is part of the result. A
+sliding row is held back by exactly $\mu N$ for the velocity the step starts
+with, and for the velocity the step adds it still has its spring. A block that
+gains speed at $v$ therefore gains it as if every sliding row added the mass
+$\mu N h^2/(\rho+hv)$: its acceleration is $(F-\mu W)/m$ over
+$1+\mu g h/(v+\rho/h)$, below Coulomb's by less than the fraction $\mu g h/v$.
+The cube of the tests (1 kg, $\mu=0.5$) pulled with $1.2\,\mu W$ gains
+0.9755 of $(F-\mu W)/m$ in the second in which it goes from 0.42 to 1.38 m/s at
+four substeps, and 0.9904 at eight (from 0.64 to 1.61 m/s); this formula gives
+0.9754 and 0.9903. Pulled with half of $\mu W$ it
+moves its floor rows by 6 µm, no anchor moves, and the floor holds the load to
+0.02 %; at rest no anchor moves between 3 s and 10 s. Second, the limit is kept
+as the distance $\rho$ and the anchor as a point of the floor, per corner of a
+surface triangle. A cut renumbers those triangles, so the offset from the anchor
+and the reach are carried as fields on the surface: every row of the new surface
+takes them from the triangle of the old one on which it lies (`update_topology`;
+`take_over` for a contact that replaces a grown one). Third, friction holds a
+body in the shape in which it came to rest, and how it got there depends on the
+time step: the cube's depths differ by 5 % between one substep and four when its
+weight comes on at once, by 0.3 % when it comes on over a second, and not at all
+without friction; the floor's force is the weight in every case. A sticking
+row's force is its stiffness times a difference of single-precision
+coordinates: on a node of that cube, whose rows add up to 2e5 N/m, one
+spacing of a coordinate at 0.05 m (3.7 nm) is 0.74 mN along the floor, so two
+runs whose positions agree to a few spacings differ by that much there. The
+contact between cut pieces has no friction.
+
 Material grips are finite spring loads attached to material coordinates. They
 follow the cut fragments rather than prescribing every node's position.
 The [full-pad guide](phantom-cut.md) records the example's controls and support
