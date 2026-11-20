@@ -3,96 +3,181 @@
     "frames": 420,
     "fps": 60,
     "poster_frame": 300,
-    "show_ui": true,
+    "show_ui": false,
     "args": [
       "--regions",
       "1",
       "--transparent-pad",
       "--test"
     ],
-    "caption": "Simulation-time playback: select entry and exit material points across a region 1 wound gap, preview the curved needle, then start, pause and resume coupled MuJoCo/FEM insertion through both tissue sections. Illustrative puncture and sliding-track forces; no fracture or physiological calibration. Playback rate does not measure live FPS."
+    "caption": "Simulation-time playback, close on the region 1 wound with the pad drawn translucent (--transparent-pad): an entry (green) and an exit (pink) material point are picked on the two lips, the curved needle and its planned tip path (cyan) are previewed, and the coupled MuJoCo/FEM drive turns the needle through both lips, with one pause, until its tip comes out 0.05 mm from the exit; the camera then moves in on the needle in the tissue. From 2.0 s to 4.2 s, while the needle goes through the first lip, the pad is drawn opaque (the example's See through pad switch is off) and the viewer's Show Edges option is on: the dark lines are the edges (about 1 mm) of the surface triangles of the pad's tetrahedra, which in the simulated region 1 (the middle band with the wound, 29,160 tetrahedra and 7,284 surface triangles) are the outer faces of the simulated tetrahedra themselves and around it belong to the pad at rest; the needle (its blunt end is black under its lines) and the two marker spheres show the lines of their own drawing meshes; the part of the needle inside the tissue is hidden for that time, and the lines show how fine the mesh is around the needle more than a motion: at the puncture (2.2 s to 2.4 s) the lines of the first lip beside the entry shift by one to three pixels and go back. Puncture and sliding-track forces are illustrative: no fracture, no cavity and no physiological calibration, and the tissue moves 0.17 mm at most, too little to see without the lines. Playback at 60 frames/s does not measure live FPS.",
+    "camera": [
+      {"frame": 0, "position": [-0.04529, -0.0484, 0.07479], "target": [0.02969, -0.04052, 0.00925], "fov": 12.0},
+      {"frame": 340, "position": [-0.04529, -0.0484, 0.07479], "target": [0.02969, -0.04052, 0.00925], "fov": 12.0},
+      {"frame": 348, "position": [-0.04334, -0.04845, 0.07233], "target": [0.02968, -0.04078, 0.00882], "fov": 12.0},
+      {"frame": 355, "position": [-0.03847, -0.04858, 0.06618], "target": [0.02964, -0.04142, 0.00776], "fov": 12.0},
+      {"frame": 362, "position": [-0.03213, -0.04874, 0.05818], "target": [0.02959, -0.04226, 0.00637], "fov": 12.0},
+      {"frame": 370, "position": [-0.02579, -0.04891, 0.05018], "target": [0.02955, -0.0431, 0.00499], "fov": 12.0},
+      {"frame": 378, "position": [-0.02092, -0.04904, 0.04403], "target": [0.02951, -0.04374, 0.00393], "fov": 12.0},
+      {"frame": 385, "position": [-0.01897, -0.04909, 0.04157], "target": [0.0295, -0.044, 0.0035], "fov": 12.0}
+    ],
+    "edges": [[120, 251]]
   },
   "fem_phantom_regions": {
     "frames": 540,
     "fps": 60,
+    "poster_frame": 90,
     "show_ui": true,
     "args": [
       "--regions",
-      "4",
-      "--test"
+      "4"
     ],
-    "caption": "Click the 2D pad map to select a SutureBot wound: right-drag wound 4, switch to wound 6, disable FEM, then return to wound 4. Wound numbers follow the dataset; inactive material stays fixed."
+    "caption": "Simulation-time playback, close on the selected wound and turned like the 2D pad map (`--regions 4` starts on wound 4): a right-drag pulls a spring grab 3 mm and the tissue under the marker (yellow while dragged, green as a hold) rises about 0.9 mm into a small tent; a click on the map moves the FEM to wound 6, which is dragged the same way, None switches the FEM off, and wound 4 is selected and dragged again, seen closer. Only the selected wound is simulated: the rest of the pad, the cut interfaces and the underside stay fixed, so the lift is small. Wound numbers follow the dataset; playback rate does not measure live FPS.",
+    "camera": [
+      {"frame": 0, "position": [-0.00734, 0.0628, 0.06542], "target": [-0.00734, -0.017, -0.00047], "fov": 15.0},
+      {"frame": 150, "position": [-0.00734, 0.0628, 0.06542], "target": [-0.00734, -0.017, -0.00047], "fov": 15.0},
+      {"frame": 156, "position": [-0.00946, 0.06787, 0.06703], "target": [-0.00946, -0.01388, -0.00048], "fov": 15.0},
+      {"frame": 162, "position": [-0.01476, 0.08056, 0.07104], "target": [-0.01476, -0.00608, -0.00049], "fov": 15.0},
+      {"frame": 168, "position": [-0.02166, 0.09704, 0.07626], "target": [-0.02166, 0.00406, -0.00051], "fov": 15.0},
+      {"frame": 174, "position": [-0.02855, 0.11353, 0.08149], "target": [-0.02855, 0.0142, -0.00053], "fov": 15.0},
+      {"frame": 180, "position": [-0.03385, 0.12622, 0.0855], "target": [-0.03385, 0.022, -0.00054], "fov": 15.0},
+      {"frame": 186, "position": [-0.03597, 0.13129, 0.08711], "target": [-0.03597, 0.02512, -0.00055], "fov": 15.0},
+      {"frame": 310, "position": [-0.03597, 0.13129, 0.08711], "target": [-0.03597, 0.02512, -0.00055], "fov": 15.0},
+      {"frame": 316, "position": [-0.03385, 0.12622, 0.0855], "target": [-0.03385, 0.022, -0.00054], "fov": 15.0},
+      {"frame": 322, "position": [-0.02855, 0.11353, 0.08149], "target": [-0.02855, 0.0142, -0.00053], "fov": 15.0},
+      {"frame": 328, "position": [-0.02166, 0.09704, 0.07626], "target": [-0.02166, 0.00406, -0.00051], "fov": 15.0},
+      {"frame": 334, "position": [-0.01476, 0.08056, 0.07104], "target": [-0.01476, -0.00608, -0.00049], "fov": 15.0},
+      {"frame": 340, "position": [-0.00946, 0.06787, 0.06703], "target": [-0.00946, -0.01388, -0.00048], "fov": 15.0},
+      {"frame": 346, "position": [-0.00734, 0.0628, 0.06542], "target": [-0.00734, -0.017, -0.00047], "fov": 15.0},
+      {"frame": 362, "position": [-0.00734, 0.0628, 0.06542], "target": [-0.00734, -0.017, -0.00047], "fov": 15.0},
+      {"frame": 366, "position": [-0.00752, 0.06036, 0.06372], "target": [-0.00752, -0.017, -0.00016], "fov": 15.0},
+      {"frame": 370, "position": [-0.00798, 0.05425, 0.05946], "target": [-0.00798, -0.01701, 0.00063], "fov": 15.0},
+      {"frame": 374, "position": [-0.00857, 0.04631, 0.05394], "target": [-0.00857, -0.01702, 0.00165], "fov": 15.0},
+      {"frame": 378, "position": [-0.00917, 0.03838, 0.04841], "target": [-0.00917, -0.01702, 0.00266], "fov": 15.0},
+      {"frame": 382, "position": [-0.00963, 0.03227, 0.04415], "target": [-0.00963, -0.01703, 0.00345], "fov": 15.0},
+      {"frame": 386, "position": [-0.00981, 0.02983, 0.04245], "target": [-0.00981, -0.01703, 0.00376], "fov": 15.0},
+      {"frame": 512, "position": [-0.00981, 0.02983, 0.04245], "target": [-0.00981, -0.01703, 0.00376], "fov": 15.0},
+      {"frame": 516, "position": [-0.00963, 0.03227, 0.04415], "target": [-0.00963, -0.01703, 0.00345], "fov": 15.0},
+      {"frame": 520, "position": [-0.00917, 0.03838, 0.04841], "target": [-0.00917, -0.01702, 0.00266], "fov": 15.0},
+      {"frame": 524, "position": [-0.00857, 0.04631, 0.05394], "target": [-0.00857, -0.01702, 0.00164], "fov": 15.0},
+      {"frame": 528, "position": [-0.00798, 0.05425, 0.05946], "target": [-0.00798, -0.01701, 0.00063], "fov": 15.0},
+      {"frame": 532, "position": [-0.00752, 0.06036, 0.06372], "target": [-0.00752, -0.017, -0.00016], "fov": 15.0},
+      {"frame": 536, "position": [-0.00734, 0.0628, 0.06542], "target": [-0.00734, -0.017, -0.00047], "fov": 15.0},
+      {"frame": 539, "position": [-0.00734, 0.0628, 0.06542], "target": [-0.00734, -0.017, -0.00047], "fov": 15.0}
+    ]
   },
   "fem_dvrk": {
     "frames": 1202,
     "fps": 60,
-    "poster_frame": 600,
+    "poster_frame": 579,
     "show_ui": true,
-    "args": [
-      "--test"
-    ],
-    "caption": "Replay measured da Vinci Research Kit (dVRK) tissue3 tool motion with prepared USD tools, cameras, fixture and the original static phantom. Four synchronized views compare the model with source video; green point labels stay on the mesh. Camera and pad placement remain fitted estimates."
+    "args": [],
+    "caption": "Close view of the default recording at the wound of region 1: measured da Vinci Research Kit (dVRK) poses move the forceps (left) and the needle driver (right) through a needle throw over the phantom, the four source-video views play beside it with the model's edges drawn over them in cyan, and two green spheres mark the dataset's insertion and exit labels. This is a kinematic replay in recorded time (simulation-time playback, not live FPS): nothing is simulated, the scene has no needle or thread, and the phantom is static, so it does not give way where the real tissue was pushed and pierced. Camera and pad placement are fitted estimates and are not validated.",
+    "camera": {"position": [0.0254, -0.1129, 0.1009], "target": [0.0416, -0.0527, 0.0117], "fov": 30.0}
   },
   "fem_surgical_incision": {
     "frames": 480,
     "fps": 60,
-    "poster_frame": 240,
+    "poster_frame": 450,
     "show_ui": true,
     "args": [
       "--test"
     ],
-    "caption": "The 38,730-tetrahedron Baymax body, 135 mm across, lies on its back on the floor. A finite slice separates a hand, which a physical spring grip lifts and releases. All material is active; nothing is held. Simulation-time playback is not measured live FPS."
+    "caption": "Simulation-time playback, seen from straight above: the 38,730-tetrahedron Baymax body, 135 mm across, lies on its back; a planar blade cuts the belly along the midline, 28.5 mm long and 13.5 mm deep where the body is 42 mm thick (not through: the Line tool of the window cuts through the whole depth of the view, this blade goes through the same cut call), and two right-drag grips, one on each side, are pulled 4 mm and 8 mm outward and stay as spring holds (green markers) that keep the wound about 7.5 mm open. Nothing holds the body: it follows the first grip, and in the first half second it sinks 13 mm into the floor, a known defect that this view shows only as the body getting a tenth smaller. From 3.5 s to 6.5 s, while the second grip pulls the wound open, the viewer's Show Edges option is on: the dark lines are the edges of the triangles that the example draws, which are the surface of the simulated tetrahedral mesh itself, not a finer drawing mesh (9,882 faces of tetrahedra with a median edge of 1.9 mm before the cut, about 10,800 triangles after it; the 860 or so on the two walls of the wound and those at the body's outline are seen at a grazing angle and merge into dark hatching). The picture is the middle 800x660 of the 1280x720 recording: the side panel and the counters are cut off. Playback at 60 frames/s does not measure live FPS.",
+    "camera": {"position": [0.02556, -0.03912, 0.12718], "target": [0.02556, -0.03485, -0.03587], "fov": 45.0},
+    "edges": [[210, 389]],
+    "crop": [322, 50, 800, 660]
   },
   "fem_versius": {
     "frames": 240,
     "fps": 60,
-    "poster_frame": 120,
+    "poster_frame": 179,
     "show_ui": true,
-    "args": [
-      "--test"
-    ],
-    "caption": "Generated kinematic preview of two supplied CMR Versius distal needle holders above a static phantom, with two illustrative stereo views. The video panels contain unrelated dVRK placeholder footage, not measured Versius recordings or calibrated image alignment. Playback rate is not live FPS."
+    "args": [],
+    "caption": "Close view of the generated kinematic preview: the distal ends of two supplied CMR Versius needle holders articulate above the static phantom, never nearer than about 9 mm and never touching it, with two illustrative stereo views beside them. The video panels hold unrelated dVRK placeholder footage, not Versius recordings or a calibrated alignment, and the motion is scripted, not measured. Simulation-time playback of the first 4 s of the 9.4 s preview; the playback rate is not live FPS.",
+    "camera": {"position": [0.0044, -0.1324, 0.089], "target": [0.0044, -0.0155, 0.0216], "fov": 30.0}
   },
   "needle_thread": {
     "frames": 300,
     "fps": 60,
-    "poster_frame": 55,
-    "show_ui": true,
-    "args": [
-      "--test"
-    ],
-    "caption": "Simulation-time playback: a spring hold lifts the free MuJoCo needle on its thread, whose far end is pinned to the floor, and lets it go. The needle and the thread act on each other; there is no tissue. Illustrative needle mass and thread stiffness. Playback rate does not measure live FPS."
-  },
-  "fem_needle_suture": {
-    "frames": 2760,
-    "fps": 60,
-    "poster_frame": 2080,
-    "show_ui": true,
-    "args": [
-      "--test"
-    ],
-    "caption": "Simulation-time playback: the MuJoCo needle makes three planned stitches across the region 1 wound and its thread follows through every track and lies on the pad with friction. The thread is then tied at the first entry and pulled until the tissue limit, which narrows the wound from 2.4 mm to about 1.2 mm, tied at the last exit, and the needle is let go. Blue and orange spheres mark where the thread enters and leaves the tissue. Illustrative forces; no calibration. Playback rate does not measure live FPS."
-  },
-  "fem_needle_grasp": {
-    "frames": 2220,
-    "fps": 60,
-    "poster_frame": 470,
+    "poster_frame": 56,
     "show_ui": false,
     "args": [
       "--test"
     ],
-    "caption": "Simulation-time playback of the procedural procedure with joint-actuated dVRK tools: fixed trocar pivots, shaft insertion, wrist articulation and jaw friction move an independent rigid needle through both sides of the selected wound; a physical thread follows. The tissue is then lifted on the needle and lowered, the needle is released, taken again by its tip and pulled on along its own curve, its tail into the tissue and the thread after it through the track the needle has cut. The tools push the tissue where they touch it: the swept tool/tissue contact, a default of the example (--no-tool-tissue-contact lets the tools pass through the tissue). Recorded by the self-test in whole frames: the frame time budget of the window is not used in a recording. No trained policy or recorded-motion playback. Playback at 60 frames/s does not measure live simulation throughput."
+    "caption": "Simulation-time playback of the scripted user of `--test`, from a close camera that follows the first lift and then pulls back to the whole 120 mm thread: a spring hold lifts the free MuJoCo needle 40 mm on its thread, whose far end is pinned to the floor (orange dot), and lets it go; then a thread node is pinned 20 mm up, the needle is lifted again, both are released, and the debug view shows the thread nodes for a moment. The holds are not drawn, the needle and the thread act on each other, the thread does not collide with itself or with the needle and has no friction on the floor, and there is no tissue. Illustrative needle mass and thread stiffness; playback rate does not measure live FPS.",
+    "camera": [
+      {"frame": 0, "position": [-0.03201, 0.03647, 0.03331], "target": [0.00501, -0.00055, 0.00308], "fov": 30.0},
+      {"frame": 19, "position": [-0.03201, 0.03647, 0.03331], "target": [0.00501, -0.00055, 0.00308], "fov": 30.0},
+      {"frame": 49, "position": [-0.03653, 0.00965, 0.06556], "target": [0.00049, -0.02737, 0.03533], "fov": 30.0},
+      {"frame": 52, "position": [-0.03653, 0.00965, 0.06556], "target": [0.00049, -0.02737, 0.03533], "fov": 30.0},
+      {"frame": 54, "position": [-0.04004, 0.01151, 0.06646], "target": [0.00034, -0.02887, 0.03348], "fov": 30.0},
+      {"frame": 56, "position": [-0.04882, 0.01615, 0.06869], "target": [-3e-05, -0.03263, 0.02886], "fov": 30.0},
+      {"frame": 58, "position": [-0.06023, 0.02219, 0.07161], "target": [-0.00052, -0.03752, 0.02285], "fov": 30.0},
+      {"frame": 60, "position": [-0.07164, 0.02822, 0.07452], "target": [-0.00101, -0.04241, 0.01684], "fov": 30.0},
+      {"frame": 62, "position": [-0.08042, 0.03286, 0.07675], "target": [-0.00138, -0.04617, 0.01222], "fov": 30.0},
+      {"frame": 64, "position": [-0.08393, 0.03472, 0.07765], "target": [-0.00153, -0.04767, 0.01037], "fov": 30.0},
+      {"frame": 299, "position": [-0.08393, 0.03472, 0.07765], "target": [-0.00153, -0.04767, 0.01037], "fov": 30.0}
+    ]
+  },
+  "fem_needle_suture": {
+    "frames": 2220,
+    "fps": 60,
+    "poster_frame": 2120,
+    "show_ui": false,
+    "args": [
+      "--test"
+    ],
+    "caption": "Simulation-time playback, close on the region 1 wound: the driven MuJoCo needle makes three stitches through the two lips and its thread follows through each track; blue spheres mark where the thread goes into the tissue, orange where it comes out, green and pink the planned entries and exits. While the stitches are made the thread pulls the lips together at the stitches, from 2.36 mm to about 1.6 mm apart; the closing pull after the last stitch ends in the frame it begins, because a tissue element is already squeezed below the 50 % volume limit, the thread is tied at the first entry and the last exit, the needle is let go, and the camera moves in on the finished stitches. From 20.5 s to 23.5 s, when the needle swings over to the third stitch, the thread tightens through the second and the tissue moves most, the viewer's Show Edges option is on: the dark lines on the pad are the edges, about 1 mm long, of the outer faces of its tetrahedra, the simulated mesh itself and not a finer drawing mesh (the wound region, the part that is simulated, has 29,160 tetrahedra and 7,284 surface triangles; the pad around it is held fixed), the lines run together on the steep walls of the slit, and the needle, the thread (black under its lines) and the spheres show the lines of their own drawing meshes. Illustrative forces without calibration; the tissue has no contact with itself, the thread dips under the surface just before the third entry, and playback at 60 frames/s does not measure live FPS.",
+    "camera": [
+      {"frame": 0, "position": [-0.05969, -0.0494, 0.08502], "target": [0.02958, -0.04002, 0.007], "fov": 12.0},
+      {"frame": 1965, "position": [-0.05969, -0.0494, 0.08502], "target": [0.02958, -0.04002, 0.007], "fov": 12.0},
+      {"frame": 1975, "position": [-0.05712, -0.04942, 0.08209], "target": [0.02954, -0.04031, 0.0067], "fov": 12.0},
+      {"frame": 1985, "position": [-0.05071, -0.04947, 0.07477], "target": [0.02943, -0.04105, 0.00596], "fov": 12.0},
+      {"frame": 1995, "position": [-0.04237, -0.04954, 0.06524], "target": [0.02929, -0.04201, 0.005], "fov": 12.0},
+      {"frame": 2005, "position": [-0.03404, -0.04961, 0.05572], "target": [0.02915, -0.04297, 0.00404], "fov": 12.0},
+      {"frame": 2015, "position": [-0.02763, -0.04966, 0.0484], "target": [0.02904, -0.04371, 0.0033], "fov": 12.0},
+      {"frame": 2025, "position": [-0.02506, -0.04968, 0.04547], "target": [0.029, -0.044, 0.003], "fov": 12.0}
+    ],
+    "edges": [[1230, 1409]]
+  },
+  "fem_needle_grasp": {
+    "frames": 2220,
+    "fps": 60,
+    "poster_frame": 2150,
+    "show_ui": false,
+    "args": [
+      "--test"
+    ],
+    "caption": "Close-up of the default procedure in simulation-time playback: a joint-actuated dVRK needle holder pushes a free rigid needle through both lips of the wound, lifts the tissue on it and lowers it, lets go, takes the needle again by its tip and pulls it out along its own curve, and the thread follows through the track the needle made (green and blue spheres: where the needle went into and came out of the tissue). Then it makes one stitch of that thread: the thread is tied where it first goes into the tissue (that sphere turns yellow), the tool pulls it tight by moving the needle up and back over the wound, which narrows the wound at its top from 2.85 mm to 2.18 mm, the thread is tied again where it comes out of the tissue (the second yellow sphere), and the tool moves the needle back until the thread from there to the needle is slack. The thread between the two ties then holds the wound by itself, about 2.45 mm wide at its top, and the procedure is done at 35.2 to 35.6 s; the clip ends at 37 s. The view changes twice, to a wider one while the tool goes over to the needle tip and back to a close one for the pull and the stitch; no option is set: by default the tools push the tissue where they touch it (swept tool/tissue contact, off with --no-tool-tissue-contact). Known limits: one stitch narrows the wound and holds it narrower, it does not close it; a tie holds the thread at the hole it passes through and is not a knot in the thread, the tool still holds the needle at the end and the thread is not cut; the puncture, track, thread and contact forces are illustrative and not calibrated, the tissue is not cut open (the needle's track is a constraint, not a hole) and has no contact with itself, the tool/tissue contact has no friction, the two grasps are poses found for this stitch and port layout, and playback at 60 frames/s does not measure live speed (the recording runs the self-test in whole frames, without the frame time budget of the window).",
+    "camera": [
+      {"frame": 0, "position": [0.0026, -0.0506, 0.0399], "target": [0.0411, -0.0381, 0.0094], "fov": 30.0},
+      {"frame": 899, "position": [0.0026, -0.0506, 0.0399], "target": [0.0411, -0.0381, 0.0094], "fov": 30.0},
+      {"frame": 900, "position": [-0.0101, -0.0602, 0.0547], "target": [0.0454, -0.0484, 0.012], "fov": 30.0},
+      {"frame": 1395, "position": [-0.0101, -0.0602, 0.0547], "target": [0.0454, -0.0484, 0.012], "fov": 30.0},
+      {"frame": 1396, "position": [-0.0045, -0.0418, 0.0421], "target": [0.04, -0.0395, 0.0073], "fov": 30.0},
+      {"frame": 2219, "position": [-0.0045, -0.0418, 0.0421], "target": [0.04, -0.0395, 0.0073], "fov": 30.0}
+    ]
   },
   "fem_tool_tissue": {
     "frames": 1668,
     "fps": 60,
-    "poster_frame": 165,
+    "poster_frame": 1360,
     "show_ui": false,
     "args": [
       "--contact",
       "swept",
       "--test"
     ],
-    "caption": "Simulation-time playback of the tool/tissue contact rig with the opt-in swept-capsule contact (--contact swept), in its eight phases. Phases 1 to 7: the closed jaws of one joint-actuated dVRK tool come down, press 1.5 mm and then 3 mm into FEM tissue, slide 10 mm, lift, press at the held border and make one fast approach; the tissue under the jaws is pushed into a dimple and the tool is stopped where the tissue cannot follow. Phase 8, the pinch: the jaws open over a ridge of the tissue, go down beside it, close on it and lift it 5 mm. The tissue between the two jaws is gripped: it is carried with them by friction while its pull stays below the limit that the squeeze sets, comes up 4.5 mm with the jaws and draws a tent of tissue up around it; then it is lowered, let go and comes to rest. In the fast approach the jaws still plunge about 2.5 mm before they are pushed out: a known limit of this contact. Without the option the tools pass through the tissue and nothing is gripped. Playback at 60 frames/s does not measure live simulation throughput."
+    "caption": "Close-up, simulation-time playback of the tool/tissue contact rig with the opt-in swept-capsule contact (--contact swept); the title bar names each of its eight phases. The closed jaws of one joint-actuated dVRK tool press on FEM tissue, slide 10 mm, lift, press at the held border and make one fast approach; then, seen along a ridge of the tissue, they open over it, go down beside it, close on it and lift it, and the gripped tissue comes up about 4.5 mm with the jaws as a tent before it is lowered and let go (yellow and green points: the tissue nodes that the jaws carry). What the picture can hide: the tissue stops the tool short of the commanded 1.5 and 3 mm (the dimple is about 1 mm deep), the fast approach still plunges about 2.5 mm for a few frames before the jaws are pushed out, the grip holds only while the pull stays below the friction limit of the squeeze, and without the option the tools pass through the tissue; playback at 60 frames/s does not measure live simulation throughput.",
+    "camera": [
+      {"frame": 0, "position": [0.02088, -0.08984, 0.02288], "target": [0.03546, -0.04978, 0.003], "fov": 24.0},
+      {"frame": 915, "position": [0.02088, -0.08984, 0.02288], "target": [0.03546, -0.04978, 0.003], "fov": 24.0},
+      {"frame": 924, "position": [0.01599, -0.08618, 0.02091], "target": [0.03489, -0.04953, 0.00321], "fov": 24.83},
+      {"frame": 933, "position": [0.00715, -0.07564, 0.01664], "target": [0.03352, -0.04893, 0.0037], "fov": 26.82},
+      {"frame": 942, "position": [0.00234, -0.06178, 0.01239], "target": [0.03189, -0.04822, 0.0043], "fov": 29.18},
+      {"frame": 951, "position": [0.00283, -0.05117, 0.0096], "target": [0.03053, -0.04763, 0.00479], "fov": 31.17},
+      {"frame": 960, "position": [0.00405, -0.04738, 0.00864], "target": [0.02995, -0.04738, 0.005], "fov": 32.0}
+    ]
   }
 }

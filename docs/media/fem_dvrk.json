@@ -1,17 +1,15 @@
 {
   "example": "fem_dvrk",
-  "module": "newton_solver_suturebot.examples.example_fem_dvrk",
-  "caption": "Replay measured da Vinci Research Kit (dVRK) tissue3 tool motion with prepared USD tools, cameras, fixture and the original static phantom. Four synchronized views compare the model with source video; green point labels stay on the mesh. Camera and pad placement remain fitted estimates.",
-  "arguments": [
-    "--test"
-  ],
+  "module": "newton_solver_suturebot.examples.recording.example_fem_dvrk",
+  "caption": "Close view of the default recording at the wound of region 1: measured da Vinci Research Kit (dVRK) poses move the forceps (left) and the needle driver (right) through a needle throw over the phantom, the four source-video views play beside it with the model's edges drawn over them in cyan, and two green spheres mark the dataset's insertion and exit labels. This is a kinematic replay in recorded time (simulation-time playback, not live FPS): nothing is simulated, the scene has no needle or thread, and the phantom is static, so it does not give way where the real tissue was pushed and pierced. Camera and pad placement are fitted estimates and are not validated.",
+  "arguments": [],
   "device": "cuda:0",
   "frames": 1202,
   "fps": 60,
   "width": 1920,
   "height": 1080,
   "show_ui": true,
-  "recording_wall_seconds": 39.16105767899717,
+  "recording_wall_seconds": 41.37449958700017,
   "playback_is_performance_benchmark": false,
   "simulation_time": [
     {
@@ -21,9 +19,60 @@
   ],
   "dependencies": {
     "newton_solver_suturebot": "0.1.0",
-    "newton": "1.7.0",
+    "newton": "1.8.0",
     "warp-lang": "1.17.0+cu13"
   },
+  "camera": {
+    "position": [
+      0.0254,
+      -0.1129,
+      0.1009
+    ],
+    "target": [
+      0.0416,
+      -0.0527,
+      0.0117
+    ],
+    "fov": 30.0
+  },
+  "camera_view": [
+    {
+      "frame": 0,
+      "position": [
+        0.02539999969303608,
+        -0.11289999634027481,
+        0.10090000182390213
+      ],
+      "view_direction": [
+        0.14886134877740934,
+        0.5531761232345704,
+        -0.8196563154904266
+      ],
+      "pitch": -55.05040440095901,
+      "yaw": 74.93833845545382,
+      "fov": 30.0,
+      "near": 0.01,
+      "far": 1000.0
+    },
+    {
+      "frame": 1201,
+      "position": [
+        0.02539999969303608,
+        -0.11289999634027481,
+        0.10090000182390213
+      ],
+      "view_direction": [
+        0.14886134877740934,
+        0.5531761232345704,
+        -0.8196563154904266
+      ],
+      "pitch": -55.05040440095901,
+      "yaw": 74.93833845545382,
+      "fov": 30.0,
+      "near": 0.01,
+      "far": 1000.0
+    }
+  ],
   "scenario": {
     "sample_id": "tissue3_215300",
     "source_episode": "tissue_3/2_needle_throw/20250428-215300-489212",
@@ -59,31 +108,12 @@
     "region_id": 1,
     "point_labels": {
       "report": "point_labels.json",
-      "texture": "textures/point_labels.png",
       "count": 2,
       "display_color_rgb": [
         0,
         255,
         0
       ]
-    },
-    "view_changes": [
-      {
-        "capture_frame": 120,
-        "view": "phantom"
-      },
-      {
-        "capture_frame": 180,
-        "view": "surface point labels"
-      },
-      {
-        "capture_frame": 850,
-        "view": "phantom"
-      },
-      {
-        "capture_frame": 1000,
-        "view": "complete rig"
-      }
-    ]
+    }
   }
 }

@@ -1,7 +1,5 @@
 """Script public example interactions for representative FEM recordings."""
 
-import json
-
 import numpy as np
 
 
@@ -14,7 +12,6 @@ def configure(name, example):
         example.recording_drag = None
     elif name in ("fem_dvrk", "fem_versius"):
         example.recording_seen_frames = set()
-        example.recording_view_changes = []
     if name in (
         "fem_phantom_regions",
         "fem_dvrk",
@@ -196,63 +193,211 @@ def _phantom_frame(example, frame):
         example.recording_events.append({"frame": frame, "action": "clear_holds"})
 
 
-def _incision_frame(example, frame):
-    """Slice off the low-x end of the body (a hand of the Baymax body), lift it through a physical grip, then release."""
+# The clip of fem_surgical_incision, after the picture the user gave of it: the body from straight above,
+# one cut along the middle of the belly that does not go through, held open by two grips. Scene frame [m];
+# the body lies with its arm span along x, its head at +y and its belly up. The lengths are read off that
+# picture as fractions of the hand span (135 mm), with the belly top 19 % larger in it than the hands.
+INCISION = {
+    # Length of the cut along the midline, centred on the middle of the body.
+    "wound_length": 0.0285,
+    # Where a grip takes the skin: this far from the wound, at its mid-length.
+    "grip_offset": 0.0059,
+    # How far each grip is dragged away from the wound: the first one (-x) half as far as the second (+x).
+    # Nothing holds the body, so it follows the first grip; the second pull opens the wound and brings
+    # the body back to where it lay. The wound opens by about as much as the second pull.
+    "pull": (0.004, 0.008),
+    # Speed of a drag [m/s]: below the speed limit of a grip's target (2.96 mm/s), so that the marker
+    # and the grip stay together.
+    "drag_speed": 0.0025,
+    # The cut comes before frame 40, where the scripted user of --test looks whether somebody else is
+    # at work and then stands down. Then the first press, and the frames between a release and a press.
+    "cut_frame": 38,
+    "first_press": 70,
+    "pause": 20,
+}
+
+
+def _incision_surface(example):
+    """Current positions [m] of the corners of the boundary triangles, three rows per triangle."""
+    example.contact.update_surface(example.state_0.particle_q)
+    return example.contact.points.numpy()[: 3 * example._surface_count]
+
+
+def _incision_plan(example):
+    """Frames of the two drags: (press, last frame of the drag, release) of each."""
+    plan, press = [], INCISION["first_press"]
+    for pull in INCISION["pull"]:
+        frames = int(np.ceil(pull / (INCISION["drag_speed"] * example.frame_dt)))
+        plan.append((press, press + frames, press + frames + 1))
+        press += frames + 1 + INCISION["pause"]
+    return plan
+
+
+def _incision_limited(example):
+    """Steps that the volume guard has shortened so far."""
+    return int(example.volume_guard.limited_steps.numpy()[0])
+
+
+def _incision_cut(example, frame):
+    """One planar cut along the midline of the belly, from above the skin to a depth that leaves the back whole.
+
+    The Line tool of the window cuts through the whole depth of the view. A blade that ends inside the
+    body goes through ``Example.cut``, the call that the tool's stroke ends in: here to the depth of the
+    scene's own wound (``_baymax_body.WOUND_DEPTH``, 13.5 mm of the 42 mm that the body is thick there).
+    """
+    from newton_solver_suturebot.examples.incision import _baymax_body as body  # noqa: PLC0415
+
+    depth = body.SCALE * body.WOUND_DEPTH
     lower, upper = example.reference_positions.min(axis=0), example.reference_positions.max(axis=0)
-    span = upper - lower
-    # The blade reaches beyond the body by a tenth of its smallest size; a ray starts half its thickness above it.
-    margin, above = 0.1 * float(span.min()), upper[2] + 0.5 * span[2]
-    x = lower[0] + 0.14 * span[0]
-    if frame == 30:
-        corners = np.array(
-            [
-                (x, lower[1] - margin, lower[2] - margin),
-                (x, upper[1] + margin, lower[2] - margin),
-                (x, upper[1] + margin, upper[2] + margin),
-                (x, lower[1] - margin, upper[2] + margin),
-            ]
-        )
-        mass_before = float(example.model.cut_physical_mass.numpy().sum())
-        if not example.cut(corners[[[0, 1, 2], [0, 2, 3]]]):
-            raise RuntimeError(f"Recorded incision failed: {example.cut_error}")
-        components = len(np.unique(example.cutter.material_components.numpy()[: example.fragment_count]))
-        mass_after = float(example.model.cut_physical_mass.numpy().sum())
-        if components < 2 or not np.isclose(mass_after, mass_before, rtol=1e-5):
-            raise RuntimeError("The incision must separate pieces and conserve material mass")
-        example.recording_events.append(
-            {
-                "frame": frame,
-                "action": "finite_line_incision",
-                "material_components": components,
-                "mass_before_kg": mass_before,
-                "mass_after_kg": mass_after,
-            }
-        )
-    if frame == 60:
-        # Straight above the middle of the piece that was cut off, wherever it lies by now.
-        example.contact.update_surface(example.state_0.particle_q)
-        surface = example.contact.points.numpy()[: 3 * example._surface_count]
-        piece = surface[surface[:, 0] < x]
-        if not len(piece):
-            raise RuntimeError("The cut piece must remain available for a physical surface grip")
-        origin = np.array((*piece[:, :2].mean(axis=0), above))
-        point = example._begin_pick(origin, np.array((0.0, 0.0, -1.0)))
+    middle, span = 0.5 * (lower + upper), upper - lower
+    half = 0.5 * INCISION["wound_length"]
+    # The skin at the middle of the cut, where the body lies now (it sinks into the floor in the first
+    # frames): the highest point of the surface within a tenth of the cut's length of it.
+    surface = _incision_surface(example)
+    near = np.linalg.norm(surface[:, :2] - middle[:2], axis=1) < 0.1 * INCISION["wound_length"]
+    skin = float(surface[near, 2].max())
+    low, high = skin - depth, skin + 0.1 * float(span.min())
+    x = middle[0]
+    corners = np.array(
+        [
+            (x, middle[1] - half, low),
+            (x, middle[1] + half, low),
+            (x, middle[1] + half, high),
+            (x, middle[1] - half, high),
+        ]
+    )
+    mass_before = float(example.model.cut_physical_mass.numpy().sum())
+    if not example.cut(corners[[[0, 1, 2], [0, 2, 3]]]):
+        raise RuntimeError(f"Recorded incision failed: {example.cut_error}")
+    components = len(np.unique(example.cutter.material_components.numpy()[: example.fragment_count]))
+    mass_after = float(example.model.cut_physical_mass.numpy().sum())
+    if components != 1 or not np.isclose(mass_after, mass_before, rtol=1e-5):
+        raise RuntimeError("The incision must leave the body in one piece and conserve material mass")
+    # The rim of the wound: corners of the new surface that lie in the blade's plane within a millimetre
+    # of the skin, in bins of a millimetre along the cut. Both lips start in the plane; the opening of
+    # the wound in a bin is the spread of its corners across the cut.
+    surface = _incision_surface(example)
+    along = surface[:, 1] - (middle[1] - half)
+    in_plane = (np.abs(surface[:, 0] - x) < 1.0e-5) & (along >= 0.0) & (along <= 2.0 * half) & (surface[:, 2] > low)
+    bins = np.floor(along / 0.001).astype(int)
+    rim = []
+    for index in range(int(np.ceil(2.0 * half / 0.001))):
+        rows = np.flatnonzero(in_plane & (bins == index))
+        if len(rows):
+            rim.append(rows[surface[rows, 2] > surface[rows, 2].max() - 0.001])
+    if not rim:
+        raise RuntimeError("The incision left no rim at the skin")
+    example.recording_wound = {"rim": rim, "limited_before": _incision_limited(example)}
+    example.recording_events.append(
+        {
+            "frame": frame,
+            "action": "planar_cut_of_limited_depth",
+            "length_m": INCISION["wound_length"],
+            "depth_below_skin_m": depth,
+            "sunk_since_start_m": float(upper[2]) - skin,
+            "material_components": components,
+            "mass_before_kg": mass_before,
+            "mass_after_kg": mass_after,
+        }
+    )
+
+
+def _incision_wound(example):
+    """Where the wound is now [m]: the middle of its rim, and its largest opening at the skin."""
+    surface = _incision_surface(example)
+    rim = example.recording_wound["rim"]
+    opening = max(float(np.ptp(surface[rows, 0])) for rows in rim)
+    return surface[np.concatenate(rim)].mean(axis=0), opening
+
+
+def _incision_press(example, side, frame):
+    """Right button down on the skin beside the wound: ``side`` -1 toward -x, +1 toward +x."""
+    lower, upper = example.reference_positions.min(axis=0), example.reference_positions.max(axis=0)
+    # Nothing holds the body, and it follows the grip that came before: the press is placed from the wound.
+    wound, _ = _incision_wound(example)
+    # A ray straight down, from half the body's thickness above its top as it was loaded.
+    origin = np.array((wound[0] + side * INCISION["grip_offset"], wound[1], upper[2] + 0.5 * (upper[2] - lower[2])))
+    down = np.array((0.0, 0.0, -1.0))
+    tool = example.screen_pick
+    if tool.window is not None:
+        point = example._pick_cut_surface(origin, down)
         if point is None:
-            raise RuntimeError("The cut piece must remain available for a physical surface grip")
-        example.recording_drag = np.asarray(point).copy()
-        example.recording_events.append({"frame": frame, "action": "begin_surface_grip"})
-    if 60 < frame <= 210:
-        fraction = (frame - 60) / 150
-        fraction = fraction * fraction * (3 - 2 * fraction)
-        example._move_pick(example.recording_drag + (0, 0, 0.03 * fraction))
-    if frame == 211:
+            raise RuntimeError("The recorded grip found no skin beside the wound")
+        pixel = _screen_point(example, np.asarray(point, dtype=np.float64))
+        tool.on_mouse_press(*pixel, 4, 0)
+        if not tool.active:
+            raise RuntimeError("The recorded right mouse press did not grip the body")
+        hit = tool.target.copy()
+    else:
+        # Without a window (the profiler) the same grip goes through the callbacks of the screen tool.
+        hit, pixel = example._begin_pick(origin, down), None
+        if hit is None:
+            raise RuntimeError("The recorded grip found no skin beside the wound")
+    example.recording_drag = {"point": np.asarray(hit, dtype=np.float64), "pixel": pixel, "side": side}
+    example.recording_events.append(
+        {
+            "frame": frame,
+            "action": "begin_right_drag",
+            "side": "+x" if side > 0 else "-x",
+            "point_m": [float(value) for value in hit],
+        }
+    )
+
+
+def _incision_drag(example, distance):
+    """Move the pressed grip to ``distance`` [m] from where it took the skin, away from the wound."""
+    drag = example.recording_drag
+    target = drag["point"] + np.array((drag["side"] * distance, 0.0, 0.0))
+    tool = example.screen_pick
+    if tool.window is not None:
+        pixel = _screen_point(example, target)
+        tool.on_mouse_drag(*pixel, *(pixel - drag["pixel"]), 4, 0)
+        drag["pixel"] = pixel
+    else:
+        example._move_pick(target)
+
+
+def _incision_release(example, frame, pull):
+    drag, tool = example.recording_drag, example.screen_pick
+    if tool.window is not None:
+        tool.on_mouse_release(*drag["pixel"], 4, 0)
+    else:
         example._finish_pick()
-        example.recording_events.append({"frame": frame, "action": "release_to_hold", "target_lift_m": 0.03})
-    if frame == 270:
-        example.clear_holds()
-        example.recording_events.append({"frame": frame, "action": "release_cut_strip"})
+    example.recording_events.append(
+        {
+            "frame": frame,
+            "action": "release_to_hold",
+            "side": "+x" if drag["side"] > 0 else "-x",
+            "pull_m": pull,
+            "wound_opening_m": _incision_wound(example)[1],
+        }
+    )
+    example.recording_drag = None
+
+
+def _incision_frame(example, frame):
+    """Cut the belly along the midline, not through; then two right-drags, one on each side, pull the wound open."""
+    if frame == INCISION["cut_frame"]:
+        _incision_cut(example, frame)
+    for side, pull, (press, last, release) in zip((-1.0, 1.0), INCISION["pull"], _incision_plan(example), strict=True):
+        if frame == press - 2 and example.screen_pick.window is not None:
+            # The pointer goes where the button will come down, as before a click.
+            pixel = _screen_point(example, _incision_wound(example)[0] + (side * INCISION["grip_offset"], 0.0, 0.0))
+            example.screen_pick._pointer(*pixel)
+        elif frame == press:
+            _incision_press(example, side, frame)
+        elif press < frame <= last:
+            _incision_drag(example, min(pull, (frame - press) * INCISION["drag_speed"] * example.frame_dt))
+        elif frame == release:
+            _incision_release(example, frame, pull)
     if frame % 60 == 0:
         example.test_final()
+
+
+# The clip of fem_needle_insertion: the first and the last captured frame in which the pad is drawn
+# opaque. They are the frames in which the clip shows the mesh edges, the "edges" interval of its
+# recipe in docs/videos.json; tests/test_record_examples.py keeps the two equal.
+INSERTION_OPAQUE_FRAMES = (120, 251)
 
 
 def before_frame(name, example, frame):
@@ -272,26 +417,18 @@ def before_frame(name, example, frame):
         elif frame == 155:
             example.running = False
             example.outcome = "Paused"
+        # The scripted user switches the panel's "See through pad" off for the frames in which the
+        # recipe shows the mesh edges and on again after them. Through a translucent pad the edge
+        # lines of its underside and of the slit walls lie over those of the top surface; on the
+        # opaque pad only the lines of the visible surface are drawn.
+        if frame == INSERTION_OPAQUE_FRAMES[0]:
+            example.args.transparent_pad = False
+        elif frame == INSERTION_OPAQUE_FRAMES[1] + 1:
+            example.args.transparent_pad = True
         return
     if name in ("fem_dvrk", "fem_versius"):
+        # The replay needs no scripted action, and its view is the camera of the recipe (docs/videos.json).
         example.recording_seen_frames.add(example.frame_index)
-        if frame == 120:
-            example.frame_phantom()
-            example.recording_view_changes.append({"capture_frame": frame, "view": "phantom"})
-        elif frame == 180 and "point_labels" in example.recording.manifest:
-            labels = example.recording.manifest["point_labels"]
-            report = json.loads(example.recording.asset(labels["report"]).read_text())
-            center = np.mean([point["position_world_m"] for point in report["points"]], axis=0)
-            # Keep the physical-size markers legible after video compression.
-            example.viewer.set_camera(pos=center + np.array([-0.06, 0.06, 0.08]))
-            example.viewer.camera.look_at(center)
-            example.recording_view_changes.append({"capture_frame": frame, "view": "surface point labels"})
-        elif frame == 850:
-            example.frame_phantom()
-            example.recording_view_changes.append({"capture_frame": frame, "view": "phantom"})
-        elif frame == 1000:
-            example.reset_camera()
-            example.recording_view_changes.append({"capture_frame": frame, "view": "complete rig"})
         if frame % 60 == 0:
             example.test_final()
         return
@@ -302,9 +439,9 @@ def before_frame(name, example, frame):
 
 def frame_label(name, example):
     if name == "fem_surgical_incision":
-        return f"Baymax body ({len(example.reference_elements):,} source tets) | Cuts: {example.cut_revision} | Simulation-time playback"
+        return f"Baymax body ({len(example.reference_elements):,} source tets) | Cuts: {example.cut_revision} | Grips: {example.holds.count} | Simulation-time playback"
     if name == "fem_needle_insertion":
-        return f"{example.outcome} | Simulation-time playback | coupled MuJoCo/FEM, illustrative interaction"
+        return f"{example.outcome} | Simulation-time playback"
     if name in ("fem_dvrk", "fem_versius"):
         return f"{example.recording.manifest['sample_id']} | frame {example.frame_index} | {example.recording.time_s[example.frame_index]:.2f} s | {example.recording.camera_count} camera overlays"
     if name == "fem_phantom_regions":
@@ -312,23 +449,44 @@ def frame_label(name, example):
         action = "Right-drag: physical spring grab" if example.recording_drag else "Click pad map | fixed inactive pad"
         return f"Active: {regions} | {len(example.selection.indices):,} tets | {action}"
     if name == "fem_needle_suture":
-        return f"{example.outcome} | Simulation-time playback | illustrative thread and tissue forces"
+        return f"{example.outcome.split(';')[0]} | Simulation-time playback"
     if name == "needle_thread":
         return "Simulation-time playback | illustrative thread forces"
+    if name == "fem_tool_tissue":
+        # The phase and the motion of the scripted path that the drawn frame ended, as the example's panel names them.
+        path = example.path
+        segment = path.segment_of(min(max(example.frame - 1, 0), path.frames - 1))
+        phases = list(dict.fromkeys(item.phase for item in path.segments))
+        return (
+            f"Phase {phases.index(segment.phase) + 1}/{len(phases)}: {segment.phase.replace('_', ' ')} "
+            f"({segment.label}) | --contact {example.args.contact} | Simulation-time playback"
+        )
     return ""
 
 
 def recording_metadata(name, example):
     if name == "fem_surgical_incision":
         example.test_final()
+        wound = getattr(example, "recording_wound", None)
+        holds = example.holds
+        grips = [holds.grip_position(example.state_0.particle_q, grip) for grip in range(holds.count)]
+        limited = None if wound is None else _incision_limited(example) - wound["limited_before"]
         return {
             "original_vertices": len(example.reference_positions),
             "original_tetrahedra": len(example.reference_elements),
             "all_material_active": True,
             "fixed_nodes": 0,
             "cuts": example.cut_revision,
+            "grips": holds.count,
+            # At the end of the clip: the wound's largest opening at the skin and the distance of the two grips.
+            "wound_opening_m": None if wound is None else _incision_wound(example)[1],
+            "grip_distance_m": float(np.linalg.norm(grips[1] - grips[0])) if len(grips) == 2 else None,
+            # Steps that the volume guard shortened after the cut, and the cut that was refused, if any.
+            "volume_guard_limited_steps": limited,
+            "cut_error": example.cut_error,
             "events": example.recording_events,
-            "interaction": "finite incision and physical surface grip through example callbacks",
+            "interaction": "a planar cut of limited depth through Example.cut; two right-drags through the mouse "
+            "handlers of the screen pick tool (through its callbacks where there is no window)",
         }
     if name == "fem_needle_insertion":
         return example.report() | {
@@ -361,7 +519,6 @@ def recording_metadata(name, example):
             ],
             "region_id": example.recording.manifest.get("region_id"),
             "point_labels": example.recording.manifest.get("point_labels"),
-            "view_changes": example.recording_view_changes,
         }
     if name == "fem_phantom_regions":
         return {"drag_distance_m": 0.003, "events": example.recording_events}

@@ -96,6 +96,13 @@ def video_examples(root=ROOT):
         frames = recorded.get("frames", config.get("frames", 240))
         if recorded and frames != config.get("frames", frames):
             raise ValueError(f"{name}: video frame count differs from docs/videos.json")
+        # A clip shows the view of the camera it was recorded with; a recipe without one is the example's own view.
+        if recorded and recorded.get("camera") != config.get("camera"):
+            raise ValueError(f"{name}: video camera differs from docs/videos.json; record the clip again")
+        # Likewise the frames in which the clip shows the viewer's edges, and the part of the captured picture it keeps.
+        for entry, differs in (("edges", "differ"), ("crop", "differs")):
+            if recorded and recorded.get(entry) != config.get(entry):
+                raise ValueError(f"{name}: video {entry} {differs} from docs/videos.json; record the clip again")
         selected[name] = {
             "description": description,
             "module": f"{package}.examples.{module}",

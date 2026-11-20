@@ -1861,8 +1861,10 @@ measured: the latest frame at which the three runs `s2_a`, `s2_b` and `s2_c`
 were done (2121), 60 frames more, rounded up to a multiple of 60; done is half
 a second after the slackening has ended, so the second that the self-test asks
 for is inside. The stages end on what the simulation reaches, not at fixed
-times. The clip in `docs/media` is an earlier one of 1700 frames (the lift by
-the tip); it has not been recorded again.
+times. The clip in `docs/media` was recorded with this recipe on 2026-11-20
+from commit `fe9306e`, from a close camera that changes its view twice (the
+recipe's `camera`); the run passed the self-test. See
+[provenance](provenance.md#current-clips-2026-11-20) for all nine clips.
 
 Validate one scene, then display more independent scenes:
 

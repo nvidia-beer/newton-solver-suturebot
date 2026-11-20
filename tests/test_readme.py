@@ -1,5 +1,6 @@
 """Generated documentation follows actual examples and detects stale output."""
 
+import json
 import shutil
 import subprocess
 import sys
@@ -70,6 +71,40 @@ class TestReadme(unittest.TestCase):
         self.assertNotIn("$$M a = f$$", text)
         (self.root / "docs/method.md").unlink()
         self.assertNotEqual(self.build().returncode, 0)
+
+    def test_recipes_with_a_camera_and_stills_beside_a_clip_leave_the_readme_as_it_is(self):
+        media = self.root / "docs/media"
+        media.mkdir()
+        (media / "first.mp4").touch()
+        (media / "first.jpg").touch()
+        self.assertEqual(self.build("--require-videos").returncode, 0)
+        before = (self.root / "README.md").read_text()
+        self.assertIn('<a href="docs/media/first.mp4"><img src="docs/media/first.jpg"', before)
+        # The recorder's recipes, sidecars and stills are not read for the page.
+        camera = {"position": [0.03, -0.04, 0.05], "target": [0.01, 0.0, 0.0], "fov": 30.0}
+        timed = [camera | {"frame": 0}, camera | {"frame": 60, "fov": 20.0}]
+        # Nor are the frames with the viewer's edges and the crop of a recipe.
+        shown = {"edges": [[30, 59]], "crop": [322, 50, 800, 660]}
+        (self.root / "docs/videos.json").write_text(
+            json.dumps({"first": {"frames": 90, "camera": camera} | shown, "second": {"camera": timed}})
+        )
+        (media / "first.json").write_text(
+            json.dumps(
+                {"frames": 90, "camera": camera, "camera_view": [], "width": 800, "height": 660}
+                | shown
+                | {"captured_width": 1280, "captured_height": 720}
+            )
+        )
+        (media / "first.still-00000.jpg").touch()
+        (media / "first.still-00060.jpg").touch()
+        self.assertEqual(self.build("--check", "--require-videos").returncode, 0)
+        self.assertEqual(self.build("--require-videos").returncode, 0)
+        self.assertEqual((self.root / "README.md").read_text(), before)
+        # A still is not the preview of its clip.
+        (media / "first.jpg").unlink()
+        required = self.build("--require-videos")
+        self.assertNotEqual(required.returncode, 0)
+        self.assertIn("Missing video or preview for first", required.stderr)
 
 
 if __name__ == "__main__":

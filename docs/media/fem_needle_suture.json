@@ -1,27 +1,185 @@
 {
   "example": "fem_needle_suture",
-  "module": "newton_solver_suturebot.examples.example_fem_needle_suture",
-  "caption": "Simulation-time playback: the MuJoCo needle makes three planned stitches across the region 1 wound and its thread follows through every track and lies on the pad with friction. The thread is then tied at the first entry and pulled until the tissue limit, which narrows the wound from 2.4 mm to about 1.2 mm, tied at the last exit, and the needle is let go. Blue and orange spheres mark where the thread enters and leaves the tissue. Illustrative forces; no calibration. Playback rate does not measure live FPS.",
+  "module": "newton_solver_suturebot.examples.needle.example_fem_needle_suture",
+  "caption": "Simulation-time playback, close on the region 1 wound: the driven MuJoCo needle makes three stitches through the two lips and its thread follows through each track; blue spheres mark where the thread goes into the tissue, orange where it comes out, green and pink the planned entries and exits. While the stitches are made the thread pulls the lips together at the stitches, from 2.36 mm to about 1.6 mm apart; the closing pull after the last stitch ends in the frame it begins, because a tissue element is already squeezed below the 50 % volume limit, the thread is tied at the first entry and the last exit, the needle is let go, and the camera moves in on the finished stitches. From 20.5 s to 23.5 s, when the needle swings over to the third stitch, the thread tightens through the second and the tissue moves most, the viewer's Show Edges option is on: the dark lines on the pad are the edges, about 1 mm long, of the outer faces of its tetrahedra, the simulated mesh itself and not a finer drawing mesh (the wound region, the part that is simulated, has 29,160 tetrahedra and 7,284 surface triangles; the pad around it is held fixed), the lines run together on the steep walls of the slit, and the needle, the thread (black under its lines) and the spheres show the lines of their own drawing meshes. Illustrative forces without calibration; the tissue has no contact with itself, the thread dips under the surface just before the third entry, and playback at 60 frames/s does not measure live FPS.",
   "arguments": [
     "--test"
   ],
   "device": "cuda:0",
-  "frames": 2760,
+  "frames": 2220,
   "fps": 60,
-  "width": 1280,
-  "height": 720,
-  "show_ui": true,
-  "recording_wall_seconds": 107.66939759399975,
+  "width": 960,
+  "height": 540,
+  "show_ui": false,
+  "recording_wall_seconds": 80.24741269600054,
   "playback_is_performance_benchmark": false,
   "simulation_time": [
     {
       "attribute": "sim_time",
-      "end": 39.34999999999907
+      "end": 33.466666666666335
     }
   ],
   "dependencies": {
     "newton_solver_suturebot": "0.1.0",
-    "newton": "1.7.0",
+    "newton": "1.8.0",
     "warp-lang": "1.17.0+cu13"
-  }
+  },
+  "camera": [
+    {
+      "frame": 0,
+      "position": [
+        -0.05969,
+        -0.0494,
+        0.08502
+      ],
+      "target": [
+        0.02958,
+        -0.04002,
+        0.007
+      ],
+      "fov": 12.0
+    },
+    {
+      "frame": 1965,
+      "position": [
+        -0.05969,
+        -0.0494,
+        0.08502
+      ],
+      "target": [
+        0.02958,
+        -0.04002,
+        0.007
+      ],
+      "fov": 12.0
+    },
+    {
+      "frame": 1975,
+      "position": [
+        -0.05712,
+        -0.04942,
+        0.08209
+      ],
+      "target": [
+        0.02954,
+        -0.04031,
+        0.0067
+      ],
+      "fov": 12.0
+    },
+    {
+      "frame": 1985,
+      "position": [
+        -0.05071,
+        -0.04947,
+        0.07477
+      ],
+      "target": [
+        0.02943,
+        -0.04105,
+        0.00596
+      ],
+      "fov": 12.0
+    },
+    {
+      "frame": 1995,
+      "position": [
+        -0.04237,
+        -0.04954,
+        0.06524
+      ],
+      "target": [
+        0.02929,
+        -0.04201,
+        0.005
+      ],
+      "fov": 12.0
+    },
+    {
+      "frame": 2005,
+      "position": [
+        -0.03404,
+        -0.04961,
+        0.05572
+      ],
+      "target": [
+        0.02915,
+        -0.04297,
+        0.00404
+      ],
+      "fov": 12.0
+    },
+    {
+      "frame": 2015,
+      "position": [
+        -0.02763,
+        -0.04966,
+        0.0484
+      ],
+      "target": [
+        0.02904,
+        -0.04371,
+        0.0033
+      ],
+      "fov": 12.0
+    },
+    {
+      "frame": 2025,
+      "position": [
+        -0.02506,
+        -0.04968,
+        0.04547
+      ],
+      "target": [
+        0.029,
+        -0.044,
+        0.003
+      ],
+      "fov": 12.0
+    }
+  ],
+  "camera_view": [
+    {
+      "frame": 0,
+      "position": [
+        -0.05969,
+        -0.0494,
+        0.08502
+      ],
+      "view_direction": [
+        0.7506124467385816,
+        0.07887022236370446,
+        -0.6560186299377633
+      ],
+      "pitch": -40.99693307011226,
+      "yaw": 5.998314514176656,
+      "fov": 12.0,
+      "near": 0.01,
+      "far": 1000.0
+    },
+    {
+      "frame": 2219,
+      "position": [
+        -0.02506,
+        -0.04968,
+        0.04547
+      ],
+      "view_direction": [
+        0.7836884166358783,
+        0.08234092131875295,
+        -0.6156723465506057
+      ],
+      "pitch": -38.00079044437102,
+      "yaw": 5.997971623588938,
+      "fov": 12.0,
+      "near": 0.01,
+      "far": 1000.0
+    }
+  ],
+  "edges": [
+    [
+      1230,
+      1409
+    ]
+  ]
 }

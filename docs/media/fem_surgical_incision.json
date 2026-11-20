@@ -1,7 +1,7 @@
 {
   "example": "fem_surgical_incision",
   "module": "newton_solver_suturebot.examples.incision.example_fem_surgical_incision",
-  "caption": "Simulation-time playback, seen from straight above: the 38,730-tetrahedron Baymax body, 135 mm across, lies on its back; a planar blade cuts the belly along the midline, 28.5 mm long and 13.5 mm deep where the body is 42 mm thick (not through: the Line tool of the window cuts through the whole depth of the view, this blade goes through the same cut call), and two right-drag grips, one on each side, are pulled 4 mm and 8 mm outward and stay as spring holds (green markers) that keep the wound 7.5 mm open. Nothing holds the body: it follows the first grip, and in the first half second it sinks 13 mm into the floor, a known defect that this view shows only as the body getting a tenth smaller. The picture is the middle 800x660 of the 1280x720 recording: the side panel and the counters are cut off. Playback at 60 frames/s does not measure live FPS.",
+  "caption": "Simulation-time playback, seen from straight above: the 38,730-tetrahedron Baymax body, 135 mm across, lies on its back; a planar blade cuts the belly along the midline, 28.5 mm long and 13.5 mm deep where the body is 42 mm thick (not through: the Line tool of the window cuts through the whole depth of the view, this blade goes through the same cut call), and two right-drag grips, one on each side, are pulled 4 mm and 8 mm outward and stay as spring holds (green markers) that keep the wound about 7.5 mm open. Nothing holds the body: it follows the first grip, and in the first half second it sinks 13 mm into the floor, a known defect that this view shows only as the body getting a tenth smaller. From 3.5 s to 6.5 s, while the second grip pulls the wound open, the viewer's Show Edges option is on: the dark lines are the edges of the triangles that the example draws, which are the surface of the simulated tetrahedral mesh itself, not a finer drawing mesh (9,882 faces of tetrahedra with a median edge of 1.9 mm before the cut, about 10,800 triangles after it; the 860 or so on the two walls of the wound and those at the body's outline are seen at a grazing angle and merge into dark hatching). The picture is the middle 800x660 of the 1280x720 recording: the side panel and the counters are cut off. Playback at 60 frames/s does not measure live FPS.",
   "arguments": [
     "--test"
   ],
@@ -10,17 +10,8 @@
   "fps": 60,
   "width": 800,
   "height": 660,
-  "crop": {
-    "recorded_width": 1280,
-    "recorded_height": 720,
-    "x": 322,
-    "y": 50,
-    "width": 800,
-    "height": 660,
-    "tool": "ffmpeg crop=800:660:322:50, libx264 crf 17"
-  },
   "show_ui": true,
-  "recording_wall_seconds": 16.595232183999542,
+  "recording_wall_seconds": 15.118455554998945,
   "playback_is_performance_benchmark": false,
   "simulation_time": [
     {
@@ -84,6 +75,20 @@
       "far": 2.0
     }
   ],
+  "edges": [
+    [
+      210,
+      389
+    ]
+  ],
+  "crop": [
+    322,
+    50,
+    800,
+    660
+  ],
+  "captured_width": 1280,
+  "captured_height": 720,
   "scenario": {
     "original_vertices": 8965,
     "original_tetrahedra": 38730,
@@ -91,8 +96,8 @@
     "fixed_nodes": 0,
     "cuts": 1,
     "grips": 2,
-    "wound_opening_m": 0.007517699152231216,
-    "grip_distance_m": 0.019509758800268173,
+    "wound_opening_m": 0.007573902606964111,
+    "grip_distance_m": 0.01950303465127945,
     "volume_guard_limited_steps": 0,
     "cut_error": "",
     "events": [
@@ -101,19 +106,19 @@
         "action": "planar_cut_of_limited_depth",
         "length_m": 0.0285,
         "depth_below_skin_m": 0.013500000000000002,
-        "sunk_since_start_m": 0.013609083523776534,
+        "sunk_since_start_m": 0.013609112394776347,
         "material_components": 1,
         "mass_before_kg": 0.09245118498802185,
-        "mass_after_kg": 0.09245118498802185
+        "mass_after_kg": 0.09245117753744125
       },
       {
         "frame": 70,
         "action": "begin_right_drag",
         "side": "-x",
         "point_m": [
-          0.03273417006368746,
-          -0.03827656882820808,
-          -0.01247640018024021
+          0.032734218515208094,
+          -0.03804078773503603,
+          -0.012512018125977326
         ]
       },
       {
@@ -121,16 +126,16 @@
         "action": "release_to_hold",
         "side": "-x",
         "pull_m": 0.004,
-        "wound_opening_m": 4.820898175239563e-05
+        "wound_opening_m": 4.821270704269409e-05
       },
       {
         "frame": 187,
         "action": "begin_right_drag",
         "side": "+x",
         "point_m": [
-          0.040531986011810725,
-          -0.03827735110610667,
-          -0.012647266114429373
+          0.0405322516846523,
+          -0.038041521761878645,
+          -0.012673747756332648
         ]
       },
       {
@@ -138,7 +143,7 @@
         "action": "release_to_hold",
         "side": "+x",
         "pull_m": 0.008,
-        "wound_opening_m": 0.007510516792535782
+        "wound_opening_m": 0.007566731423139572
       }
     ],
     "interaction": "a planar cut of limited depth through Example.cut; two right-drags through the mouse handlers of the screen pick tool (through its callbacks where there is no window)"

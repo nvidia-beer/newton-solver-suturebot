@@ -1,17 +1,15 @@
 {
   "example": "fem_versius",
-  "module": "newton_solver_suturebot.examples.example_fem_versius",
-  "caption": "Generated kinematic preview of two supplied CMR Versius distal needle holders above a static phantom, with two illustrative stereo views. The video panels contain unrelated dVRK placeholder footage, not measured Versius recordings or calibrated image alignment. Playback rate is not live FPS.",
-  "arguments": [
-    "--test"
-  ],
+  "module": "newton_solver_suturebot.examples.recording.example_fem_versius",
+  "caption": "Close view of the generated kinematic preview: the distal ends of two supplied CMR Versius needle holders articulate above the static phantom, never nearer than about 9 mm and never touching it, with two illustrative stereo views beside them. The video panels hold unrelated dVRK placeholder footage, not Versius recordings or a calibrated alignment, and the motion is scripted, not measured. Simulation-time playback of the first 4 s of the 9.4 s preview; the playback rate is not live FPS.",
+  "arguments": [],
   "device": "cuda:0",
   "frames": 240,
   "fps": 60,
   "width": 1920,
   "height": 1080,
   "show_ui": true,
-  "recording_wall_seconds": 8.179229029999988,
+  "recording_wall_seconds": 8.877416531002382,
   "playback_is_performance_benchmark": false,
   "simulation_time": [
     {
@@ -21,9 +19,60 @@
   ],
   "dependencies": {
     "newton_solver_suturebot": "0.1.0",
-    "newton": "1.7.0",
+    "newton": "1.8.0",
     "warp-lang": "1.17.0+cu13"
   },
+  "camera": {
+    "position": [
+      0.0044,
+      -0.1324,
+      0.089
+    ],
+    "target": [
+      0.0044,
+      -0.0155,
+      0.0216
+    ],
+    "fov": 30.0
+  },
+  "camera_view": [
+    {
+      "frame": 0,
+      "position": [
+        0.004399999976158142,
+        -0.1324000060558319,
+        0.08900000154972076
+      ],
+      "view_direction": [
+        5.304687838120432e-17,
+        0.8663212677832927,
+        -0.4994871980204784
+      ],
+      "pitch": -29.96607908939177,
+      "yaw": 90.0,
+      "fov": 30.0,
+      "near": 0.01,
+      "far": 1000.0
+    },
+    {
+      "frame": 239,
+      "position": [
+        0.004399999976158142,
+        -0.1324000060558319,
+        0.08900000154972076
+      ],
+      "view_direction": [
+        5.304687838120432e-17,
+        0.8663212677832927,
+        -0.4994871980204784
+      ],
+      "pitch": -29.96607908939177,
+      "yaw": 90.0,
+      "fov": 30.0,
+      "near": 0.01,
+      "far": 1000.0
+    }
+  ],
   "scenario": {
     "sample_id": "versius_stereo_preview",
     "source_episode": "generated preview",
@@ -52,12 +101,6 @@
       "right"
     ],
     "region_id": "all",
-    "point_labels": null,
-    "view_changes": [
-      {
-        "capture_frame": 120,
-        "view": "phantom"
-      }
-    ]
+    "point_labels": null
   }
 }

@@ -1,7 +1,7 @@
 {
   "example": "fem_needle_insertion",
-  "module": "newton_solver_fem.examples.example_fem_needle_insertion",
-  "caption": "Simulation-time playback: select entry and exit material points across a region 1 wound gap, preview the curved needle, then start, pause and resume coupled MuJoCo/FEM insertion through both tissue sections. Illustrative puncture and sliding-track forces; no fracture or physiological calibration. Playback rate does not measure live FPS.",
+  "module": "newton_solver_suturebot.examples.needle.example_fem_needle_insertion",
+  "caption": "Simulation-time playback, close on the region 1 wound with the pad drawn translucent (--transparent-pad): an entry (green) and an exit (pink) material point are picked on the two lips, the curved needle and its planned tip path (cyan) are previewed, and the coupled MuJoCo/FEM drive turns the needle through both lips, with one pause, until its tip comes out 0.05 mm from the exit; the camera then moves in on the needle in the tissue. From 2.0 s to 4.2 s, while the needle goes through the first lip, the pad is drawn opaque (the example's See through pad switch is off) and the viewer's Show Edges option is on: the dark lines are the edges (about 1 mm) of the surface triangles of the pad's tetrahedra, which in the simulated region 1 (the middle band with the wound, 29,160 tetrahedra and 7,284 surface triangles) are the outer faces of the simulated tetrahedra themselves and around it belong to the pad at rest; the needle (its blunt end is black under its lines) and the two marker spheres show the lines of their own drawing meshes; the part of the needle inside the tissue is hidden for that time, and the lines show how fine the mesh is around the needle more than a motion: at the puncture (2.2 s to 2.4 s) the lines of the first lip beside the entry shift by one to three pixels and go back. Puncture and sliding-track forces are illustrative: no fracture, no cavity and no physiological calibration, and the tissue moves 0.17 mm at most, too little to see without the lines. Playback at 60 frames/s does not measure live FPS.",
   "arguments": [
     "--regions",
     "1",
@@ -11,10 +11,10 @@
   "device": "cuda:0",
   "frames": 420,
   "fps": 60,
-  "width": 1280,
-  "height": 720,
-  "show_ui": true,
-  "recording_wall_seconds": 12.819514279995929,
+  "width": 960,
+  "height": 540,
+  "show_ui": false,
+  "recording_wall_seconds": 11.098700924005243,
   "playback_is_performance_benchmark": false,
   "simulation_time": [
     {
@@ -23,12 +23,170 @@
     }
   ],
   "dependencies": {
-    "newton_solver_fem": "0.1.0",
-    "newton": "1.7.0",
+    "newton_solver_suturebot": "0.1.0",
+    "newton": "1.8.0",
     "warp-lang": "1.17.0+cu13"
   },
+  "camera": [
+    {
+      "frame": 0,
+      "position": [
+        -0.04529,
+        -0.0484,
+        0.07479
+      ],
+      "target": [
+        0.02969,
+        -0.04052,
+        0.00925
+      ],
+      "fov": 12.0
+    },
+    {
+      "frame": 340,
+      "position": [
+        -0.04529,
+        -0.0484,
+        0.07479
+      ],
+      "target": [
+        0.02969,
+        -0.04052,
+        0.00925
+      ],
+      "fov": 12.0
+    },
+    {
+      "frame": 348,
+      "position": [
+        -0.04334,
+        -0.04845,
+        0.07233
+      ],
+      "target": [
+        0.02968,
+        -0.04078,
+        0.00882
+      ],
+      "fov": 12.0
+    },
+    {
+      "frame": 355,
+      "position": [
+        -0.03847,
+        -0.04858,
+        0.06618
+      ],
+      "target": [
+        0.02964,
+        -0.04142,
+        0.00776
+      ],
+      "fov": 12.0
+    },
+    {
+      "frame": 362,
+      "position": [
+        -0.03213,
+        -0.04874,
+        0.05818
+      ],
+      "target": [
+        0.02959,
+        -0.04226,
+        0.00637
+      ],
+      "fov": 12.0
+    },
+    {
+      "frame": 370,
+      "position": [
+        -0.02579,
+        -0.04891,
+        0.05018
+      ],
+      "target": [
+        0.02955,
+        -0.0431,
+        0.00499
+      ],
+      "fov": 12.0
+    },
+    {
+      "frame": 378,
+      "position": [
+        -0.02092,
+        -0.04904,
+        0.04403
+      ],
+      "target": [
+        0.02951,
+        -0.04374,
+        0.00393
+      ],
+      "fov": 12.0
+    },
+    {
+      "frame": 385,
+      "position": [
+        -0.01897,
+        -0.04909,
+        0.04157
+      ],
+      "target": [
+        0.0295,
+        -0.044,
+        0.0035
+      ],
+      "fov": 12.0
+    }
+  ],
+  "camera_view": [
+    {
+      "frame": 0,
+      "position": [
+        -0.04529,
+        -0.0484,
+        0.07479
+      ],
+      "view_direction": [
+        0.7505664795593662,
+        0.07888055293315287,
+        -0.656069979598838
+      ],
+      "pitch": -41.000831349718936,
+      "yaw": 5.999459180285811,
+      "fov": 12.0,
+      "near": 0.01,
+      "far": 1000.0
+    },
+    {
+      "frame": 419,
+      "position": [
+        -0.01897,
+        -0.04909,
+        0.04157
+      ],
+      "view_direction": [
+        0.7837571056751023,
+        0.08230500655841311,
+        -0.6155897052414102
+      ],
+      "pitch": -37.994781826750916,
+      "yaw": 5.994852926144887,
+      "fov": 12.0,
+      "near": 0.01,
+      "far": 1000.0
+    }
+  ],
+  "edges": [
+    [
+      120,
+      251
+    ]
+  ],
   "scenario": {
-    "outcome": "Success: tip emerged, exit error 0.048 mm",
+    "outcome": "Success: tip emerged, exit error 0.047 mm",
     "success": true,
     "task_status": "success",
     "control_mode": "automatic",
@@ -43,17 +201,18 @@
     "step_refinements": 0,
     "accepted_physics_steps": 229,
     "minimum_step_dt_s": 0.016666666666666666,
-    "current_deformation_m": 3.3524939161414977e-06,
-    "engaged_track_length_m": 0.005581734236329794,
+    "current_deformation_m": 6.636646791436617e-06,
+    "least_volume_ratio": 0.9984921580425224,
+    "engaged_track_length_m": 0.005730463657528162,
     "failure_reason": null,
     "interaction_events": [
       {
         "kind": "puncture",
         "time_s": 1.0333333333333345,
         "position_m": [
-          0.030017369523183464,
-          -0.040116641843011086,
-          0.0011669670797305417
+          0.03001733787324088,
+          -0.04011671398516547,
+          0.0011669532241236587
         ],
         "reused": false
       },
@@ -62,7 +221,7 @@
         "time_s": 1.0500000000000012,
         "position_m": [
           0.030001256614923477,
-          -0.040074802935123444,
+          -0.040074799209833145,
           0.0012190872803330421
         ],
         "reused": false
@@ -71,9 +230,9 @@
         "kind": "exit",
         "time_s": 2.033333333333331,
         "position_m": [
-          0.030029861256480217,
-          -0.04298081621527672,
-          0.0007795598357915878
+          0.030029788613319397,
+          -0.04298064112663269,
+          0.0007793745025992393
         ],
         "reused": false
       },
@@ -81,9 +240,9 @@
         "kind": "puncture",
         "time_s": 2.7833333333333283,
         "position_m": [
-          0.030058141844110643,
-          -0.04529600124005228,
-          0.00101755975491868
+          0.030058118361466376,
+          -0.045295941580320714,
+          0.001017451583397334
         ],
         "reused": false
       },
@@ -91,9 +250,9 @@
         "kind": "entry",
         "time_s": 2.799999999999995,
         "position_m": [
-          0.030029552057385445,
-          -0.04525537043809891,
-          0.0010712351649999619
+          0.030029483139514923,
+          -0.04525519907474518,
+          0.0010710153728723526
         ],
         "reused": false
       },
@@ -101,9 +260,9 @@
         "kind": "exit",
         "time_s": 3.816666666666658,
         "position_m": [
-          0.02999916858971119,
-          -0.048040859401226044,
-          0.0022832080721855164
+          0.02999907173216343,
+          -0.0480407252907753,
+          0.002282806672155857
         ],
         "reused": false
       }
@@ -111,28 +270,70 @@
     "entry_count": 2,
     "exit_count": 2,
     "physical_time_s": 3.816666666666658,
-    "exit_error_m": 4.786243692393375e-05,
+    "exit_error_m": 4.6908817899944406e-05,
     "exit_tolerance_m": 0.001,
     "puncture_count": 2,
-    "track_samples": 21,
+    "track_samples": 22,
+    "track_capacity": 105,
+    "track_storage_growths": 0,
+    "cooperative_shaft_rebinds": 0,
+    "openings": 4,
+    "opening_capacity": 32,
+    "opening_storage_growths": 0,
     "track_section_count": 2,
-    "track_length_m": 0.005581734345762529,
-    "maximum_interface_force_N": 0.003321567353839877,
-    "maximum_deformation_m": 0.0001679779030773648,
+    "track_length_m": 0.005730463789826998,
+    "maximum_interface_force_N": 0.0033324167573584667,
+    "maximum_deformation_m": 0.00016796207314474565,
     "maximum_deformation_time_s": 1.0333333333333345,
-    "maximum_force_balance_error_N": 4.674767378079999e-10,
-    "maximum_torque_balance_error_Nm": 1.4777539772032398e-11,
+    "maximum_force_balance_error_N": 4.665698955615924e-10,
+    "maximum_torque_balance_error_Nm": 1.4999770885397668e-11,
     "maximum_coupling_iterations": 12,
-    "maximum_coupling_residual_N": 5.0538653720301994e-06,
-    "last_coupling_attempt_iterations": 3,
-    "last_coupling_attempt_residual_N": 4.167241058894433e-07,
-    "fem_graph_captures": 8,
-    "fem_graph_launches": 509,
+    "maximum_coupling_residual_N": 5.02121065465975e-06,
+    "last_coupling_attempt_iterations": 2,
+    "last_coupling_attempt_residual_N": 6.500222298200242e-07,
+    "surface_pc_applications": 0,
+    "surface_pc_selection_changes": 0,
+    "surface_pc_graph_captures": 0,
+    "surface_pc_graph_launches": 0,
+    "surface_pc_native_mass_fallbacks": 0,
+    "fem_graph_captures": 10,
+    "fem_graph_launches": 146,
     "fem_graph_status": "replaying",
+    "host_force_graph_captures": 4,
+    "host_force_graph_launches": 98,
+    "host_force_graph_fallbacks": 3,
+    "host_force_primal_reuses": 0,
+    "trial_prepare_graph_captures": 2,
+    "trial_prepare_graph_launches": 146,
+    "phase_predictor_attempts": 0,
+    "phase_predictor_commits": 0,
+    "phase_predictor_invalidations": 0,
+    "phase_predictor_rejections": 0,
+    "coupling_graph_status": "exact surface-event fallback",
+    "coupling_graph_captures": 2,
+    "coupling_graph_launches": 166,
+    "coupling_graph_fallbacks": 8,
+    "coupling_graph_event_searches": 6,
+    "coupling_graph_event_restarts": 0,
+    "coupling_divergence_stops": 0,
+    "coupling_budget_keeps": 0,
+    "coupling_budget_searches": 0,
+    "coupling_budget_residual": 0.0,
+    "coupling_budget_events": {},
+    "coupling_graph_fallback_reasons": {
+      "tip in material without puncture or outside every tetrahedron": 2,
+      "tip sweep not clear of the surface": 4,
+      "tip sweep not clear of the active boundary": 4,
+      "tip within reach of a deformed opening": 1,
+      "tip outside with an unretained opening or inside a tetrahedron": 2,
+      "puncture force threshold": 2
+    },
+    "coupling_graph_verifications": 158,
     "shaft_preconditioner_status": "enabled",
     "coupling_absolute_tolerance_N": 2e-06,
     "coupling_relative_tolerance": 0.001,
     "coupling_iteration_cap": 160,
+    "coupling_trial_budget": null,
     "fem_iteration_cap": 160,
     "fem_relative_tolerance": 0.003,
     "young_modulus_Pa": 25000.0,
@@ -150,17 +351,34 @@
     "shaft_stiffness_N_per_m2": 60000.0,
     "tunnel_model": "alm",
     "tunnel_clearance_m": 2e-05,
-    "tunnel_compliance_m2_per_N": 1.6666666666666667e-05,
+    "tunnel_compliance_m2_per_N": 3.3333333333333333e-06,
     "tunnel_penalty_N_per_m2": 60000.0,
     "tunnel_tolerance_m": 2e-06,
-    "tunnel_alm_dual_updates": 63,
-    "tunnel_alm_last_normal_error_m": 7.689726134497976e-13,
+    "tunnel_alm_dual_updates": 121,
+    "tunnel_alm_last_normal_error_m": 0.0,
     "tunnel_alm_last_dual_residual_N": 0.0,
     "drive_stiffness_N_per_m": 400.0,
     "angular_drive_stiffness_Nm_per_rad": 0.05,
     "implicit_drive_spring": true,
     "status": "outside",
     "calibrated": false,
+    "captures_after_startup": 0,
+    "solver_captures_after_startup": 0,
+    "module_loads_after_startup": 0,
+    "render_module_loads_after_startup": 0,
+    "capture_census": {
+      "status": "checked",
+      "startups": 2,
+      "startup_seconds": 3.894143471996358,
+      "startup_captures": 24,
+      "startup_solver_captures": 3,
+      "startup_module_loads": 58,
+      "startup_unlaunched_graphs": 0,
+      "graphs_released_after_startup": 0,
+      "late_sites": {},
+      "late_modules": {},
+      "late_render_modules": {}
+    },
     "entry_xy_m": [
       0.03,
       -0.04

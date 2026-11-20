@@ -100,8 +100,11 @@ with no skips. Its log is `results/phantom-cut/cuda-tests.log`. Ruff checks and
 formatting passed for all 189 Python files. These are the post-extension
 results; the 473-test extraction result below remains historical.
 
-The [360-frame recorded demonstration](media/fem_phantom_cut.mp4) advances six
-simulated seconds. One accepted finite incision creates two components, then
+The 360-frame recorded demonstration of the pad example advanced six
+simulated seconds. Its files `docs/media/fem_phantom_cut.*`, which the report
+names, left the tree on 2026-11-20, the day after `fem_surgical_incision` got
+its own clip ([provenance](provenance.md#earlier-clips)); they remain in the
+repository's history. One accepted finite incision creates two components, then
 a physical spring grip lifts and releases the separated strip. Before/after
 mass sums are exactly equal in float32 at 0.1343255192041397 kg. Finite-state
 and positive-volume checks passed every 60 frames and at the final state.
@@ -264,7 +267,7 @@ visible desktop compositor. The identical smooth handling sequence gave:
 
 **Sustained 60 FPS during loaded handling remains unmet.** Nominal-1 p95
 active-frame latency was about 44 ms; abrupt clicks can require additional
-iterations and smaller steps. The [canonical gap movie](media/fem_needle_insertion.mp4)
+iterations and smaller steps. The [canonical gap movie](media/history/fem_needle_insertion/fem_needle_insertion.mp4)
 and separate handling movie are 60 FPS simulation-time exports, not live-rate
 measurements. The handling capture shows local lifting and relaxation without
 deformation magnification; its 1 mm lift reached 0.757 mm maximum tissue
@@ -306,11 +309,20 @@ grab-target motions produced maximum nodal displacements of approximately
 0.811 mm and 1.258 mm in wounds 4 and 6. These are checks of this scripted
 demonstration, not fitted tissue parameters or guarantees for arbitrary pulls.
 
-The nine-second [actual GPU recording](media/fem_phantom_regions.mp4) has 540
+The nine-second [actual GPU recording](media/history/fem_phantom_regions/fem_phantom_regions.mp4) has 540
 decoded frames at 1280 × 720 and 60 fps. It shows clicks on the 2D region map, active
-tetrahedron counts and mouse-grab markers; its [capture metadata](media/fem_phantom_regions.json)
+tetrahedron counts and mouse-grab markers; its [capture metadata](media/history/fem_phantom_regions/fem_phantom_regions.json)
 retains the selection and deformation measurements. The movie's playback rate
-is not a live performance result.
+is not a live performance result. It is the historical recording, archived on
+2026-11-20. The [current clip](media/fem_phantom_regions.mp4) replays the same
+script at the same size from a close camera, without `--test`; its
+[capture metadata](media/fem_phantom_regions.json) records maximum nodal
+displacements of 0.885 mm and 1.299 mm in wounds 4 and 6 and 0.883 mm in the
+second drag of wound 4: its grabs are picked through the pixels of the close
+camera, not along the example's own view as in the null-viewer replay. The
+validation command below, which takes its arguments from the clip's recipe,
+reproduced the replay's numbers above on 2026-11-19 (minimum Jacobian
+0.924977, 0.811 mm and 1.258 mm).
 
 ```bash
 uv run --locked --extra examples python tools/validate_phantom_regions.py --output /tmp/phantom-regions.json
@@ -640,7 +652,7 @@ workbench in `docs/recording-replay.md`; the example does not require it.
 ```bash
 PYTHONPATH=tests uv run --locked --extra examples python -m unittest test_suturebot_recording test_suturebot_cameras test_suturebot_point_labels test_suturebot_needle -v
 NEWTON_TEST_DEVICE=cuda:0 uv run --locked --extra examples python -m unittest discover -s tests -v
-uv run --locked --extra examples python tools/record_examples.py fem_dvrk --width 1280 --height 720
+uv run --locked --extra examples python tools/record_examples.py fem_dvrk --width 1920 --height 1080
 ```
 
 

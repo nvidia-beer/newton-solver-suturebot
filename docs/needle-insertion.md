@@ -947,9 +947,20 @@ device synchronization. **Sustained 60 FPS during loaded handling remains
 unmet.** More substeps improve some force-history comparisons but cost more
 work; they are not interchangeable speed presets with proven identical forces.
 
-The current [canonical movie](media/fem_needle_insertion.mp4) shows selection,
+The [canonical movie](media/history/fem_needle_insertion/fem_needle_insertion.mp4) shows selection,
 preview and insertion through two wound lips, with two material entries and
-exits and 47.9 µm final exit error. The separate
+exits and 47.9 µm final exit error. It is the historical recording, archived
+on 2026-11-20; the [current clip](media/fem_needle_insertion.mp4) shows the same
+script from a close camera and ends with 46.9 µm exit error
+([capture metadata](media/fem_needle_insertion.json)). From 2.0 s to 4.2 s of
+it, while the needle goes through the first lip, the pad is drawn opaque and
+the viewer's Show Edges option is on: the dark lines are the edges, about
+1 mm long, of the pad's surface triangles, which in the simulated region are
+the outer faces of its 29,160 tetrahedra. The part of the needle inside the
+tissue is hidden for that time, and the tissue moves 0.17 mm at most, so the
+lines show how fine the mesh is around the needle more than a motion: at the
+puncture (2.2 s to 2.4 s) the lines of the first lip beside the entry shift by
+one to three pixels and go back. The separate
 [historical manual handling movie](../nsys/results/needle_alm_final_movies_20261110/manual/fem_needle_insertion.mp4)
 shows a continuous insertion, an extra 0.75 mm arc advance, a 1 mm lift,
 lowering and withdrawal. That extra advance makes its 405 accepted steps a
@@ -1154,6 +1165,8 @@ percentile is 0.93–0.95 seconds and their maximum is about 1.70 seconds. They
 are not real time.
 The [recorded movie](media/fem_needle_insertion.mp4) records actual coupled
 simulation but is encoded at 60 FPS; its playback speed is not live throughput.
+The same holds for the [historical recording](media/history/fem_needle_insertion/fem_needle_insertion.mp4)
+that it replaced on 2026-11-20.
 
 Nsight Systems 2026.5.1 separately traced the fixed-32 workload. The final
 surface-force kernel took 4.478 seconds of recorded GPU time, versus 49.461

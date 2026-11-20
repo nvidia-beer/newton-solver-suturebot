@@ -4,49 +4,37 @@
   "date": "2026-11-10",
   "scope": "Imported documentation, historical validation and recorded demonstrations. Original media/JSON metadata remain byte-identical; their namespace, parameters and paths describe their original capture, not a fresh standalone run.",
   "files": {
-    "docs/media/fem_needle_insertion.mp4": {
+    "docs/media/history/fem_needle_insertion/fem_needle_insertion.mp4": {
       "original_path": "docs/media/fem_needle_insertion.mp4",
       "original_sha256": "c95aef837d7dcc2aa7ba0ce1ea8915131ee32b1746a12329ca20911153916853",
       "copied_sha256": "c95aef837d7dcc2aa7ba0ce1ea8915131ee32b1746a12329ca20911153916853",
       "handling": "byte-identical historical artifact"
     },
-    "docs/media/fem_needle_insertion.gif": {
-      "original_path": "docs/media/fem_needle_insertion.gif",
-      "original_sha256": "55fb435012993bdf7a3dee2aee07a9b14de1fdc403adc87b1b9555d867669ede",
-      "copied_sha256": "55fb435012993bdf7a3dee2aee07a9b14de1fdc403adc87b1b9555d867669ede",
-      "handling": "byte-identical historical artifact"
-    },
-    "docs/media/fem_needle_insertion.jpg": {
+    "docs/media/history/fem_needle_insertion/fem_needle_insertion.jpg": {
       "original_path": "docs/media/fem_needle_insertion.jpg",
       "original_sha256": "2501e5e338382d602e8fd0cc375e41a32a12eb2847a89d1ba9a19ecef7053840",
       "copied_sha256": "2501e5e338382d602e8fd0cc375e41a32a12eb2847a89d1ba9a19ecef7053840",
       "handling": "byte-identical historical artifact"
     },
-    "docs/media/fem_needle_insertion.json": {
+    "docs/media/history/fem_needle_insertion/fem_needle_insertion.json": {
       "original_path": "docs/media/fem_needle_insertion.json",
       "original_sha256": "d5e7399c40607c6dff9ae8be56ab0ac7e2fa8041bbfb7ad92f802fa1c618e861",
       "copied_sha256": "d5e7399c40607c6dff9ae8be56ab0ac7e2fa8041bbfb7ad92f802fa1c618e861",
       "handling": "byte-identical historical artifact"
     },
-    "docs/media/fem_phantom_regions.mp4": {
+    "docs/media/history/fem_phantom_regions/fem_phantom_regions.mp4": {
       "original_path": "docs/media/fem_phantom_regions.mp4",
       "original_sha256": "4cf8b58adf166d40ddeafb98f3eba1d6f6eb4311293272bb606a0882578a047b",
       "copied_sha256": "4cf8b58adf166d40ddeafb98f3eba1d6f6eb4311293272bb606a0882578a047b",
       "handling": "byte-identical historical artifact"
     },
-    "docs/media/fem_phantom_regions.gif": {
-      "original_path": "docs/media/fem_phantom_regions.gif",
-      "original_sha256": "8528c0ff8f5feb436a796ab4ac6363d2d9487e94b7027c423971e792cdcd0e48",
-      "copied_sha256": "8528c0ff8f5feb436a796ab4ac6363d2d9487e94b7027c423971e792cdcd0e48",
-      "handling": "byte-identical historical artifact"
-    },
-    "docs/media/fem_phantom_regions.jpg": {
+    "docs/media/history/fem_phantom_regions/fem_phantom_regions.jpg": {
       "original_path": "docs/media/fem_phantom_regions.jpg",
       "original_sha256": "db593e2dd46d8e9b842a94f625fafa3efe8a836ea6c53c8052e7c3269797a42e",
       "copied_sha256": "db593e2dd46d8e9b842a94f625fafa3efe8a836ea6c53c8052e7c3269797a42e",
       "handling": "byte-identical historical artifact"
     },
-    "docs/media/fem_phantom_regions.json": {
+    "docs/media/history/fem_phantom_regions/fem_phantom_regions.json": {
       "original_path": "docs/media/fem_phantom_regions.json",
       "original_sha256": "c8fa99c4fc5729010652880f0375a235f5bfe9772d0f62382aa33d4f5d92d709",
       "copied_sha256": "c8fa99c4fc5729010652880f0375a235f5bfe9772d0f62382aa33d4f5d92d709",
@@ -303,6 +291,20 @@
       "original_sha256": "5e1c2a041b6f74e1f50457bad7586ad0bca8abec3cef69ee2daf57901afa5f65",
       "copied_sha256": "5e1c2a041b6f74e1f50457bad7586ad0bca8abec3cef69ee2daf57901afa5f65",
       "handling": "byte-identical historical artifact"
+    }
+  },
+  "removed": {
+    "docs/media/fem_needle_insertion.gif": {
+      "original_path": "docs/media/fem_needle_insertion.gif",
+      "original_sha256": "55fb435012993bdf7a3dee2aee07a9b14de1fdc403adc87b1b9555d867669ede",
+      "copied_sha256": "55fb435012993bdf7a3dee2aee07a9b14de1fdc403adc87b1b9555d867669ede",
+      "handling": "left the repository on 2026-11-20 with the GIF previews of all clips, which no document showed; the bytes remain in the repository's history up to commit fe9306e"
+    },
+    "docs/media/fem_phantom_regions.gif": {
+      "original_path": "docs/media/fem_phantom_regions.gif",
+      "original_sha256": "8528c0ff8f5feb436a796ab4ac6363d2d9487e94b7027c423971e792cdcd0e48",
+      "copied_sha256": "8528c0ff8f5feb436a796ab4ac6363d2d9487e94b7027c423971e792cdcd0e48",
+      "handling": "left the repository on 2026-11-20 with the GIF previews of all clips, which no document showed; the bytes remain in the repository's history up to commit fe9306e"
     }
   }
 }

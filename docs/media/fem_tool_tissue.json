@@ -1,29 +1,167 @@
 {
   "example": "fem_tool_tissue",
   "module": "newton_solver_suturebot.examples.grasp.example_fem_tool_tissue",
-  "caption": "Simulation-time playback of the tool/tissue contact rig with the opt-in swept-capsule contact (--contact swept): the closed jaws of one joint-actuated dVRK tool press 1.5 mm and then 3 mm into FEM tissue, slide 10 mm, lift, press at the held border and make one fast approach. The tissue under the jaws is pushed into a dimple and the tool is stopped where the tissue cannot follow. In the fast approach at the end the jaws still plunge about 2.5 mm before they are pushed out: a known limit of this contact. Without the option the tools pass through the tissue. Playback at 60 frames/s does not measure live simulation throughput.",
+  "caption": "Close-up, simulation-time playback of the tool/tissue contact rig with the opt-in swept-capsule contact (--contact swept); the title bar names each of its eight phases. The closed jaws of one joint-actuated dVRK tool press on FEM tissue, slide 10 mm, lift, press at the held border and make one fast approach; then, seen along a ridge of the tissue, they open over it, go down beside it, close on it and lift it, and the gripped tissue comes up about 4.5 mm with the jaws as a tent before it is lowered and let go (yellow and green points: the tissue nodes that the jaws carry). What the picture can hide: the tissue stops the tool short of the commanded 1.5 and 3 mm (the dimple is about 1 mm deep), the fast approach still plunges about 2.5 mm for a few frames before the jaws are pushed out, the grip holds only while the pull stays below the friction limit of the squeeze, and without the option the tools pass through the tissue; playback at 60 frames/s does not measure live simulation throughput.",
   "arguments": [
     "--contact",
     "swept",
     "--test"
   ],
   "device": "cuda:0",
-  "frames": 942,
+  "frames": 1668,
   "fps": 60,
   "width": 960,
-  "height": 720,
+  "height": 540,
   "show_ui": false,
-  "recording_wall_seconds": 28.21935048198793,
+  "recording_wall_seconds": 78.79535229000066,
   "playback_is_performance_benchmark": false,
   "simulation_time": [
     {
       "attribute": "sim_time",
-      "end": 15.633333333332766
+      "end": 27.73333333333208
     }
   ],
   "dependencies": {
     "newton_solver_suturebot": "0.1.0",
     "newton": "1.8.0",
     "warp-lang": "1.17.0+cu13"
-  }
+  },
+  "camera": [
+    {
+      "frame": 0,
+      "position": [
+        0.02088,
+        -0.08984,
+        0.02288
+      ],
+      "target": [
+        0.03546,
+        -0.04978,
+        0.003
+      ],
+      "fov": 24.0
+    },
+    {
+      "frame": 915,
+      "position": [
+        0.02088,
+        -0.08984,
+        0.02288
+      ],
+      "target": [
+        0.03546,
+        -0.04978,
+        0.003
+      ],
+      "fov": 24.0
+    },
+    {
+      "frame": 924,
+      "position": [
+        0.01599,
+        -0.08618,
+        0.02091
+      ],
+      "target": [
+        0.03489,
+        -0.04953,
+        0.00321
+      ],
+      "fov": 24.83
+    },
+    {
+      "frame": 933,
+      "position": [
+        0.00715,
+        -0.07564,
+        0.01664
+      ],
+      "target": [
+        0.03352,
+        -0.04893,
+        0.0037
+      ],
+      "fov": 26.82
+    },
+    {
+      "frame": 942,
+      "position": [
+        0.00234,
+        -0.06178,
+        0.01239
+      ],
+      "target": [
+        0.03189,
+        -0.04822,
+        0.0043
+      ],
+      "fov": 29.18
+    },
+    {
+      "frame": 951,
+      "position": [
+        0.00283,
+        -0.05117,
+        0.0096
+      ],
+      "target": [
+        0.03053,
+        -0.04763,
+        0.00479
+      ],
+      "fov": 31.17
+    },
+    {
+      "frame": 960,
+      "position": [
+        0.00405,
+        -0.04738,
+        0.00864
+      ],
+      "target": [
+        0.02995,
+        -0.04738,
+        0.005
+      ],
+      "fov": 32.0
+    }
+  ],
+  "camera_view": [
+    {
+      "frame": 0,
+      "position": [
+        0.02088,
+        -0.08984,
+        0.02288
+      ],
+      "view_direction": [
+        0.30996069038943763,
+        0.8516478228395666,
+        -0.42263501542812243
+      ],
+      "pitch": -25.001059154220755,
+      "yaw": 70.00081786600867,
+      "fov": 24.0,
+      "near": 0.01,
+      "far": 1000.0
+    },
+    {
+      "frame": 1667,
+      "position": [
+        0.00405,
+        -0.04738,
+        0.00864
+      ],
+      "view_direction": [
+        0.990268108887986,
+        0.0,
+        -0.13917281530317643
+      ],
+      "pitch": -7.999983472218973,
+      "yaw": 0.0,
+      "fov": 32.0,
+      "near": 0.01,
+      "far": 1000.0
+    }
+  ]
 }

@@ -83,10 +83,11 @@ class TestProfiling(unittest.TestCase):
                 )
             media = root / "docs/media"
             media.mkdir(parents=True)
+            # What a recording writes: the clip, its poster and its sidecar.
             (media / "recorded.mp4").touch()
-            (media / "recorded.gif").touch()
+            (media / "recorded.jpg").touch()
             (media / "orphan.mp4").touch()
-            (media / "orphan.gif").touch()
+            (media / "orphan.jpg").touch()
             (media / "recorded.json").write_text(
                 json.dumps(
                     {
@@ -111,6 +112,53 @@ class TestProfiling(unittest.TestCase):
             config.write_text(json.dumps({"recorded": {"frames": 30, "args": ["--different"]}}))
             with self.assertRaisesRegex(ValueError, "video arguments differ"):
                 profiling.video_examples(root)
+            # A recipe may hold a camera; the clip must then have been recorded with that camera.
+            camera = {"position": [0.03, -0.04, 0.05], "target": [0.01, 0.0, 0.0], "fov": 30.0}
+            recipe = {"frames": 30, "args": ["--test"], "camera": camera}
+            config.write_text(json.dumps({"recorded": recipe}))
+            with self.assertRaisesRegex(ValueError, "video camera differs"):
+                profiling.video_examples(root)
+            sidecar = json.loads((media / "recorded.json").read_text())
+            (media / "recorded.json").write_text(json.dumps(sidecar | {"camera": camera, "camera_view": []}))
+            _, entries = profiling.video_examples(root)
+            self.assertEqual(entries["recorded"]["config"], recipe)
+            self.assertEqual(entries["recorded"]["arguments"], ["--test"])
+            config.write_text(json.dumps({"recorded": recipe | {"camera": camera | {"fov": 20.0}}}))
+            with self.assertRaisesRegex(ValueError, "video camera differs"):
+                profiling.video_examples(root)
+            config.write_text(json.dumps({"recorded": {"frames": 30, "args": ["--test"]}}))
+            with self.assertRaisesRegex(ValueError, "video camera differs"):
+                profiling.video_examples(root)
+            # The same for the frames with the viewer's edges and for the crop: a recipe may hold
+            # them, and the clip must then have been recorded with them.
+            sidecar = json.loads((media / "recorded.json").read_text())
+            for entry, value, other, message in (
+                ("edges", [[10, 19]], [[10, 20]], "video edges differ from docs/videos.json"),
+                ("crop", [322, 50, 800, 660], [322, 50, 800, 600], "video crop differs from docs/videos.json"),
+            ):
+                with self.subTest(entry=entry):
+                    config.write_text(json.dumps({"recorded": recipe | {entry: value}}))
+                    with self.assertRaisesRegex(ValueError, message):
+                        profiling.video_examples(root)
+                    (media / "recorded.json").write_text(json.dumps(sidecar | {entry: value}))
+                    _, entries = profiling.video_examples(root)
+                    self.assertEqual(entries["recorded"]["config"], recipe | {entry: value})
+                    self.assertEqual(entries["recorded"]["sidecar"][entry], value)
+                    config.write_text(json.dumps({"recorded": recipe | {entry: other}}))
+                    with self.assertRaisesRegex(ValueError, message):
+                        profiling.video_examples(root)
+                    config.write_text(json.dumps({"recorded": recipe}))
+                    with self.assertRaisesRegex(ValueError, message):
+                        profiling.video_examples(root)
+                    (media / "recorded.json").write_text(json.dumps(sidecar))
+                    profiling.video_examples(root)
+            # Both at once, with what a cropped recording writes beside them.
+            both = {"edges": [[10, 19]], "crop": [322, 50, 800, 660]}
+            config.write_text(json.dumps({"recorded": recipe | both}))
+            written = sidecar | both | {"width": 800, "height": 660, "captured_width": 1280, "captured_height": 720}
+            (media / "recorded.json").write_text(json.dumps(written))
+            _, entries = profiling.video_examples(root)
+            self.assertEqual(entries["recorded"]["frames"], 30)
 
     def test_capture_scope_and_literal_example_arguments(self):
         opts = options("/tmp/not-created")

@@ -80,9 +80,143 @@ extraction and dVRK replay reports do not validate this new preview.
 
 ## Demonstration media and history
 
-The original three MP4s, GIF/JPG previews and JSON sidecars retain their historical
-capture bytes. Needle/regions media remain in `docs/media/`; the original replay
-quartet is archived under `docs/media/history/fem_dvrk/`. Each sidecar retains its original
+### Current clips (2026-11-20)
+
+The README shows one clip per example. Six were recorded on 2026-11-19 with
+the example code of commit `640000d`, which commit `4b9fe78` left as it was.
+Three were recorded on 2026-11-20 with the code of commit `fe9306e`, the
+parent of the commit that brought the clips: `fem_needle_grasp`, whose
+procedure had gained its stitch since, and `fem_needle_suture` and
+`fem_needle_insertion`, recorded again with shorter texts in the recorder's
+title bar, which now fit the 960 pixels of the picture. Of the six,
+`fem_tool_tissue` and `needle_thread` were recorded once more from `fe9306e`
+as a check and not replaced: the sidecars came out equal but for the wall
+time and the pictures within the noise of two runs. The recorder's `camera`,
+`edges` and `crop` entries, the scenario file `tools/video_scenarios.py` and
+the recipes in `docs/videos.json` were committed together with the clips.
+Each clip is taken from a camera close on its action, the `camera` of its
+recipe ([camera of a clip](development.md#camera-of-a-clip)), and shows the
+example's default behaviour unless its arguments below or its caption name
+an option.
+The caption in the recipe and in the sidecar says what is seen and names the
+known limits. A clip is three files: the MP4, its JPG poster, which the README
+shows, and its JSON sidecar.
+
+| Clip, sidecar | Picture | Frames | Simulated time | Example arguments | MP4 |
+| --- | --- | ---: | ---: | --- | ---: |
+| [fem_needle_grasp](media/fem_needle_grasp.mp4), [JSON](media/fem_needle_grasp.json) | 960×540 | 2,220 | 37.0 s | `--test` | 2.98 MB |
+| [fem_tool_tissue](media/fem_tool_tissue.mp4), [JSON](media/fem_tool_tissue.json) | 960×540 | 1,668 | 27.7 s | `--contact swept --test` | 2.37 MB |
+| [fem_needle_suture](media/fem_needle_suture.mp4), [JSON](media/fem_needle_suture.json) | 960×540 | 2,220 | 33.5 s | `--test` | 3.43 MB |
+| [fem_needle_insertion](media/fem_needle_insertion.mp4), [JSON](media/fem_needle_insertion.json) | 960×540 | 420 | 3.8 s | `--regions 1 --transparent-pad --test` | 0.76 MB |
+| [fem_surgical_incision](media/fem_surgical_incision.mp4), [JSON](media/fem_surgical_incision.json) | 800×660, cut from 1280×720 with the panel | 480 | 8.0 s | `--test` | 2.06 MB |
+| [fem_dvrk](media/fem_dvrk.mp4), [JSON](media/fem_dvrk.json) | 1920×1080, with the panel | 1,202 | 20.0 s | none | 6.85 MB |
+| [fem_versius](media/fem_versius.mp4), [JSON](media/fem_versius.json) | 1920×1080, with the panel | 240 | 4.0 s | none | 0.68 MB |
+| [needle_thread](media/needle_thread.mp4), [JSON](media/needle_thread.json) | 1280×720 | 300 | 5.0 s | `--test` | 0.37 MB |
+| [fem_phantom_regions](media/fem_phantom_regions.mp4), [JSON](media/fem_phantom_regions.json) | 1280×720, with the panel | 540 | 9.0 s | `--regions 4` | 1.08 MB |
+
+- The picture size is an option of the recorder (`--width`, `--height`;
+  960×540 without them), not an entry of the recipe. The panel and the overlay
+  windows have fixed pixel sizes, so a clip of the table is recorded again
+  with its size (commands below). The `crop` of the `fem_surgical_incision`
+  recipe counts pixels of the 1280×720 picture: at a size that does not hold
+  it, such as the default one, the recorder refuses the recipe before a
+  simulation starts.
+- The six recordings with `--test` ended with the example's self-test passed.
+  `fem_dvrk`, `fem_versius` and `fem_phantom_regions` are recorded without it:
+  with `--test` each plays its own scripted user, which ends the two replays
+  paused at their last frame and presses and switches regions during the
+  recorded drag of the third. The scenario file checks the state during those
+  three recordings (`test_final` every 60 frames of a replay; at each
+  selection and release of the regions clip); the start-up census of `--test`
+  is not part of them.
+- `fem_needle_grasp` has 2,220 frames, 37 s (1,700 before, of the procedure
+  that ended with a lift by the needle tip): the procedure with the pull
+  through the tissue and the stitch is done at about 35.3 s in this
+  recording (at 35.2 to 35.6 s in the runs of
+  [usage](usage.md#the-lock-and-the-slackening)). The marker of the first
+  tie is yellow from frame 1,843 and that of the second from frame 2,015;
+  the poster is frame 2,150, after the procedure is done, with both markers
+  yellow and the slack thread from the exit to the needle.
+- `fem_needle_suture` has 2,220 frames (2,760 before): the default run now
+  ends in frame 2,007, with the closing pull ending in the frame it begins,
+  and the clip holds the finished stitches for 3.5 s.
+- The clips are encoded at 60 frames per second. Encoding/playback rate and
+  the capture wall times of the sidecars (7 s to 106 s, with start-up,
+  rendering and encoding) do not establish live simulation FPS.
+- The 27 files of the nine clips are 21.6 MB together, 20.6 MB of them the
+  MP4s. Two files are over 3 MB. `fem_dvrk.mp4` (6.85 MB; 5.12 MB before) is
+  1920×1080 with the four video views, and a close view changes more of the
+  picture from frame to frame than the wide view did. `fem_needle_suture.mp4`
+  is 3.43 MB: its 180 frames with the mesh edges take 1.60 MB of it, because
+  the fine lines over the whole picture compress badly. For the same reason
+  the frames with the edges take 1.79 MB of the 2.06 MB of
+  `fem_surgical_incision.mp4` and 0.58 MB of the 0.76 MB of
+  `fem_needle_insertion.mp4`. `fem_needle_grasp.mp4` is 2.98 MB.
+- The clips have no GIF preview. The README shows the JPG poster and links
+  the MP4, no document showed a GIF, and the GIFs of the close views would be
+  0.5 to 6.6 MB each, 28.6 MB together. The recorder writes one only with
+  `--gif`. The GIF previews of the earlier clips left the tree with this
+  change; the one GIF that remains is that of the archived replay quartet
+  ([earlier clips](#earlier-clips)).
+
+Three clips hold one moment in which the mesh is seen, the `edges` interval of
+their recipes
+([mesh edges and crop of a clip](development.md#mesh-edges-and-crop-of-a-clip)).
+In the frames of the interval "Show Edges" of Newton's OpenGL viewer is on and
+draws the meshes again as dark lines; in all other frames it is off. On the
+tissue the lines are the edges of the outer faces of the tetrahedral mesh
+itself, not of a finer drawing mesh: of the simulated tetrahedra on the Baymax
+body and in region 1 of the pad, and of the same pad mesh around that region,
+which these two examples do not simulate. The needle, the thread and the
+marker spheres show the lines of their own drawing meshes. The three posters
+are frames without the lines.
+
+| Clip | Frames with the edges | Time in the clip | What is seen then |
+| --- | --- | --- | --- |
+| `fem_needle_suture` | 1,230 to 1,409 | 20.5 s to 23.5 s | The thread tightens through the second stitch and the tissue moves most, 2.3 mm (2.27 mm in this recording; 2.23 mm at frame 1,302 in a run of `fe9306e` without drawing). The edges on the pad are about 1 mm long; the thread is black under its lines. |
+| `fem_surgical_incision` | 210 to 389 | 3.5 s to 6.5 s | The second grip pulls the wound open. The median edge is 1.9 mm; on the walls of the wound and at the body's outline the lines merge into dark hatching. |
+| `fem_needle_insertion` | 120 to 251 | 2.0 s to 4.2 s | The needle goes through the first lip. The edges on the pad are about 1 mm long. The tissue moves 0.17 mm at most, so this moment shows how fine the mesh is around the needle more than a motion: at the puncture (2.2 s to 2.4 s) the lines of the first lip beside the entry shift by one to three pixels and go back. |
+
+In the moment of `fem_needle_insertion` the pad is drawn opaque: the scripted
+user of `tools/video_scenarios.py` switches the panel's "See through pad" off
+for these frames and on again after them (`INSERTION_OPAQUE_FRAMES`, which a
+test keeps equal to the recipe's `edges`). Through the translucent pad the
+lines of its underside and of the slit walls lie over those of the top
+surface, and single triangles cannot be told apart. The part of the needle
+inside the tissue is hidden for that time.
+
+The [Baymax cutting clip](media/fem_surgical_incision.mp4) is seen from
+straight above. Its [sidecar](media/fem_surgical_incision.json) records 480
+frames, eight simulated seconds: a planar blade cuts the belly along the
+midline, 28.5 mm long and 13.5 mm deep, and two right-drag grips, one on each
+side, are pulled 4 mm and 8 mm outward and stay as spring holds (green
+markers) that keep the wound about 7.5 mm open (7.57 mm in this recording).
+The clip is the recorder's own output: the blade and the two grips are
+scripted in `tools/video_scenarios.py`, and the camera, the `edges` interval
+and the `crop` are entries of the recipe in `docs/videos.json`. The picture is
+the middle 800×660 of the 1280×720 recording, the part that the `crop` keeps.
+The grip markers are drawn by the viewer's interface, so the recording has the
+interface on (`show_ui`), and the crop cuts off its side panel, the counters
+and the recorder's title bar. Nothing holds the body: it follows the first
+grip, and in the first half second it sinks 13 mm into the floor, a known
+defect that the top view shows only as the body getting about a tenth smaller.
+The encoding rate is 60 frames per second: simulation-time playback, not live
+FPS. The clip of commit `4b9fe78` showed the same scene with the same crop,
+cut with ffmpeg from an earlier recording of this scenario and camera, without
+the moment with the mesh edges.
+
+### Earlier clips
+
+The three original clips (needle insertion, phantom regions and the dVRK
+replay) were imported on 2026-11-10 with their GIF/JPG previews and JSON
+sidecars. They retain their historical capture bytes and are archived under
+`docs/media/history/<example>/`: the replay quartet since the standalone dVRK
+capture of 2026-11-11; the MP4, JPG poster and JSON sidecar of the
+needle-insertion and of the phantom-regions clip since 2026-11-20, when the
+captures above took their places in `docs/media/`. The GIF previews of these
+two were not archived: they left the tree with the other GIF previews, and
+the import manifest lists them with their hashes under `removed`. Each
+sidecar retains its original
 module name, dependency names, parameters, source identifiers and capture wall
 time. These fields have deliberately **not** been rewritten to imply a fresh
 capture by `newton_solver_suturebot`.
@@ -95,8 +229,8 @@ Supplemental alignment/thread images and historical reports retain their names.
 
 | Movie | Meaning of the recorded result |
 | --- | --- |
-| [Needle insertion](media/fem_needle_insertion.mp4) | Physical automatic insertion through two tissue sections, rendered in simulation time. Its earlier wall compliance was `1/60000` m²/N; the current example uses `1/300000` m²/N. |
-| [Phantom regions](media/fem_phantom_regions.mp4) | Physical regional FEM and spring-grab response while changing the active region. |
+| [Historical needle insertion](media/history/fem_needle_insertion/fem_needle_insertion.mp4) | Physical automatic insertion through two tissue sections, rendered in simulation time. Its earlier wall compliance was `1/60000` m²/N; the current example uses `1/300000` m²/N. |
+| [Historical phantom regions](media/history/fem_phantom_regions/fem_phantom_regions.mp4) | Physical regional FEM and spring-grab response while changing the active region. |
 | [Historical dVRK recording](media/history/fem_dvrk/fem_dvrk.mp4) | Original measured-motion replay and fitted camera/image overlays, not a physical suturing experiment. |
 
 All three are encoded at 60 frames per second. Encoding/playback rate and capture
@@ -105,65 +239,37 @@ needle measurements remain below sustained 60 FPS. Camera/phantom alignment and
 tissue/needle parameters remain estimates, with limitations in the individual
 guides.
 
-The current [dVRK gallery movie](media/fem_dvrk.mp4) is a fresh standalone
-capture with the metal-appearance preset. Its [sidecar](media/fem_dvrk.json)
-records 1,202 frames at 1920×1080 and all 597 supported source-motion frames.
-The four camera overlays remain fitted estimates. This visual capture does not
-replace the historical numerical reports or establish calibrated reflectance,
-physical contact or live FPS.
+The other clips that the captures above replaced on 2026-11-20 were
+standalone captures of this package. They are not archived in the tree and
+remain in the repository's history up to commit `fe9306e`:
 
-The [full-pad cutting movie](media/fem_phantom_cut.mp4) is a new standalone
-capture, rather than an imported clip. It shows the pad example
-`fem_phantom_cut` as it was before 2026-11-17; the example that replaced it,
-`fem_surgical_incision`, has its own clip, described in the next paragraph. The movie's [sidecar](media/fem_phantom_cut.json)
-records this package's module, 360 frames, six simulated seconds and the
-slice/grip/release sequence. The encoding rate is 60 FPS; the 199.447-second
-capture wall time includes setup, rendering and encoding and is not live FPS.
-The new [cutting validation report](validation/standalone/phantom-cut.json)
-keeps its evidence separate from the original imported artifact hashes.
+- the dVRK gallery movie of 2026-11-11 (metal-appearance preset, 1,202 frames
+  at 1920×1080, the whole rig with four changes of view) and the Versius
+  preview of the same day;
+- the `needle_thread` clip of 2026-11-11 and the `fem_needle_suture` clip of
+  2026-11-12 (2,760 frames; its caption described a closing pull that
+  narrowed the wound from 2.4 mm to about 1.2 mm);
+- the grasp and tool/tissue contact movies of 2026-11-17: 1,700 frames of the
+  procedure that ended with a lift by the needle tip, without contact between
+  tools and tissue, and 942 frames of the contact rig before it had the pinch;
+- the full-pad cutting movie `fem_phantom_cut` of 2026-11-10, of the pad
+  example that `fem_surgical_incision` replaced on 2026-11-17. Its four files
+  left `docs/media/` on 2026-11-20 with the captures above, after the
+  incision clip had been added in commit `4b9fe78`. The
+  [cutting validation report](validation/standalone/phantom-cut.json) of the
+  pad example still names the movie and its sidecar by their former paths and
+  keeps its evidence separate from the original imported artifact hashes.
 
-The [Baymax cutting movie](media/fem_surgical_incision.mp4) is a standalone
-capture of 2026-11-19, seen from straight above. Its
-[sidecar](media/fem_surgical_incision.json) records 480 frames, eight
-simulated seconds: a planar blade cuts the belly along the midline, 28.5 mm
-long and 13.5 mm deep, and two right-drag grips, one on each side, are pulled
-4 mm and 8 mm outward and stay as spring holds (green markers) that keep the
-wound 7.5 mm open. The picture is the middle 800×660 of the 1280×720
-recording; the side panel and the counters are cut off. Nothing holds the
-body: in the first half second it sinks 13 mm into the floor, a known defect
-that the top view shows only as the body getting about a tenth smaller. The
-blade, the two grips and the camera of this capture are not in
-`tools/video_scenarios.py` and `tools/record_examples.py` yet: the recipe in
-`docs/videos.json` still scripts a slice through a hand, so it records
-another scene than this clip shows; only its frame count follows the clip.
-The encoding rate is 60 FPS and is not live FPS.
-
-The [grasp movie](media/fem_needle_grasp.mp4) and the
-[tool/tissue contact movie](media/fem_tool_tissue.mp4) are standalone captures
-of 2026-11-17. The grasp [sidecar](media/fem_needle_grasp.json) records 1,700
-frames, 28.3 simulated seconds: the whole procedure with both lifts, with the
-options that were the example's defaults when it was captured, so without
-contact between tools and tissue. Later that day the example's defaults
-changed: the pull by the tip replaced the second lift and takes the needle
-out of the tissue with the thread following through its track (the procedure
-is done at 30.4 to 30.9 s), and the swept tool/tissue contact is on. The
-recipe in `docs/videos.json` (`--test`, the example's defaults) therefore
-records another procedure than this clip shows, and the 1,700 frames of the
-recipe end during the pull. The clip has not been recorded again, and its
-sidecar still calls the contact an opt-in switch. The contact
-[sidecar](media/fem_tool_tissue.json) records 942 frames, 15.6 simulated
-seconds, with `--contact swept`: an opt-in contact that does not stop the tool
-in the fast approach at the end of the clip. Both runs passed the example's
-self-test, with no graph capture and no kernel module load after start-up. The
-encoding rate is 60 FPS; the capture wall times (77 s and 28 s) include setup,
-rendering and encoding and are not live FPS.
-
-`docs/videos.json` stores the capture recipes. To replace an imported
-clip with a fresh standalone capture, use the recorder and regenerate the README:
+`docs/videos.json` stores the capture recipes. To record a clip again, use the
+recorder with the picture size of the table; a recording into `docs/media`
+regenerates the README:
 
 ```bash
 uv run --locked --extra examples python tools/record_examples.py fem_needle_insertion
-python3 tools/build_readme.py --require-videos
+uv run --locked --extra examples python tools/record_examples.py fem_phantom_regions --width 1280 --height 720
+uv run --locked --extra examples python tools/record_examples.py fem_surgical_incision --width 1280 --height 720
+uv run --locked --extra examples python tools/record_examples.py fem_dvrk --width 1920 --height 1080
+python3 tools/build_readme.py --check --require-videos
 ```
 
 Record only when a display/GPU workload is intended; the recorder performs real
@@ -181,7 +287,9 @@ latest imported copy-lifetime optimization, rejected alternatives and confinemen
 check. Large raw Nsight databases, frame histories and exploratory recordings are
 retained locally under ignored `nsys/results/`. Their original run settings and
 provenance are unchanged; they are not fresh measurements or runtime
-dependencies. The original 41 imported artifacts remain byte-identical.
+dependencies. Of the original 41 imported artifacts, 39 are in the tree and
+remain byte-identical; the two GIF previews that left on 2026-11-20 are
+listed under `removed` in the manifest with their paths and hashes.
 Exact earlier guides and preservation hashes are retained in the
 [historical document archive](validation/original-fem-documents/README.md).
 

@@ -77,11 +77,15 @@ These partitions assign existing tetrahedra without changing their geometry.
 See the [asset provenance](../src/newton_solver_suturebot/examples/assets/phantom_pad/README.md)
 for the bundled USD and its source.
 
-The historical [recorded demonstration](media/fem_phantom_regions.mp4) clicks the 2D map,
+The [recorded demonstration](media/fem_phantom_regions.mp4) clicks the 2D map,
 pulls wound 4, switches to wound 6, disables FEM, then returns to wound 4. Its script
 sends mouse input through the map and attachment controls; deformation comes
-from the FEM solve. Regenerate its MP4, animated preview and capture metadata
-with:
+from the FEM solve. It was recorded on 2026-11-19 from a camera close on the
+selected wound and turned like the map, without `--test`: with it the example
+plays a scripted user of its own during the recorded drag. The
+[historical recording](media/history/fem_phantom_regions/fem_phantom_regions.mp4)
+of the same script shows the example's own view. Regenerate the MP4, its
+poster and capture metadata with:
 
 ```bash
 uv run --locked --extra examples python tools/record_examples.py fem_phantom_regions --width 1280 --height 720

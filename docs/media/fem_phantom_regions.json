@@ -1,11 +1,10 @@
 {
   "example": "fem_phantom_regions",
-  "module": "newton_solver_fem.examples.example_fem_phantom_regions",
-  "caption": "Click the 2D pad map to select a SutureBot wound: right-drag wound 4, switch to wound 6, disable FEM, then return to wound 4. Wound numbers follow the dataset; inactive material stays fixed.",
+  "module": "newton_solver_suturebot.examples.phantom.example_fem_phantom_regions",
+  "caption": "Simulation-time playback, close on the selected wound and turned like the 2D pad map (`--regions 4` starts on wound 4): a right-drag pulls a spring grab 3 mm and the tissue under the marker (yellow while dragged, green as a hold) rises about 0.9 mm into a small tent; a click on the map moves the FEM to wound 6, which is dragged the same way, None switches the FEM off, and wound 4 is selected and dragged again, seen closer. Only the selected wound is simulated: the rest of the pad, the cut interfaces and the underside stay fixed, so the lift is small. Wound numbers follow the dataset; playback rate does not measure live FPS.",
   "arguments": [
     "--regions",
-    "4",
-    "--test"
+    "4"
   ],
   "device": "cuda:0",
   "frames": 540,
@@ -13,7 +12,7 @@
   "width": 1280,
   "height": 720,
   "show_ui": true,
-  "recording_wall_seconds": 27.278495639002358,
+  "recording_wall_seconds": 19.73102763100178,
   "playback_is_performance_benchmark": false,
   "simulation_time": [
     {
@@ -22,10 +21,470 @@
     }
   ],
   "dependencies": {
-    "newton_solver_fem": "0.1.0",
-    "newton": "1.7.0",
+    "newton_solver_suturebot": "0.1.0",
+    "newton": "1.8.0",
     "warp-lang": "1.17.0+cu13"
   },
+  "camera": [
+    {
+      "frame": 0,
+      "position": [
+        -0.00734,
+        0.0628,
+        0.06542
+      ],
+      "target": [
+        -0.00734,
+        -0.017,
+        -0.00047
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 150,
+      "position": [
+        -0.00734,
+        0.0628,
+        0.06542
+      ],
+      "target": [
+        -0.00734,
+        -0.017,
+        -0.00047
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 156,
+      "position": [
+        -0.00946,
+        0.06787,
+        0.06703
+      ],
+      "target": [
+        -0.00946,
+        -0.01388,
+        -0.00048
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 162,
+      "position": [
+        -0.01476,
+        0.08056,
+        0.07104
+      ],
+      "target": [
+        -0.01476,
+        -0.00608,
+        -0.00049
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 168,
+      "position": [
+        -0.02166,
+        0.09704,
+        0.07626
+      ],
+      "target": [
+        -0.02166,
+        0.00406,
+        -0.00051
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 174,
+      "position": [
+        -0.02855,
+        0.11353,
+        0.08149
+      ],
+      "target": [
+        -0.02855,
+        0.0142,
+        -0.00053
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 180,
+      "position": [
+        -0.03385,
+        0.12622,
+        0.0855
+      ],
+      "target": [
+        -0.03385,
+        0.022,
+        -0.00054
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 186,
+      "position": [
+        -0.03597,
+        0.13129,
+        0.08711
+      ],
+      "target": [
+        -0.03597,
+        0.02512,
+        -0.00055
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 310,
+      "position": [
+        -0.03597,
+        0.13129,
+        0.08711
+      ],
+      "target": [
+        -0.03597,
+        0.02512,
+        -0.00055
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 316,
+      "position": [
+        -0.03385,
+        0.12622,
+        0.0855
+      ],
+      "target": [
+        -0.03385,
+        0.022,
+        -0.00054
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 322,
+      "position": [
+        -0.02855,
+        0.11353,
+        0.08149
+      ],
+      "target": [
+        -0.02855,
+        0.0142,
+        -0.00053
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 328,
+      "position": [
+        -0.02166,
+        0.09704,
+        0.07626
+      ],
+      "target": [
+        -0.02166,
+        0.00406,
+        -0.00051
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 334,
+      "position": [
+        -0.01476,
+        0.08056,
+        0.07104
+      ],
+      "target": [
+        -0.01476,
+        -0.00608,
+        -0.00049
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 340,
+      "position": [
+        -0.00946,
+        0.06787,
+        0.06703
+      ],
+      "target": [
+        -0.00946,
+        -0.01388,
+        -0.00048
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 346,
+      "position": [
+        -0.00734,
+        0.0628,
+        0.06542
+      ],
+      "target": [
+        -0.00734,
+        -0.017,
+        -0.00047
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 362,
+      "position": [
+        -0.00734,
+        0.0628,
+        0.06542
+      ],
+      "target": [
+        -0.00734,
+        -0.017,
+        -0.00047
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 366,
+      "position": [
+        -0.00752,
+        0.06036,
+        0.06372
+      ],
+      "target": [
+        -0.00752,
+        -0.017,
+        -0.00016
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 370,
+      "position": [
+        -0.00798,
+        0.05425,
+        0.05946
+      ],
+      "target": [
+        -0.00798,
+        -0.01701,
+        0.00063
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 374,
+      "position": [
+        -0.00857,
+        0.04631,
+        0.05394
+      ],
+      "target": [
+        -0.00857,
+        -0.01702,
+        0.00165
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 378,
+      "position": [
+        -0.00917,
+        0.03838,
+        0.04841
+      ],
+      "target": [
+        -0.00917,
+        -0.01702,
+        0.00266
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 382,
+      "position": [
+        -0.00963,
+        0.03227,
+        0.04415
+      ],
+      "target": [
+        -0.00963,
+        -0.01703,
+        0.00345
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 386,
+      "position": [
+        -0.00981,
+        0.02983,
+        0.04245
+      ],
+      "target": [
+        -0.00981,
+        -0.01703,
+        0.00376
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 512,
+      "position": [
+        -0.00981,
+        0.02983,
+        0.04245
+      ],
+      "target": [
+        -0.00981,
+        -0.01703,
+        0.00376
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 516,
+      "position": [
+        -0.00963,
+        0.03227,
+        0.04415
+      ],
+      "target": [
+        -0.00963,
+        -0.01703,
+        0.00345
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 520,
+      "position": [
+        -0.00917,
+        0.03838,
+        0.04841
+      ],
+      "target": [
+        -0.00917,
+        -0.01702,
+        0.00266
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 524,
+      "position": [
+        -0.00857,
+        0.04631,
+        0.05394
+      ],
+      "target": [
+        -0.00857,
+        -0.01702,
+        0.00164
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 528,
+      "position": [
+        -0.00798,
+        0.05425,
+        0.05946
+      ],
+      "target": [
+        -0.00798,
+        -0.01701,
+        0.00063
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 532,
+      "position": [
+        -0.00752,
+        0.06036,
+        0.06372
+      ],
+      "target": [
+        -0.00752,
+        -0.017,
+        -0.00016
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 536,
+      "position": [
+        -0.00734,
+        0.0628,
+        0.06542
+      ],
+      "target": [
+        -0.00734,
+        -0.017,
+        -0.00047
+      ],
+      "fov": 15.0
+    },
+    {
+      "frame": 539,
+      "position": [
+        -0.00734,
+        0.0628,
+        0.06542
+      ],
+      "target": [
+        -0.00734,
+        -0.017,
+        -0.00047
+      ],
+      "fov": 15.0
+    }
+  ],
+  "camera_view": [
+    {
+      "frame": 0,
+      "position": [
+        -0.007340000011026859,
+        0.06279999762773514,
+        0.065420001745224
+      ],
+      "view_direction": [
+        4.7217011835855275e-17,
+        -0.7711123218340112,
+        -0.6366991339053009
+      ],
+      "pitch": -39.54612027917227,
+      "yaw": -90.0,
+      "fov": 15.0,
+      "near": 0.01,
+      "far": 1000.0
+    },
+    {
+      "frame": 539,
+      "position": [
+        -0.007340000011026859,
+        0.06279999762773514,
+        0.065420001745224
+      ],
+      "view_direction": [
+        4.7217011835855275e-17,
+        -0.7711123218340112,
+        -0.6366991339053009
+      ],
+      "pitch": -39.54612027917227,
+      "yaw": -90.0,
+      "fov": 15.0,
+      "near": 0.01,
+      "far": 1000.0
+    }
+  ],
   "scenario": {
     "drag_distance_m": 0.003,
     "events": [
@@ -45,7 +504,7 @@
       {
         "frame": 91,
         "action": "release_to_hold",
-        "maximum_displacement_m": 0.0008109309315861061
+        "maximum_displacement_m": 0.0008850643294501304
       },
       {
         "frame": 130,
@@ -68,7 +527,7 @@
       {
         "frame": 261,
         "action": "release_to_hold",
-        "maximum_displacement_m": 0.0012582303161248333
+        "maximum_displacement_m": 0.0012988576034619085
       },
       {
         "frame": 300,
@@ -98,7 +557,7 @@
       {
         "frame": 461,
         "action": "release_to_hold",
-        "maximum_displacement_m": 0.0008109390407761253
+        "maximum_displacement_m": 0.0008827342938061116
       },
       {
         "frame": 500,

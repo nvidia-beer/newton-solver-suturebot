@@ -1,7 +1,7 @@
 {
   "example": "needle_thread",
-  "module": "newton_solver_suturebot.examples.example_needle_thread",
-  "caption": "Simulation-time playback: a spring hold lifts the free MuJoCo needle on its thread, whose far end is pinned to the floor, and lets it go. The needle and the thread act on each other; there is no tissue. Illustrative needle mass and thread stiffness. Playback rate does not measure live FPS.",
+  "module": "newton_solver_suturebot.examples.needle.example_needle_thread",
+  "caption": "Simulation-time playback of the scripted user of `--test`, from a close camera that follows the first lift and then pulls back to the whole 120 mm thread: a spring hold lifts the free MuJoCo needle 40 mm on its thread, whose far end is pinned to the floor (orange dot), and lets it go; then a thread node is pinned 20 mm up, the needle is lifted again, both are released, and the debug view shows the thread nodes for a moment. The holds are not drawn, the needle and the thread act on each other, the thread does not collide with itself or with the needle and has no friction on the floor, and there is no tissue. Illustrative needle mass and thread stiffness; playback rate does not measure live FPS.",
   "arguments": [
     "--test"
   ],
@@ -10,8 +10,8 @@
   "fps": 60,
   "width": 1280,
   "height": 720,
-  "show_ui": true,
-  "recording_wall_seconds": 7.641374493992771,
+  "show_ui": false,
+  "recording_wall_seconds": 7.126762462999977,
   "playback_is_performance_benchmark": false,
   "simulation_time": [
     {
@@ -21,7 +21,201 @@
   ],
   "dependencies": {
     "newton_solver_suturebot": "0.1.0",
-    "newton": "1.7.0",
+    "newton": "1.8.0",
     "warp-lang": "1.17.0+cu13"
-  }
+  },
+  "camera": [
+    {
+      "frame": 0,
+      "position": [
+        -0.03201,
+        0.03647,
+        0.03331
+      ],
+      "target": [
+        0.00501,
+        -0.00055,
+        0.00308
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 19,
+      "position": [
+        -0.03201,
+        0.03647,
+        0.03331
+      ],
+      "target": [
+        0.00501,
+        -0.00055,
+        0.00308
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 49,
+      "position": [
+        -0.03653,
+        0.00965,
+        0.06556
+      ],
+      "target": [
+        0.00049,
+        -0.02737,
+        0.03533
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 52,
+      "position": [
+        -0.03653,
+        0.00965,
+        0.06556
+      ],
+      "target": [
+        0.00049,
+        -0.02737,
+        0.03533
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 54,
+      "position": [
+        -0.04004,
+        0.01151,
+        0.06646
+      ],
+      "target": [
+        0.00034,
+        -0.02887,
+        0.03348
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 56,
+      "position": [
+        -0.04882,
+        0.01615,
+        0.06869
+      ],
+      "target": [
+        -3e-05,
+        -0.03263,
+        0.02886
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 58,
+      "position": [
+        -0.06023,
+        0.02219,
+        0.07161
+      ],
+      "target": [
+        -0.00052,
+        -0.03752,
+        0.02285
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 60,
+      "position": [
+        -0.07164,
+        0.02822,
+        0.07452
+      ],
+      "target": [
+        -0.00101,
+        -0.04241,
+        0.01684
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 62,
+      "position": [
+        -0.08042,
+        0.03286,
+        0.07675
+      ],
+      "target": [
+        -0.00138,
+        -0.04617,
+        0.01222
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 64,
+      "position": [
+        -0.08393,
+        0.03472,
+        0.07765
+      ],
+      "target": [
+        -0.00153,
+        -0.04767,
+        0.01037
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 299,
+      "position": [
+        -0.08393,
+        0.03472,
+        0.07765
+      ],
+      "target": [
+        -0.00153,
+        -0.04767,
+        0.01037
+      ],
+      "fov": 30.0
+    }
+  ],
+  "camera_view": [
+    {
+      "frame": 0,
+      "position": [
+        -0.03201,
+        0.03647,
+        0.03331
+      ],
+      "view_direction": [
+        0.6123557388816322,
+        -0.6123557388816321,
+        -0.5000408964449418
+      ],
+      "pitch": -30.002705723904302,
+      "yaw": -45.0,
+      "fov": 30.0,
+      "near": 0.01,
+      "far": 1000.0
+    },
+    {
+      "frame": 299,
+      "position": [
+        -0.08393,
+        0.03472,
+        0.07765
+      ],
+      "view_direction": [
+        0.6123987533142844,
+        -0.6123244330772315,
+        -0.5000265548905951
+      ],
+      "pitch": -30.001756872971583,
+      "yaw": -44.996523103377456,
+      "fov": 30.0,
+      "near": 0.01,
+      "far": 1000.0
+    }
+  ]
 }

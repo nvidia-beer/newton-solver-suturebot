@@ -1,27 +1,151 @@
 {
   "example": "fem_needle_grasp",
   "module": "newton_solver_suturebot.examples.grasp.example_fem_needle_grasp",
-  "caption": "Simulation-time playback of the whole procedural procedure with joint-actuated dVRK tools: fixed trocar pivots, shaft insertion, wrist articulation and jaw friction move an independent rigid needle through both sides of the selected wound; a physical thread follows. The tissue is then lifted on the needle and lowered, the needle is released, grasped again at its tip and lifted once more. The tools and the tissue do not act on each other in this clip (the tool/tissue contact is an opt-in switch). No trained policy or recorded-motion playback. Playback at 60 frames/s does not measure live simulation throughput.",
+  "caption": "Close-up of the default procedure in simulation-time playback: a joint-actuated dVRK needle holder pushes a free rigid needle through both lips of the wound, lifts the tissue on it and lowers it, lets go, takes the needle again by its tip and pulls it out along its own curve, and the thread follows through the track the needle made (green and blue spheres: where the needle went into and came out of the tissue). Then it makes one stitch of that thread: the thread is tied where it first goes into the tissue (that sphere turns yellow), the tool pulls it tight by moving the needle up and back over the wound, which narrows the wound at its top from 2.85 mm to 2.18 mm, the thread is tied again where it comes out of the tissue (the second yellow sphere), and the tool moves the needle back until the thread from there to the needle is slack. The thread between the two ties then holds the wound by itself, about 2.45 mm wide at its top, and the procedure is done at 35.2 to 35.6 s; the clip ends at 37 s. The view changes twice, to a wider one while the tool goes over to the needle tip and back to a close one for the pull and the stitch; no option is set: by default the tools push the tissue where they touch it (swept tool/tissue contact, off with --no-tool-tissue-contact). Known limits: one stitch narrows the wound and holds it narrower, it does not close it; a tie holds the thread at the hole it passes through and is not a knot in the thread, the tool still holds the needle at the end and the thread is not cut; the puncture, track, thread and contact forces are illustrative and not calibrated, the tissue is not cut open (the needle's track is a constraint, not a hole) and has no contact with itself, the tool/tissue contact has no friction, the two grasps are poses found for this stitch and port layout, and playback at 60 frames/s does not measure live speed (the recording runs the self-test in whole frames, without the frame time budget of the window).",
   "arguments": [
     "--test"
   ],
   "device": "cuda:0",
-  "frames": 1700,
+  "frames": 2220,
   "fps": 60,
   "width": 960,
-  "height": 720,
+  "height": 540,
   "show_ui": false,
-  "recording_wall_seconds": 77.4407189550111,
+  "recording_wall_seconds": 105.73215767700458,
   "playback_is_performance_benchmark": false,
   "simulation_time": [
     {
       "attribute": "sim_time",
-      "end": 28.33333333333205
+      "end": 37.000000000002494
     }
   ],
   "dependencies": {
     "newton_solver_suturebot": "0.1.0",
     "newton": "1.8.0",
     "warp-lang": "1.17.0+cu13"
-  }
+  },
+  "camera": [
+    {
+      "frame": 0,
+      "position": [
+        0.0026,
+        -0.0506,
+        0.0399
+      ],
+      "target": [
+        0.0411,
+        -0.0381,
+        0.0094
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 899,
+      "position": [
+        0.0026,
+        -0.0506,
+        0.0399
+      ],
+      "target": [
+        0.0411,
+        -0.0381,
+        0.0094
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 900,
+      "position": [
+        -0.0101,
+        -0.0602,
+        0.0547
+      ],
+      "target": [
+        0.0454,
+        -0.0484,
+        0.012
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 1395,
+      "position": [
+        -0.0101,
+        -0.0602,
+        0.0547
+      ],
+      "target": [
+        0.0454,
+        -0.0484,
+        0.012
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 1396,
+      "position": [
+        -0.0045,
+        -0.0418,
+        0.0421
+      ],
+      "target": [
+        0.04,
+        -0.0395,
+        0.0073
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 2219,
+      "position": [
+        -0.0045,
+        -0.0418,
+        0.0421
+      ],
+      "target": [
+        0.04,
+        -0.0395,
+        0.0073
+      ],
+      "fov": 30.0
+    }
+  ],
+  "camera_view": [
+    {
+      "frame": 0,
+      "position": [
+        0.0026,
+        -0.0506,
+        0.0399
+      ],
+      "view_direction": [
+        0.7596259804471647,
+        0.24663181183349508,
+        -0.601781620873728
+      ],
+      "pitch": -36.99760368855035,
+      "yaw": 17.987334652061463,
+      "fov": 30.0,
+      "near": 0.01,
+      "far": 1000.0
+    },
+    {
+      "frame": 2219,
+      "position": [
+        -0.0045,
+        -0.0418,
+        0.0421
+      ],
+      "view_direction": [
+        0.7870770007799499,
+        0.040680384309975,
+        -0.6155119017335339
+      ],
+      "pitch": -37.98912540188881,
+      "yaw": 2.958722146780758,
+      "fov": 30.0,
+      "near": 0.01,
+      "far": 1000.0
+    }
+  ]
 }

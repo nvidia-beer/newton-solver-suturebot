@@ -86,8 +86,11 @@ See [provenance](provenance.md) for the distinction from the existing dVRK
 recordings and historical validation reports.
 
 The [recorded preview](media/fem_versius.mp4) shows 240 viewer frames at
-1920×1080 with both labeled camera panels. The capture passed `--test`, which
-checks displayed body poses against the prepared motion and checks finite
-transforms. Its [capture metadata](media/fem_versius.json) records four seconds
+1920×1080 with both labeled camera panels, from a camera close on the distal
+ends of the instruments (the `camera` of its recipe in `docs/videos.json`).
+The capture plays the example without arguments: `--test` now plays a scripted
+user that ends paused at the last frame. Every 60 frames and at its end the
+recording checks displayed body poses against the prepared motion and checks
+finite transforms. Its [capture metadata](media/fem_versius.json) records four seconds
 of generated playback and 120 observed source-image indices. This is a preview
 loading/rendering check, not physical or calibration validation.

@@ -3,8 +3,9 @@
 > On 2026-11-17 `fem_phantom_cut` was renamed `fem_surgical_incision`, and the
 > bundled Baymax body (135 mm across, on its back on the floor) replaced the
 > pad. The controls below apply to it as they stand. The description of the
-> pad, the measured numbers, the movie and the validation report in this guide
+> pad, the measured numbers and the validation report in this guide
 > are those of the pad example and have not been measured again on the body.
+> The recorded clip is of the body ([below](#recorded-demonstration-and-checks)).
 > The grip defaults and the `--asset` option named below are the pad's as well:
 > on the body a grip is 3.0 mm in radius, 2.06 kN/m stiff and follows the mouse
 > at no more than 3.0 mm/s by default, and `--asset` takes one tetrahedral body.
@@ -185,13 +186,47 @@ this preparation in state, topology and grips (`id_base`, `id_tree` under
 
 ## Recorded demonstration and checks
 
-The [full-pad movie](media/fem_phantom_cut.mp4) shows one finite slice separating
+The [recorded clip](media/fem_surgical_incision.mp4) of 2026-11-19 shows the
+Baymax body from straight above. The picture is the middle 800×660 of the
+1280×720 recording: the `crop` of the clip's recipe cuts off the side panel,
+the counters and the recorder's title bar, and the two grip markers, which
+the viewer's interface draws, stay. A planar blade cuts the
+belly along the midline, 28.5 mm long and 13.5 mm deep where the body is 42 mm
+thick: the scripted cut goes through the call that a stroke of the Line tool
+ends in, because the Line tool itself cuts through the whole depth of the
+view. Two right-drags, one on each side of the wound, are pulled 4 mm and 8 mm
+outward and released as spring holds. Nothing holds the body, so it follows
+the first grip and the second pull opens the wound, to about 7.5 mm at the
+skin (7.57 mm in this recording). From 3.5 s to 6.5 s of the clip, while the
+second grip pulls, the viewer's Show Edges option is on (the `edges` of the
+recipe): the dark lines are the edges of the triangles that the example
+draws, which are the surface of the simulated tetrahedral mesh itself, not a
+finer drawing mesh. Before the cut these are the 9,882 outer faces of the
+tetrahedra, with a median edge of 1.9 mm; after it about 10,800 triangles, of
+which the 860 or so on the two walls of the wound are seen at a grazing angle
+and merge into dark hatching, as do those at the body's outline. The
+body stays one piece of 38,730 original tetrahedra with no fixed nodes, and
+the mass is 0.0924512 kg before and after the cut: the two float32 sums of
+the capture metadata differ by one unit in the last place, 7.5e-9 kg. The
+capture has 480 frames over eight simulated
+seconds; the volume guard shortened no step, the finite-state and
+positive-volume checks passed every 60 frames and at the end, and the
+self-test of `--test` found no graph capture after start-up. In the first
+half second the body sinks about 13 mm into the floor (the depth named at the
+top of this guide), which the view from above shows only as the body getting
+a tenth smaller. The [capture metadata](media/fem_surgical_incision.json)
+holds the events; the 15.1-second recording wall time includes initialization,
+rendering and encoding and is not a live-performance benchmark.
+
+The rest of this section describes the full-pad movie of the pad example,
+whose files left `docs/media/` on 2026-11-20 and remain in the repository's
+history. It showed one finite slice separating
 an edge strip, followed by a spring grip lifting and releasing it. All 413,405
 original tetrahedra start active and there are no fixed nodes. The cut creates
 two material components; the total mass before and after the incision is the
 same float32 sum, 0.1343255192041397 kg.
 
-The capture contains 360 frames over six simulated seconds. Finite-state and
+That capture contains 360 frames over six simulated seconds. Finite-state and
 positive-volume checks passed every 60 frames and at the end; selected frames
 were also visually inspected. The 199.447-second recording wall time includes
 initialization, rendering and encoding, so neither it nor the encoded 60 FPS

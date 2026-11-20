@@ -18,13 +18,15 @@ The standard-library generator reads project metadata and discovers runnable
 come from the first line of each module's docstring. Edit detailed explanations
 in the corresponding guides; the README links to them instead of copying them.
 `--check` detects stale generated output. `--require-videos` additionally
-requires an MP4 and JPG/GIF preview for each discovered example.
+requires an MP4 and its preview for each discovered example. The preview is
+the JPG poster that a recording writes; a GIF is taken only where there is no
+JPG.
 
 ## Record demonstrations
 
 ```bash
-uv run --locked --extra examples python tools/record_examples.py fem_surgical_incision
-uv run --locked --extra examples python tools/record_examples.py --all
+uv run --locked --extra examples python tools/record_examples.py fem_needle_grasp
+uv run --locked --extra examples python tools/record_examples.py fem_surgical_incision --width 1280 --height 720
 python3 tools/build_readme.py --require-videos
 ```
 
@@ -35,6 +37,137 @@ list. Each clip's JSON sidecar records arguments, frame count and capture
 conditions. Keep historical sidecars unchanged; new captures receive new
 metadata. Playback rate is not live simulation performance. See
 [provenance](provenance.md) for imported media and asset restrictions.
+
+A recording writes three files: the clip `<example>.mp4`, its poster
+`<example>.jpg` (the recipe's `poster_frame` of the finished clip, or its last
+frame) and the sidecar `<example>.json`. The README shows the poster and links
+the clip. With `--gif` the recorder also writes `<example>.gif`, an animated
+preview 480 pixels wide at 12 frames per second. No document shows a GIF and
+the clips in `docs/media` have none: for four of the close-up clips it would
+be 3.5 to 6.6 MB. The sidecar names no file.
+
+The picture size is an option of the recorder (`--width`, `--height`, 960×540
+without them), not an entry of a recipe, and `--all` records every example at
+the one size it is given. The clips with the example's panel were recorded
+larger, because the panel and the overlay windows have fixed pixel sizes and
+the cameras of their recipes are set for that picture:
+[provenance](provenance.md#current-clips-2026-11-20) lists the size of each
+clip. A recipe with a `crop` is refused at a picture size that does not hold
+its part: `fem_surgical_incision` is recorded with `--width 1280 --height
+720`. At the default size the recorder stops with a message before any
+simulation starts, also with `--all`.
+
+A recording with the panel (`show_ui`) reads and writes the viewer's window
+layout, `imgui.ini` in the repository's root (git-ignored). The clips with the
+panel show the layout of a first use at their picture size: the panel at the
+upper left, 300 pixels wide and 20 pixels less high than the picture. A layout
+saved by an interactive run or by a recording of another size moves or
+shortens the panel, so move a present `imgui.ini` aside before recording such
+a clip. The `crop` of `fem_surgical_incision` is set for that layout: it
+keeps the columns between the panel and the counters.
+
+### Camera of a clip
+
+A recipe in `docs/videos.json` may hold a `camera`. Without one the clip shows
+the example's own view. With one, the recorder gives that camera to Newton's
+OpenGL viewer before the scripted action of every frame and again where the
+frame is drawn, so the example's own framing (in its constructor, at a reset,
+in its framing helpers, in its `--test` script, in a view change of
+`tools/video_scenarios.py`) does not show.
+
+```json
+"camera": {"position": [0.11, -0.057, 0.06], "target": [0.004, -0.022, 0.02], "fov": 30.0}
+```
+
+| Entry | Meaning |
+| --- | --- |
+| `position` | Where the camera stands [m], in the world frame of the example's model: right-handed, with Z up in all examples. |
+| `target` | The point at the middle of the picture [m]. |
+| `fov` | Vertical field of view [degrees]. At a distance `d` the picture is `2 d tan(fov / 2)` high and `width / height` times as wide. |
+| `near`, `far` | Optional clip distances [m]. Without them the example's stay; the viewer starts with 0.01 and 1000, so a camera nearer than 10 mm to a surface needs `near`. |
+
+Newton's viewer camera is a position, a pitch and a yaw; it has no roll, so
+there is no up vector: the up of the picture is the up axis of the model. The
+recorder computes the two angles from `position` and `target` and calls
+`viewer.set_camera(pos, pitch, yaw)`, sets `viewer.camera.fov` (and `near`,
+`far`) and makes the target the camera's pivot. With Z up the view direction
+is `(cos yaw cos pitch, sin yaw cos pitch, sin pitch)`: yaw 0 looks along +X
+and yaw 90 along +Y, a negative pitch looks down, and the right of the picture
+is the view direction crossed with +Z (from +X toward the origin, +Y is at the
+right). The viewer keeps the pitch within 89°, so a camera within 1° of
+straight down or up is refused; the horizontal part of the view direction is
+the up of the picture, which decides how a view from nearly above is turned.
+The recorder's title bar covers the upper 30 pixels of the picture, and with
+`show_ui` the example's panel covers part of its left side.
+
+A timed camera is a list of such cameras, each with `frame`, the index of a
+captured frame counted from 0, in rising order. The camera moves linearly from
+one to the next (position, target, field of view and clip distances), stands
+at the first before it and at the last after it; two entries with the same
+camera hold a view between them.
+
+```json
+"camera": [
+  {"frame": 0, "position": [0.075, -0.03, 0.035], "target": [0.005, 0.0015, 0.0003], "fov": 15.0},
+  {"frame": 20, "position": [0.075, -0.03, 0.035], "target": [0.005, 0.0015, 0.0003], "fov": 15.0},
+  {"frame": 50, "position": [0.11, -0.057, 0.06], "target": [0.004, -0.022, 0.02], "fov": 30.0}
+]
+```
+
+The sidecar records the entry as `camera` and, as `camera_view`, the camera
+the viewer had in the first and the last frame. `nsys/profile_examples.py`
+refuses a clip whose sidecar camera differs from its recipe's.
+
+### Mesh edges and crop of a clip
+
+```json
+"edges": [[300, 419]],
+"crop": [322, 50, 800, 660]
+```
+
+A recipe may hold `edges`, a list of `[first_frame, last_frame]` intervals of
+captured frames (counted from 0, both ends included, in rising order without
+overlap): in the frames of an interval the recorder switches on "Show Edges"
+of Newton's OpenGL viewer (`viewer.renderer.draw_edges`), which draws the
+meshes again as dark lines over the shaded picture, in every other frame it
+switches it off, and without the entry it leaves the switch alone. A recipe
+may hold `crop`, `[x, y, width, height]` in pixels of the captured frame
+counted from its top-left corner, inside the `--width`×`--height` picture and
+with an even width and height: every frame is cut to that part after the
+title bar is drawn and before it is written, so the clip, the poster, the
+stills and a GIF have the size of the part, and a part with `y` of 30 or more
+has no title bar. The sidecar records both entries as they are written, gives
+the size of the written clip as `width` and `height` and that of the captured
+frame as `captured_width` and `captured_height`, and
+`nsys/profile_examples.py` refuses a clip whose sidecar differs from its
+recipe in either entry.
+
+Three clips in `docs/media` hold an `edges` interval: `fem_needle_insertion`,
+`fem_needle_suture` and `fem_surgical_incision`, the last also the `crop` of
+the example above ([provenance](provenance.md#current-clips-2026-11-20)). For
+`fem_needle_insertion` the scenario file draws the pad opaque in the frames
+of the interval (`INSERTION_OPAQUE_FRAMES` in `tools/video_scenarios.py`),
+because through the see-through pad the lines of its underside lie over those
+of its top surface. The interval therefore stands in two files;
+`tests/test_record_examples.py` fails when they differ.
+
+### Recipes of another file and stills
+
+```bash
+uv run --locked --extra examples python tools/record_examples.py needle_thread \
+    --profiles /tmp/clips/recipes.json --output-dir /tmp/clips --stills 0,60,119
+```
+
+`--profiles` reads the recipes from another file of the same form, which must
+hold every example that is recorded; `docs/videos.json` is not read. `--stills`
+writes the named frames (counted from 0) as `<example>.still-<frame>.jpg`
+beside the clip, each as soon as it is captured: the frame as it goes to the
+encoder, with the title bar and after a crop. A recipe that cannot be
+recorded (an unknown camera entry, an `edges` interval or a still outside the
+clip, a `crop` outside the picture) is refused before the simulation
+starts. Relative paths of `--profiles` and `--output-dir` are taken from the
+caller's folder. The README is generated again only after a recording into
+`docs/media`.
 
 ## Checks, builds and profiling
 
