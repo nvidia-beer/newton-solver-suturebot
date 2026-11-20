@@ -82,18 +82,21 @@ extraction and dVRK replay reports do not validate this new preview.
 
 ### Current clips (2026-11-20)
 
-The README shows one clip per example. Six were recorded on 2026-11-19 with
+The README shows one clip per example. Five were recorded on 2026-11-19 with
 the example code of commit `640000d`, which commit `4b9fe78` left as it was.
 Three were recorded on 2026-11-20 with the code of commit `fe9306e`, the
 parent of the commit that brought the clips: `fem_needle_grasp`, whose
 procedure had gained its stitch since, and `fem_needle_suture` and
 `fem_needle_insertion`, recorded again with shorter texts in the recorder's
-title bar, which now fit the 960 pixels of the picture. Of the six,
+title bar, which now fit the 960 pixels of the picture. Of the five,
 `fem_tool_tissue` and `needle_thread` were recorded once more from `fe9306e`
 as a check and not replaced: the sidecars came out equal but for the wall
 time and the pictures within the noise of two runs. The recorder's `camera`,
 `edges` and `crop` entries, the scenario file `tools/video_scenarios.py` and
 the recipes in `docs/videos.json` were committed together with the clips.
+The ninth, `fem_surgical_incision`, was recorded again on 2026-11-20 from
+commit `a67249d`, after the floor contact of that example was corrected,
+and replaced the clip of 2026-11-19 in which the body sank into the floor.
 Each clip is taken from a camera close on its action, the `camera` of its
 recipe ([camera of a clip](development.md#camera-of-a-clip)), and shows the
 example's default behaviour unless its arguments below or its caption name
@@ -108,7 +111,7 @@ shows, and its JSON sidecar.
 | [fem_tool_tissue](media/fem_tool_tissue.mp4), [JSON](media/fem_tool_tissue.json) | 960×540 | 1,668 | 27.7 s | `--contact swept --test` | 2.37 MB |
 | [fem_needle_suture](media/fem_needle_suture.mp4), [JSON](media/fem_needle_suture.json) | 960×540 | 2,220 | 33.5 s | `--test` | 3.43 MB |
 | [fem_needle_insertion](media/fem_needle_insertion.mp4), [JSON](media/fem_needle_insertion.json) | 960×540 | 420 | 3.8 s | `--regions 1 --transparent-pad --test` | 0.76 MB |
-| [fem_surgical_incision](media/fem_surgical_incision.mp4), [JSON](media/fem_surgical_incision.json) | 800×660, cut from 1280×720 with the panel | 480 | 8.0 s | `--test` | 2.06 MB |
+| [fem_surgical_incision](media/fem_surgical_incision.mp4), [JSON](media/fem_surgical_incision.json) | 800×660, cut from 1280×720 with the panel | 480 | 8.0 s | `--test` | 2.11 MB |
 | [fem_dvrk](media/fem_dvrk.mp4), [JSON](media/fem_dvrk.json) | 1920×1080, with the panel | 1,202 | 20.0 s | none | 6.85 MB |
 | [fem_versius](media/fem_versius.mp4), [JSON](media/fem_versius.json) | 1920×1080, with the panel | 240 | 4.0 s | none | 0.68 MB |
 | [needle_thread](media/needle_thread.mp4), [JSON](media/needle_thread.json) | 1280×720 | 300 | 5.0 s | `--test` | 0.37 MB |
@@ -149,12 +152,12 @@ shows, and its JSON sidecar.
   picture from frame to frame than the wide view did. `fem_needle_suture.mp4`
   is 3.43 MB: its 180 frames with the mesh edges take 1.60 MB of it, because
   the fine lines over the whole picture compress badly. For the same reason
-  the frames with the edges take 1.79 MB of the 2.06 MB of
+  the frames with the edges take 1.87 MB of the 2.11 MB of
   `fem_surgical_incision.mp4` and 0.58 MB of the 0.76 MB of
   `fem_needle_insertion.mp4`. `fem_needle_grasp.mp4` is 2.98 MB.
 - The clips have no GIF preview. The README shows the JPG poster and links
   the MP4, no document showed a GIF, and the GIFs of the close views would be
-  0.5 to 6.6 MB each, 28.6 MB together. The recorder writes one only with
+  0.5 to 6.6 MB each, 28.5 MB together. The recorder writes one only with
   `--gif`. The GIF previews of the earlier clips left the tree with this
   change; the one GIF that remains is that of the archived replay quartet
   ([earlier clips](#earlier-clips)).
@@ -190,7 +193,7 @@ straight above. Its [sidecar](media/fem_surgical_incision.json) records 480
 frames, eight simulated seconds: a planar blade cuts the belly along the
 midline, 28.5 mm long and 13.5 mm deep, and two right-drag grips, one on each
 side, are pulled 4 mm and 8 mm outward and stay as spring holds (green
-markers) that keep the wound about 7.5 mm open (7.57 mm in this recording).
+markers) that keep the wound about 7.6 mm open (7.59 mm in this recording).
 The clip is the recorder's own output: the blade and the two grips are
 scripted in `tools/video_scenarios.py`, and the camera, the `edges` interval
 and the `crop` are entries of the recipe in `docs/videos.json`. The picture is
@@ -198,11 +201,11 @@ the middle 800×660 of the 1280×720 recording, the part that the `crop` keeps.
 The grip markers are drawn by the viewer's interface, so the recording has the
 interface on (`show_ui`), and the crop cuts off its side panel, the counters
 and the recorder's title bar. Nothing holds the body: it follows the first
-grip. In the first half second of the clip it sinks 13 mm into the floor,
-which the top view shows only as the body getting about a tenth smaller: the
-clip was recorded before the floor contact was corrected on 2026-11-20. The
-example now rests on the floor, 0.27 mm under its plane at the deepest point,
-and has not been recorded again.
+grip. It rests on the floor, 0.27 mm under its plane at the deepest point;
+the top of the belly comes down 2.4 mm before the cut as the soft body
+settles on its round back. The clip was recorded on 2026-11-20 from commit
+`a67249d`, after the floor contact was corrected; the clip before it showed
+the body sinking 13 mm into the floor.
 The encoding rate is 60 frames per second: simulation-time playback, not live
 FPS. The clip of commit `4b9fe78` showed the same scene with the same crop,
 cut with ffmpeg from an earlier recording of this scenario and camera, without

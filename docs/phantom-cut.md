@@ -16,8 +16,7 @@
 > settles, because a body of 30 kPa flattens on its round back and its arms come
 > to lie on the floor (measured on 2026-11-20, on `cuda:0` and on the CPU alike).
 > Until 2026-11-20 the floor's force was divided by an implicit denominator that
-> was not part of the solve, and the body lay 13 mm deep; the recorded clip
-> still shows that.
+> was not part of the solve, and the body lay 13 mm deep.
 
 `fem_phantom_cut` simulated the entire bundled tissue pad using the local FEM
 and embedded cutting implementation. All 97,489 original vertices and 413,405
@@ -193,7 +192,7 @@ this preparation in state, topology and grips (`id_base`, `id_tree` under
 
 ## Recorded demonstration and checks
 
-The [recorded clip](media/fem_surgical_incision.mp4) of 2026-11-19 shows the
+The [recorded clip](media/fem_surgical_incision.mp4) of 2026-11-20 shows the
 Baymax body from straight above. The picture is the middle 800×660 of the
 1280×720 recording: the `crop` of the clip's recipe cuts off the side panel,
 the counters and the recorder's title bar, and the two grip markers, which
@@ -203,8 +202,8 @@ thick: the scripted cut goes through the call that a stroke of the Line tool
 ends in, because the Line tool itself cuts through the whole depth of the
 view. Two right-drags, one on each side of the wound, are pulled 4 mm and 8 mm
 outward and released as spring holds. Nothing holds the body, so it follows
-the first grip and the second pull opens the wound, to about 7.5 mm at the
-skin (7.57 mm in this recording). From 3.5 s to 6.5 s of the clip, while the
+the first grip and the second pull opens the wound, to about 7.6 mm at the
+skin (7.59 mm in this recording). From 3.5 s to 6.5 s of the clip, while the
 second grip pulls, the viewer's Show Edges option is on (the `edges` of the
 recipe): the dark lines are the edges of the triangles that the example
 draws, which are the surface of the simulated tetrahedral mesh itself, not a
@@ -214,16 +213,14 @@ which the 860 or so on the two walls of the wound are seen at a grazing angle
 and merge into dark hatching, as do those at the body's outline. The
 body stays one piece of 38,730 original tetrahedra with no fixed nodes, and
 the mass is 0.0924512 kg before and after the cut: the two float32 sums of
-the capture metadata differ by one unit in the last place, 7.5e-9 kg. The
+the capture metadata are equal. The
 capture has 480 frames over eight simulated
 seconds; the volume guard shortened no step, the finite-state and
 positive-volume checks passed every 60 frames and at the end, and the
 self-test of `--test` found no graph capture after start-up. The clip was
-recorded before the floor contact was corrected on 2026-11-20: in it the body
-sinks about 13 mm into the floor in the first half second, which the view from
-above shows only as the body getting a tenth smaller. The example itself now
-rests on the floor (the top of this guide), and the same scenario run on it
-opens the wound to 7.6 mm. The [capture metadata](media/fem_surgical_incision.json)
+recorded on 2026-11-20 from commit `a67249d`, after the floor contact was
+corrected: the body rests on the floor (the top of this guide), and the top
+of its belly comes down 2.4 mm before the cut as it settles. The [capture metadata](media/fem_surgical_incision.json)
 holds the events; the 15.1-second recording wall time includes initialization,
 rendering and encoding and is not a live-performance benchmark.
 
