@@ -1474,6 +1474,32 @@ node between the first and the last threaded eyelet of a group is inside the
 tissue and takes no contact plane; while a group is only partly threaded, so
 is the thread from its first node to the group's last threaded eyelet.
 
+Where a threaded track meets the surface the needle has left a hole, the
+mouth of the track, and the surface mesh has none. A node over that hole
+would be stopped by the plane of the face around it until the pull presses it
+through the contact penalty, with up to $k\,(r+d_1)$ for the thread radius
+$r$ and the depth $d_1$ of the track's first eyelet, and a node that has just
+left a track would be thrown out by the same plane. A scene can therefore
+open the mouths (`ThreadTissueCoupling.open_mouths`): with $\mathbf p$ the
+nearest surface point of a node, $\mathbf n$ the outward normal there and
+$\mathbf e$ the eyelet at an end of a track's threaded span, the node takes
+no plane when
+
+$$
+0\le(\mathbf p-\mathbf e)\cdot\mathbf n\le d_{\rm mouth},\qquad
+\big|(\mathbf I-\mathbf n\mathbf n^T)(\mathbf p-\mathbf e)\big|\le r_{\rm mouth}.
+$$
+
+The grasp scene gives $r_{\rm mouth}$ two wire radii, the radius within which
+the needle/tissue interaction takes a surface point for the needle's track,
+and $d_{\rm mouth}$ one eyelet spacing, under which the eyelet at the end of
+a track lies. The end of the span at the thread's start is a mouth only when
+the whole track is threaded. The test is made with the nearest surface point:
+where the surface around a mouth is drawn in by more than $d_{\rm mouth}$,
+the node has its plane again. On the device the thread's force on the needle
+while it is drawn through both lips falls from a sawtooth of up to 12 mN to
+0.4 mN ([usage](usage.md#the-draw-of-the-thread)).
+
 The friction anchor of a node that has grip is kept as a point of the surface
 triangle under it and moves with the surface, so a thread that sticks rides
 on the tissue.
@@ -1914,10 +1940,15 @@ $$
 d(u)=v\,T\left(u^3-\tfrac12u^4\right),\qquad d(1)=\tfrac12 vT=0.75\ \text{mm}
 $$
 
-for $v=3$ mm/s and $T=0.5$ s. The tightening ends by the tightness rule of the
+for $v=3$ mm/s and $T=0.5$ s. Before the tie the palm has gone the same line by
+one length of the needle, which draws that much of the loose thread through
+the track ([usage](usage.md#the-draw-of-the-thread)). The tightening ends by
+the tightness rule of the
 thread's section: the smallest volume ratio $J$ of the tissue's tetrahedra at
-$J_{\rm tight}$ = `TIGHT_VOLUME_RATIO`. $J$ goes on falling over the way to
-rest (by 0.11 over 0.75 mm in a pull measured on this tissue), so the stop
+$J_{\rm tight}$ = `TIGHT_VOLUME_RATIO`, or at the larger value that a scene
+publishes for its own tissue under the tie (`tight_volume_ratio`; the grasp
+scene: 0.75, because its tissue collapses from $J$ = 0.64). $J$ goes on
+falling over the way to rest (by 0.05 over 0.75 mm on this tissue), so the stop
 begins where a stop begun now is predicted to end at the rule. With $a$ the
 travel of the observed palm along the direction (it is behind its target) and
 $k$ the slope of $J$ against $a$ over the last $\tfrac12vT$ of $a$,
@@ -1928,16 +1959,19 @@ $$
 
 and the stop ramp begins in the first frame with $J_{\rm rest}\le J_{\rm tight}$,
 to end at $s+d$. The prediction is linear over the length its slope was
-measured on. Its error is what $J$ does that is not linear in the travel: on
-the device $J$ drops twice by 0.07 within a quarter of a millimetre, where
-the thread's pull on the knot rises by 3 to 4 mN within a frame or two; the
-slope over the window takes such a drop for slope, the stop begins early, and
-the four runs end at $J$ = 0.543 to 0.554, inside the predicted
-fall $|k|(s+d-a)$ = 0.112 to 0.120 that the self-test allows. The commanded
-travel is bounded by 6.75 mm, twice the 3.37 mm at which the pull measured on
-the CPU reaches the rule; a tightening that arrives there without its rule
-stops the procedure. One tied stitch narrows the top of the wound by 0.66 to
-0.68 mm of 2.85 mm at 26 mN on the needle while the tool holds; it does not
+measured on. Its error is what $J$ does that is not linear in the travel. With
+the mouths of the track open $J$ still drops once by 0.02 to 0.03 within a
+frame or two, at 4.3 to 4.5 mm of travel (cause not established); the slope
+over the window takes that drop for slope, the stop begins early, and the
+three runs end at $J$ = 0.778 to 0.780 for the rule 0.75, inside the predicted
+fall $|k|(s+d-a)$ = 0.067 to 0.070 that the self-test allows. (With the
+mouths closed $J$ dropped twice by 0.07 within a quarter of a millimetre.)
+The commanded
+travel is bounded by 7.5 mm, the travel at which the tissue under the tie
+collapsed when it was pulled on without a stop, rounded down; a tightening
+that arrives there without its rule
+stops the procedure. One tied stitch narrows the top of the wound by 0.57 to
+0.59 mm of 2.87 mm at 15.5 mN on the needle while the tool holds; it does not
 close the wound, it is not a knot, and nothing holds the thread yet when the
 hold of the tightening ends.
 

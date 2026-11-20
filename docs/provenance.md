@@ -97,6 +97,10 @@ the recipes in `docs/videos.json` were committed together with the clips.
 The ninth, `fem_surgical_incision`, was recorded again on 2026-11-20 from
 commit `a67249d`, after the floor contact of that example was corrected,
 and replaced the clip of 2026-11-19 in which the body sank into the floor.
+`fem_needle_grasp` was recorded once more on 2026-11-20, with the code of
+the commit that brought the draw of the thread through the tissue (its
+parent is `c2edf1e`), and replaced the clip of `fe9306e`, whose procedure
+ended with the needle held just above the exit.
 Each clip is taken from a camera close on its action, the `camera` of its
 recipe ([camera of a clip](development.md#camera-of-a-clip)), and shows the
 example's default behaviour unless its arguments below or its caption name
@@ -107,7 +111,7 @@ shows, and its JSON sidecar.
 
 | Clip, sidecar | Picture | Frames | Simulated time | Example arguments | MP4 |
 | --- | --- | ---: | ---: | --- | ---: |
-| [fem_needle_grasp](media/fem_needle_grasp.mp4), [JSON](media/fem_needle_grasp.json) | 960×540 | 2,220 | 37.0 s | `--test` | 2.98 MB |
+| [fem_needle_grasp](media/fem_needle_grasp.mp4), [JSON](media/fem_needle_grasp.json) | 960×540 | 2,640 | 44.0 s | `--test` | 3.60 MB |
 | [fem_tool_tissue](media/fem_tool_tissue.mp4), [JSON](media/fem_tool_tissue.json) | 960×540 | 1,668 | 27.7 s | `--contact swept --test` | 2.37 MB |
 | [fem_needle_suture](media/fem_needle_suture.mp4), [JSON](media/fem_needle_suture.json) | 960×540 | 2,220 | 33.5 s | `--test` | 3.43 MB |
 | [fem_needle_insertion](media/fem_needle_insertion.mp4), [JSON](media/fem_needle_insertion.json) | 960×540 | 420 | 3.8 s | `--regions 1 --transparent-pad --test` | 0.76 MB |
@@ -132,29 +136,33 @@ shows, and its JSON sidecar.
   three recordings (`test_final` every 60 frames of a replay; at each
   selection and release of the regions clip); the start-up census of `--test`
   is not part of them.
-- `fem_needle_grasp` has 2,220 frames, 37 s (1,700 before, of the procedure
-  that ended with a lift by the needle tip): the procedure with the pull
-  through the tissue and the stitch is done at about 35.3 s in this
-  recording (at 35.2 to 35.6 s in the runs of
-  [usage](usage.md#the-lock-and-the-slackening)). The marker of the first
-  tie is yellow from frame 1,843 and that of the second from frame 2,015;
-  the poster is frame 2,150, after the procedure is done, with both markers
-  yellow and the slack thread from the exit to the needle.
+- `fem_needle_grasp` has 2,640 frames, 44 s (2,220 before, of the procedure
+  that ended with the needle held just above the exit; 1,700 before that, of
+  the procedure that ended with a lift by the needle tip): the procedure
+  with the pull through the tissue, the draw of the thread and the stitch is
+  done at 42.4 to 42.6 s in the runs of
+  [usage](usage.md#the-draw-of-the-thread). The camera follows the needle
+  away from the wound during the draw (frames 1,830 to 2,230). The marker of
+  the first tie is green in frame 2,255 and yellow in frame 2,262, that of
+  the second is yellow in frame 2,428; the poster is frame 2,600, after the
+  procedure is done, with both markers yellow and the slack thread from the
+  exit up to the needle, which the tool holds clear of the wound.
 - `fem_needle_suture` has 2,220 frames (2,760 before): the default run now
   ends in frame 2,007, with the closing pull ending in the frame it begins,
   and the clip holds the finished stitches for 3.5 s.
 - The clips are encoded at 60 frames per second. Encoding/playback rate and
   the capture wall times of the sidecars (7 s to 106 s, with start-up,
   rendering and encoding) do not establish live simulation FPS.
-- The 27 files of the nine clips are 21.6 MB together, 20.6 MB of them the
-  MP4s. Two files are over 3 MB. `fem_dvrk.mp4` (6.85 MB; 5.12 MB before) is
+- The 27 files of the nine clips are 22.3 MB together, 21.3 MB of them the
+  MP4s. Three files are over 3 MB. `fem_dvrk.mp4` (6.85 MB; 5.12 MB before) is
   1920×1080 with the four video views, and a close view changes more of the
   picture from frame to frame than the wide view did. `fem_needle_suture.mp4`
   is 3.43 MB: its 180 frames with the mesh edges take 1.60 MB of it, because
   the fine lines over the whole picture compress badly. For the same reason
   the frames with the edges take 1.87 MB of the 2.11 MB of
   `fem_surgical_incision.mp4` and 0.58 MB of the 0.76 MB of
-  `fem_needle_insertion.mp4`. `fem_needle_grasp.mp4` is 2.98 MB.
+  `fem_needle_insertion.mp4`. `fem_needle_grasp.mp4` is 3.60 MB, 0.63 MB
+  more than before for its 420 frames more.
 - The clips have no GIF preview. The README shows the JPG poster and links
   the MP4, no document showed a GIF, and the GIFs of the close views would be
   0.5 to 6.6 MB each, 28.5 MB together. The recorder writes one only with

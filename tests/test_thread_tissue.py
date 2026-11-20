@@ -736,21 +736,86 @@ class EyeletTrackTests(unittest.TestCase):
         self.assertGreater(tension, 1.05 * proportional[-1])
         self.assertEqual(scene.thread.eyelet_held.numpy()[knot], 1)
 
-    # Defect: the surface contact stops a node at a track's mouth with up to k (r + depth of the first eyelet), 35 mN.
-    @unittest.expectedFailure
     def test_thread_is_drawn_into_a_track_through_its_mouth(self):
-        """Fails while nodes that reach the mouth of a track are stopped by the contact with the surface around it."""
-        scene = _Through(friction=0.0)
-        scene.step(5)
-        end = scene.nodes()[-1, 0]
-        draw = 3.0 * ELEMENT
-        scene.draw(draw, 90)
-        scene.step(30)
-        # Without friction nothing but its inertia and mass damping holds the thread back: it follows as a
-        # whole. A node that reaches the mouth is not yet between the track's eyelets, so it still has the
-        # plane of the face around the mouth. Measured: the far end follows 1.12 mm of the 6 mm and the thread
-        # carries 29 mN; with the thread's contact switched off it follows the 6 mm and carries none.
-        self.assertAlmostEqual(end - scene.nodes()[-1, 0], draw, delta=0.05 * draw)
+        """Fails if a node that reaches the open mouth of a track is stopped by the surface around it."""
+        draw, followed = 3.0 * ELEMENT, {}
+        for mouths in (False, True):
+            scene = _Through(friction=0.0)
+            if mouths:
+                scene.coupling.open_mouths(LATERAL, ALONG)
+            scene.step(5)
+            end = scene.nodes()[-1, 0]
+            scene.draw(draw, 90)
+            scene.step(30)
+            followed[mouths] = end - scene.nodes()[-1, 0]
+        # Without friction nothing but its inertia and mass damping holds the thread back: with the mouths
+        # open it follows as a whole.
+        self.assertAlmostEqual(followed[True], draw, delta=0.05 * draw)
+        # Without them a node that reaches the mouth is not yet between the track's eyelets, so it still has
+        # the plane of the face around the mouth, which stops it with up to k (r + depth of the first eyelet),
+        # 35 mN. Measured: the far end follows 1.12 mm of the 6 mm and the thread carries 29 mN.
+        self.assertLess(followed[False], 0.5 * draw)
+
+    def test_a_node_over_the_mouth_of_a_threaded_track_takes_no_plane(self):
+        """Fails if a node over the hole of a track keeps the plane of the face around it, or one beside the hole loses it."""
+        scene = _Through()
+
+        def without():
+            # Of the nodes within the contact margin of the block (6 to 15), those without a plane.
+            scene.coupling.update(scene.particle_q)
+            free = np.flatnonzero(np.all(scene.thread.contact_normal.numpy() == 0.0, axis=1))
+            return free[(free >= 6) & (free <= 15)].tolist()
+
+        # The track is threaded from 6.6 to 14.4 elements: the nodes 7 to 14 are inside. Node 6 is 1 mm in
+        # front of the face through which the thread goes in and node 15 as far behind the face through
+        # which it comes out, each on the line of the track; both have the plane of that face.
+        self.assertEqual(without(), list(range(7, 15)))
+        normals = scene.thread.contact_normal.numpy()
+        np.testing.assert_allclose(normals[[6, 15]], [(-1.0, 0.0, 0.0), (1.0, 0.0, 0.0)], atol=1.0e-6)
+        # With the mouths open: their nearest surface point is over the first and the last eyelet, which lie
+        # 0.2 mm under those faces.
+        scene.coupling.open_mouths(LATERAL, ALONG)
+        self.assertEqual(without(), list(range(6, 16)))
+        # An eyelet deeper under the face than the given depth is not at a mouth.
+        scene.coupling.open_mouths(LATERAL, 0.0001)
+        self.assertEqual(without(), list(range(7, 15)))
+        # The tissue carries the track 1 mm aside, more than the radius of the hole: the nodes are beside it.
+        scene.coupling.open_mouths(LATERAL, ALONG)
+        scene.place(scene.rest + np.array([0.0, 0.001, 0.0]))
+        self.assertEqual(without(), list(range(7, 15)))
+        # Half that, less than the radius: over the hole again.
+        scene.place(scene.rest + np.array([0.0, 0.0005, 0.0]))
+        self.assertEqual(without(), list(range(6, 16)))
+        for radius, depth in ((0.0, ALONG), (LATERAL, 0.0), (-LATERAL, ALONG), (np.nan, ALONG), (LATERAL, np.inf)):
+            with self.assertRaisesRegex(ValueError, "positive radius and a positive depth"):
+                scene.coupling.open_mouths(radius, depth)
+
+    def test_only_the_far_end_of_a_track_that_is_being_threaded_is_a_mouth(self):
+        """Fails if the eyelet that the tail has passed last counts as a mouth while its track is only partly threaded."""
+        # Every node is 1 mm over the top; three eyelets lie 0.2 mm under the top, under the nodes 15, 16 and 17.
+        scene = _Scene(_line((0.0031, 0.0013, 0.001), RESTING + 1), eyelets=5, max_tracks=2)
+        found = [
+            _material_point(scene.vertices, scene.tetrahedra, np.array([x, 0.0013, -0.0002]))
+            for x in (0.0331, 0.0351, 0.0371)
+        ]
+        slots = scene.coupling.add_track([tetrahedron for tetrahedron, _ in found], [weights for _, weights in found])
+        scene.coupling.open_mouths(LATERAL, ALONG)
+
+        def without():
+            scene.coupling.update(scene.particle_q)
+            return np.flatnonzero(np.all(scene.thread.contact_normal.numpy() == 0.0, axis=1)).tolist()
+
+        self.assertEqual(without(), [])
+        # Two of the three are threaded, at 3 and at 5 elements along the thread: the thread from its start to
+        # 5 elements is inside the tissue. The eyelet at 5 elements is the hole through which the thread went
+        # in, and the node over it (17) has no plane. The eyelet at 3 elements is where the tail is now, in
+        # the tissue: the node over it (15) keeps its plane.
+        scene.coupling.thread_eyelet(slots[0], 3, 0.0)
+        scene.coupling.thread_eyelet(slots[2], 5, 0.0)
+        self.assertEqual(without(), [0, 1, 2, 3, 4, 5, 17])
+        # The whole track is threaded: both ends are mouths, and the node over the middle eyelet has its plane.
+        scene.coupling.thread_eyelet(slots[1], 4, 0.0)
+        self.assertEqual(without(), [3, 4, 5, 15, 17])
 
     def test_nodes_inside_a_track_take_no_plane(self):
         """Fails if a node between a track's first and last threaded eyelet, or in a half-made track, has contact."""

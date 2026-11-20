@@ -377,6 +377,11 @@ class WorkerThread:
             self.tissue.follow_tail(
                 scene.needle_body, self.tail, self.tangent, self.eyelet_spacing, 2.0 * float(geometry.thickness)
             )
+            # Where a threaded track meets the surface the needle has left a hole of that radius, and the
+            # eyelet at the end of a track lies less than one eyelet spacing under it (NeedleTrackEyelets:
+            # the first row of a passage, and the last row or the eyelet half a spacing before it). A thread
+            # node over that hole has no surface under it.
+            self.tissue.open_mouths(2.0 * float(geometry.thickness), self.eyelet_spacing)
             self.track = NeedleTrackEyelets(self.tissue, scene, self.eyelet_spacing)
         self.rigid_contact = ThreadRigidCapsuleContact(
             self.solver,

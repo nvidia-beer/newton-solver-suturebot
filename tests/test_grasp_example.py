@@ -1034,6 +1034,25 @@ class GraspExampleLifecycleTests(unittest.TestCase):
                 example_with(thread=thread).test_final()
         with self.assertRaisesRegex(AssertionError, "No thread is inside the tissue"):
             example_with(thread={"thread_inside_tissue_m": 0.0}).test_final()
+        # The thread must have been drawn through by the length of the draw.
+        for report in (
+            {"draw_complete": False},
+            {"draw_travel_m": 0.012},
+            {"draw_travel_m": 0.0, "draw_length_m": 0.0},
+        ):
+            with (
+                self.subTest(report=report),
+                self.assertRaisesRegex(AssertionError, "was not drawn through the tissue"),
+            ):
+                example_with(report=report).test_final()
+        # And it must have run freely: it pulled the needle with less than the needle's weight (2.94 mN)
+        # meanwhile. Stopped at a mouth of its track it pulled with up to 12 mN.
+        for force in (None, 0.00294, 0.012):
+            with (
+                self.subTest(force=force),
+                self.assertRaisesRegex(AssertionError, "did not run through its track in the draw"),
+            ):
+                example_with(report={"draw_thread_force_N": force}).test_final()
         # An eyelet that found no room in the reserve fails the self-test, pull or not, also where nothing
         # is asked of the procedure (another speed).
         for options in (
@@ -1060,15 +1079,21 @@ class GraspExampleLifecycleTests(unittest.TestCase):
                 engaged=0.003,
             ).test_final()
 
-    # What the controller reports of a stitch that ended as it should (ProceduralGraspController.report), with
-    # the numbers of the first device run of the tightening: the rule began the stop 0.94 mm before rest with
-    # a slope of -126 per metre, so the least volume may end within 0.118 of the rule's 0.5. Then the thread
-    # was tied at its exit, and the tool took the needle 2.2 mm back: the stop began with 2.7 mN on the needle,
-    # below its weight of 2.94 mN, at 34.9 s.
+    # What the controller reports of a stitch that ended as it should (ProceduralGraspController.report). The
+    # numbers are those of the first device run of the stitch as it was before the thread was drawn through
+    # the tissue first (rule 0.5, a travel bound of 6.75 mm); the checks of the self-test do not depend on
+    # which run they are of. The rule began the stop 0.94 mm before rest with a slope of -126 per metre, so
+    # the least volume may end within 0.118 of the rule's 0.5. Then the thread was tied at its exit, and the
+    # tool took the needle 2.2 mm back: the stop began with 2.7 mN on the needle, below its weight of
+    # 2.94 mN, at 34.9 s.
     STITCHED = {
         "ties": 2,
         "tighten_travel_m": 0.0056,
         "tighten_travel_bound_m": 0.00675,
+        "draw_travel_m": 0.01753,
+        "draw_length_m": 0.01753,
+        "draw_complete": True,
+        "draw_thread_force_N": 0.0004,
         "tighten_stop_volume": 0.5,
         "tighten_predicted_volume": 0.495,
         "tighten_slope_per_m": -126.0,
@@ -1610,26 +1635,29 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         self.assertEqual((example._pull_through(alone), example._tip_lift_height(alone)), (False, 0.0))
         # An argument set without the options (a caller of the class) has neither.
         self.assertEqual((example._pull_through(self.args()), example._tip_lift_height(self.args())), (False, 0.0))
-        # 40 s at 60 Hz. The measured sequence is clear of the tissue before 31 s of simulated time; the
-        # stitch then takes at most two frames for the tie, the tightening to its travel bound (6.75 mm at
-        # 3 mm/s with the two ramps of 0.5 s: 2.75 s) and the hold of 0.5 s, then two frames for the tie at
-        # the exit, the slackening back to where the tightening began (as long again) and the hold of
-        # 0.5 s: it ends before 37.6 s, and the second that the self-test asks the stitch to have held by
-        # itself has passed before 38.1 s.
-        self.assertEqual(args.num_frames, 2400)
+        # 48 s at 60 Hz. The measured sequence is clear of the tissue before 31 s of simulated time. The draw
+        # of the thread then takes one length of the needle (17.53 mm, the chord from its tail to its tip) at
+        # 3 mm/s with the two ramps of 0.5 s, 6.35 s, and the hold of 0.5 s. The stitch then takes at most two
+        # frames for the tie, the tightening to its travel bound (7.5 mm at 3 mm/s with the two ramps: 3.0 s)
+        # and the hold of 0.5 s, then two frames for the tie at the exit, the slackening back to where the
+        # tightening began (as long again) and the hold of 0.5 s: it ends before 45.0 s, and the second that
+        # the self-test asks the stitch to have held by itself has passed before 45.5 s.
+        self.assertEqual(args.num_frames, 2880)
         controller = grasp_example.ProceduralGraspController
         bound, speed, ramp = controller.tighten_travel_bound, 0.003, 0.5
         travel_frames, hold_frames = round(60 * (bound / speed + ramp)), round(60 * controller.lift_hold_seconds)
         stitch_frames = 2 * (2 + travel_frames + hold_frames)
-        self.assertEqual((travel_frames, hold_frames, stitch_frames), (165, 30, 394))
+        self.assertEqual((travel_frames, hold_frames, stitch_frames), (180, 30, 424))
+        draw_frames = round(60 * (controller.draw_needle_lengths * 0.01753 / speed + ramp)) + hold_frames
+        self.assertEqual(draw_frames, 411)
         rest_frames = round(60 * example.stitch_rest_seconds)
-        self.assertLess(round(60 * 31.0) + stitch_frames - hold_frames + rest_frames, args.num_frames)
+        self.assertLess(round(60 * 31.0) + draw_frames + stitch_frames - hold_frames + rest_frames, args.num_frames)
         # The clip recipe records with the self-test, which asks for the procedure to be done and the stitch
         # to have held for that second. Its length is measured, not the bound above: the latest frame at
-        # which three device runs were done (docs/usage.md, the lock and the slackening), 60 frames more,
+        # which three device runs were done (2552; docs/usage.md, the draw of the thread), 60 frames more,
         # rounded up to a multiple of 60. Done is half a second after the slackening has ended.
         recipe = json.loads((Path(__file__).parents[1] / "docs/videos.json").read_text())["fem_needle_grasp"]
-        self.assertEqual((recipe["frames"], recipe["fps"], recipe["args"]), (2220, 60, ["--test"]))
+        self.assertEqual((recipe["frames"], recipe["fps"], recipe["args"]), (2640, 60, ["--test"]))
         self.assertEqual(recipe["frames"] % 60, 0)
         self.assertGreaterEqual(60 + hold_frames, rest_frames)
         self.assertLess(recipe["frames"], args.num_frames)

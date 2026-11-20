@@ -152,12 +152,13 @@ def closed_on_the_tip(
 
 
 def tick(c, item, config, *, follow=True, contact=True):
-    """One frame: the tool target follows the action exactly; the needle follows the tool as it lies in the jaws."""
+    """One frame: the tool target follows the action exactly and the palm is at it; the needle follows the tool as it lies in the jaws."""
     item["diagnostics"]["physical_time_s"] += config.frame_dt
     item["jaw_contact_count"] = np.full(2, int(contact))
     item["jaw_contact_normal_force_n"] = np.full(2, 0.2 if contact else 0.0)
     action = c([item])[0]
     item["gripper_target_pose"] = stepped(item["gripper_target_pose"], action, config)
+    item["gripper_pose"] = item["gripper_target_pose"].copy()
     if follow:
         item["needle_pose"] = times(item["gripper_target_pose"], item["needle_relative_pose"])
     return action
@@ -624,7 +625,7 @@ class PullStageTests(unittest.TestCase):
                 # After the pull through the tissue the stitch follows: the scene of the test ties and its
                 # tissue is at the tightness rule after 3.4 mm.
                 scene = Stitched(c, item, config) if fixture_of is through_the_tissue else None
-                for _ in range(600):
+                for _ in range(1200):
                     tick(c, item, config) if scene is None else scene.tick()
                     if state.stage == "done":
                         break
@@ -840,12 +841,13 @@ class PullThroughTests(unittest.TestCase):
         self.assertGreaterEqual(report["tail_past_exit_m"], ELEMENT - 3e-7)
         self.assertLess(report["tail_past_exit_m"], ELEMENT + 0.05 * speed * config.frame_dt)
         self.assertAlmostEqual(report["pull_angle_rad"], travelled / radius, delta=5e-6)
-        # Then the tool holds the needle for the hold time of a lift, and the stitch follows (StitchTests).
+        # Then the tool holds the needle for the hold time of a lift, and the draw of the thread follows
+        # (DrawTests), then the stitch (StitchTests).
         for _ in range(29):
             tick(c, item, config)
             self.assertEqual(c.report()[0]["stage"], "clear")
         tick(c, item, config)
-        self.assertEqual((c.report()[0]["stage"], c.report()[0]["reason"]), ("tie", None))
+        self.assertEqual((c.report()[0]["stage"], c.report()[0]["reason"]), ("draw", None))
 
     def test_the_pull_does_not_end_while_the_tissue_holds_the_track_and_stops_with_a_reason_at_its_bound(self):
         """Fails if a tail that is past the exit ends the pull although the tissue has not let go of the needle."""
@@ -965,6 +967,18 @@ class PullThroughTests(unittest.TestCase):
         with_pull = ProceduralGraspController(geometry, config, settle_seconds=0, lift_height=0.001, pull_through=True)
         self.assertEqual((with_pull.thread_tracks, with_pull.pull_clearance), (True, ELEMENT))
         self.assertEqual((with_pull.needle_weight, with_pull.passages), (0.0, PASSAGES))
+        # The least tissue volume of a tight thread is the coupling's rule unless the scene publishes one for
+        # its own tissue under the tie: that may ask for an earlier stop, never for a later one.
+        self.assertEqual(with_pull.tight_volume, 0.5)
+        for volume in (None, 0.49, 0.0, 1.0, 1.2, float("nan"), float("inf")):
+            geometry["tight_volume_ratio"] = volume
+            with self.subTest(volume=volume), self.assertRaisesRegex(ValueError, "tight_volume_ratio"):
+                ProceduralGraspController(geometry, config, settle_seconds=0, lift_height=0.001, pull_through=True)
+        for volume in (0.5, 0.75, 0.99):
+            geometry["tight_volume_ratio"] = volume
+            own = ProceduralGraspController(geometry, config, settle_seconds=0, lift_height=0.001, pull_through=True)
+            self.assertEqual(own.tight_volume, volume)
+        del geometry["tight_volume_ratio"]
         # Neither is asked of a scene whose controller does not pull, or whose thread stays on the surface.
         geometry["insertion_plan"] = plan
         del geometry["needle_weight_N"]
@@ -980,18 +994,161 @@ class PullThroughTests(unittest.TestCase):
         self.assertEqual((off.thread_tracks, off.pull_clearance, off.pull_hole), (False, 0.0, HOLE))
 
 
-def clear_of_the_tissue(**options):
-    """The fixture of the pull through the tissue at the call that ends its clear hold: the stage ``tie`` comes next."""
+def clear_of_the_tissue(stage="tie", **options):
+    """The fixture of the pull through the tissue at the call that begins ``stage``.
+
+    ``draw``: the call that ends the clear hold of the pull. ``tie`` (the default): the call that ends the hold
+    after the draw of the thread; the tie is asked for in the next.
+    """
     geometry, config, c, item, state = through_the_tissue(**options)
     tick(c, item, config)
-    for _ in range(600):
+    for _ in range(1200):
         # The tissue of the test: it holds the track until the tail is level with the exit marker.
         item["diagnostics"]["engaged_track_length_m"] = 0.004 if state.tail_past_exit < 0.0 else 0.0
         tick(c, item, config)
-        if state.stage == "tie":
+        if state.stage == stage:
             break
-    assert (state.stage, state.pull_complete) == ("tie", True)
+    assert (state.stage, state.pull_complete, c.report()[0]["reason"]) == (stage, True, None), c.report()[0]
     return geometry, config, c, item, state
+
+
+class DrawTests(unittest.TestCase):
+    """The draw of the loose thread through the tissue, between the pull and the first tie. No physics."""
+
+    def test_the_palm_draws_straight_along_the_chord_by_one_length_of_the_needle_then_holds_and_the_tie_follows(self):
+        """Fails if the draw turns the tool, leaves the chord, has another length, steps in speed or skips its hold."""
+        from newton_solver_suturebot.examples.grasp._dvrk_grasper import GRASP_BITE_DEPTH_M
+
+        _geometry, config, c, item, state = clear_of_the_tissue("draw")
+        needle, palm = item["needle_pose"], item["gripper_pose"]
+        tail = procedure._rotation(needle) @ c.centerline[-1] + needle[:3]
+        bite = procedure._rotation(palm) @ np.array([0.0, GRASP_BITE_DEPTH_M, 0.0]) + palm[:3]
+        direction = (bite - tail) / np.linalg.norm(bite - tail)
+        # To the rounding that a held target leaves in the poses of the call after it (float32 quaternions).
+        np.testing.assert_allclose(state.draw_direction, direction, atol=1e-6)
+        direction = state.draw_direction
+        # One length of the needle: the chord from its tail to its tip.
+        length = float(np.linalg.norm(c.centerline[0] - c.centerline[-1]))
+        self.assertEqual(c.draw_needle_lengths, 1.0)
+        self.assertAlmostEqual(state.draw_length, length, delta=1e-15)
+        report = c.report()[0]
+        self.assertEqual(
+            (report["draw_travel_m"], report["draw_length_m"], report["draw_complete"]), (0.0, length, False)
+        )
+        self.assertIsNone(c.commands())
+        start = item["gripper_target_pose"].copy()
+        speed = c.tighten_speed
+        # By hand: the ramp of the insertion at the start, and the same ramp backwards over what is left.
+        travelled, frames = 0.0, 0
+        while state.stage == "draw":
+            action = tick(c, item, config)
+            if state.stage != "draw":
+                break
+            frames += 1
+            added = float(
+                ramp_distance(frames * config.frame_dt, speed) - ramp_distance((frames - 1) * config.frame_dt, speed)
+            )
+            left = length - travelled
+            travelled += min(added, ramp_speed(left, speed) * config.frame_dt, left)
+            moved = item["gripper_target_pose"][:3] - start[:3]
+            # Straight along the chord, without turning; the jaws stay closed; nothing is asked of the scene.
+            np.testing.assert_allclose(moved, travelled * direction, atol=2e-8)
+            self.assertLessEqual(np.linalg.norm(action[3:6]) * config.rotation_step, 4 * np.finfo(np.float32).eps)
+            self.assertEqual(action[6], 0.0)
+            self.assertIsNone(c.commands())
+            self.assertEqual(c.report()[0]["phase"], "drawing")
+            self.assertAlmostEqual(c.report()[0]["draw_travel_m"], travelled, delta=2e-9)
+            self.assertLess(frames, 800)
+        # The whole length, in the time of the travel at 3 mm/s and of one ramp (each of the two ramps takes
+        # a quarter of a second longer than its way at full speed), to a tenth of a second.
+        self.assertAlmostEqual(state.draw_travel, length, delta=1e-12)
+        self.assertLessEqual(abs(frames - round(60 * (length / speed + 0.5))), 6)
+        report = c.report()[0]
+        self.assertEqual((report["stage"], report["phase"], report["draw_complete"]), ("drawn", "holding", True))
+        # Then the tool holds for the hold time of a lift, and the tie follows (StitchTests).
+        held = item["gripper_target_pose"].copy()
+        for _ in range(29):
+            tick(c, item, config)
+            self.assertEqual(c.report()[0]["stage"], "drawn")
+        tick(c, item, config)
+        self.assertEqual((c.report()[0]["stage"], c.report()[0]["reason"]), ("tie", None))
+        np.testing.assert_array_equal(item["gripper_target_pose"], held)
+
+    def test_a_thread_that_does_not_slide_stops_the_draw_with_the_reason(self):
+        """Fails if the draw goes on while the tissue is pulled to the tightness rule of the thread."""
+        _geometry, config, c, item, state = clear_of_the_tissue("draw")
+        item["diagnostics"]["least_volume_ratio"] = 0.9
+        item["thread_tension"] = {"needle_force_N": 0.004}
+        for _ in range(40):
+            tick(c, item, config)
+        self.assertEqual((state.stage, c.report()[0]["phase"]), ("draw", "drawing"))
+        self.assertEqual(c.report()[0]["draw_thread_force_N"], 0.004)
+        travel = state.draw_travel
+        item["diagnostics"]["least_volume_ratio"] = 0.5
+        action = tick(c, item, config)
+        report = c.report()[0]
+        self.assertEqual((report["phase"], report["stage"], report["draw_complete"]), ("stopped", "draw", False))
+        self.assertEqual(
+            report["reason"],
+            f"The thread did not run through its track: {1e3 * travel:.2f} mm into the draw the "
+            "least tissue volume is 0.5 where 0.5 is a tight thread",
+        )
+        np.testing.assert_array_equal(action[:3], np.zeros(3))
+
+    def test_a_draw_that_the_tool_cannot_reach_with_the_tightening_after_it_stops_before_it_begins(self):
+        """Fails if the draw begins on a line that the joints cannot follow to its end and to the tightening's bound."""
+        from newton_solver_suturebot.examples.grasp._dvrk_grasper import GRASP_BITE_DEPTH_M
+
+        def at_the_end_of_the_clear_hold():
+            _geometry, config, c, item, state = clear_of_the_tissue("clear")
+            c.joint_limits = c.joint_limits.copy()
+            return config, c, item, state
+
+        def slide(c, item, travel):
+            # The slide of the tool with its palm ``travel`` [m] along the chord from its target.
+            needle, palm = item["needle_pose"], item["gripper_pose"]
+            tail = procedure._rotation(needle) @ c.centerline[-1] + needle[:3]
+            bite = procedure._rotation(palm) @ np.array([0.0, GRASP_BITE_DEPTH_M, 0.0]) + palm[:3]
+            pose = item["gripper_target_pose"].copy()
+            pose[:3] += travel * (bite - tail) / np.linalg.norm(bite - tail)
+            return arm_joint_positions(c.trocar, pose[None], c.nominal_insertion)[0][2]
+
+        # The slide of this tool has no room left: any way along the chord takes it out.
+        config, c, item, state = at_the_end_of_the_clear_hold()
+        here = slide(c, item, 0.0)
+        c.joint_limits[:, 2] = here - 0.002, here + 0.002
+        for _ in range(31):
+            tick(c, item, config)
+        report = c.report()[0]
+        self.assertEqual((report["phase"], report["stage"]), ("stopped", "clear"))
+        self.assertRegex(
+            report["reason"],
+            "^The tool cannot draw the thread on through the tissue within its joint limits: insertion is ",
+        )
+        # The slide has room for the draw and not for the tightening after it: its limit lies halfway between
+        # where the draw ends and where the tightening's bound is. The same tool with a tightening that needs
+        # no room begins the draw.
+        for bound, begins in ((None, False), (1.0e-6, True)):
+            with self.subTest(bound=bound):
+                config, c, item, state = at_the_end_of_the_clear_hold()
+                if bound is not None:
+                    c.tighten_travel_bound = bound
+                length = float(np.linalg.norm(c.centerline[0] - c.centerline[-1]))
+                drawn = slide(c, item, length)
+                beyond = slide(c, item, length + ProceduralGraspController.tighten_travel_bound)
+                # The draw moves the slide, and the tightening moves it on by more than the reach margin twice.
+                self.assertGreater(abs(drawn - here), 0.005)
+                self.assertGreater(abs(beyond - drawn), 4.0 * c.reach_margin[2])
+                limit = 0.5 * (drawn + beyond)
+                c.joint_limits[:, 2] = (min(here, limit) - 0.01, limit) if beyond > drawn else (limit, here + 0.01)
+                for _ in range(31):
+                    tick(c, item, config)
+                report = c.report()[0]
+                if begins:
+                    self.assertEqual((report["phase"], report["stage"], report["reason"]), ("drawing", "draw", None))
+                else:
+                    self.assertEqual((report["phase"], report["stage"]), ("stopped", "clear"))
+                    self.assertRegex(report["reason"], "^The tool cannot draw the thread on through the tissue")
 
 
 class Stitched:
@@ -1325,9 +1482,9 @@ class StitchTests(unittest.TestCase):
         # The least volume does not fall: the thread slides, or was not tied where it was said to be.
         _geometry, config, c, item, state, scene = self.tightening(slack=1.0)
         bound = c.tighten_travel_bound
-        # Twice the travel at which the measured pull reaches the rule (3.37 mm, CPU); the table at the top
-        # of the module names it.
-        self.assertAlmostEqual(bound, 0.00675, delta=1e-12)
+        # The travel at which the tissue under the tie collapsed when it was pulled on without a stop (7.7 mm,
+        # device), rounded down; the table at the top of the module names it.
+        self.assertAlmostEqual(bound, 0.0075, delta=1e-12)
         steps = []
         while c.report()[0]["phase"] != "stopped":
             before = state.tighten_travel
@@ -1337,14 +1494,14 @@ class StitchTests(unittest.TestCase):
         report = c.report()[0]
         self.assertEqual((report["stage"], report["stitch_complete"]), ("tighten", False))
         self.assertAlmostEqual(report["tighten_travel_m"], bound, delta=1e-12)
-        self.assertRegex(report["reason"], r"^The thread did not come tight: the tool moved the needle on by 6\.75 mm")
+        self.assertRegex(report["reason"], r"^The thread did not come tight: the tool moved the needle on by 7\.50 mm")
         self.assertIsNone(report["tighten_predicted_volume"])
         # The command came to rest at the bound by the ramp of the insertion run backwards.
         self.assertLess(steps[-2], 0.05 * 0.003 * config.frame_dt)
         self.assertAlmostEqual(sum(steps), bound, delta=1e-12)
-        # Tissue whose volume falls only inside the ramp to the bound, from 6 mm on and to the rule within
+        # Tissue whose volume falls only inside the ramp to the bound, from 6.75 mm on and to the rule within
         # 0.5 mm: the rule ends the tightening, where that ramp ends: at the bound, with no reason to stop.
-        _geometry, config, c, item, state, scene = self.tightening(slack=0.006, length=0.001)
+        _geometry, config, c, item, state, scene = self.tightening(slack=0.00675, length=0.001)
         scene.run("hold")
         report = c.report()[0]
         self.assertEqual((report["stage"], report["reason"]), ("hold", None))

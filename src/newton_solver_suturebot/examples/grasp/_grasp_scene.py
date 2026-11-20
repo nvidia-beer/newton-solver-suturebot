@@ -38,6 +38,16 @@ from ._dvrk_rcm_grasper import add_rcm_grasper
 # step. The scene publishes the weight itself from it (grasp_geometry, needle_weight_N).
 NEEDLE_GRAVITY = 9.81
 
+# Least tissue volume at which the tied thread of this scene's stitch counts as tight, as a fraction of the
+# rest volume (grasp_geometry, tight_volume_ratio). The first tie of the stitch sits in the first row of the
+# needle's track, at the surface, and the thread pulls it into the tissue. Measured on the device
+# (docs/usage.md, the tie and the tightening): the tetrahedra under that tie follow the pull down to 0.64 of
+# their rest volume, at 24.6 mN on the needle, and collapse from there to 0.30 within 0.4 mm of the tool's
+# travel. The rule of the thread/tissue coupling (TIGHT_VOLUME_RATIO, 0.5) lies inside that collapse, so no
+# tightening comes to rest at it. With three quarters the tightening ends at 0.78 with 15.5 mN on the needle,
+# 63 % of the pull at the collapse (three device runs).
+STITCH_TIGHT_VOLUME_RATIO = 0.75
+
 
 @wp.kernel(enable_backward=False)
 def _needle_weight(needle: int, mass: wp.array[float], force: wp.array[wp.spatial_vector]):
@@ -1157,5 +1167,8 @@ class GraspScene(Example):
             # (SutureSceneConfig.needle_weight). A thread that pulls the needle with less is slack for the
             # tool that holds the needle.
             "needle_weight_N": NEEDLE_GRAVITY * self.needle_mass_kg if self._weighs_needle() else 0.0,
+            # Least tissue volume, as a fraction of the rest volume, at which the tied thread of this scene's
+            # stitch is as tight as its tissue allows (STITCH_TIGHT_VOLUME_RATIO).
+            "tight_volume_ratio": STITCH_TIGHT_VOLUME_RATIO,
             "grasp_physics": "independent free needle; native MuJoCo finite hinge actuation and frictional capsule contacts; fixed-trocar shaft pivot/insertion/roll and wrist joint actuators with bounded IK; no weld or needle pose drive",
         }

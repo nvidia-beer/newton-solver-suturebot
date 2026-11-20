@@ -883,9 +883,13 @@ class Example:
         For a procedure that is done, in a scene whose thread follows the needle's track. Per
         scene: the tail of the needle is past the exit marker and the tissue holds no part of
         the track; every planned passage has eyelets, every eyelet that was made is threaded,
-        and thread is inside the tissue.
+        and thread is inside the tissue; the draw of the thread ended at its length, and while
+        it ran the loose thread pulled the needle with less than the weight that the scene
+        applies to the needle (``needle_weight_N`` of the geometry): it ran through the track
+        and was not stopped at a mouth of it.
         """
         passages = int(self.geometry["insertion_plan"]["expected_passages"])
+        weight = self.geometry["needle_weight_N"]
         for item, observation in zip(self.controller.report(), observations, strict=True):
             engaged = observation["diagnostics"]["engaged_track_length_m"]
             if not item["tail_past_exit_m"] > 0.0 or engaged != 0.0:
@@ -902,6 +906,14 @@ class Example:
                 )
             if not thread["thread_inside_tissue_m"] > 0.0:
                 raise AssertionError("No thread is inside the tissue after the pull")
+            drawn, force = item["draw_travel_m"], item["draw_thread_force_N"]
+            if not item["draw_complete"] or not 0.0 < item["draw_length_m"] == drawn:
+                raise AssertionError(f"The thread was not drawn through the tissue by the length of the draw: {item}")
+            if force is None or not force < weight:
+                raise AssertionError(
+                    f"The loose thread did not run through its track in the draw: it pulled the needle with "
+                    f"{force} N, not with less than the needle's weight of {weight} N: {item}"
+                )
 
     # Time that the stitch must have held the wound without the tool's pull when the self-test ends [s].
     stitch_rest_seconds = 1.0
@@ -1046,7 +1058,7 @@ class Example:
         # The parser's formatter prints the default of every option after its help text.
         parser = newton.examples.create_parser()
         parser.description = __doc__
-        parser.set_defaults(num_frames=2400)
+        parser.set_defaults(num_frames=2880)
         parser.add_argument("--num-envs", type=int, default=1, help="Independent scenes; start with one, then scale.")
         parser.add_argument("--substeps", type=int, default=4, help="Coupled physics intervals per 60 Hz frame.")
         parser.add_argument(

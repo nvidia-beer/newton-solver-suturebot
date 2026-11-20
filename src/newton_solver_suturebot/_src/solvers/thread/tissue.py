@@ -22,6 +22,13 @@ ordered track through the tissue such as the path a needle cut. The thread
 between the first and the last threaded eyelet of a group is inside the
 tissue and has no surface contact; while a group is only partly threaded, the
 thread from its first node up to the group's last threaded eyelet is inside.
+Where a threaded track meets the surface the needle has left a hole, the mouth
+of the track. A node over that hole has no surface under it and gets no contact
+plane either (:meth:`ThreadTissueCoupling.open_mouths`): without that, a node
+that is drawn into a track is stopped on the surface over its mouth until the
+pull presses it through the contact penalty, and a node that has just left a
+track is thrown out by it, each time with a step in the thread's force and in
+the load on the tissue around the mouth.
 The force of the thread on an eyelet is spread over the four vertices of its
 tetrahedron. A track can also grow one eyelet at a time while a needle cuts
 it (:meth:`ThreadTissueCoupling.add_track_point`), and the coupling can pass
@@ -126,6 +133,12 @@ def _contact_planes(
     lowest: wp.array[wp.float64],
     highest: wp.array[wp.float64],
     count: wp.array[int],
+    mouth_radius: float,
+    mouth_depth: float,
+    element: wp.array[int],
+    xi: wp.array[wp.float64],
+    eyelet_group: wp.array[int],
+    target: wp.array[wp.vec3d],
     contact_point: wp.array[wp.vec3d],
     contact_normal: wp.array[wp.vec3d],
     face: wp.array[int],
@@ -134,7 +147,15 @@ def _contact_planes(
     """Nearest surface point and its outward normal for every thread node; launch over nodes.
 
     A node farther than ``margin`` from the surface, or inside the tissue
-    between threaded eyelets, gets no contact plane.
+    between threaded eyelets, gets no contact plane. With a mouth radius, neither
+    does a node over the mouth of a threaded track: a node whose nearest surface
+    point ``p``, with the outward normal ``n`` there, lies over an eyelet ``e`` at
+    an end of its track's threaded span,
+
+        0 <= dot(p - e, n) <= mouth_depth   and   |p - e - dot(p - e, n) n| <= mouth_radius.
+
+    The end of the span at the thread's start is a mouth only when the whole track
+    is threaded: until then the thread's start is inside the tissue there.
     """
     node = wp.tid()
     face[node] = -1
@@ -152,8 +173,23 @@ def _contact_planes(
     query = wp.mesh_query_point_no_sign(mesh, position, margin)
     if not query.result:
         return
-    contact_point[node] = wp.vec3d(wp.mesh_eval_position(mesh, query.face, query.u, query.v))
-    contact_normal[node] = wp.vec3d(wp.mesh_eval_face_normal(mesh, query.face))
+    point = wp.mesh_eval_position(mesh, query.face, query.u, query.v)
+    normal = wp.mesh_eval_face_normal(mesh, query.face)
+    if mouth_radius > 0.0:
+        for eyelet in range(element.shape[0]):
+            if element[eyelet] < 0:
+                continue
+            group = eyelet_group[eyelet]
+            along = wp.float64(element[eyelet]) + xi[eyelet]
+            at_start = along == lowest[group] and count[group] == group_size[group]
+            if not (at_start or along == highest[group]):
+                continue
+            offset = point - wp.vec3(target[eyelet])
+            depth = wp.dot(offset, normal)
+            if depth >= 0.0 and depth <= mouth_depth and wp.length(offset - depth * normal) <= mouth_radius:
+                return
+    contact_point[node] = wp.vec3d(point)
+    contact_normal[node] = wp.vec3d(normal)
     face[node] = query.face
     weights[node] = wp.vec3(query.u, query.v, 1.0 - query.u - query.v)
 
@@ -375,6 +411,8 @@ class ThreadTissueCoupling:
         self.refused_points = 0
         # The body point that update() follows (follow_tail): body, point, direction, reach along and across.
         self._tail = None
+        # The mouth of a threaded track (open_mouths): its radius and the depth to its eyelet; zero: no mouths.
+        self._mouth = (0.0, 0.0)
         spring = max(thread.contact_stiffness, thread.eyelet_stiffness)
         self._relaxation = float(tissue_stiffness) / (float(tissue_stiffness) + spring)
         self.applied_force = wp.zeros(len(particle_points), dtype=wp.vec3, device=device)
@@ -508,6 +546,27 @@ class ThreadTissueCoupling:
             raise ValueError("The outward direction must be nonzero and the reach along and across it positive")
         self._tail = (int(body), wp.vec3(*point), wp.vec3(*(outward / length)), float(along), float(lateral))
 
+    def open_mouths(self, radius, depth):
+        """Have :meth:`update` give no contact plane to a thread node that is over the mouth of a threaded track.
+
+        The mouth of a track is the hole that the needle left where the track meets the surface:
+        the surface over the eyelet at an end of the track's threaded span. A node whose nearest
+        surface point lies within ``radius`` of the line through that eyelet along the surface
+        normal there, with the eyelet at most ``depth`` under it, is over the hole. It keeps no
+        contact plane until the thread has taken it into the track, where it has none anyway, or
+        until it has left the hole across the surface. Call it before the step is captured in a
+        graph.
+
+        Args:
+            radius: Radius of the hole [m]: the radius within which a point counts as inside the
+                track (``lateral`` of :meth:`follow_tail`).
+            depth: Largest depth of the eyelet at a track's end under the surface [m]: the spacing
+                of the eyelets of a track (``along`` of :meth:`follow_tail`).
+        """
+        if not np.isfinite([radius, depth]).all() or radius <= 0 or depth <= 0:
+            raise ValueError("The mouth of a track needs a positive radius and a positive depth")
+        self._mouth = (float(radius), float(depth))
+
     def thread_eyelet(self, slot, element=0, xi=0.0):
         """Pass the thread through eyelet ``slot`` at a point of the chain, by default at its first node.
 
@@ -611,6 +670,11 @@ class ThreadTissueCoupling:
                 self._lowest,
                 self._highest,
                 self._count,
+                *self._mouth,
+                thread.eyelet_element,
+                thread.eyelet_xi,
+                self._group_device,
+                thread.eyelet_target,
             ],
             outputs=[thread.contact_point, thread.contact_normal, self._face, self._weights],
             device=device,

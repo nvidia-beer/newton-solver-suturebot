@@ -1,22 +1,22 @@
 {
   "example": "fem_needle_grasp",
   "module": "newton_solver_suturebot.examples.grasp.example_fem_needle_grasp",
-  "caption": "Close-up of the default procedure in simulation-time playback: a joint-actuated dVRK needle holder pushes a free rigid needle through both lips of the wound, lifts the tissue on it and lowers it, lets go, takes the needle again by its tip and pulls it out along its own curve, and the thread follows through the track the needle made (green and blue spheres: where the needle went into and came out of the tissue). Then it makes one stitch of that thread: the thread is tied where it first goes into the tissue (that sphere turns yellow), the tool pulls it tight by moving the needle up and back over the wound, which narrows the wound at its top from 2.85 mm to 2.18 mm, the thread is tied again where it comes out of the tissue (the second yellow sphere), and the tool moves the needle back until the thread from there to the needle is slack. The thread between the two ties then holds the wound by itself, about 2.45 mm wide at its top, and the procedure is done at 35.2 to 35.6 s; the clip ends at 37 s. The view changes twice, to a wider one while the tool goes over to the needle tip and back to a close one for the pull and the stitch; no option is set: by default the tools push the tissue where they touch it (swept tool/tissue contact, off with --no-tool-tissue-contact). Known limits: one stitch narrows the wound and holds it narrower, it does not close it; a tie holds the thread at the hole it passes through and is not a knot in the thread, the tool still holds the needle at the end and the thread is not cut; the puncture, track, thread and contact forces are illustrative and not calibrated, the tissue is not cut open (the needle's track is a constraint, not a hole) and has no contact with itself, the tool/tissue contact has no friction, the two grasps are poses found for this stitch and port layout, and playback at 60 frames/s does not measure live speed (the recording runs the self-test in whole frames, without the frame time budget of the window).",
+  "caption": "Close-up of the default procedure in simulation-time playback: a joint-actuated dVRK needle holder pushes a free rigid needle through both lips of the wound, lifts the tissue on it and lowers it, lets go, takes the needle again by its tip and pulls it out along its own curve, and the thread follows through the track the needle made (green and blue spheres: where the needle went into and came out of the tissue). The tool then carries the needle one needle length (17.5 mm) up and away from the wound, which draws as much of the loose thread through the tissue behind it. Then it makes one stitch of that thread: the thread is tied where it first goes into the tissue (that sphere turns yellow), the tool pulls it tight by moving the needle 5.1 to 5.2 mm further on along the same line, which narrows the wound at its top from 2.87 mm to about 2.29 mm, the thread is tied again where it comes out of the tissue (the second yellow sphere), and the tool moves the needle back until the thread from there to the needle is slack. The thread between the two ties then holds the wound by itself, about 2.58 mm wide at its top, and the procedure is done at 42.4 to 42.6 s; the clip ends at 44 s. The view changes three times: to a wider one while the tool goes over to the needle tip, back to a close one for the pull, and away from the wound, with the needle, while the thread is drawn through; no option is set: by default the tools push the tissue where they touch it (swept tool/tissue contact, off with --no-tool-tissue-contact). Known limits: one stitch narrows the wound and holds it narrower, it does not close it; the tightening stops where the most squeezed tissue element has three quarters of its volume left, because the tissue under the first tie gives way beyond that (measured: it collapses below 0.64); a tie holds the thread at the hole it passes through and is not a knot in the thread, the tool still holds the needle at the end and the thread is not cut; the puncture, track, thread and contact forces are illustrative and not calibrated, the tissue is not cut open (the needle's track is a constraint, not a hole) and has no contact with itself, the tool/tissue contact has no friction, the two grasps are poses found for this stitch and port layout, and playback at 60 frames/s does not measure live speed (the recording runs the self-test in whole frames, without the frame time budget of the window).",
   "arguments": [
     "--test"
   ],
   "device": "cuda:0",
-  "frames": 2220,
+  "frames": 2640,
   "fps": 60,
   "width": 960,
   "height": 540,
   "show_ui": false,
-  "recording_wall_seconds": 105.73215767700458,
+  "recording_wall_seconds": 117.14924241400149,
   "playback_is_performance_benchmark": false,
   "simulation_time": [
     {
       "attribute": "sim_time",
-      "end": 37.000000000002494
+      "end": 44.00000000000806
     }
   ],
   "dependencies": {
@@ -96,7 +96,7 @@
       "fov": 30.0
     },
     {
-      "frame": 2219,
+      "frame": 1830,
       "position": [
         -0.0045,
         -0.0418,
@@ -106,6 +106,34 @@
         0.04,
         -0.0395,
         0.0073
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 2230,
+      "position": [
+        -0.0255,
+        -0.0408,
+        0.0615
+      ],
+      "target": [
+        0.039,
+        -0.0375,
+        0.011
+      ],
+      "fov": 30.0
+    },
+    {
+      "frame": 2639,
+      "position": [
+        -0.0255,
+        -0.0408,
+        0.0615
+      ],
+      "target": [
+        0.039,
+        -0.0375,
+        0.011
       ],
       "fov": 30.0
     }
@@ -130,19 +158,19 @@
       "far": 1000.0
     },
     {
-      "frame": 2219,
+      "frame": 2639,
       "position": [
-        -0.0045,
-        -0.0418,
-        0.0421
+        -0.0255,
+        -0.0408,
+        0.0615
       ],
       "view_direction": [
-        0.7870770007799499,
-        0.040680384309975,
-        -0.6155119017335339
+        0.7867380715100286,
+        0.04025171528655966,
+        -0.6159732187791698
       ],
-      "pitch": -37.98912540188881,
-      "yaw": 2.958722146780758,
+      "pitch": -38.02267018028685,
+      "yaw": 2.92885819969311,
       "fov": 30.0,
       "near": 0.01,
       "far": 1000.0

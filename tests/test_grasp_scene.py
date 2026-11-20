@@ -18,7 +18,12 @@ from newton_solver_suturebot import NeedleStepTooLarge
 from newton_solver_suturebot._src.solvers.coupled.host_trial_prepare import _arrays
 from newton_solver_suturebot._src.solvers.mujoco.subcycled_mujoco_warp import INTEGRATION_FIELDS
 from newton_solver_suturebot._src.utils.capture import census, loaded_modules
-from newton_solver_suturebot.examples.grasp._grasp_scene import NEEDLE_GRAVITY, GraspScene, _needle_weight
+from newton_solver_suturebot.examples.grasp._grasp_scene import (
+    NEEDLE_GRAVITY,
+    STITCH_TIGHT_VOLUME_RATIO,
+    GraspScene,
+    _needle_weight,
+)
 from newton_solver_suturebot.examples.grasp.parallel import (
     LocalSutureScene,
     SutureSceneConfig,
@@ -287,11 +292,22 @@ class GraspSceneTests(unittest.TestCase):
             body, _point, _outward, along, lateral = worker.tissue._tail
             self.assertEqual((body, along), (scene.needle_body, np.float32(worker.eyelet_spacing)))
             self.assertAlmostEqual(lateral, 2.0 * scene.geometry.thickness, delta=1e-9)
+            # A thread node over a mouth of the needle's track takes no plane: the hole has the radius within
+            # which a point counts as inside the track, and the eyelet at a track's end lies less than one
+            # spacing under it.
+            radius, depth = worker.tissue._mouth
+            self.assertAlmostEqual(radius, 2.0 * scene.geometry.thickness, delta=1e-9)
+            self.assertEqual(depth, worker.eyelet_spacing)
             # The interaction's tetrahedra are the coupling's, in the same order: a track row names both.
             np.testing.assert_array_equal(scene.interaction.tetrahedra, worker.tissue._tetrahedra.numpy())
             geometry = _geometry(scene, config)
             self.assertIs(geometry["thread_tracks"], True)
             self.assertEqual(geometry["thread_element_length"], config.thread_length_m / config.thread_elements)
+            # The least tissue volume at which the stitch of this pad counts as tight: three quarters, above
+            # the 0.64 from which the tissue under the first tie collapsed on the device, and not below the
+            # rule of the thread/tissue coupling.
+            self.assertEqual(STITCH_TIGHT_VOLUME_RATIO, 0.75)
+            self.assertEqual(geometry["tight_volume_ratio"], STITCH_TIGHT_VOLUME_RATIO)
             self.assertIn("needle's actual track", scene.report()["thread_coupling"])
             scene.step()
             report = scene.observe_grasp()["thread_diagnostics"]
@@ -305,6 +321,8 @@ class GraspSceneTests(unittest.TestCase):
             self.assertEqual((worker.thread_tracks, worker.eyelet_reserve, worker.track), (False, (0, 1), None))
             self.assertEqual((worker.solver.max_eyelets, len(worker.tissue._group_size)), (0, 1))
             self.assertIsNone(worker.tissue._tail)
+            # Without tracks there is no mouth to open.
+            self.assertEqual(worker.tissue._mouth, (0.0, 0.0))
             geometry = _geometry(scene, config)
             self.assertIs(geometry["thread_tracks"], False)
             self.assertIn("no scheduled eyelets", scene.report()["thread_coupling"])
