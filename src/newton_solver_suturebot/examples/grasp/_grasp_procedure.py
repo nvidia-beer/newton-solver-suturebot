@@ -13,8 +13,9 @@ speed, the end and the bound of the pull (``_begin_pull``, ``_pull_target``, ``_
 reach margin of the joints (``_read_joints``), the rest tolerance of the needle (``_rest_tolerance``),
 the turning radius of the tool and every length of the way from the one grasp to the other
 (``_read_tool``, ``_rise``, ``_strip``, ``_transfer``, ``_plan_route``), where on the needle the jaws
-take it (``_plan_tip_grasp``), and the direction, the speed and the stop of the tightening of the tied
-thread (``_begin_tighten``, ``_tighten_target``).
+take it (``_plan_tip_grasp``), the direction, the speed and the stop of the tightening of the tied
+thread (``_begin_tighten``, ``_tighten_target``), and the stop and the bound of its slackening when it
+is tied at its exit as well (``_slacken_target``).
 
 The numbers below are not derived. They are choices, each named once; this table is the one place
 that says what chose them. "by hand" means: set once; neither this file nor docs/usage.md records a
@@ -40,8 +41,8 @@ name                                    value       what chose it
 ``SEARCH_HALVINGS``                     6           by hand: 1/64 of a search step
 ``ABOVE_SEARCH_RADII``                  2           by hand: jaws at thirty degrees or more to the tissue
 ``lift_rise_seconds``                   0.75 s      by hand: the least time of a rise (the rate limit can ask more)
-``lift_hold_seconds``                   0.5 s       by hand: hold of a lift, of the needle after the pull and of
-                                                    the tightened thread
+``lift_hold_seconds``                   0.5 s       by hand: hold of a lift, of the needle after the pull, of the
+                                                    tightened thread and of the slackened one
 ``lift_height_limit``                   10 mm       by hand: the highest lift that is accepted
 ``rate_fraction``                       0.8         by hand: a lift or pull that the gripper follows
 ``contact_force_n``                     1e-5 N      by hand: a jaw contact that counts
@@ -169,6 +170,28 @@ def ramp_speed(distance, speed, ramp_time=RAMP_SECONDS):
             high = u
     u = 0.5 * (low + high)
     return speed * u * u * (3.0 - 2.0 * u)
+
+
+def ramp_way(rate, speed, ramp_time=RAMP_SECONDS):
+    """Distance that the stop of :func:`ramp_speed` covers from the speed ``rate``: the inverse of that function.
+
+    ``speed * ramp_time * (u^3 - u^4 / 2)`` for the ``u`` at which the ramp runs at ``rate``,
+    ``speed * u^2 (3 - 2 u) = rate``: nothing from rest, ``speed * ramp_time / 2`` from ``speed`` or more.
+    """
+    part = rate / speed
+    if part >= 1.0:
+        return 0.5 * speed * ramp_time
+    if part <= 0.0:
+        return 0.0
+    low, high = 0.0, 1.0
+    for _ in range(50):
+        u = 0.5 * (low + high)
+        if u * u * (3.0 - 2.0 * u) < part:
+            low = u
+        else:
+            high = u
+    u = 0.5 * (low + high)
+    return speed * ramp_time * (u**3 - 0.5 * u**4)
 
 
 def _pose(value):
@@ -886,7 +909,7 @@ class _Scene:
     lift_offset: float = 0.0
     # Stage of the procedure: arc, lift, release, retreat, approach, descend, close, then either
     # tip_lift, done or (with the pull) pull, clear, done; with the pull through the tissue the
-    # stitch follows the clear hold: pull, clear, tie, tighten, hold, done.
+    # stitch follows the clear hold: pull, clear, tie, tighten, hold, lock, slacken, hold, done.
     stage: str = "arc"
     drive_angle: float = 0.0
     lifts_complete: int = 0
@@ -972,6 +995,28 @@ class _Scene:
     tighten_slip_rad: float = 0.0
     stitch_lost_calls: int = 0
     stitch_complete: bool = False
+    # The tie at the exit and the slackening after the tightening's hold (ProceduralGraspController._stitch_target):
+    # whether that tie has been asked for, and the thread's force on the needle as the scene last reported it [N].
+    # Then, of the slackening: the time it has run with both jaws on the needle [s], the commanded travel back
+    # along the line of the tightening [m] and the speed of its last frame [m/s], that travel and the thread's
+    # force of every frame, the commanded travel at which the stop ends that the rule has begun [m], and what
+    # the rule found when it began it: the thread's force [N] and the slope it had measured [N/m]. Whether the
+    # slackening has ended, the physical time at which it did [s], the needle pose in the tool frame at the tie
+    # at the exit, and the largest travel and turn of the needle in the jaws since [m, rad].
+    lock_asked: bool = False
+    thread_pull: float | None = None
+    slack_time: float = 0.0
+    slack_travel: float = 0.0
+    slack_rate: float = 0.0
+    slack_samples: list | None = None
+    slack_end: float | None = None
+    slack_stop_pull: float | None = None
+    slack_slope: float | None = None
+    slack_complete: bool = False
+    slack_ended_at: float | None = None
+    lock_grasp: np.ndarray | None = None
+    lock_slip_m: float = 0.0
+    lock_slip_rad: float = 0.0
 
 
 class ProceduralGraspController:
@@ -1002,7 +1047,10 @@ class ProceduralGraspController:
     (``_stitch_target``): it asks the scene to tie the thread at its first entry (:meth:`commands`;
     a stand-in for a knot), moves the needle on straight along its own chord, from the tail to
     the jaws, until the thread is as tight as the tissue allows (``_tighten_target``), and
-    holds. In a scene without thread
+    holds. Then it asks for a second tie where the thread comes out of the tissue, takes the
+    needle back along the same line until the thread to the needle is slack
+    (``_slacken_target``), and holds: the thread between the two ties stays tight without
+    the tool. In a scene without thread
     tracks the pull ends when the tail arrives at the hole of the entry, because the thread
     would be pressed back out through the surface; the tool then holds the needle there. The
     pull needs no lift before it and excludes the lift at the
@@ -1017,7 +1065,7 @@ class ProceduralGraspController:
     Calling the controller with observation dictionaries returns one float32
     seven-value action per observation: world translation, world rotation and
     jaw closure. Apply these to gripper actuator targets, never to needle state.
-    What an action cannot say, the tie of the thread, is asked for beside the
+    What an action cannot say, the ties of the thread, is asked for beside the
     actions of a call (:meth:`commands`), for the ``commands`` of the scenes' ``step``.
     ``env_id`` and ``reset_count`` keep reset and contact history independent.
     """
@@ -1135,6 +1183,22 @@ class ProceduralGraspController:
                 from ..._src.solvers.thread.tissue import TIGHT_VOLUME_RATIO
 
                 self.tight_volume = TIGHT_VOLUME_RATIO
+                # The stitch ends with the thread tied where it leaves the last planned passage and slack
+                # between there and the needle: slack is a thread that pulls the needle with less than the
+                # weight that the scene itself applies to the needle [N] (zero: the scene applies none).
+                weight = geometry.get("needle_weight_N")
+                passages = geometry["insertion_plan"].get("expected_passages")
+                if weight is None or not np.isfinite(weight) or weight < 0:
+                    raise ValueError(
+                        "The stitch after the pull through the tissue needs the weight that the scene applies to "
+                        "the needle (needle_weight_N)"
+                    )
+                if isinstance(passages, bool) or not isinstance(passages, (int, np.integer)) or passages < 1:
+                    raise ValueError(
+                        "The stitch after the pull through the tissue needs the number of planned passages "
+                        "(insertion_plan expected_passages)"
+                    )
+                self.needle_weight, self.passages = float(weight), int(passages)
             else:
                 hole = geometry.get("needle_capture_radius")
                 if hole is None or not np.isfinite(hole) or hole <= 0:
@@ -2488,17 +2552,21 @@ class ProceduralGraspController:
         return min(self.speed, self.rate_fraction * self.config.translation_step / self.config.frame_dt)
 
     def _follow_grip(self, state, item):
-        """Keep the largest travel and turn of the needle in the jaws since the tightening began [m, rad]."""
-        relative, held = _pose(item["needle_relative_pose"]), state.tighten_grasp
-        state.tighten_slip_m = max(state.tighten_slip_m, float(np.linalg.norm(relative[:3] - held[:3])))
-        similarity = np.clip(abs(np.dot(relative[3:], held[3:])), 0, 1)
-        state.tighten_slip_rad = max(state.tighten_slip_rad, float(2 * np.arccos(similarity)))
+        """Keep the largest travel and turn of the needle in the jaws [m, rad]: since the tightening began and since the lock."""
+        relative = _pose(item["needle_relative_pose"])
+        for name, held in (("tighten", state.tighten_grasp), ("lock", state.lock_grasp)):
+            if held is None:
+                continue
+            travel = float(np.linalg.norm(relative[:3] - held[:3]))
+            turn = float(2 * np.arccos(np.clip(abs(np.dot(relative[3:], held[3:])), 0, 1)))
+            setattr(state, f"{name}_slip_m", max(getattr(state, f"{name}_slip_m"), travel))
+            setattr(state, f"{name}_slip_rad", max(getattr(state, f"{name}_slip_rad"), turn))
 
     def _stitch_target(self, state, item, old_target, elapsed, index):
-        """Target of the stitch that follows the pull through the tissue: tie, tighten, hold.
+        """Target of the stitch that follows the pull through the tissue: tie, tighten, hold, lock, slacken, hold.
 
         After the pull the thread lies through both passages of the track with its far end loose
-        on the pad: pulled on, it would only slide through. Three stages follow the clear hold.
+        on the pad: pulled on, it would only slide through. Six stages follow the clear hold.
 
         ``tie``: the scene is asked, beside this call's action (:meth:`commands`), to tie the
         thread at the first eyelet of its first passage, the hole through which it goes into the
@@ -2509,12 +2577,25 @@ class ProceduralGraspController:
 
         ``tighten``: :meth:`_tighten_target`.
 
-        ``hold``: the tool holds its last target for the hold time of a lift, and the procedure is
-        done. The thread is tight only while the tool holds the needle: nothing ties it at the exit.
+        ``hold``: the tool holds its last target for the hold time of a lift. The thread is tight
+        only while the tool holds the needle: nothing ties it at the exit yet.
+
+        ``lock``: the scene is asked, in the same way, for a second tie: at the last eyelet of the
+        last planned passage, the hole through which the thread comes out of the tissue
+        (``("tie_thread", {"passage": passages - 1, "last": True})``). The observation after the
+        scene's next frame must report two ties, else the procedure stops here with what the scene
+        reports. The thread between the two ties now holds the tissue by itself.
+
+        ``slacken``: :meth:`_slacken_target`.
+
+        ``hold``, again: the tool holds its last target for the same time, and the procedure is
+        done. The tool still holds the needle; the thread to it is slack.
         """
         self._follow_tail(state, item["needle_pose"], item)
         tension = item.get("thread_tension") or {}
         state.ties = tension.get("ties")
+        pull = tension.get("needle_force_N")
+        state.thread_pull = None if pull is None else float(pull)
         volume = item["diagnostics"].get("least_volume_ratio")
         state.least_volume = None if volume is None else float(volume)
         if state.stage == "tie":
@@ -2533,11 +2614,37 @@ class ProceduralGraspController:
             return old_target
         if state.stage == "tighten":
             return self._tighten_target(state, item, old_target, elapsed)
+        if state.stage == "slacken":
+            return self._slacken_target(state, item, old_target, elapsed)
         self._follow_grip(state, item)
+        if state.stage == "lock":
+            state.status = "tying"
+            if not state.lock_asked:
+                state.lock_asked = True
+                self._asked[index] = (("tie_thread", {"passage": self.passages - 1, "last": True}),)
+            elif state.ties != 2:
+                self._stop(
+                    state,
+                    "The thread was not tied at its exit: the scene reports "
+                    f"{state.ties} ties of {tension.get('ties_asked')} asked for",
+                )
+            elif state.thread_pull is None:
+                self._stop(
+                    state, "The scene does not report the thread's pull on the needle that the slackening stops by"
+                )
+            else:
+                # The slackening begins with the next call, from where the tool holds the needle now.
+                state.lock_grasp = _pose(item["needle_relative_pose"])
+                state.slack_time = state.slack_travel = state.slack_rate = 0.0
+                state.slack_samples, state.stage = [], "slacken"
+            return old_target
         state.hold_time += elapsed
         state.status = "holding"
         if state.hold_time >= self.lift_hold_seconds - 1e-9:
-            state.stage, state.stitch_complete = "done", True
+            if state.slack_complete:
+                state.stage, state.stitch_complete = "done", True
+            else:
+                state.stage = "lock"
         return old_target
 
     def _begin_tighten(self, state, item, old_target):
@@ -2661,14 +2768,89 @@ class ProceduralGraspController:
         target[:3] += state.tighten_travel * direction
         return target
 
+    def _slacken_target(self, state, item, old_target, elapsed):
+        """Target of the slackening: the tool takes the needle back until the thread to it is slack.
+
+        The thread is tied at both ends of its way through the tissue. The commanded travel back
+        ``b`` runs along the line of the tightening (:meth:`_begin_tighten`), towards where the
+        tightening began, at its speed rule (:attr:`tighten_speed`, :func:`ramp_distance`), and
+        comes to rest by the same ramp run backwards (:func:`ramp_speed`). It ends at the latest
+        where the tightening began (``b`` equal to the travel of the tightening): the tool has
+        come along that line, so it is not asked for reach again.
+
+        The thread is slack when its force on the needle (``needle_force_N`` of the observation's
+        ``thread_tension``, ``F``) is below the weight that the scene applies to the needle
+        (``needle_weight_N`` of the geometry): the stop ramp begins in the first frame in which
+        it is, from the speed that the command then has (:func:`ramp_way`). A stop takes its
+        way, ``v T / 2`` = 0.75 mm from the full speed, and the thread that the needle then
+        moves into pushes back: measured on this scene's tissue, the force on the needle falls
+        to a least value and rises again beyond it, above the weight in the end, and the pushed
+        thread loads the tied eyelet (docs/usage.md, the lock and the slackening). The command
+        therefore comes to that frame slowly. With ``k`` the slope of ``F`` over the last
+        ``v T / 2`` of ``b`` that this slackening has measured itself (taken only over at least
+        the travel of one frame at full speed, and only while ``F`` falls), the thread is
+        predicted to carry nothing at
+
+            b_slack = b + F / (-k),
+
+        and until the stop begins the command goes no faster than the stop ramp allows for the
+        travel left to ``b_slack`` (:func:`ramp_speed`). The stop that begins where ``F`` falls
+        below the weight then ends there, within the travel of a frame. Without a slope the
+        command is not slowed, and the stop takes the way of the speed that it has.
+
+        When the command is at rest the tool holds (stage ``hold``); the report has the travel
+        back and what the rule found. A slackening that reaches its bound without the thread
+        having gone slack also ends there: the report then has no force at which the stop began.
+        """
+        state.status = "slackening"
+        self._follow_grip(state, item)
+        speed, pull, bound = self.tighten_speed, state.thread_pull, state.tighten_travel
+        slope = slack = None
+        if pull is not None:
+            state.slack_samples.append((state.slack_travel, pull))
+            window = 0.5 * speed * RAMP_SECONDS
+            first = next(sample for sample in state.slack_samples if sample[0] >= state.slack_travel - window)
+            if state.slack_travel - first[0] >= speed * self.config.frame_dt:
+                slope = (pull - first[1]) / (state.slack_travel - first[0])
+                if slope < 0.0:
+                    slack = pull / -slope
+        if state.slack_end is None and pull is not None and pull < self.needle_weight:
+            # The stop ramp begins, from the speed that the command has.
+            state.slack_end = min(state.slack_travel + ramp_way(state.slack_rate, speed), bound)
+            state.slack_stop_pull, state.slack_slope = pull, slope
+        left = (bound if state.slack_end is None else state.slack_end) - state.slack_travel
+        if left <= 0.0:
+            state.stage, state.hold_time, state.status = "hold", 0.0, "holding"
+            state.slack_complete = True
+            state.slack_ended_at = float(item["diagnostics"]["physical_time_s"])
+            return old_target
+        # The travel of this frame: what the ramp of the insertion adds, no more than the speed of the
+        # same ramp towards its stop allows with the travel that is left (to the end of a stop that has
+        # begun, else to the bound and to where the thread is predicted slack), and no more than is left.
+        limit = ramp_speed(left, speed)
+        if state.slack_end is None and slack is not None:
+            limit = min(limit, ramp_speed(slack, speed))
+        started = float(ramp_distance(state.slack_time, speed))
+        state.slack_time += elapsed
+        added = float(ramp_distance(state.slack_time, speed)) - started
+        step = min(added, limit * elapsed, left)
+        state.slack_travel += step
+        if elapsed > 0.0:
+            state.slack_rate = step / elapsed
+        target = state.tighten_origin.copy()
+        target[:3] += (state.tighten_travel - state.slack_travel) * state.tighten_direction
+        return target
+
     def commands(self):
         """What the last call asks of the scenes beside its actions: the ``commands`` of their ``step``.
 
         Returns:
-            None when the last call asks no scene for anything, which is every call but the one
-            that asks for the tie. Else one entry per observation of that call, in its order:
+            None when the last call asks no scene for anything, which is every call but the two
+            that ask for a tie. Else one entry per observation of that call, in its order:
             None, or a tuple of ``(name, arguments)`` pairs for the scene's ``command`` method
-            (``("tie_thread", {})``: tie the thread at its first entry).
+            (``("tie_thread", {})``: tie the thread at its first entry;
+            ``("tie_thread", {"passage": n - 1, "last": True})``: at its exit from the last of
+            ``n`` planned passages).
         """
         return list(self._asked) if any(asked is not None for asked in self._asked) else None
 
@@ -2758,7 +2940,7 @@ class ProceduralGraspController:
             similarity = np.clip(abs(np.dot(relative[3:], state.grasp[3:])), 0, 1)
             state.relative_rotation_rad = float(2 * np.arccos(similarity))
             if not contact:
-                if state.stage in ("tie", "tighten", "hold"):
+                if state.stage in ("tie", "tighten", "hold", "lock", "slacken"):
                     state.stitch_lost_calls += 1
                 if state.lost_since is None:
                     state.lost_since = now
@@ -2798,14 +2980,19 @@ class ProceduralGraspController:
                         state.stage = "done"
             elif state.stage in ("pull", "clear"):
                 target = self._pull_target(state, item, old_target, contact_elapsed)
-            elif state.stage in ("tie", "tighten", "hold"):
+            elif state.stage in ("tie", "tighten", "hold", "lock", "slacken"):
                 target = self._stitch_target(state, item, old_target, contact_elapsed, index)
             else:
                 state.status = "holding"
                 target = old_target
                 if state.pull_complete:
-                    # The procedure is done and the tool holds the needle: the report follows the tail.
+                    # The procedure is done and the tool holds the needle: the report follows the tail,
+                    # and after a stitch the thread's force on the needle and the needle in the jaws.
                     self._follow_tail(state, item["needle_pose"], item)
+                if state.stitch_complete:
+                    pull = (item.get("thread_tension") or {}).get("needle_force_N")
+                    state.thread_pull = None if pull is None else float(pull)
+                    self._follow_grip(state, item)
             actions[index, :6] = action_to(old_target, target, self.config)
             actions[index, 6] = self._closing(jaw_target)
         return actions
@@ -2858,7 +3045,8 @@ class ProceduralGraspController:
                 # palm had left to rest [m] (all None until then; a tightening that ends at its bound
                 # stops the procedure). The largest travel and turn of the needle in the jaws since the
                 # tightening began [m, rad], the calls since the tie without both jaws on the needle, and
-                # whether the stitch has ended as it should: tied, tightened by its rule and held.
+                # whether the stitch has ended as it should: tied, tightened by its rule, held, tied at
+                # its exit, slackened and held.
                 "ties": state.ties,
                 "tighten_start_volume": state.tighten_start_volume,
                 "least_volume_ratio": state.least_volume,
@@ -2872,6 +3060,22 @@ class ProceduralGraspController:
                 "tighten_slip_rad": state.tighten_slip_rad,
                 "stitch_calls_without_grasp": state.stitch_lost_calls,
                 "stitch_complete": state.stitch_complete,
+                # The slackening after the tie at the exit: the commanded travel back along the line of
+                # the tightening [m] (it is bounded by the travel of the tightening), the weight of the
+                # needle below which the thread's force on it ends the slackening [N], the force [N] and
+                # the slope [N/m] that the rule found when it began the stop (None until then, and for a
+                # slackening that ended at its bound; no slope where none was measured), the physical
+                # time at which the slackening ended [s], the thread's force on the needle as last seen
+                # [N], and the largest travel and turn of the needle in the jaws since the tie at the
+                # exit [m, rad].
+                "slacken_travel_m": state.slack_travel,
+                "needle_weight_N": self.needle_weight if self.thread_tracks else None,
+                "slacken_stop_force_N": state.slack_stop_pull,
+                "slacken_slope_N_per_m": state.slack_slope,
+                "slacken_end_time_s": state.slack_ended_at,
+                "thread_needle_force_N": state.thread_pull,
+                "lock_slip_m": state.lock_slip_m,
+                "lock_slip_rad": state.lock_slip_rad,
             }
             for env_id, state in sorted(self.scenes.items())
         ]

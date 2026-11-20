@@ -18,7 +18,7 @@ from newton_solver_suturebot import NeedleStepTooLarge
 from newton_solver_suturebot._src.solvers.coupled.host_trial_prepare import _arrays
 from newton_solver_suturebot._src.solvers.mujoco.subcycled_mujoco_warp import INTEGRATION_FIELDS
 from newton_solver_suturebot._src.utils.capture import census, loaded_modules
-from newton_solver_suturebot.examples.grasp._grasp_scene import GraspScene
+from newton_solver_suturebot.examples.grasp._grasp_scene import NEEDLE_GRAVITY, GraspScene, _needle_weight
 from newton_solver_suturebot.examples.grasp.parallel import (
     LocalSutureScene,
     SutureSceneConfig,
@@ -310,6 +310,46 @@ class GraspSceneTests(unittest.TestCase):
             self.assertIn("no scheduled eyelets", scene.report()["thread_coupling"])
             scene.step()
             self.assertEqual(scene.observe_grasp()["thread_diagnostics"]["eyelets"], 0)
+
+    def test_the_scene_publishes_the_weight_that_its_steps_apply_to_the_needle(self):
+        """Fails if needle_weight_N is not the force of the step's kernel, needs a read, or stays for a scene without it."""
+        from dataclasses import replace
+
+        with _scene() as (scene, config):
+            mass = float(scene.model.body_mass.numpy()[scene.needle_body])
+            self.assertGreater(mass, 0.0)
+            # The mass was taken to the host at construction.
+            self.assertEqual(scene.needle_mass_kg, mass)
+            # What the kernel of every step adds to the needle, on a force array of this test.
+            force = wp.zeros(scene.model.body_count, dtype=wp.spatial_vector, device=scene.device)
+            wp.launch(_needle_weight, 1, [scene.needle_body, scene.model.body_mass, force], device=scene.device)
+            applied = force.numpy()
+            self.assertEqual(np.count_nonzero(applied), 1)
+            reads = []
+            original = wp.array.numpy
+
+            def read(array):
+                reads.append(array is scene.model.body_mass)
+                return original(array)
+
+            with patch.object(wp.array, "numpy", new=read):
+                geometry = _geometry(scene, config)
+            # The geometry is assembled without a read of the masses.
+            self.assertGreater(len(reads), 0)
+            self.assertEqual(sum(reads), 0)
+            weight = geometry["needle_weight_N"]
+            self.assertEqual(weight, NEEDLE_GRAVITY * mass)
+            # The kernel works in single precision: the same force to its rounding, straight down.
+            self.assertAlmostEqual(
+                weight, -float(applied[scene.needle_body][2]), delta=4 * np.finfo(np.float32).eps * weight
+            )
+            # The needle of the dVRK scene: 0.3 g, 2.9 mN.
+            self.assertAlmostEqual(weight, 2.94e-3, delta=0.05e-3)
+            self.assertTrue(scene._weighs_needle())
+            # A scene that carries the needle's weight as it carries that of the tool links applies none.
+            scene.worker_config = replace(config, needle_weight=False)
+            self.assertFalse(scene._weighs_needle())
+            self.assertEqual(scene.grasp_geometry()["needle_weight_N"], 0.0)
 
     def test_incremental_actions_do_not_reposition_independent_needle_or_thread(self):
         with _scene() as (scene, config):

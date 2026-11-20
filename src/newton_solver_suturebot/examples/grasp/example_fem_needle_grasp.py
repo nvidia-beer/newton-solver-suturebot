@@ -8,9 +8,11 @@ show the tissue deformation, lets go, takes the needle by its tip and pulls it
 on along its own curve until it is out of the tissue; the thread on its tail
 follows it through the track it has cut. Then the thread is tied at its entry
 (a stand-in for a knot), and the tool moves the needle on until the thread is
-as tight as the tissue allows, and holds: the wound narrows at its top. No
-trained policy or Isaac Lab is used. One scene runs in this process; several
-scenes each run in a worker process.
+as tight as the tissue allows, and holds: the wound narrows at its top. The
+thread is then tied where it comes out of the tissue as well, and the tool
+takes the needle back until the thread to it is slack: the stitch keeps a part
+of that narrowing by itself. No trained policy or Isaac Lab is used. One scene
+runs in this process; several scenes each run in a worker process.
 
 By default the tools push the tissue where they touch it (the swept tool/tissue
 contact, --tool-tissue-contact), and with one scene in the window a step plans
@@ -148,12 +150,13 @@ def thread_line(thread):
 
 
 def stitch_line(item):
-    """The panel line of one scene's stitch: the wound's width, whether the thread is tied, and its pull.
+    """The panel line of one scene's stitch: the wound's width, where the thread is tied, and its pull.
 
     The width of every gap that the planned needle path crosses, at the top and at the track,
-    with the widths of the reference shape (``wound_widths`` of the observation); whether the
-    thread is tied to the tissue; the thread's force on the needle and its largest force on an
-    eyelet (``thread_tension``). None for a scene without such a gap or without a thread.
+    with the widths of the reference shape (``wound_widths`` of the observation); where the
+    thread is tied to the tissue: nowhere, at its entry (one tie), or at its entry and at its
+    exit (two); the thread's force on the needle and its largest force on an eyelet
+    (``thread_tension``). None for a scene without such a gap or without a thread.
     """
     wound, tension = item.get("wound_widths"), item.get("thread_tension")
     if not wound or not tension:
@@ -163,7 +166,7 @@ def stitch_line(item):
         f"{1.0e3 * gap['track_m']:.2f} mm at the track ({1.0e3 * gap['rest_track_m']:.2f})"
         for gap in wound
     )
-    tied = "tied at its entry" if tension["ties"] else "not tied"
+    tied = ("not tied", "tied at its entry", "tied at its entry and at its exit")[min(int(tension["ties"]), 2)]
     pull = (
         f"pulls the needle with {1.0e3 * tension['needle_force_N']:.1f} mN, "
         f"an eyelet with {1.0e3 * tension['eyelet_force_N']:.1f} mN at most"
@@ -178,7 +181,8 @@ class Example:
     # Radius of the entry and exit markers [m]: twice the needle wire radius of the dVRK scene.
     marker_radius = 0.0006
     marker_colors = {"entry": (0.1, 0.8, 0.2), "exit": (0.15, 0.35, 0.95)}
-    # Colour of the first entry marker of a scene while its thread is tied there (a stand-in for a knot).
+    # Colour of a marker of a scene while its thread is tied there (a stand-in for a knot): the first entry
+    # marker with one tie, and the last exit marker as well with two.
     tie_color = (1.0, 0.8, 0.1)
     # Markers one scene can show at a time, per passage of the planned arc through the tissue:
     # the entry and the exit of the passage, four times over for crossings that the plan does not
@@ -204,6 +208,8 @@ class Example:
     _draw_seconds = 0.0
     _draw_longest = 0.0
     _frame_start = None
+    # Per scene, what the stitch left where the controller passed (_follow_stitch): None before a tightening.
+    _stitch_record = None
 
     def __init__(self, viewer, args):
         self.viewer, self.args = viewer, args
@@ -496,11 +502,13 @@ class Example:
             world_nodes=self.model.particle_count // self.args.num_envs,
         )
         # Events of every scene that the markers have been asked about (render()), the markers attached
-        # for them, which of those is the first entry, and whether it shows a tie.
+        # for them, which of those are the first entry and the last exit, and whether each shows a tie.
         self._events_drawn = [0] * self.args.num_envs
         self._markers_attached = [0] * self.args.num_envs
         self._entry_marker = [None] * self.args.num_envs
+        self._exit_marker = [None] * self.args.num_envs
         self._tie_shown = [False] * self.args.num_envs
+        self._lock_shown = [False] * self.args.num_envs
         if hasattr(self.viewer, "camera"):
             if self.args.overview:
                 points = framing_points(self.render_scene, self.geometry, self.observations, world_offsets)
@@ -613,6 +621,7 @@ class Example:
                         flush=True,
                     )
                     self.last_phases = phases
+                self._follow_stitch(progress)
                 if any(item["phase"] == "stopped" for item in progress):
                     self._halt(f"Procedural insertion stopped: {progress}")
                     return
@@ -650,6 +659,38 @@ class Example:
         else:
             self.completed += 1
 
+    def _follow_stitch(self, progress):
+        """Keep, per scene, the wound's widths and the least tissue volume at two calls of the controller.
+
+        ``slack``: the first call of the stage ``tighten``, with the thread tied at its entry and
+        the tool not yet moved. ``tight``: the first call of the stage ``lock``, which ends the
+        hold of the tightened thread. Each is ``(top, track)`` [m] of every gap of
+        ``wound_widths`` and the ``least_volume_ratio`` of the observation that the controller
+        acted on: host values that the observation has anyway. The closure that the stitch
+        keeps is measured against them (:meth:`_check_stitched`). A scene that was reset starts
+        again without a record.
+
+        Args:
+            progress: The controller's report of this call, one entry per scene.
+        """
+        if self._stitch_record is None:
+            self._stitch_record = [None] * len(self.observations)
+        for index, (item, observation) in enumerate(zip(progress, self.observations, strict=True)):
+            record, reset = self._stitch_record[index], observation.get("reset_count")
+            if record is not None and record["reset_count"] != reset:
+                record = self._stitch_record[index] = None
+            name = {"tighten": "slack", "lock": "tight"}.get(item.get("stage"))
+            wound = observation.get("wound_widths")
+            if name is None or not wound:
+                continue
+            if record is None:
+                record = self._stitch_record[index] = {"reset_count": reset}
+            if name not in record:
+                record[name] = {
+                    "widths": [(gap["top_m"], gap["track_m"]) for gap in wound],
+                    "least_volume_ratio": observation["diagnostics"].get("least_volume_ratio"),
+                }
+
     def render(self):
         started = time.perf_counter()
         # After a failure the scene keeps the last state that was drawn.
@@ -671,6 +712,7 @@ class Example:
                     self.markers.clear(world)
                     self._events_drawn[world] = self._markers_attached[world] = 0
                     self._entry_marker[world], self._tie_shown[world] = None, False
+                    self._exit_marker[world], self._lock_shown[world] = None, False
                 for event in events[self._events_drawn[world] :]:
                     if event["kind"] in self.marker_colors:
                         self.markers.attach_point(
@@ -681,14 +723,27 @@ class Example:
                         )
                         if event["kind"] == "entry" and self._entry_marker[world] is None:
                             self._entry_marker[world] = self._markers_attached[world]
+                        if event["kind"] == "exit":
+                            # The newest exit is where the thread leaves the tissue: an older one that showed
+                            # the second tie is an exit marker again.
+                            if self._lock_shown[world]:
+                                self.markers.recolor(world, self._exit_marker[world], self.marker_colors["exit"])
+                            self._exit_marker[world], self._lock_shown[world] = self._markers_attached[world], False
                         self._markers_attached[world] += 1
                 self._events_drawn[world] = len(events)
-                # The first entry marker shows the tie of the thread: the thread is tied where it goes in.
-                tied = bool((item.get("thread_tension") or {}).get("ties"))
+                # The first entry marker shows the first tie of the thread, which is tied where it goes in;
+                # the last exit marker shows the second, which is tied where it comes out.
+                ties = int((item.get("thread_tension") or {}).get("ties") or 0)
+                tied = ties >= 1
                 if tied != self._tie_shown[world] and self._entry_marker[world] is not None:
                     color = self.tie_color if tied else self.marker_colors["entry"]
                     if self.markers.recolor(world, self._entry_marker[world], color):
                         self._tie_shown[world] = tied
+                locked = ties >= 2
+                if locked != self._lock_shown[world] and self._exit_marker[world] is not None:
+                    color = self.tie_color if locked else self.marker_colors["exit"]
+                    if self.markers.recolor(world, self._exit_marker[world], color):
+                        self._lock_shown[world] = locked
             self.markers.draw(self.state_0.particle_q)
         self.viewer.end_frame()
         self._draw_seconds = time.perf_counter() - started
@@ -848,66 +903,135 @@ class Example:
             if not thread["thread_inside_tissue_m"] > 0.0:
                 raise AssertionError("No thread is inside the tissue after the pull")
 
+    # Time that the stitch must have held the wound without the tool's pull when the self-test ends [s].
+    stitch_rest_seconds = 1.0
+
     def _check_stitched(self, observations):
-        """Fail unless the thread is tied at its entry and was tightened by its rule; returns the numbers of the stitch.
+        """Fail unless the stitch was made and holds by itself; returns the numbers of the stitch.
 
         For a procedure that is done, in a scene whose thread follows the needle's track. Per scene:
 
-        - one tie was asked for and one holds, in the scene's thread report and in the controller's;
+        - two ties were asked for and two hold, in the scene's thread report and in the controller's;
         - the tightening ended by its rule (the controller's report has what the rule predicted;
           a tightening that ends at its travel bound stops the procedure), inside the travel
-          bound, and the least tissue volume is now within the fall that the rule predicted for
-          its way to rest (slope times way) of the rule's value;
-        - both jaws were on the needle in every call from the tie on;
-        - the wound is narrower at its top than in the reference shape.
+          bound, and the least tissue volume at the end of its hold (:meth:`_follow_stitch`) was
+          within the fall that the rule predicted for its way to rest (slope times way) of the
+          rule's value;
+        - the slackening ended by its rule, the thread's force on the needle below the weight that
+          the scene applies to the needle (``needle_weight_N`` of the geometry), within the
+          travel of the tightening, and that force is below the weight now;
+        - both jaws were on the needle in every call from the first tie on;
+        - the slackening ended at least :attr:`stitch_rest_seconds` ago, and the wound is narrower
+          at its top and at its track than in the reference shape and than it was when the
+          tightening began: the stitch keeps a closure without the tool's pull.
 
         Returns:
-            Per scene, in lists: the tool's travel, the least tissue volume, the thread's force on
-            the needle and its largest force on an eyelet, and the wound's widths, for the line
-            of :meth:`test_final`.
+            Per scene, in lists, for the line of :meth:`test_final`: the tool's travel of the
+            tightening and back; the least tissue volume now and at the end of the tightening's
+            hold; the thread's force on the needle and its largest force on an eyelet; the weight
+            of the needle; the wound's widths; per gap the closure that the stitch keeps (the
+            width when the tightening began less the width now) and its share of the closure at
+            the end of the tightening's hold, at the top and at the track; the time since the
+            slackening ended; and the largest travel and turn of the needle in the jaws since the
+            tie at the exit.
         """
         numbers = {
             name: []
             for name in (
                 "tighten_travel_mm",
+                "slacken_travel_mm",
                 "least_volume_ratio",
+                "least_volume_ratio_tight",
                 "thread_needle_force_mN",
                 "thread_eyelet_force_mN",
+                "needle_weight_mN",
                 "wound_top_mm",
                 "wound_track_mm",
+                "wound_top_kept_mm",
+                "wound_top_kept_share",
+                "wound_track_kept_mm",
+                "wound_track_kept_share",
+                "stitch_rest_s",
+                "lock_slip_mm",
+                "lock_slip_mrad",
             )
         }
-        for item, observation in zip(self.controller.report(), observations, strict=True):
+        weight = self.geometry["needle_weight_N"]
+        records = self._stitch_record or [None] * len(observations)
+        for item, observation, record in zip(self.controller.report(), observations, records, strict=True):
             thread, tension = observation["thread_diagnostics"], observation["thread_tension"]
-            if not item["stitch_complete"] or (thread["ties"], thread["ties_asked"], tension["ties"]) != (1, 1, 1):
+            if not item["stitch_complete"] or (thread["ties"], thread["ties_asked"], tension["ties"]) != (2, 2, 2):
                 raise AssertionError(
-                    f"The thread is not tied at its entry by one tie: {thread['ties']} ties of {thread['ties_asked']} "
-                    f"asked for; the stitch of the procedure: {item}"
+                    f"The thread is not tied at its entry and at its exit by two ties: {thread['ties']} ties of "
+                    f"{thread['ties_asked']} asked for; the stitch of the procedure: {item}"
                 )
+            if record is None or "slack" not in record or "tight" not in record:
+                raise AssertionError(f"The example did not see the tightening begin and its hold end: {record}")
             slope, way = item["tighten_slope_per_m"], item["tighten_way_to_rest_m"]
             travel, bound = item["tighten_travel_m"], item["tighten_travel_bound_m"]
             if item["tighten_predicted_volume"] is None or slope is None or not 0.0 < travel <= bound:
                 raise AssertionError(f"The tightening did not end by its rule inside its travel bound: {item}")
-            volume, rule = observation["diagnostics"]["least_volume_ratio"], item["tighten_stop_volume"]
-            if not abs(volume - rule) <= -slope * way:
+            tight, rule = record["tight"]["least_volume_ratio"], item["tighten_stop_volume"]
+            if tight is None or not abs(tight - rule) <= -slope * way:
                 raise AssertionError(
-                    f"The least tissue volume {volume} is not within {-slope * way} of the rule's {rule}, "
-                    f"the fall that the rule predicted for its way to rest: {item}"
+                    f"The least tissue volume {tight} at the end of the tightening's hold is not within "
+                    f"{-slope * way} of the rule's {rule}, the fall that the rule predicted for its way to rest: {item}"
+                )
+            back, pull = item["slacken_travel_m"], tension["needle_force_N"]
+            if item["slacken_stop_force_N"] is None or not 0.0 <= back <= travel:
+                raise AssertionError(
+                    f"The slackening did not end by its rule within the travel of the tightening: the thread's "
+                    f"force on the needle did not fall below the needle's weight of {weight} N: {item}"
+                )
+            if not pull < weight:
+                raise AssertionError(
+                    f"The thread pulls the needle with {pull} N, not with less than the needle's weight of "
+                    f"{weight} N: it is not slack: {item}"
                 )
             if item["stitch_calls_without_grasp"]:
-                raise AssertionError(f"A jaw was off the needle while the thread was tied and tightened: {item}")
+                raise AssertionError(f"A jaw was off the needle while the stitch was made: {item}")
+            rested = self.sim_time - item["slacken_end_time_s"]
+            if not rested >= self.stitch_rest_seconds - 1e-9:
+                raise AssertionError(
+                    f"The run ended {rested} s after the slackening: the stitch must have held for "
+                    f"{self.stitch_rest_seconds} s without the tool's pull"
+                )
             wound = observation["wound_widths"]
-            if not wound or not all(gap["top_m"] < gap["rest_top_m"] for gap in wound):
-                raise AssertionError(f"The wound is not narrower at its top than in the reference shape: {wound}")
+            slack, held = record["slack"]["widths"], record["tight"]["widths"]
+            if not wound or len(wound) != len(slack):
+                raise AssertionError(f"The wound's widths are not those of the gaps that were tightened: {wound}")
+            kept = [
+                (before[0] - gap["top_m"], before[1] - gap["track_m"]) for gap, before in zip(wound, slack, strict=True)
+            ]
+            closed = [(before[0] - then[0], before[1] - then[1]) for before, then in zip(slack, held, strict=True)]
+            narrower = all(
+                gap["top_m"] < gap["rest_top_m"] and gap["track_m"] < gap["rest_track_m"] and min(left) > 0.0
+                for gap, left in zip(wound, kept, strict=True)
+            )
+            if not narrower:
+                raise AssertionError(
+                    "The stitch does not hold the wound narrower without the tool's pull, at its top and at its "
+                    f"track, than in the reference shape and than when the tightening began {slack}: {wound}"
+                )
             for name, value in zip(
                 numbers,
                 (
                     1.0e3 * travel,
-                    volume,
-                    1.0e3 * tension["needle_force_N"],
+                    1.0e3 * back,
+                    observation["diagnostics"]["least_volume_ratio"],
+                    tight,
+                    1.0e3 * pull,
                     1.0e3 * tension["eyelet_force_N"],
+                    1.0e3 * weight,
                     [1.0e3 * gap["top_m"] for gap in wound],
                     [1.0e3 * gap["track_m"] for gap in wound],
+                    [1.0e3 * left[0] for left in kept],
+                    [left[0] / whole[0] if whole[0] > 0.0 else None for left, whole in zip(kept, closed, strict=True)],
+                    [1.0e3 * left[1] for left in kept],
+                    [left[1] / whole[1] if whole[1] > 0.0 else None for left, whole in zip(kept, closed, strict=True)],
+                    rested,
+                    1.0e3 * item["lock_slip_m"],
+                    1.0e3 * item["lock_slip_rad"],
                 ),
                 strict=True,
             ):
@@ -955,7 +1079,7 @@ class Example:
             default=True,
             help="After the lift the tool lets go, takes the needle by its tip and pulls it on along its own "
             "curve until it is out of the tissue; the thread follows it through the track, is then tied at its "
-            "entry and tightened until the tissue allows no more. "
+            "entry and tightened until the tissue allows no more, tied at its exit as well, and let go slack. "
             "--no-pull-through takes the tip with the earlier grasp and lifts by it instead (--tip-lift-height). "
             "With --lift-height 0 the example is the insertion alone.",
         )

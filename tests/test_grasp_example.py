@@ -39,7 +39,9 @@ def _small_view(example, offsets):
     example._events_drawn = [0] * len(offsets)
     example._markers_attached = [0] * len(offsets)
     example._entry_marker = [None] * len(offsets)
+    example._exit_marker = [None] * len(offsets)
     example._tie_shown = [False] * len(offsets)
+    example._lock_shown = [False] * len(offsets)
 
 
 class _PoolResource:
@@ -996,8 +998,8 @@ class GraspExampleLifecycleTests(unittest.TestCase):
             "eyelets_threaded": 8,
             "eyelets_refused": 0,
             "thread_inside_tissue_m": 0.009,
-            "ties": 1,
-            "ties_asked": 1,
+            "ties": 2,
+            "ties_asked": 2,
         }
 
         def example_with(report=None, thread=None, engaged=0.0, tracks=True, **options):
@@ -1009,6 +1011,7 @@ class GraspExampleLifecycleTests(unittest.TestCase):
             example.observations[0]["thread_diagnostics"] = threaded | (thread or {})
             example.observations[0]["diagnostics"]["engaged_track_length_m"] = engaged
             self.stitched_scene(example.observations[0])
+            self.stitched_example(example)
             return example
 
         with contextlib.redirect_stdout(io.StringIO()):
@@ -1058,10 +1061,12 @@ class GraspExampleLifecycleTests(unittest.TestCase):
             ).test_final()
 
     # What the controller reports of a stitch that ended as it should (ProceduralGraspController.report), with
-    # the numbers of the first device run: the rule began the stop 0.94 mm before rest with a slope of
-    # -126 per metre, so the least volume may end within 0.118 of the rule's 0.5.
+    # the numbers of the first device run of the tightening: the rule began the stop 0.94 mm before rest with
+    # a slope of -126 per metre, so the least volume may end within 0.118 of the rule's 0.5. Then the thread
+    # was tied at its exit, and the tool took the needle 2.2 mm back: the stop began with 2.7 mN on the needle,
+    # below its weight of 2.94 mN, at 34.9 s.
     STITCHED = {
-        "ties": 1,
+        "ties": 2,
         "tighten_travel_m": 0.0056,
         "tighten_travel_bound_m": 0.00675,
         "tighten_stop_volume": 0.5,
@@ -1070,16 +1075,24 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         "tighten_way_to_rest_m": 0.00094,
         "stitch_calls_without_grasp": 0,
         "stitch_complete": True,
+        "slacken_travel_m": 0.0022,
+        "needle_weight_N": 0.00294,
+        "slacken_stop_force_N": 0.0027,
+        "slacken_slope_N_per_m": -9.5,
+        "slacken_end_time_s": 34.9,
+        "thread_needle_force_N": 0.0008,
+        "lock_slip_m": 0.00004,
+        "lock_slip_rad": 0.005,
     }
 
     @staticmethod
     def stitched_scene(observation, **changes):
-        """Give an observation what a scene reports of a tied and tightened thread."""
-        observation["thread_tension"] = {"ties": 1, "ties_asked": 1, "eyelet_force_N": 0.0181, "needle_force_N": 0.0258}
+        """Give an observation what a scene reports of a thread that is tied twice and slack to the needle."""
+        observation["thread_tension"] = {"ties": 2, "ties_asked": 2, "eyelet_force_N": 0.0142, "needle_force_N": 0.0008}
         observation["wound_widths"] = [
-            {"track_m": 0.00143, "top_m": 0.00218, "rest_track_m": 0.00175, "rest_top_m": 0.00288}
+            {"track_m": 0.00152, "top_m": 0.00248, "rest_track_m": 0.00175, "rest_top_m": 0.00288}
         ]
-        observation["diagnostics"]["least_volume_ratio"] = 0.553
+        observation["diagnostics"]["least_volume_ratio"] = 0.61
         for name, value in changes.items():
             target = observation["diagnostics"] if name == "least_volume_ratio" else observation
             if isinstance(value, dict) and isinstance(target.get(name), dict):
@@ -1087,8 +1100,26 @@ class GraspExampleLifecycleTests(unittest.TestCase):
             else:
                 target[name] = value
 
-    def test_with_thread_tracks_the_self_test_asks_for_the_tie_and_the_stop_by_its_rule(self):
-        """Fails if the self-test passes a procedure that did not tie, did not stop by its rule or let the needle go."""
+    @staticmethod
+    def stitched_example(example, **record):
+        """Give an example what it keeps of a stitch and what it reads of the scene: the run ends at 36.5 s.
+
+        The wound was 2.85 mm wide at its top and 1.73 mm at its track when the tightening began and 2.18
+        and 1.43 mm when its hold ended, with the least tissue volume at 0.553 (the first device run).
+        """
+        example.geometry["needle_weight_N"] = 0.00294
+        example.sim_time = 36.5
+        example._stitch_record = [
+            {
+                "reset_count": 0,
+                "slack": {"widths": [(0.00285, 0.00173)], "least_volume_ratio": 0.884},
+                "tight": {"widths": [(0.00218, 0.00143)], "least_volume_ratio": 0.553},
+            }
+            | record
+        ]
+
+    def test_with_thread_tracks_the_self_test_asks_for_the_two_ties_the_stops_by_their_rules_and_a_kept_closure(self):
+        """Fails if the self-test passes a stitch that is not tied twice, not stopped by its rules, or holds nothing."""
         done = {
             "commanded_arc_complete": True,
             "entry_count": 2,
@@ -1104,11 +1135,11 @@ class GraspExampleLifecycleTests(unittest.TestCase):
             "eyelets_threaded": 8,
             "eyelets_refused": 0,
             "thread_inside_tissue_m": 0.0066,
-            "ties": 1,
-            "ties_asked": 1,
+            "ties": 2,
+            "ties_asked": 2,
         }
 
-        def example_with(report=None, thread=None, tracks=True, **scene):
+        def example_with(report=None, thread=None, tracks=True, record=None, time=None, **scene):
             example = self.final_state(lift_height=0.01, pull_through=True)
             example.geometry["insertion_plan"] = {"expected_passages": 2}
             if tracks:
@@ -1117,36 +1148,62 @@ class GraspExampleLifecycleTests(unittest.TestCase):
             example.observations[0]["thread_diagnostics"] = threaded | (thread or {})
             example.observations[0]["diagnostics"]["engaged_track_length_m"] = 0.0
             self.stitched_scene(example.observations[0], **scene)
+            self.stitched_example(example, **(record or {}))
+            if time is not None:
+                example.sim_time = time
             return example
 
         # The line of the self-test has the numbers of the stitch, per scene.
         _printed, line = self.run_final(example_with())
-        stitch = {name: line[name] for name in line if name.startswith(("tighten", "least", "thread", "wound"))}
+        first = list(line).index("tighten_travel_mm")
+        stitch = {name: line[name] for name in list(line)[first:]}
         expected = {
             "tighten_travel_mm": [5.6],
-            "least_volume_ratio": [0.553],
-            "thread_needle_force_mN": [25.8],
-            "thread_eyelet_force_mN": [18.1],
-            "wound_top_mm": [[2.18]],
-            "wound_track_mm": [[1.43]],
+            "slacken_travel_mm": [2.2],
+            "least_volume_ratio": [0.61],
+            "least_volume_ratio_tight": [0.553],
+            "thread_needle_force_mN": [0.8],
+            "thread_eyelet_force_mN": [14.2],
+            "needle_weight_mN": [2.94],
+            "wound_top_mm": [[2.48]],
+            "wound_track_mm": [[1.52]],
+            # Kept: 2.85 - 2.48 mm of the 2.85 - 2.18 mm that the tightening closed at the top, and
+            # 1.73 - 1.52 of 1.73 - 1.43 mm at the track.
+            "wound_top_kept_mm": [[0.37]],
+            "wound_top_kept_share": [[0.37 / 0.67]],
+            "wound_track_kept_mm": [[0.21]],
+            "wound_track_kept_share": [[0.21 / 0.30]],
+            "stitch_rest_s": [1.6],
+            "lock_slip_mm": [0.04],
+            "lock_slip_mrad": [5.0],
         }
         self.assertEqual(list(stitch), list(expected))
         for name, value in expected.items():
-            np.testing.assert_allclose(stitch[name], value, rtol=1e-12)
-        # One tie asked for and one made, in the scene's report, in what the observation brings and in the
+            np.testing.assert_allclose(stitch[name], value, rtol=1e-9)
+        # Two ties asked for and two made, in the scene's report, in what the observation brings and in the
         # controller's own record.
         for change in (
-            {"thread": {"ties": 0}},
-            {"thread": {"ties": 2, "ties_asked": 2}},
-            {"thread": {"ties_asked": 2}},
-            {"thread_tension": {"ties": 0}},
+            {"thread": {"ties": 1}},
+            {"thread": {"ties": 3, "ties_asked": 3}},
+            {"thread": {"ties_asked": 3}},
+            {"thread_tension": {"ties": 1}},
             {"report": {"stitch_complete": False}},
         ):
             with (
                 self.subTest(change=change),
-                self.assertRaisesRegex(AssertionError, "not tied at its entry by one tie"),
+                self.assertRaisesRegex(AssertionError, "not tied at its entry and at its exit by two ties"),
             ):
                 example_with(**change).test_final()
+        # The example saw the tightening begin and its hold end: the closure is measured against both.
+        for record in ({"slack": None}, {"tight": None}):
+            example = example_with()
+            del example._stitch_record[0][next(iter(record))]
+            with self.subTest(record=record), self.assertRaisesRegex(AssertionError, "did not see the tightening"):
+                example.test_final()
+        example = example_with()
+        example._stitch_record = None
+        with self.assertRaisesRegex(AssertionError, "did not see the tightening"):
+            example.test_final()
         # The tightening ended by its rule, with a slope it had measured, inside its travel bound.
         for report in (
             {"tighten_predicted_volume": None, "tighten_slope_per_m": None, "tighten_way_to_rest_m": None},
@@ -1159,21 +1216,69 @@ class GraspExampleLifecycleTests(unittest.TestCase):
                 self.assertRaisesRegex(AssertionError, "did not end by its rule inside its travel bound"),
             ):
                 example_with(report=report).test_final()
-        # The least volume at the end is within the fall that the rule predicted for its way to rest
-        # (126 per metre over 0.94 mm: 0.118) of the rule's 0.5, on either side.
+        # The least volume at the end of the tightening's hold was within the fall that the rule predicted
+        # for its way to rest (126 per metre over 0.94 mm: 0.118) of the rule's 0.5, on either side; what it
+        # is now, with the thread slack to the needle, is reported and not asked for.
+        widths = [(0.00218, 0.00143)]
         for volume in (0.383, 0.5, 0.617):
             with self.subTest(volume=volume), contextlib.redirect_stdout(io.StringIO()):
-                example_with(least_volume_ratio=volume).test_final()
-        for volume in (0.38, 0.62, 0.9):
+                example_with(record={"tight": {"widths": widths, "least_volume_ratio": volume}}).test_final()
+        for volume in (0.38, 0.62, 0.9, None):
             with self.subTest(volume=volume), self.assertRaisesRegex(AssertionError, "not within"):
-                example_with(least_volume_ratio=volume).test_final()
+                example_with(record={"tight": {"widths": widths, "least_volume_ratio": volume}}).test_final()
+        with contextlib.redirect_stdout(io.StringIO()):
+            example_with(least_volume_ratio=0.9).test_final()
+        # The slackening ended by its rule (a slackening that ends where the tightening began has no force
+        # at which its stop began), within the travel of the tightening.
+        for report in ({"slacken_stop_force_N": None}, {"slacken_travel_m": 0.0057}):
+            with (
+                self.subTest(report=report),
+                self.assertRaisesRegex(AssertionError, "slackening did not end by its rule within the travel"),
+            ):
+                example_with(report=report).test_final()
+        # A thread that is slack when it is tied at its exit is not slackened at all.
+        with contextlib.redirect_stdout(io.StringIO()):
+            example_with(report={"slacken_travel_m": 0.0}).test_final()
+        # The thread pulls the needle with less than the weight that the scene applies to the needle, now.
+        for pull in (0.00294, 0.0061):
+            with self.subTest(pull=pull), self.assertRaisesRegex(AssertionError, "it is not slack"):
+                example_with(thread_tension={"needle_force_N": pull}).test_final()
+        with contextlib.redirect_stdout(io.StringIO()):
+            example_with(thread_tension={"needle_force_N": 0.00293}).test_final()
         # Both jaws were on the needle in every call from the tie on.
         with self.assertRaisesRegex(AssertionError, "A jaw was off the needle"):
             example_with(report={"stitch_calls_without_grasp": 1}).test_final()
-        # The wound is narrower at its top than in the reference shape.
-        for wound in ([], [{"track_m": 0.0017, "top_m": 0.00288, "rest_track_m": 0.00175, "rest_top_m": 0.00288}]):
-            with self.subTest(wound=wound), self.assertRaisesRegex(AssertionError, "not narrower at its top"):
+        # The stitch has held for a second without the tool's pull when the run ends.
+        for time in (34.9, 35.4, 35.89):
+            with self.subTest(time=time), self.assertRaisesRegex(AssertionError, "must have held for 1.0 s"):
+                example_with(time=time).test_final()
+        with contextlib.redirect_stdout(io.StringIO()):
+            example_with(time=35.9).test_final()
+        # The wound is narrower at its top and at its track than in the reference shape and than it was when
+        # the tightening began: a stitch that keeps nothing of the closure fails.
+        rest = {"rest_track_m": 0.00175, "rest_top_m": 0.00288}
+        for wound in (
+            [],
+            [{"track_m": 0.00152, "top_m": 0.00288} | rest],
+            [{"track_m": 0.00175, "top_m": 0.00248} | rest],
+            [{"track_m": 0.00152, "top_m": 0.00285} | rest],
+            [{"track_m": 0.00173, "top_m": 0.00248} | rest],
+            [{"track_m": 0.00174, "top_m": 0.00286} | rest],
+        ):
+            with self.subTest(wound=wound), self.assertRaisesRegex(AssertionError, "widths are not|does not hold"):
                 example_with(wound_widths=wound).test_final()
+        # A wound that is narrower than when the tightening began but not than the reference shape: a scene
+        # whose wound was wider than its reference before the stitch.
+        wide = {"slack": {"widths": [(0.00295, 0.00180)], "least_volume_ratio": 0.9}}
+        with self.assertRaisesRegex(AssertionError, "does not hold the wound narrower"):
+            example_with(record=wide, wound_widths=[{"track_m": 0.00176, "top_m": 0.00289} | rest]).test_final()
+        # Each of the two widths is asked against the reference shape by itself: the top alone wider than
+        # its reference, and the track alone, with both narrower than when the tightening began.
+        for wound in ({"track_m": 0.00174, "top_m": 0.00289}, {"track_m": 0.00176, "top_m": 0.00287}):
+            with self.subTest(wound=wound), self.assertRaisesRegex(AssertionError, "does not hold the wound narrower"):
+                example_with(record=wide, wound_widths=[wound | rest]).test_final()
+        with contextlib.redirect_stdout(io.StringIO()):
+            example_with(record=wide, wound_widths=[{"track_m": 0.00174, "top_m": 0.00287} | rest]).test_final()
         # Without thread tracks the pull ends at the entry and nothing is tied: none of this is asked.
         untied = {name: None for name in self.STITCHED} | {"stitch_complete": False, "stitch_calls_without_grasp": 0}
         example = example_with(report=untied | {"tail_past_exit_m": -0.0115}, tracks=False)
@@ -1185,6 +1290,14 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         """Fails if the panel does not show how wide the wound is, whether the thread is tied and how it pulls."""
         observation = {"diagnostics": {}}
         self.stitched_scene(observation)
+        self.assertEqual(
+            grasp_example.stitch_line(observation),
+            "Stitch: wound 2.48 mm wide at the top (2.88 at rest), 1.52 mm at the track (1.75); "
+            "thread tied at its entry and at its exit, pulls the needle with 0.8 mN, an eyelet with 14.2 mN at most",
+        )
+        # While the tool holds the thread tight: one tie.
+        observation["thread_tension"] = {"ties": 1, "ties_asked": 1, "eyelet_force_N": 0.0181, "needle_force_N": 0.0258}
+        observation["wound_widths"][0].update(top_m=0.00218, track_m=0.00143)
         self.assertEqual(
             grasp_example.stitch_line(observation),
             "Stitch: wound 2.18 mm wide at the top (2.88 at rest), 1.43 mm at the track (1.75); "
@@ -1258,8 +1371,8 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         self.assertNotIn("commands", steps[-1])
         self.assertEqual(example.completed, 4)
 
-    def test_the_first_entry_marker_shows_the_tie_of_the_thread(self):
-        """Fails if the tie is shown on another marker than the first entry of its scene, or stays after a reset."""
+    def test_the_first_entry_marker_and_the_last_exit_marker_show_the_ties_of_the_thread(self):
+        """Fails if a tie is shown on another marker than the first entry or the last exit of its scene, or stays after a reset."""
         from newton_solver_suturebot.examples.grasp import _grasp_view
 
         green, blue = (grasp_example.Example.marker_colors[kind] for kind in ("entry", "exit"))
@@ -1296,6 +1409,13 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         tied[0] = 1
         np.testing.assert_array_equal(draw(), np.float32([yellow, blue, yellow, blue]))
         np.testing.assert_array_equal(draw(), np.float32([yellow, blue, yellow, blue]))
+        # The second tie of scene 1, where its thread comes out: its exit marker turns as well, and stays.
+        tied[1] = 2
+        np.testing.assert_array_equal(draw(), np.float32([yellow, blue, yellow, yellow]))
+        np.testing.assert_array_equal(draw(), np.float32([yellow, blue, yellow, yellow]))
+        # Only the first tie holds again: the exit marker is an exit marker again.
+        tied[1] = 1
+        np.testing.assert_array_equal(draw(), np.float32([yellow, blue, yellow, blue]))
         # A thread that is let go: the marker is an entry marker again.
         tied[1] = 0
         np.testing.assert_array_equal(draw(), np.float32([yellow, blue, green, blue]))
@@ -1303,6 +1423,114 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         events[0], tied[0] = [event("entry", 0.009, 0.001, 0.0)], 0
         np.testing.assert_array_equal(draw(), np.float32([green, blue, green]))
         example.close()
+        # The exit that shows the second tie is the last one of its scene: a needle that went through two
+        # lips has two exits, and the first is an exit marker again when the second is there.
+        calls = []
+        example = self._drawn_example(calls, offsets=np.array([[0.5, 0.0, 0.0]]))
+        events, tied = [[event("exit", 0.004, 0.004, 0.0)]], [2]
+        np.testing.assert_array_equal(draw(), np.float32([yellow]))
+        events[0] += [event("exit", 0.008, 0.008, 0.0)]
+        np.testing.assert_array_equal(draw(), np.float32([blue, yellow]))
+        # A reset (the scene reports fewer events than were drawn) clears both: the markers, and with them
+        # which of them is the last exit and the tie that it showed.
+        events[0], tied[0] = [event("entry", 0.009, 0.001, 0.0)], 0
+        np.testing.assert_array_equal(draw(), np.float32([green]))
+        self.assertEqual((example._tie_shown, example._lock_shown, example._exit_marker), ([False], [False], [None]))
+        # The thread of the new run, tied twice before the needle has come out: there is no exit marker to
+        # turn, and the one that comes then turns in the same draw.
+        tied[0] = 2
+        np.testing.assert_array_equal(draw(), np.float32([yellow]))
+        events[0] += [event("exit", 0.008, 0.008, 0.0)]
+        np.testing.assert_array_equal(draw(), np.float32([yellow, yellow]))
+        example.close()
+
+    def test_the_example_keeps_the_widths_of_the_wound_when_the_tightening_begins_and_when_its_hold_ends(self):
+        """Fails if the closure of the stitch is measured against another frame, or a record survives a reset."""
+        example = grasp_example.Example.__new__(grasp_example.Example)
+        self.assertIsNone(example._stitch_record)
+
+        def scene(top, track, volume, reset=0):
+            return {
+                "reset_count": reset,
+                "wound_widths": [{"top_m": top, "track_m": track, "rest_top_m": 0.00288, "rest_track_m": 0.00175}],
+                "diagnostics": {"least_volume_ratio": volume},
+            }
+
+        def follow(stages, observations):
+            example.observations = observations
+            example._follow_stitch([{"env_id": index, "stage": stage} for index, stage in enumerate(stages)])
+            return example._stitch_record
+
+        # Nothing is kept before a tightening, and nothing of a scene without a wound gap.
+        self.assertEqual(
+            follow(["pull", "tie"], [scene(0.00286, 0.00174, 0.95), scene(0.00286, 0.00174, 0.9)]), [None] * 2
+        )
+        bare = {"reset_count": 0, "diagnostics": {}}
+        self.assertEqual(follow(["tighten", "tie"], [bare, scene(0.00286, 0.00174, 0.9)]), [None, None])
+        # The first call of the stage tighten: the widths and the least volume of the observation it acted on.
+        record = follow(["tighten", "tighten"], [bare, scene(0.00285, 0.00173, 0.884)])
+        slack = {"widths": [(0.00285, 0.00173)], "least_volume_ratio": 0.884}
+        self.assertEqual(record, [None, {"reset_count": 0, "slack": slack}])
+        # Later calls of the tightening and its hold change nothing; the first call of the lock is kept.
+        follow(["tighten", "tighten"], [bare, scene(0.0026, 0.0016, 0.7)])
+        follow(["hold", "hold"], [bare, scene(0.0022, 0.00144, 0.55)])
+        self.assertEqual(example._stitch_record[1], {"reset_count": 0, "slack": slack})
+        follow(["lock", "lock"], [bare, scene(0.00218, 0.00143, 0.553)])
+        tight = {"widths": [(0.00218, 0.00143)], "least_volume_ratio": 0.553}
+        self.assertEqual(example._stitch_record[1], {"reset_count": 0, "slack": slack, "tight": tight})
+        for stage in ("lock", "slacken", "hold", "done"):
+            follow([stage, stage], [bare, scene(0.0024, 0.0015, 0.6)])
+        self.assertEqual(example._stitch_record[1], {"reset_count": 0, "slack": slack, "tight": tight})
+        # A scene that was reset starts without a record, in whatever stage its new run is.
+        follow(["arc", "arc"], [bare, scene(0.00288, 0.00175, 1.0, reset=1)])
+        self.assertEqual(example._stitch_record, [None, None])
+
+    def test_a_step_keeps_the_widths_of_the_observation_that_its_call_of_the_controller_acted_on(self):
+        """Fails if a step does not follow the stitch, or keeps the widths of the frame that the call started."""
+        example = grasp_example.Example.__new__(grasp_example.Example)
+        example.args = self.args()
+        example.config = SimpleNamespace(action_dimension=7, frame_dt=1 / 60)
+        example.render_scene, example.frame_budget, example.halted = None, None, None
+        example.sim_time, example.completed, example.last_phases = 0.0, 0, None
+
+        def scene(frame, top, track, volume):
+            return {
+                "reset_count": 0,
+                "wound_widths": [{"top_m": top, "track_m": track, "rest_top_m": 0.00288, "rest_track_m": 0.00175}],
+                "diagnostics": {"physical_time_s": frame / 60, "least_volume_ratio": volume},
+            }
+
+        # What the scene returns after each of three frames: the wound narrows from frame to frame.
+        frames = [scene(1, 0.0028, 0.0017, 0.85), scene(2, 0.0022, 0.00144, 0.56), scene(3, 0.00218, 0.00143, 0.553)]
+        example.pool = SimpleNamespace(step=lambda actions, **options: [frames.pop(0)], frame_unfinished=False)
+        example.observations = [scene(0, 0.00285, 0.00173, 0.884)]
+        # The stage that the controller reports after each of its calls.
+        stages = ["tighten", "hold", "lock"]
+
+        class Controller:
+            calls = 0
+
+            def __call__(self, observations):
+                self.calls += 1
+                return np.zeros((1, 7), dtype=np.float32)
+
+            def report(self):
+                return [{"env_id": 0, "stage": stages[self.calls - 1], "phase": "holding", "reason": None}]
+
+        example.controller = Controller()
+        with contextlib.redirect_stdout(io.StringIO()):
+            example.step()
+        # The call that began the tightening acted on the observation of before its frame: that one is kept,
+        # not the one that the frame returned.
+        slack = {"widths": [(0.00285, 0.00173)], "least_volume_ratio": 0.884}
+        self.assertEqual(example._stitch_record, [{"reset_count": 0, "slack": slack}])
+        with contextlib.redirect_stdout(io.StringIO()):
+            example.step()
+            example.step()
+        # The call that ended the hold acted on the observation after the second frame.
+        tight = {"widths": [(0.0022, 0.00144)], "least_volume_ratio": 0.56}
+        self.assertEqual(example._stitch_record, [{"reset_count": 0, "slack": slack, "tight": tight}])
+        self.assertEqual(example.completed, 3)
 
     def test_thread_tracks_are_on_by_default_and_the_switch_reaches_the_scene(self):
         from newton_solver_suturebot.examples.grasp._grasp_scene import GraspScene
@@ -1384,16 +1612,26 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         self.assertEqual((example._pull_through(self.args()), example._tip_lift_height(self.args())), (False, 0.0))
         # 40 s at 60 Hz. The measured sequence is clear of the tissue before 31 s of simulated time; the
         # stitch then takes at most two frames for the tie, the tightening to its travel bound (6.75 mm at
-        # 3 mm/s with the two ramps of 0.5 s: 2.75 s) and the hold of 0.5 s: it ends before 34.3 s. The clip
-        # recipe records 36 s with the self-test, which asks for the procedure to be done.
+        # 3 mm/s with the two ramps of 0.5 s: 2.75 s) and the hold of 0.5 s, then two frames for the tie at
+        # the exit, the slackening back to where the tightening began (as long again) and the hold of
+        # 0.5 s: it ends before 37.6 s, and the second that the self-test asks the stitch to have held by
+        # itself has passed before 38.1 s.
         self.assertEqual(args.num_frames, 2400)
         controller = grasp_example.ProceduralGraspController
         bound, speed, ramp = controller.tighten_travel_bound, 0.003, 0.5
-        stitch_frames = 2 + round(60 * (bound / speed + ramp)) + round(60 * controller.lift_hold_seconds)
-        self.assertEqual(stitch_frames, 197)
+        travel_frames, hold_frames = round(60 * (bound / speed + ramp)), round(60 * controller.lift_hold_seconds)
+        stitch_frames = 2 * (2 + travel_frames + hold_frames)
+        self.assertEqual((travel_frames, hold_frames, stitch_frames), (165, 30, 394))
+        rest_frames = round(60 * example.stitch_rest_seconds)
+        self.assertLess(round(60 * 31.0) + stitch_frames - hold_frames + rest_frames, args.num_frames)
+        # The clip recipe records with the self-test, which asks for the procedure to be done and the stitch
+        # to have held for that second. Its length is measured, not the bound above: the latest frame at
+        # which three device runs were done (docs/usage.md, the lock and the slackening), 60 frames more,
+        # rounded up to a multiple of 60. Done is half a second after the slackening has ended.
         recipe = json.loads((Path(__file__).parents[1] / "docs/videos.json").read_text())["fem_needle_grasp"]
-        self.assertEqual((recipe["frames"], recipe["fps"], recipe["args"]), (2160, 60, ["--test"]))
-        self.assertGreaterEqual(recipe["frames"], round(60 * 31.0) + stitch_frames + 60)
+        self.assertEqual((recipe["frames"], recipe["fps"], recipe["args"]), (2220, 60, ["--test"]))
+        self.assertEqual(recipe["frames"] % 60, 0)
+        self.assertGreaterEqual(60 + hold_frames, rest_frames)
         self.assertLess(recipe["frames"], args.num_frames)
         self.assertLess(recipe["poster_frame"], recipe["frames"])
         self.assertEqual(parser.parse_args(["--lift-height", "0"]).lift_height, 0)

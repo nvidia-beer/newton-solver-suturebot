@@ -735,7 +735,10 @@ a passage, a stand-in for a knot (`GraspScene.tie_thread`, asked for with the
 optional `commands` of the pool's `step`); every observation has the held
 eyelets and the thread's pull (`thread_tension`) and the width of a wound
 that the planned stitch crosses (`wound_widths`)
-([the tie and the tightening](#the-tie-and-the-tightening)). No eyelet is
+([the tie and the tightening](#the-tie-and-the-tightening)), and the scene's
+geometry has the weight that it applies to the needle (`needle_weight_N`),
+below which a thread's pull on the needle counts as slack
+([the lock and the slackening](#the-lock-and-the-slackening)). No eyelet is
 planned and no passage is learned, so
 this mode's validation is separate from the completed scripted stitches in
 `fem_needle_suture`.
@@ -819,6 +822,11 @@ the grasp and then runs one sequence:
    until the thread is as tight as the tissue allows, and holds: the wound
    narrows at its top while the tool holds
    ([the tie and the tightening](#the-tie-and-the-tightening)).
+7. It ties the thread where it comes out of the tissue as well, takes the
+   needle back along the same line until the thread to the needle is slack,
+   and holds: the thread between the two ties keeps a part of the narrowing
+   without the tool's pull
+   ([the lock and the slackening](#the-lock-and-the-slackening)).
 
 Every motion uses the same bounded joint IK and finite actuators. Nothing welds
 or directly repositions the needle. The physical thread collides with tissue and
@@ -870,8 +878,10 @@ names every number that is not derived, with what chose it, and
   is driven on, the arc speed, the end and the bound of the pull, the reach
   margin of the joints, the rest tolerance of the needle, the turning radius
   of the tool (from the capsules and the wrist length of the tool model),
-  every length of the way from the one grasp to the other, and the direction,
-  the speed and the stop of the tightening.
+  every length of the way from the one grasp to the other, the direction,
+  the speed and the stop of the tightening, and the stop and the bound of the
+  slackening (its threshold is the weight that the scene applies to the
+  needle).
 
 #### The way to the tip and the pull
 
@@ -921,8 +931,9 @@ not free of the tissue, or has not followed, 0.25 s after the command has
 reached that bound stops the procedure with that reason. The tool then holds
 for 0.5 s: the needle is held by its tip, clear of the tissue, with the thread
 running from its tail into the exit. With thread tracks
-[the tie and the tightening](#the-tie-and-the-tightening) follow; without them
-the procedure is done.
+[the tie and the tightening](#the-tie-and-the-tightening) and
+[the lock and the slackening](#the-lock-and-the-slackening) follow; without
+them the procedure is done.
 
 The thread follows through the track that the needle has actually cut
 (`WorkerThread`, `NeedleTrackEyelets`, `ThreadTissueCoupling.follow_tail`).
@@ -1219,9 +1230,10 @@ and 1.75 mm between its walls at the depth of the track). With thread tracks
 the procedure therefore goes on with the first step of a stitch
 (`ProceduralGraspController._stitch_target`): it ties the thread where it goes
 into the tissue, moves the needle on until the thread is as tight as the
-tissue allows, and holds. No option switches this off by itself: without
-thread tracks and with `--no-pull-through` the procedure ends where it ended
-before.
+tissue allows, and holds; then it ties the thread at its exit and lets it go
+slack to the needle ([below](#the-lock-and-the-slackening)). No option
+switches this off by itself: without thread tracks and with
+`--no-pull-through` the procedure ends where it ended before.
 
 The tie. In the first call after the hold that ends the pull, the controller
 asks the scene to tie the thread at the first eyelet of its first passage,
@@ -1276,8 +1288,9 @@ it then extrapolates over,
 
 and the stop ramp begins in the first frame with `J_rest <= 0.5`, to end at
 `s + d`. `J` at or below 0.5 stops as well, whatever the slope. The self-test
-asks that the least volume at the end is within `|k| (s + d - a)` of 0.5: the
-fall that the rule predicted for its way to rest.
+asks that the least volume at the end of the tightening's hold is within
+`|k| (s + d - a)` of 0.5: the fall that the rule predicted for its way to
+rest.
 
 The travel is bounded by `tighten_travel_bound`, 6.75 mm: twice the travel at
 which the measured pull reaches the rule (3.37 mm, below). It is a measured
@@ -1287,7 +1300,8 @@ measured one without its rule does not behave as measured: the command comes
 to rest at the bound by the same ramp and the procedure stops there with that
 reason. At 6.75 mm the measured tissue still holds (least volume 0.12; the
 measured pull fails at 13.0 mm). When the stop of the rule has ended the tool
-holds for 0.5 s and the procedure is done.
+holds for 0.5 s, and [the lock and the slackening](#the-lock-and-the-slackening)
+follow.
 
 What a run shows. The first entry marker of the scene turns from green to
 yellow while the thread is tied there. The side panel has a second line per
@@ -1338,7 +1352,8 @@ lip and the first in the other.
 Measured on the device (one DGX Spark, MuJoCo Warp backend, null viewer,
 2026-11-19; four default self-tests with a record per frame: `s1_first` alone
 at 17:58, `s1_a`, `s1_b` and `s1_c` together at 22:52, so none is a timing
-run). Every run completes the procedure, done at 33.4 to 33.8 s of simulated
+run; the procedure then ended with the hold of the tightening). Every run
+completes that procedure, done at 33.4 to 33.8 s of simulated
 time (frames 2005 to 2028), with 2 entries and 2 exits, 8 of 8 eyelets
 threaded and none refused, one tie asked for and one eyelet held on the
 device, no CUDA graph captured and no kernel module loaded after start-up, no
@@ -1430,9 +1445,277 @@ What one tied stitch does not do:
   (CPU: 0.80 mm at the top with a tetrahedron at 0.3, 1.02 mm at 0.14).
 - There is no knot in the thread. The tie is a held eyelet, as in
   `fem_needle_suture`.
-- Nothing holds once the tool lets go. The thread is tied at its entry only;
-  the procedure ends with the tool holding the needle, and the tension is the
-  tool's.
+- Nothing holds yet when its hold ends. The thread is tied at its entry
+  only, and the tension is the tool's. The lock and the slackening, next,
+  change that.
+- The tissue has no contact with itself, and the thread is elastic (2 MPa).
+
+#### The lock and the slackening
+
+When the hold of the tightened thread ends, the thread is tight only because
+the tool pulls. The procedure goes on (`_stitch_target`, stages `lock`,
+`slacken`, `hold`): it ties the thread a second time, where it comes out of
+the tissue, takes the needle back until the thread between that tie and the
+needle is slack, and holds. The thread between the two ties then holds the
+tissue by itself. The tool still holds the needle.
+
+The lock. In the first call after the hold the controller asks for the second
+tie beside its action, as for the first:
+`("tie_thread", {"passage": n - 1, "last": True})`, the last eyelet of the
+last of the `n` planned passages (`expected_passages` of the plan, 2 here),
+the hole through which the thread leaves the tissue. The observation after
+the scene's next frame must report two held eyelets
+(`thread_tension["ties"]`), or the procedure stops with what the scene
+reports. Nothing new runs on the device: it is the tie of the first knot at
+another eyelet (`WorkerThread.tie(passage, last)`), one launch of a kernel
+that start-up has loaded.
+
+The slackening (`_slacken_target`). The palm goes back along the line of the
+tightening, towards where the tightening began, at its speed and ramp
+(3 mm/s after 0.5 s), and no further than where it began: the tool came along
+that line, so it is not asked for reach again. The thread to the needle is
+slack when its force on the needle (`thread_tension["needle_force_N"]`) is
+below the weight that the scene itself applies to the needle. The scene
+publishes that weight as one more key of its geometry, `needle_weight_N`
+(`GraspScene.grasp_geometry`): the needle's mass, read once when the scene is
+constructed, times the 9.81 m/s² of the kernel `_needle_weight` that adds the
+weight in every step; 2.943 mN here, and zero for a scene that applies none
+(`SutureSceneConfig.needle_weight`). No number about the needle is written
+into the controller, which needs the key and the number of planned passages
+wherever it needs the length of a thread element.
+
+The stop. The stop ramp begins in the first frame in which the force is below
+the weight, from the speed that the command then has (`ramp_way`, the inverse
+of `ramp_speed`). From the full speed that stop takes `v T / 2` = 0.75 mm,
+and here those 0.75 mm matter: the force on the needle is not monotone in the
+travel back (the measurement below). It falls to a least value where the
+thread is slack and rises again beyond it, because the needle then pushes the
+slack thread together against the tied eyelet; the number that is read is the
+size of the thread's force and does not tell a pull from a push. The command
+therefore comes to that frame slowly. With `b` the commanded travel back and
+`k` the slope of the force `F` against `b` that this slackening has measured
+itself over the last `v T / 2` of `b` (as the tightening measures its own;
+only over at least the travel of one frame at full speed, and only while `F`
+falls), the thread is predicted to carry nothing at
+
+    b_slack = b + F / (-k),
+
+and until the stop begins the command goes no faster than the stop ramp
+allows for the travel that is left to `b_slack` (`ramp_speed(F / (-k))`; the
+pull slows down in the same way over the arc that its tail has left). The
+stop that begins under the weight then ends within the travel of one frame of
+`b_slack`. No number is new: speed, ramp and window are the tightening's and
+the threshold is the scene's. The slope is taken over the commanded travel,
+not over the palm's own: the palm springs forward as the load falls, and a
+prediction in the palm's travel could ask the command to wait for a palm that
+never arrives. Without a slope the command is not slowed, and the stop takes
+the way of the speed that it has. A slackening that arrives where the
+tightening began without the force below the weight ends there as well: the
+controller's report then has no force at which the stop began, and the
+self-test fails.
+
+Then the tool holds for 0.5 s and the procedure is done. `report()` of the
+controller has the travel back (`slacken_travel_m`), the weight that it
+stopped by (`needle_weight_N`), the force and the slope when the stop began
+(`slacken_stop_force_N`, `slacken_slope_N_per_m`), the time at which the
+slackening ended (`slacken_end_time_s`), the thread's force on the needle as
+last seen, also after the procedure is done (`thread_needle_force_N`), and
+the largest travel and turn of the needle in the jaws since the second tie
+(`lock_slip_m`, `lock_slip_rad`; reported, with no bound on them).
+
+What a run shows. The last exit marker of the scene turns from blue to yellow
+while two ties hold, as the first entry marker does with the first; a reset
+of the scene clears both. The panel line says where the thread is tied, at
+the end for example
+`Stitch: wound 2.46 mm wide at the top (2.88 at rest), 1.52 mm at the track (1.75); thread tied at its entry and at its exit, pulls the needle with 0.3 mN, an eyelet with 17.4 mN at most`.
+The example keeps, per scene, the wound's widths and the least tissue volume
+of two observations that the controller acted on: the one in which the
+tightening began and the one in which its hold ended (`Example._follow_stitch`;
+host values that every observation has). The closure that the stitch keeps
+is measured against them.
+
+The self-test (`Example._check_stitched`) asks, per scene: two ties asked for
+and two held; the tightening ended by its rule inside its travel bound, with
+the least volume at the end of its hold within the rule's allowance (the
+least volume of the last frame is reported and not asked for: the thread is
+slack to the needle then); the slackening ended by its rule within the travel
+of the tightening, and the thread's force on the needle is below
+`needle_weight_N` in the last frame; both jaws on the needle in every call
+from the first tie on; the slackening ended at least 1 s before the last
+frame; and the wound is narrower at its top and at its track than in the
+reference shape and than it was when the tightening began. A stitch that
+keeps nothing of its closure fails the self-test. Its line has the travel
+back, the kept closure at the top and at the track and each as a share of the
+closure at the end of the tightening's hold.
+
+Measured on the CPU before the stages were written (the night of 2026-11-19
+to 20; tool `slack_cpu.py`, a copy of the design review's `pull_cpu.py` with
+the act added: `fem_needle_suture` with this stitch as its one stitch, without
+the stitching, the thread tied at the first entry, then the motion law of
+this controller: tighten to a given travel, hold 0.5 s, tie at the last
+eyelet of the last passage, back along the same line, rest). The needle of
+that scene weighs 2.943 mN as well. Tightened to 3.37 mm (the travel at which
+that pull is at the tightness rule: 17.1 mN on the needle, least volume
+0.50), all the way back to where the tightening began (run `curve_337`):
+
+| Travel back | Thread on the needle | Least volume | On the exit eyelet (tied) | Wound at its top | At the track |
+| --- | --- | --- | --- | --- | --- |
+| 0 | 16.7 mN | 0.504 | 8.0 mN | 2.385 mm | 1.525 mm |
+| 0.20 mm | 13.5 mN | 0.549 | 7.2 mN | 2.412 mm | 1.524 mm |
+| 0.51 mm | 8.9 mN | 0.620 | 6.5 mN | 2.459 mm | 1.525 mm |
+| 0.90 mm | 4.3 mN | 0.682 | 7.0 mN | 2.537 mm | 1.560 mm |
+| 1.30 mm | 0.7 mN | 0.664 | 8.6 mN | 2.596 mm | 1.580 mm |
+| 1.70 mm | 2.6 mN | 0.569 | 10.0 mN | 2.635 mm | 1.590 mm |
+| 2.50 mm | 4.5 mN | 0.432 | 11.6 mN | 2.652 mm | 1.591 mm |
+| 3.35 mm | 6.2 mN | 0.274 | 13.5 mN | 2.656 mm | 1.585 mm |
+
+The force is below the weight only from 1.05 to about 1.85 mm. Beyond its
+least value it is a push, which loads the tied eyelet and squeezes the tissue
+under it further than the tightening did. With a stop that begins under the
+weight at full speed (run `stop_337`) the command ends at 1.80 mm, 0.46 mm
+past the least force, with 2.84 mN on the needle: 0.1 mN under the weight.
+The same stop from a tighter state (run `stop_485`: tightened to 4.85 mm,
+24 mN, least volume 0.32, which is beyond the tightness rule) drives the
+least volume to 0.20, and the tissue step fails 0.25 s later. With the rule
+as it is built (run `built_337`) the stop begins at 1.05 mm with the command
+at 2.1 mm/s and ends at 1.32 mm, 0.02 mm from the least force of the curve,
+with 0.64 mN on the needle (22 % of the weight), steady over the next 1.5 s;
+the least volume is 0.656. Kept 1 s after the slackening ended: 0.279 mm of
+the 0.501 mm that the tightening closed at the top (56 %) and 0.166 mm of
+0.224 mm at the track (74 %). (An earlier form of the rule, run `valley_485`
+from the tighter state: 0.43 mN at rest, 56 % and 70 % kept.) From these runs
+the device was expected to show, before it ran: about 2.2 mm of travel back,
+under 1 mN on the needle at rest, 56 % of the closure kept at the top and 70
+to 75 % at the track.
+
+Measured on the device (one DGX Spark, MuJoCo Warp backend, null viewer,
+2026-11-20; four default self-tests of this text with a record per frame that
+copies host values only: `s2_first` alone at 00:38, `s2_a`, `s2_b` and `s2_c`
+together at 00:47; other jobs loaded the machine, so none is a timing run).
+Every run completes the procedure through `tie`, `tighten`, `hold`, `lock`,
+`slacken` and `hold`, done at 35.22 to 35.45 s of simulated time (frames 2112
+to 2126), with 2 entries and 2 exits, 8 of 8 eyelets threaded and none refused,
+two ties asked for and two eyelets held on the device (the first of the first
+passage and the last of the second), no CUDA graph captured and no kernel
+module loaded after start-up, no rejected coupled attempt and no rejected
+tissue step from the first tie to the last frame, and both jaws on the needle
+in every frame from the first tie on (0.668 N at least). The second tie is
+asked for at 33.5 to 33.7 s; the slackening takes 1.18 to 1.20 s:
+
+| | Thread on the needle | Least volume | Wound at its top | Between the walls at the track |
+| --- | --- | --- | --- | --- |
+| The tightening begins | 1.98 to 2.58 mN | 0.880 to 0.891 | 2.843 to 2.853 mm | 1.726 to 1.732 mm |
+| End of the tightening's hold, travel 5.55 to 5.60 mm | 25.35 to 26.13 mN | 0.544 to 0.559 | 2.176 to 2.191 mm | 1.429 to 1.437 mm |
+| The slackening has ended, travel back 2.15 to 2.17 mm | 0.20 to 0.22 mN | 0.561 to 0.575 | 2.447 to 2.458 mm | 1.509 to 1.516 mm |
+| 1 s later | 0.20 to 0.24 mN | 0.561 to 0.575 | 2.448 to 2.459 mm | 1.510 to 1.516 mm |
+| Last frame, 5.1 to 5.3 s after the slackening | 0.29 to 0.52 mN | 0.561 to 0.575 | 2.447 to 2.457 mm | 1.509 to 1.516 mm |
+
+- The stop. It began with 2.64 to 2.78 mN on the needle, under the weight of
+  2.943 mN, with a measured slope of -11.2 to -10.8 mN per mm and the command
+  slowed down from 3.0 mm/s to between 2.14 and 2.18 mm/s (the commanded speed
+  steps up by 0.15 mm/s between two frames at most). The command ended 2.15 to
+  2.17 mm back, of the 5.55 to 5.60 mm of the tightening (the palm itself 2.10
+  to 2.11 mm). In 4 of the 4 runs the force in the frame in which the
+  slackening ended is the least of the whole way back: the command came to rest
+  where the thread is slack, not beyond.
+- The thread to the needle is slack. In the last frame it pulls the needle with
+  0.29 to 0.52 mN, 10 to 18 % of the needle's weight (0.41, 0.33, 0.29, 0.52 mN
+  in the four runs), and never with more than 0.52 mN after the slackening. It
+  is not constant while the tool holds: in `s2_first` it rises from 0.22 to
+  0.41 mN in the 5 s after the slackening. The cause is not established.
+- The kept closure. The tightening had narrowed the top by 0.66 to 0.67 mm and
+  the width between the walls at the track by 0.29 to 0.30 mm. One second after
+  the slackening the stitch keeps 0.39 to 0.40 mm of that at the top (59 %) and
+  0.21 to 0.22 mm at the track (73 to 74 %); in the last frame 0.39 to 0.40 mm
+  and 0.22 mm. The wound is then 2.45 to 2.46 mm wide at its top, where it was
+  2.84 to 2.85 mm before the stitch and is 2.88 mm in the reference shape.
+- Against the expected numbers. The CPU runs above gave about 2.2 mm of travel
+  back, under 1 mN at rest, 56 % kept at the top and 70 to 75 % at the track;
+  the design review's measurement of the same act, with the needle dropped
+  instead of taken back, gave 0.25 to 0.32 mm (38 to 48 %) at the top and 0.19
+  to 0.22 mm (61 to 71 %) at the track. The four runs are inside a factor of
+  two of each (0.98 to 0.99 times the travel, 1.23 to 1.24 times the review's
+  band at the top and 1.00 times at the track), and the force at rest is under
+  1 mN up to one second after the slackening. Nothing was tuned towards them.
+- The tissue after the lock. The least volume is 0.544 to 0.559 at the end of
+  the tightening's hold, never under 0.541 from the lock on, and 0.561 to 0.575
+  in the last frame: it is reported and not bounded, and it stays near the
+  tightness rule because the thread between the two ties stays as tight as the
+  tightening made it: in the last frame the knot carries 17.4 to 18.2 mN (the
+  largest eyelet force, 17.7 to 18.7 mN at the end of the tightening's hold)
+  and the eyelet that is tied at the exit 13.9 to 14.3 mN. The tetrahedron with
+  the least volume is still the one beside the knot.
+- The needle in the jaws since the second tie (`lock_slip_m`, `lock_slip_rad`):
+  it moves 0.06 to 0.17 mm and turns 5.2 to 16.3 mrad while the load of the
+  thread comes off it. Reported, with no bound.
+- The controller by replay without physics: its calls of the four runs (2400
+  each), replayed from the recorded observations on the CPU, give back every
+  action bit for bit, every command and every stage. The controller of this
+  text on the records of the earlier procedure (`s1_a`, `s1_b`, `s1_c`) gives
+  the same actions in every call up to the one in which the hold of the
+  tightening ends; on the records `s1_nopull` and `s1_notracks` it differs in
+  no call.
+- Two scenes, each in its own worker process (run `s2_two`, with `--num-envs 2
+  --viewer null --test`): both ties reach each worker with its action, and the
+  self-test passes for both scenes: travel back 2.16, 2.15 mm, 0.44, 0.24 mN on
+  the needle in the last frame, kept at the top 0.40, 0.40 mm (60, 59 %) and at
+  the track 0.22, 0.22 mm (74, 73 %), nothing captured or loaded after
+  start-up.
+- Two more default self-tests with the same record per frame, run by the
+  independent check of this step (`c_a` and `c_b` together at 02:01): both
+  pass, with two ties held of two asked for, nothing captured or loaded after
+  start-up, no rejected coupled attempt from the first tie on and both jaws
+  on the needle in every frame from it. Done at 35.62 and 35.40 s (frames 2136
+  and 2123); travel back 2.15 mm; 0.23 and 0.21 mN on the needle when the
+  slackening ended, the least of the way back in both, and 0.26 and 0.29 mN in
+  the last frame; kept one second after the slackening 0.40 and 0.40 mm at the
+  top (59 %) and 0.22 mm at the track (73 %). `c_a` lies outside the ranges of
+  the four runs above in three numbers: it is done 10 frames later, its
+  tightening narrows the top by 0.68 mm, and its top is 2.44 mm wide at the
+  end.
+- The older procedures ask the scene for nothing and tie nothing. With
+  `--no-thread-tracks` (one self-test, run `s2_notracks`) the pull ends at the
+  entry and the procedure is done at 26.2 s, as before. With
+  `--no-pull-through` the lift by the tip ends the procedure at 28.1 s in three
+  of four self-tests: `s2_nopull_2` of this text, and `b2_nopull_1` and
+  `b2_nopull_2` of the text before it. The fourth, `s2_nopull` of this text,
+  stopped at 19.0 s on the way to the tip, in the stage `approach`, with the
+  scene's "RCM GPU tool pose is unreachable within unchanged joint
+  limits/tolerances". The controller of the text before this step, replayed on
+  that run's recorded observations, gives the same commands in every one of its
+  1142 calls: the stop does not come from the controller of this step. Its
+  cause is the grasp of that older procedure, which has no reach test and takes
+  the roll joint to its limit: in the four runs of it that pass (with
+  `s1_nopull`) the commanded targets keep that joint 0.017 to 0.031 rad inside
+  the limit; in `s2_nopull` the last target is 0.004 rad inside and the next
+  one beyond. The needle that the tool lets go of comes to rest up to 0.39 mm
+  and 3.2 degrees apart between device runs (17 recorded runs), and `s2_nopull`
+  is at one end of that spread (four other recorded runs, among them `s1_a` of
+  the text before this step, have the needle within 0.05 mm and 0.4 degree of
+  it; they used the pull, whose plan asks for reach). By this
+  `--no-pull-through` can stop in the same way before this step as after it; no
+  run of the text before it did (three of three passed).
+- Not seen in a window by this step: the second marker, the panel line and the
+  pace of the new stages are untested on screen.
+
+What a locked stitch does, and what it does not do:
+
+- It holds the wound narrower without the tool's pull: 0.39 to 0.40 mm at the
+  top and 0.22 mm at the track, 5.1 to 5.3 s after the slackening, with 0.29 to
+  0.52 mN of thread force on the needle. The tool is free of the thread; it
+  still holds the needle.
+- It does not close the wound. The top stays 2.45 to 2.46 mm wide (2.84 to
+  2.85 mm before the stitch), and 1.51 to 1.52 mm stay between the walls at the
+  track.
+- It keeps 59 to 60 % of what the tightening closed at the top and 73 to 74 %
+  at the track. The rest was held by the thread between the exit and the
+  needle, which pulled the exit lip up and back over the wound while the tool
+  held it tight; that pull is gone when the thread is slack (an explanation
+  from the direction of the tightening, not a separate measurement).
+- There is no knot in the thread. Both ties are held eyelets, as in
+  `fem_needle_suture`: they cannot slip and need no thread.
+- The tool does not put the needle down, cut the thread or take a second bite.
+  The thread behind the first tie stays on the pad.
 - The tissue has no contact with itself, and the thread is elastic (2 MPa).
 
 #### The grasp at the needle tip
@@ -1567,17 +1850,19 @@ the time that keeps its peak speed at 80 % of the action rate limit (3.1 s for
 10 mm, at least 0.75 s), holds for 0.5 s and returns in the same time. Grasp
 loss pauses its clock under the existing contact-loss checks. The viewer
 defaults to 2400 frames (40 s of simulated time); the sequence ends before
-34.3 s (the needle is clear of the tissue at 30.4 to 31.0 s; the tie, the
-tightening and its hold end at 33.4 to 33.8 s, and at 34.3 s at the latest: a
-tightening to its travel bound takes 2.75 s). With a lift, `--test`
-fails a run of the default speed and settling time that ends while the
-procedure is under way: a shorter run (`--num-frames`) has to reach its end.
-The clip recipe (`docs/videos.json`) therefore records 2160 frames with
-`--test`: 36 s, so the pull, the tie, the tightening, the hold of 0.5 s that
-ends the procedure and at least 1 s of the held needle are inside. The stages end on what the
-simulation reaches, not at fixed times, so the length is that bound and not a
-sum of stage times. The clip in `docs/media` is an earlier one of 1700 frames
-(the lift by the tip); it has not been recorded again.
+37.6 s (the needle is clear of the tissue at 30.4 to 31.0 s; the stitch ends at
+35.2 to 35.6 s in the runs, and at 37.6 s at the latest: a tightening to its
+travel bound takes 2.75 s, and the slackening at most as long again). With a
+lift, `--test` fails a run of the default speed and settling time that ends
+while the procedure is under way, or less than 1 s after the slackening has
+ended: a shorter run (`--num-frames`) has to reach that. The clip recipe
+(`docs/videos.json`) records 2220 frames with `--test`: 37 s. That length is
+measured: the latest frame at which the three runs `s2_a`, `s2_b` and `s2_c`
+were done (2121), 60 frames more, rounded up to a multiple of 60; done is half
+a second after the slackening has ended, so the second that the self-test asks
+for is inside. The stages end on what the simulation reaches, not at fixed
+times. The clip in `docs/media` is an earlier one of 1700 frames (the lift by
+the tip); it has not been recorded again.
 
 Validate one scene, then display more independent scenes:
 

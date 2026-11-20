@@ -34,6 +34,10 @@ from ._dvrk_grasper import GrasperConfig, jaw_opening_on_needle, needle_to_gripp
 from ._dvrk_layout import load_source_layout, load_source_stitch
 from ._dvrk_rcm_grasper import add_rcm_grasper
 
+# Gravity of the needle's weight [m/s²]: the factor that _needle_weight applies to the needle's mass in every
+# step. The scene publishes the weight itself from it (grasp_geometry, needle_weight_N).
+NEEDLE_GRAVITY = 9.81
+
 
 @wp.kernel(enable_backward=False)
 def _needle_weight(needle: int, mass: wp.array[float], force: wp.array[wp.spatial_vector]):
@@ -313,6 +317,9 @@ class GraspScene(Example):
         # construct native MuJoCo from those frames. They never move in a run.
         self.worker_thread = None
         self.jaw_opening_target = 0.0
+        # The needle's mass [kg] as a host value, read once here, at construction: the weight that the
+        # scene publishes (grasp_geometry, needle_weight_N) is formed from it without a read.
+        self.needle_mass_kg = float(self.model.body_mass.numpy()[self.needle_body])
 
     def _build_rigid_solver(self):
         self.rigid_solver = tool_rigid_solver(self.model, self.rigid_backend)
@@ -758,9 +765,13 @@ class GraspScene(Example):
             device=device,
         )
 
+    def _weighs_needle(self):
+        """Whether every step applies the needle's weight (the worker's ``needle_weight``; without a worker it does)."""
+        return bool(getattr(getattr(self, "worker_config", None), "needle_weight", True))
+
     def _prepare_step_loads(self, desired, velocity, dt):
         self._external_forces.zero_()
-        if getattr(getattr(self, "worker_config", None), "needle_weight", True):
+        if self._weighs_needle():
             wp.launch(
                 _needle_weight,
                 1,
@@ -1141,5 +1152,10 @@ class GraspScene(Example):
             # Radius of the hole that the needle makes in the surface [m]: the needle/tissue interaction
             # takes a point of the surface within it of the needle's track for the opening of that track.
             "needle_capture_radius": self.interaction.capture_radius,
+            # Weight that every step of this scene applies to the needle [N] (_needle_weight): its mass, read
+            # once at construction, times NEEDLE_GRAVITY; zero for a scene that applies none
+            # (SutureSceneConfig.needle_weight). A thread that pulls the needle with less is slack for the
+            # tool that holds the needle.
+            "needle_weight_N": NEEDLE_GRAVITY * self.needle_mass_kg if self._weighs_needle() else 0.0,
             "grasp_physics": "independent free needle; native MuJoCo finite hinge actuation and frictional capsule contacts; fixed-trocar shaft pivot/insertion/roll and wrist joint actuators with bounded IK; no weld or needle pose drive",
         }

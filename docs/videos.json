@@ -74,7 +74,7 @@
     "caption": "Simulation-time playback: the MuJoCo needle makes three planned stitches across the region 1 wound and its thread follows through every track and lies on the pad with friction. The thread is then tied at the first entry and pulled until the tissue limit, which narrows the wound from 2.4 mm to about 1.2 mm, tied at the last exit, and the needle is let go. Blue and orange spheres mark where the thread enters and leaves the tissue. Illustrative forces; no calibration. Playback rate does not measure live FPS."
   },
   "fem_needle_grasp": {
-    "frames": 2160,
+    "frames": 2220,
     "fps": 60,
     "poster_frame": 470,
     "show_ui": false,

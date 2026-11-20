@@ -1920,8 +1920,41 @@ travel is bounded by 6.75 mm, twice the 3.37 mm at which the pull measured on
 the CPU reaches the rule; a tightening that arrives there without its rule
 stops the procedure. One tied stitch narrows the top of the wound by 0.66 to
 0.68 mm of 2.85 mm at 26 mN on the needle while the tool holds; it does not
-close the wound, it is not a knot, and nothing holds the thread once the tool
-lets go.
+close the wound, it is not a knot, and nothing holds the thread yet when the
+hold of the tightening ends.
+
+Then the thread is tied a second time, at the last eyelet of its last planned
+passage, where it leaves the tissue, by the same request beside an action, and
+the palm goes back along the line of the tightening by a commanded travel $b$
+at the same ramp ([usage](usage.md#the-lock-and-the-slackening)). The thread
+to the needle is slack when the size of its force on the needle, $F$, is below
+the weight $W$ that the scene applies to the needle (`needle_weight_N` of the
+scene's geometry: the needle's mass times the 9.81 m/s² of the scene's weight
+kernel). The stop ramp begins in the first frame with $F<W$, from the speed
+that the command then has. Its way matters: beyond the point where the thread
+is slack the needle pushes the thread together against the tied eyelet, and
+$F$ rises again (on the CPU, tightened to the rule: 0.7 mN at its least, 2.8
+mN 0.46 mm further, 6 mN where the tightening began). So the command comes to
+that frame slowly. With $k$ the slope of $F$ against $b$ over the last
+$\tfrac12vT$ of $b$, taken while $F$ falls, the thread is predicted to carry
+nothing at
+
+$$
+b_{\rm slack}=b+\frac{F}{-k},
+$$
+
+and until the stop begins the commanded speed is at most that of the stop
+ramp with the travel $F/(-k)$ left, the speed $v\,u^2(3-2u)$ at which
+$d(u)=F/(-k)$. A stop that begins at $F=W$ then has the way $W/(-k)$ and ends
+at $b_{\rm slack}$, to within the travel of a frame. The slope is taken
+against the commanded travel, not the palm's own, because the palm springs
+forward as the load falls. The travel back is bounded by the travel of the
+tightening. The thread between the two ties then holds the tissue without the
+tool: in four device runs the command ends 2.15 to 2.17 mm back with 0.20 to
+0.22 mN on the needle, and one second later the wound is 0.39 to 0.40 mm
+narrower at its top and 0.21 to 0.22 mm at the track than before the stitch,
+59 % and 73 to 74 % of what the tightening closed. It does not close the wound,
+and the ties are held eyelets, not knots.
 
 Measured on one DGX Spark (GB10), MuJoCo Warp backend, 2026-11-17,
 self-test of `fem_needle_grasp` without the tool/tissue contact (2400 frames;
