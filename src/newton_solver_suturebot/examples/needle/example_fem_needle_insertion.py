@@ -643,7 +643,6 @@ class Example(PhantomExample):
             trial_budget=getattr(self.args, "trial_budget", None),
             search_past_puncture=getattr(self.args, "event_search", "tip-path") == "puncture",
             oracle_at_device_trial=getattr(self.args, "event_oracle", "restart") == "device-trial",
-            step_trial_budget=getattr(self.args, "event_budget", "loop") == "step",
         )
         self.coupler._host_wrench_enabled = getattr(self, "host_wrench_reuse", False)
 
@@ -1817,14 +1816,6 @@ class Example(PhantomExample):
             help="First trial of the host oracle after a device search: restart (default), a complete host trial "
             "from the load of the search; device-trial, the host evaluation of the last device trial as it stands "
             "(NeedleTissueCoupler.oracle_at_device_trial)",
-        )
-        parser.add_argument(
-            "--event-budget",
-            choices=("loop", "step"),
-            default="loop",
-            help="Trial budget of a step whose device search hands a surface event to the host oracle: loop "
-            "(default), the oracle loop has a budget of its own; step, the trials of the search count in the "
-            "oracle loop, one budget for the step (NeedleTissueCoupler.step_trial_budget)",
         )
         parser.add_argument(
             "--response-basis-nodes",

@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 """Read original bundled dVRK visual assets without replaying recorded motion.
 
-The prepared phantom has authored constant materials, not photographic textures.
 Distal tool parts are assembled from USD joint frames at explicitly chosen joint
 coordinates. These are render assets, not a grasp or articulated-physics model.
 """
@@ -238,43 +237,6 @@ def _provenance(stage, root):
             raise ValueError("Visual asset references leave the bundled tree")
         result.append({"path": str(path.relative_to(root)), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
     return sorted(result, key=lambda entry: entry["path"])
-
-
-def load_native_phantom(recording=None) -> VisualAsset:
-    """Load all authored phantom surfaces aligned to the native FEM pad frame.
-
-    No inactive-region cut faces are introduced. Vertices are original regional
-    surface vertices; updating the active region is the renderer's responsibility.
-    """
-    from pxr import UsdGeom
-
-    path, manifest, root, scene = _recording(recording)
-    stage = _stage(scene)
-    native_from_world = np.linalg.inv(_transform(manifest["phantom"]["T_world_from_native"]))
-    cache = UsdGeom.XformCache()
-    meshes = []
-    for region in sorted(manifest["phantom"]["regions"], key=lambda value: value["id"]):
-        name = f"Region{region['id']:02d}"
-        prim = stage.GetPrimAtPath(f"/SutureBotReplay/Phantom/{name}")
-        if not prim or prim.GetTypeName() != "Mesh":
-            raise ValueError(f"Missing phantom surface {name}")
-        world_from_local = np.asarray(cache.GetLocalToWorldTransform(prim)).T
-        meshes.append(
-            _mesh(prim, native_from_world @ world_from_local, name=name, frame="native FEM pad", asset_root=root)
-        )
-    return VisualAsset(
-        tuple(meshes),
-        {
-            "kind": "full authored phantom",
-            "sample_id": manifest["sample_id"],
-            "recording": str(path.relative_to(root)),
-            "native_from_recording_world": native_from_world.tolist(),
-            "appearance": "original USD materials; no photographic tissue texture is bundled",
-            "calibration": "recorded placement is a fitted estimate; inverse placement restores native simulation coordinates",
-            "source_layers": _provenance(stage, root),
-        },
-        {},
-    )
 
 
 def _joint_frame(joint, end):

@@ -9,8 +9,6 @@ No state-dependent projection, force or multiplier is cached.
 
 import warp as wp
 
-from .insertion import _shaft_projection
-
 
 @wp.func_native("""
     #if defined(__CUDA_ARCH__)
@@ -91,50 +89,6 @@ def _arc_point(value: float, source: wp.array[wp.vec3], table: ProjectionTable):
         if start <= value and value <= start + segment_length:
             point = start_point + (value - start) / segment_length * (end_point - start_point)
     return point
-
-
-@wp.func
-def cached_projection(
-    point: wp.vec3,
-    pose: wp.transform,
-    samples: wp.array[wp.vec3],
-    tangent_radius: float,
-    table: ProjectionTable,
-):
-    if table.valid[0] == 0 or not wp.isfinite(tangent_radius) or tangent_radius < 0.0:
-        return _shaft_projection(point, pose, samples, tangent_radius)
-    local_point = wp.transform_point(wp.transform_inverse(pose), point)
-    closest, tangent = wp.vec3(0.0), wp.vec3(0.0)
-    best = float(1.0e20)
-    fraction_best = float(0.0)
-    segment_best = int(0)
-    arc_best, arc_length = float(0.0), float(0.0)
-    for j in range(samples.shape[0] - 1):
-        a, b = samples[j], samples[j + 1]
-        direction = b - a
-        length = wp.length(direction)
-        fraction = wp.dot(local_point - a, direction) / wp.max(wp.dot(direction, direction), 1.0e-20)
-        candidate = a + wp.clamp(fraction, 0.0, 1.0) * direction
-        distance = wp.length_sq(candidate - local_point)
-        if distance < best:
-            closest, tangent, best = candidate, wp.normalize(direction), distance
-            fraction_best, segment_best = fraction, j
-            arc_best = arc_length + wp.clamp(fraction, 0.0, 1.0) * length
-        arc_length += length
-    before = wp.max(0.0, arc_best - tangent_radius)
-    after = wp.min(arc_length, arc_best + tangent_radius)
-    lower, upper = _arc_point(before, samples, table), _arc_point(after, samples, table)
-    if wp.length_sq(upper - lower) > 1.0e-20:
-        tangent = wp.normalize(upper - lower)
-    covered = not (
-        (segment_best == 0 and fraction_best < 0.0) or (segment_best == samples.shape[0] - 2 and fraction_best > 1.0)
-    )
-    return (
-        wp.transform_point(pose, closest),
-        wp.quat_rotate(wp.transform_get_rotation(pose), tangent),
-        best,
-        covered,
-    )
 
 
 class ShaftProjectionTables:

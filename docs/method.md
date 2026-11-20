@@ -3038,7 +3038,7 @@ the device trials at once. By default that includes a contact force at the
 puncture threshold. The accepted state is always one the oracle or a clean
 final device trial has confirmed.
 
-Three options of `NeedleTissueCoupler`, each off by default, change how such
+Two options of `NeedleTissueCoupler`, each off by default, change how such
 a step passes from the device trials to the oracle. Every puncture, entry and
 exit is still decided by the host evaluation and committed with the accepted
 step. What was measured with them is in the
@@ -3070,13 +3070,6 @@ stay over it, as that section states under "Not fixed by these options".
   the standing trial is the last trial of the device loop where the default
   path solves that trial a second time on the host: the same load and start
   state, not the same bits.
-- `step_trial_budget` (it needs a `trial_budget`): the trials of the device
-  search count in the oracle loop, so the trial budget bounds the trials of
-  the step instead of those of each loop. A search that the budget ended is
-  kept at the oracle's evaluation of its kept trial, with the event the
-  oracle decides there and whatever residual that evaluation shows. This
-  option changes which event steps are kept unconverged; the other two do
-  not.
 
 The mask of an opening (the surface faces that share a vertex with the
 punctured face and face its way) is computed from the faces connected to the

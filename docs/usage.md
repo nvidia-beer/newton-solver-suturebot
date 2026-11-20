@@ -786,7 +786,7 @@ trial budget, the two surface-event arguments it hands to its scene, and the
 response columns per step; each with the section here that has its runs. The
 options that selected a way the example no longer uses were taken out on
 2026-11-19: `--tool-tissue-contact first` (and the option without a value),
-`--event-search`, `--event-oracle`, `--event-budget` and
+`--event-search`, `--event-oracle` and
 `--frame-budget-unit`. A default run is the same as before: the example hands
 its scene the same arguments. The scene keeps its own arguments of those
 names for callers of `SutureSceneConfig.example_arguments`.
@@ -2361,14 +2361,14 @@ example. Python callers opt in with
 
 ### Surface events on the device and response columns per step (default)
 
-Four arguments of the scene decide what a coupled step of the GPU rigid backend
+Three arguments of the scene decide what a coupled step of the GPU rigid backend
 does at a surface event (a puncture, an entry or an exit of the needle tip) and
 how many response columns it solves after the track has grown. The insertion
 example, `SutureSceneConfig`, `GraspScene`, `NeedleTissueCoupler` and
-`AffineGuessManager` keep all four off, so Python callers are unaffected. This
-example switches three of them on: the two surface-event arguments are fixed
+`AffineGuessManager` keep all three off, so Python callers are unaffected. This
+example switches all three on: the two surface-event arguments are fixed
 in the example (`SURFACE_EVENTS`), and the response columns per step are its
-option `--response-basis-nodes`. Until 2026-11-19 the example had the three
+option `--response-basis-nodes`. Until 2026-11-19 the example had the two
 event arguments as options of its own; they selected the scene's way, which
 the example does not use, and were taken out. The scene keeps them.
 
@@ -2376,7 +2376,6 @@ the example does not use, and were taken out. The scene keeps them.
 |---|---|---|---|
 | `--event-search` | `tip-path` | `puncture` | `puncture`: the GPU trials also continue past a contact force at the puncture threshold (`NeedleTissueCoupler(search_past_puncture=True)`) |
 | `--event-oracle` | `restart` | `device-trial` | `device-trial`: the host oracle evaluates the last GPU trial as it stands instead of solving it again (`oracle_at_device_trial=True`) |
-| `--event-budget` | `loop` | `loop` | `step`: the trials of the GPU search count against the trial budget of the oracle loop (`step_trial_budget=True`; it needs a `--trial-budget`) |
 | `--response-basis-nodes` | `0` | `1` | `n`: a coupled step solves the response columns of at most `n` support nodes (`AffineGuessManager(nodes_per_attempt=n)`); `0`: every missing column in the step after the track has grown |
 
 ```bash
@@ -2386,7 +2385,7 @@ uv run --locked python -m newton_solver_suturebot.examples fem_needle_grasp --re
 uv run --locked python -m newton_solver_suturebot.examples fem_needle_grasp --response-basis-nodes 0
 ```
 
-A caller of the scene gets the scene's way of all four by naming them after
+A caller of the scene gets the scene's way of all three by naming them after
 the example's arguments (a later argument replaces an earlier one), as
 `tests/test_needle_event_search.py` does for its comparison on the device:
 `("--event-search", "tip-path", "--event-oracle", "restart", "--response-basis-nodes", "0")`.
@@ -2399,7 +2398,7 @@ trial 2.1 to 2.6 ms). A GPU search that converged past a request about the tip
 path is solved once more by the oracle (4.1 ms; 1.7 to 1.9 ms when the oracle
 evaluates the GPU trial as it stands). The step after an entry solves the
 twelve response columns of the first track sample (18 to 20 ms). The
-[method](method.md#gpu-trial-pipeline) describes the three coupler options and
+[method](method.md#gpu-trial-pipeline) describes the two coupler options and
 the bound on the columns, and what was compared for each.
 
 Measured on one DGX Spark (GB10), GPU rigid backend, one scene, no window, 826
@@ -2471,14 +2470,6 @@ and 212 took 71 to 87 ms and 64 to 71 ms.
   60.0 ms, so frame 77 is over 66.7 ms there. In that run frames 81 and 83
   took 60.8 and 61.5 ms, frame 316 81.1 ms and frame 317 67.1 ms, and 15
   intervals of the lowering were over 66.7 ms.
-
-`--event-budget step` is the argument of the scene for the event step that
-uses the budget twice: with it a search that the budget ended is kept at the oracle's
-evaluation of its kept trial, so the step ends after one budget. It changes
-which event steps are accepted unconverged and at which trial, and it was not
-measured on this state of the example, so the example does not hand it on. In three runs of all
-four options on the prototype of this change (the same night) the frame of
-the third exit took 48 to 82 ms and frame 316 took 67 to 75 ms.
 
 `NeedleTissueCoupler.coupling_oracle_device_trials` counts the oracle loops
 that started at a GPU trial and `coupling_oracle_device_accepts` those the

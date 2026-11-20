@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 """Surface events between the device trials and the host oracle.
 
-Coupler options, all off by default: the device trials search past a contact force at the
-puncture threshold, the host oracle evaluates the last trial of a device search as it
-stands, and the trial budget counts the search and the oracle of a step together. Most
-checks here run on the CPU, where every trial loop is the host-controlled one: the forces
-the first option relies on, and the hand-over of a standing trial. On CUDA the scene of the
-default demo is driven through its first puncture and entry with the options off and on.
+Coupler options, both off by default: the device trials search past a contact force at the
+puncture threshold, and the host oracle evaluates the last trial of a device search as it
+stands. Most checks here run on the CPU, where every trial loop is the host-controlled one:
+the forces the first option relies on, and the hand-over of a standing trial. On CUDA the
+scene of the default demo is driven through its first puncture and entry with the options
+off and on.
 """
 
 import contextlib
@@ -164,19 +164,12 @@ class EventOptionTests(unittest.TestCase):
             coupler = example.coupler
             self.assertIs(type(coupler), NeedleTissueCoupler)
             self.assertEqual((coupler.search_past_puncture, coupler.oracle_at_device_trial), (False, False))
-            self.assertFalse(coupler.step_trial_budget)
             self.assertEqual((coupler.coupling_oracle_device_trials, coupler.coupling_oracle_device_accepts), (0, 0))
         parser = insertion.Example.create_parser()
         defaults = parser.parse_args([])
-        self.assertEqual(
-            (defaults.event_search, defaults.event_oracle, defaults.event_budget), ("tip-path", "restart", "loop")
-        )
-        chosen = parser.parse_args(
-            ["--event-search", "puncture", "--event-oracle", "device-trial", "--event-budget", "step"]
-        )
-        self.assertEqual(
-            (chosen.event_search, chosen.event_oracle, chosen.event_budget), ("puncture", "device-trial", "step")
-        )
+        self.assertEqual((defaults.event_search, defaults.event_oracle), ("tip-path", "restart"))
+        chosen = parser.parse_args(["--event-search", "puncture", "--event-oracle", "device-trial"])
+        self.assertEqual((chosen.event_search, chosen.event_oracle), ("puncture", "device-trial"))
 
     def test_command_line_options_set_the_coupler(self):
         with (
@@ -187,17 +180,13 @@ class EventOptionTests(unittest.TestCase):
         ):
             arguments = ["--asset", str(Path(directory) / "pad.usd"), "--regions", "1", "--substeps", "32"]
             arguments += ["--event-search", "puncture", "--event-oracle", "device-trial"]
-            arguments += ["--event-budget", "step", "--trial-budget", "12"]
             viewer = ViewerNull()
             try:
                 example = insertion.Example(viewer, insertion.Example.create_parser().parse_args(arguments))
                 _prepare(example)
                 example.start()
                 coupler = example.coupler
-                self.assertEqual(
-                    (coupler.search_past_puncture, coupler.oracle_at_device_trial, coupler.step_trial_budget),
-                    (True, True, True),
-                )
+                self.assertEqual((coupler.search_past_puncture, coupler.oracle_at_device_trial), (True, True))
                 # On the CPU every loop is the host loop: the options select nothing there.
                 example.step()
                 self.assertTrue(example.running, example.failure_reason)
@@ -212,27 +201,19 @@ class EventOptionTests(unittest.TestCase):
         parser = GraspExample.create_parser()
         defaults = GraspExample._coupling(parser.parse_args([]))
         # The search past the puncture threshold and the oracle at the device trial: one way,
-        # named once in the example; the budget of the step is not handed on, so the scene's
-        # own value ("loop") stands.
+        # named once in the example.
         self.assertEqual(grasp_example.SURFACE_EVENTS, ("--event-search", "puncture", "--event-oracle", "device-trial"))
         self.assertEqual(defaults[4:8], grasp_example.SURFACE_EVENTS)
-        self.assertNotIn("--event-budget", defaults)
         # The parser of the example's scene: the insertion example's, and the tool/tissue contact
         # that the example forwards by default.
         scene_parser = GraspScene.create_parser()
         parsed = scene_parser.parse_args(["--asset", "pad.usd", *defaults])
-        self.assertEqual(
-            (parsed.event_search, parsed.event_oracle, parsed.event_budget), ("puncture", "device-trial", "loop")
-        )
+        self.assertEqual((parsed.event_search, parsed.event_oracle), ("puncture", "device-trial"))
         # The alternatives are options of the scene, not of the example.
         names = vars(parser.parse_args([]))
-        for name in ("event_search", "event_oracle", "event_budget"):
+        for name in ("event_search", "event_oracle"):
             self.assertNotIn(name, names)
-        for option, value in (
-            ("--event-search", "tip-path"),
-            ("--event-oracle", "restart"),
-            ("--event-budget", "step"),
-        ):
+        for option, value in (("--event-search", "tip-path"), ("--event-oracle", "restart")):
             with (
                 self.subTest(option=option),
                 contextlib.redirect_stderr(io.StringIO()),
@@ -298,7 +279,7 @@ class StandingTrialTests(unittest.TestCase):
             record["punctures"] = interaction.puncture_count
             return record
 
-    def _kept(self, *, hand_over, budget=3, search_trials=0):
+    def _kept(self, *, hand_over, budget=3):
         """First step of the pressed scene, the needle free and no surface metric: the loop does not settle.
 
         The fixture of ``test_grasp_host_trial_budget`` whose loop only the trial budget ends
@@ -306,8 +287,7 @@ class StandingTrialTests(unittest.TestCase):
         on the wire; with the needle in the seated grasp of the reset that loop converges in 3
         trials, before any of the budgets below).
         ``hand_over``: the loop that the budget ended is followed by a second one that is handed
-        its kept trial, with the trials of the first loop counted (``"spent"``) or not.
-        ``search_trials``: the one loop of the step is told that this many trials came before.
+        its kept trial.
         """
         with _scene() as (scene, _):
             _press(scene, 1.0, free=True)
@@ -319,58 +299,27 @@ class StandingTrialTests(unittest.TestCase):
             record = {"second": None}
 
             def twice(*args, **kwargs):
-                if search_trials:
-                    kwargs = {**kwargs, "search_trials": search_trials}
                 kept = solve_host(*args, **kwargs)
                 if not (hand_over and kept and coupler._budget_kept):
                     return kept
                 record["first"] = coupler.iterations
-                counted = coupler.iterations if hand_over == "spent" else 0
-                again = solve_host(*args, **{**kwargs, "device_trial": True, "search_trials": counted})
+                again = solve_host(*args, **{**kwargs, "device_trial": True})
                 record["second"] = coupler.iterations
                 return again
 
             coupler._solve_host = twice
             coupler.step(scene.state_0, scene.state_1, scene.control, scene.sim_dt)
-            record.update(
-                state=_bits(scene.state_1),
-                load=coupler._load.numpy().copy(),
-                keeps=coupler.coupling_budget_keeps,
-                kept=coupler._budget_kept,
-                residual=coupler.residual,
-                trials=coupler.iterations,
-            )
+            record.update(keeps=coupler.coupling_budget_keeps, kept=coupler._budget_kept)
             return record
 
-    @unittest.skipIf(_CUDA, "bit-for-bit comparison of two runs: CPU only")
-    def test_trials_of_a_search_count_against_the_budget_of_the_step(self):
-        # A loop whose first trial is the third trial of the step has the budget less two.
-        shorter = self._kept(hand_over=None, budget=4)
-        counted = self._kept(hand_over=None, budget=6, search_trials=3)
-        self.assertEqual((shorter["keeps"], counted["keeps"]), (1, 1))
-        self.assertEqual(counted["trials"], shorter["trials"])
-        self.assertEqual(counted["residual"], shorter["residual"])
-        for name, expected, actual in zip(_FIELDS, shorter["state"], counted["state"], strict=True):
-            np.testing.assert_array_equal(expected, actual, err_msg=name)
-        np.testing.assert_array_equal(shorter["load"], counted["load"])
-        # Uncounted, the same loop goes on to its own budget.
-        own = self._kept(hand_over=None, budget=6)
-        self.assertGreater(own["trials"], shorter["trials"])
-
-    @unittest.skipIf(_CUDA, "bit-for-bit comparison of two runs: CPU only")
-    def test_kept_trial_of_a_search_the_budget_ended_is_kept_at_the_oracles_evaluation(self):
-        reference = self._kept(hand_over=None)
+    @unittest.skipIf(_CUDA, "the host loop stands in for a device search: CPU only")
+    def test_oracle_loop_that_is_handed_the_kept_trial_of_a_search_has_a_budget_of_its_own(self):
+        reference = self._kept(hand_over=False)
         self.assertEqual((reference["keeps"], reference["kept"]), (1, True))
-        spent = self._kept(hand_over="spent")
-        # The second loop ends in its first trial and keeps the trial the first loop kept.
-        self.assertEqual((spent["second"], spent["keeps"], spent["kept"]), (1, 2, True))
-        self.assertEqual(spent["residual"], reference["residual"])
-        for name, expected, actual in zip(_FIELDS, reference["state"], spent["state"], strict=True):
-            np.testing.assert_array_equal(expected, actual, err_msg=name)
-        np.testing.assert_array_equal(reference["load"], spent["load"])
-        # Without the option the oracle loop has a budget of its own and goes on from the kept trial.
-        own = self._kept(hand_over="own budget")
+        # The oracle loop goes on from the kept trial, and its own budget ends it with a kept trial.
+        own = self._kept(hand_over=True)
         self.assertGreater(own["second"], 1)
+        self.assertEqual((own["keeps"], own["kept"]), (2, True))
 
     @unittest.skipIf(_CUDA, "bit-for-bit comparison of two runs: CPU only")
     def test_oracle_accepts_a_standing_converged_trial_in_its_first_trial_bit_for_bit(self):
@@ -407,8 +356,6 @@ class DeviceSearchSceneTests(unittest.TestCase):
     frames = 90
     scene_defaults = ("--event-search", "tip-path", "--event-oracle", "restart", "--response-basis-nodes", "0")
     options = ("--event-search", "puncture", "--event-oracle", "device-trial", "--response-basis-nodes", "1")
-    # The budget of the step is a separate option and stays off in both.
-    budget = ("--event-budget", "loop")
     # So does the contact between the tools and the tissue: the scene's own default, not the example's.
     contact = ("--no-tool-tissue-contact",)
 
@@ -483,7 +430,7 @@ class DeviceSearchSceneTests(unittest.TestCase):
                 "late": _late(report),
                 "late_names": (census["late_sites"], census["late_modules"], census["graphs_released_after_startup"]),
                 "begun": begun,
-                "options": (coupler.search_past_puncture, coupler.oracle_at_device_trial, coupler.step_trial_budget),
+                "options": (coupler.search_past_puncture, coupler.oracle_at_device_trial),
                 "oracle": (coupler.coupling_oracle_device_trials, coupler.coupling_oracle_device_accepts),
                 "fallbacks": coupler.coupling_graph_fallbacks,
                 "basis": (manager.nodes_per_attempt, manager.basis_builds, manager.deferred_builds),
@@ -499,9 +446,9 @@ class DeviceSearchSceneTests(unittest.TestCase):
             scene.viewer.close()
 
     def test_oracle_evaluates_device_trials_and_decides_the_events_of_the_default_scene_at_their_substeps(self):
-        off = self._drive(self.scene_defaults + self.budget)
-        on = self._drive(self.options + self.budget)
-        self.assertEqual((off["options"], on["options"]), ((False, False, False), (True, True, False)))
+        off = self._drive(self.scene_defaults)
+        on = self._drive(self.options)
+        self.assertEqual((off["options"], on["options"]), ((False, False), (True, True)))
         # Both went through the first puncture and the entry behind it.
         self.assertEqual([kind for _, _, kind in off["events"]][:2], ["puncture", "entry"])
         self.assertEqual((off["entries"], on["entries"]), (1, 1))

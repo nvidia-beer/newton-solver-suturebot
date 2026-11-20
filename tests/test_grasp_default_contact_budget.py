@@ -175,7 +175,7 @@ class DefaultNamespaceTests(unittest.TestCase):
         for stale in ("default: off", "0 runs whole frames (default)", "the tissue (the default)"):
             self.assertNotIn(stale, text)
         # Nor are the options that selected a way no longer in use.
-        for gone in ("--frame-budget-unit", "--event-search", "--event-oracle", "--event-budget", "'first'"):
+        for gone in ("--frame-budget-unit", "--event-search", "--event-oracle", "'first'"):
             self.assertNotIn(gone, text)
 
 

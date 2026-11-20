@@ -194,10 +194,6 @@ class InsertionPlan:
         return 0.0
 
     @property
-    def approach_angle(self):
-        return self.initial_angle
-
-    @property
     def path_points(self):
         return self.tip(np.linspace(self.initial_angle, self.finish_angle, 160))
 

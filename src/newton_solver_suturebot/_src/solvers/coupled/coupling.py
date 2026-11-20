@@ -393,20 +393,6 @@ class NeedleTissueCoupler:
     ``coupling_oracle_device_trials`` counts these loops and
     ``coupling_oracle_device_accepts`` those that ended in their first trial.
 
-    ``step_trial_budget=True`` (default off; it needs a ``trial_budget``) makes the
-    trial budget the budget of the coupled step where a device search hands its load to
-    the host oracle. Without the option the oracle loop has a budget of its own, so one
-    step can evaluate twice the budget. With it the trials of the search count: the
-    first trial of the oracle loop is the last trial of the search (it is evaluated
-    again or, with ``oracle_at_device_trial``, as it stands) and has the number of that
-    trial, and the loop keeps its best trial when that count reaches the budget. A
-    search that the budget ended has used it up: the oracle's first trial, the kept
-    trial of the search, is kept, with the surface event the oracle decides in it and
-    whatever residual it shows. A trial in which the interaction reports a failure is
-    not kept; the loop then goes on without a budget, as every host loop does. A host
-    loop that follows no search, or that starts again from the accepted load, keeps its
-    own budget.
-
     ``coupling_budget_keeps`` counts the trial loops the budget ended with a kept
     trial (device and host loops). The acceptance checks of the step can still
     refuse such a trial, as they can a converged one; the loop is counted all the
@@ -448,7 +434,6 @@ class NeedleTissueCoupler:
         trial_budget=None,
         search_past_puncture=False,
         oracle_at_device_trial=False,
-        step_trial_budget=False,
     ):
         import mujoco
 
@@ -529,10 +514,6 @@ class NeedleTissueCoupler:
         self.search_past_puncture = bool(search_past_puncture)
         # The host oracle evaluates the last trial of a device search as it stands (see the class text).
         self.oracle_at_device_trial = bool(oracle_at_device_trial)
-        # The trial budget counts the device search and the host oracle of one step together (see the class text).
-        self.step_trial_budget = bool(step_trial_budget)
-        # Trials of the device search whose load the host oracle of this step starts from.
-        self._search_trials = 0
         # Host loops whose first trial was the last trial of a device search, and those of them
         # that the oracle accepted in that trial.
         self.coupling_oracle_device_trials = 0
@@ -952,7 +933,6 @@ class NeedleTissueCoupler:
     def _solve_device(self, graph, state_in, control, dt, tunnel_alm):
         """Return None for exact fallback, or the completed GPU solve result."""
         self._first_trial_event = self._event_load_kept = self._device_trial_stands = False
-        self._search_trials = 0
         self._budget_kept = False
         self._invalidate_query_cache()
         try:
@@ -1017,7 +997,6 @@ class NeedleTissueCoupler:
                 self.coupling_graph_event_searches += int(converged)
             self._first_trial_event = first == 1
             self._event_load_kept = converged
-            self._search_trials = self.iterations if converged else 0
             self._count_fallback_reasons(getattr(graph, "seen", graph.permissions.fallback))
             if converged and self.oracle_at_device_trial and self._gpu_checkpoint is not None:
                 # The last trial of the search stands: its candidate state was computed with the
@@ -1189,7 +1168,6 @@ class NeedleTissueCoupler:
         *,
         capture_forces=True,
         device_trial=False,
-        search_trials=0,
     ):
         """The host-controlled trial loop in one call (see _host_trials)."""
         trials = self._host_trials(
@@ -1202,7 +1180,6 @@ class NeedleTissueCoupler:
             preconditioned,
             capture_forces=capture_forces,
             device_trial=device_trial,
-            search_trials=search_trials,
         )
         try:
             next(trials)
@@ -1222,7 +1199,6 @@ class NeedleTissueCoupler:
         *,
         capture_forces=True,
         device_trial=False,
-        search_trials=0,
     ):
         """Original host-controlled trial loop; also the exact event fallback.
 
@@ -1231,8 +1207,7 @@ class NeedleTissueCoupler:
 
         ``device_trial=True``: the candidate state is the last trial of a device search, computed
         with the trial load. The first trial evaluates it without repeating its tissue solve and
-        rigid interval. ``search_trials``: trials of the device search this loop continues, when
-        they count against the trial budget; the first trial of this loop is the last of them.
+        rigid interval.
         """
         shadow_pending = False
         if self._gpu_checkpoint is not None:
@@ -1335,8 +1310,6 @@ class NeedleTissueCoupler:
         # Trial budget, the rule of the device loop: smallest force residual of the current
         # multiplier epoch (its load is in _best_load) and whether this trial re-applies it.
         trial_budget = getattr(self, "trial_budget", None)
-        # Trials that came before the first one of this loop and count against its budget.
-        counted = max(int(search_trials) - 1, 0)
         best_residual = None
         best_reapplied = False
         if trial_budget is not None and self._best_load is None:
@@ -1433,7 +1406,7 @@ class NeedleTissueCoupler:
                         force_graph.stage()
                     converged = True
                     break
-                if trial_budget is not None and iteration + counted >= trial_budget:
+                if trial_budget is not None and iteration >= trial_budget:
                     # The trial budget is used up. This trial passes the force test and only
                     # waits for a multiplier update, so it is the best trial of its epoch, and
                     # it is the last one evaluated: it is kept as it is, without the update.
@@ -1464,7 +1437,7 @@ class NeedleTissueCoupler:
             if trial_budget is not None:
                 # Smallest force residual of the multiplier epoch; of equal trials, the later one.
                 best = best_residual is None or self.residual <= best_residual
-                if best_reapplied or (best and iteration + counted >= trial_budget):
+                if best_reapplied or (best and iteration >= trial_budget):
                     # The trial budget is used up and the loop has neither failed nor diverged.
                     # The last trial is the best one, or it applied the best load once more:
                     # it is kept, through the path of a converged trial, whatever its residual.
@@ -1473,7 +1446,7 @@ class NeedleTissueCoupler:
                         break
                     # The interaction reported a failure in it: the loop goes on without a budget.
                     trial_budget = None
-                elif iteration + counted >= trial_budget:
+                elif iteration >= trial_budget:
                     # An earlier trial is the best one. Its load is applied once more, with no
                     # correction after this trial, and that trial is kept.
                     wp.copy(self._trial_load, self._best_load)
@@ -2280,7 +2253,7 @@ class NeedleTissueCoupler:
             if converged is None:
                 from .host_trial_forces import TrialForceFallback
 
-                def host(captured_forces, device_trial=False, search_trials=0):
+                def host(captured_forces, device_trial=False):
                     pc = self._shaft_preconditioner
                     if attempt.preconditioned is None:
                         # Once per step, where its host-controlled trials first run. The accepted
@@ -2302,8 +2275,6 @@ class NeedleTissueCoupler:
                     options = {} if captured_forces else {"capture_forces": False}
                     if device_trial:
                         options["device_trial"] = True
-                    if search_trials:
-                        options["search_trials"] = search_trials
                     own = getattr(self._solve_host, "__func__", None) is NeedleTissueCoupler._solve_host
                     if pieces is None or not own:
                         return self._timed_loop(
@@ -2345,10 +2316,8 @@ class NeedleTissueCoupler:
                     stands = self._device_trial_stands
                     self._device_trial_stands = False
                     self.coupling_oracle_device_trials += int(stands)
-                    # With a budget of the step, the trials of the search count in the oracle loop.
-                    counted = self._search_trials if self.step_trial_budget else 0
                     try:
-                        converged = yield from host(False, stands, counted)
+                        converged = yield from host(False, stands)
                     except NeedleStepTooLarge:
                         converged = False
                     if not converged:
