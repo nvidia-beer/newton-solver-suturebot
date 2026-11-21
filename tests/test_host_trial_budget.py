@@ -1638,7 +1638,7 @@ class LocalSceneHostTrialTests(unittest.TestCase):
             scenes.step(action, deadline=10.0)
             scenes.step(action, deadline=10.0, unit="attempt")
             self.assertEqual(calls, [((), {}), ((9.75,), {}), ((9.75,), {})])
-            self.assertLess(scenes._observe_seconds, 0.25)
+            self.assertEqual(scenes._observe_longest, 0.25)
             # The unit host-trial: the deadline less the longest observation, and the permission to return inside.
             scenes.step(action, deadline=10.0, unit="host-trial", observe_native_trials=True)
             scenes.step(action, unit="host-trial", observe_native_trials=True)
@@ -2000,7 +2000,7 @@ class ExampleSceneUnitTests(unittest.TestCase):
             small = {"asset": str(Path(directory) / "pad.usd"), "entry_xy": (0, 0.005), "exit_xy": (0, -0.005)}
             args = SimpleNamespace(
                 device=DEVICE, num_envs=1, substeps=4, controller="procedural", rigid_backend="native", viewer="null",
-                speed=0.003, settle_seconds=0.02, spacing=0.45, lift_height=0.0, tip_lift_height=0.0,
+                speed=0.003, settle_seconds=0.02, spacing=0.45, lift_height=0.0,
             )  # fmt: skip
             with patch.object(
                 grasp_example, "SutureSceneConfig", lambda **settings: SutureSceneConfig(**(settings | small))

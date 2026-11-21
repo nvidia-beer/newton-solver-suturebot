@@ -11,6 +11,7 @@ import newton
 import numpy as np
 import warp as wp
 from test_worker_thread import scene_fixture
+from test_worker_thread_graph import invalidate_step_graphs
 
 from newton_solver_suturebot._src.solvers.coupled.interface.tool_tissue_contact import (
     ToolTissueContact,
@@ -548,7 +549,7 @@ class WorkerThreadToolTissueTests(unittest.TestCase):
         for _ in range(2):
             reference.advance(dt)
             worker.advance(dt)
-        worker.invalidate_step_graphs()
+        invalidate_step_graphs(worker)
         self.assertGreater(worker.tool_tissue.force.numpy().max(), 0)
         before = [(str(array.dtype), array.shape, array.numpy().tobytes()) for array in worker.state]
         steps, launches = worker.accepted_steps, worker.graph_launches

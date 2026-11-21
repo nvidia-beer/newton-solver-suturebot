@@ -1338,7 +1338,6 @@ class GraspSceneCensusTests(unittest.TestCase):
                 defaults.speed,
                 defaults.settle_seconds,
                 lift_height=defaults.lift_height,
-                tip_lift_height=grasp_example.Example._tip_lift_height(defaults),
                 pull_through=grasp_example.Example._pull_through(defaults),
             )
             _mark_startup(scene)

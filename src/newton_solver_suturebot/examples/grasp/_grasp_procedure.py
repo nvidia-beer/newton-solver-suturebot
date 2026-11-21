@@ -61,13 +61,6 @@ name                                    value       what chose it
 ``pull_grasp_jaws_exchanged``           True        the plan for the dVRK port layout and the default stitch
                                                     (docs/usage.md, the way to the tip and the pull, has the
                                                     numbers that bound twist and bite)
-``tip_grasp_roll_rad``                  -2.618      measured, the lift by the tip (without the pull): -150 and 45
-``tip_grasp_bite_rad``                  0.7854      degrees, from a scan of the tool's inverse kinematics for
-``tip_grasp_jaws_exchanged``            False       the dVRK port layout; at the edge of the range (roll joint
-                                                    0.002 to 0.03 rad from its limit); -155 and -160 degrees
-                                                    took the needle into tissue that does not move, 4 runs of 4
-``pull_slack_radii``                    4           by hand, the pull to the entry (without thread tracks): twice
-                                                    the hole; a coupled run needed 0.38 mm, this allows 1.12 mm
 slack of the pull through the tissue    1 element   by hand (``_pull_out_span``): the bound is one thread element
                                                     beyond the end of the pull
 ``draw_needle_lengths``                 1           by hand: after the pull the tool draws the thread on through
@@ -916,10 +909,9 @@ class _Scene:
     lift_time: float = 0.0
     lift_complete: bool = False
     lift_offset: float = 0.0
-    # Stage of the procedure: arc, lift, release, retreat, approach, descend, close, then either
-    # tip_lift, done or (with the pull) pull, clear, done; with the pull through the tissue the
-    # draw and the stitch follow the clear hold: pull, clear, draw, drawn, tie, tighten, hold, lock,
-    # slacken, hold, done.
+    # Stage of the procedure: arc, lift, done; with the pull: arc, lift, release, retreat, approach,
+    # descend, close, pull, clear, and the draw and the stitch after the clear hold: draw, drawn, tie,
+    # tighten, hold, lock, slacken, hold, done.
     stage: str = "arc"
     drive_angle: float = 0.0
     lifts_complete: int = 0
@@ -1049,18 +1041,18 @@ class ProceduralGraspController:
     the commanded arc is reported separately from actual entry and exit events.
     An optional inspection lift follows the arc, which then continues past the plan
     until the needle is centred in the tissue: the gripper moves along the entry
-    normal, holds, then returns. With a lift at the tip the tool then opens its jaws
-    (the tissue holds the needle), takes the tip that has come out of the tissue and
-    lifts once more, which pulls the tissue by the needle tip. On the way from the one
-    grasp to the other every capsule of the tool stays clear of the tissue at rest and
-    of the needle (``_transfer``).
+    normal, holds, then returns.
 
-    With ``pull_through`` the tool takes the tip with another grasp, one from which it can
-    go on along the needle's curve (``pull_grasp_*``), and instead of lifting it turns the
+    With ``pull_through`` the tool then opens its jaws (the tissue holds the needle) and
+    takes the tip that has come out of the tissue, with a grasp from which it can go on
+    along the needle's curve (``pull_grasp_*``). On the way from the one grasp to the other
+    every capsule of the tool stays clear of the tissue at rest and of the needle
+    (``_transfer``). It then turns the
     needle about the needle's own centre of curvature, in its own plane, at the speed rule
     of the insertion (``_pull_target``): the tip rises out of the exit and the tail moves
-    towards the entry. In a scene whose thread follows the needle's track through the tissue
-    (``geometry["thread_tracks"]``) the tail goes on into the entry, through the tissue and
+    towards the entry. The pull needs a scene whose thread follows the needle's track through
+    the tissue (``geometry["thread_tracks"]``; the constructor refuses another): the tail goes
+    on into the entry, through the tissue and
     out of the exit: the pull ends when the tissue holds no part of the track any more and
     the tail is one thread element (``geometry["thread_element_length"]``) past the exit
     marker, and the tool then holds the needle clear of the tissue. The thread now lies through
@@ -1073,11 +1065,8 @@ class ProceduralGraspController:
     holds. Then it asks for a second tie where the thread comes out of the tissue, takes the
     needle back along the same line until the thread to the needle is slack
     (``_slacken_target``), and holds: the thread between the two ties stays tight without
-    the tool. In a scene without thread
-    tracks the pull ends when the tail arrives at the hole of the entry, because the thread
-    would be pressed back out through the surface; the tool then holds the needle there. The
-    pull needs no lift before it and excludes the lift at the
-    tip. The plan of that grasp takes only points whose descent, closing
+    the tool. The
+    pull needs no lift before it. The plan of that grasp takes only points whose descent, closing
     and pull-out arc the tool can reach with every joint inside its limits by the reach
     margin, and the procedure stops with a reason when the needle has none
     (``_grasp_reach``). Without the argument nothing of this is used.
@@ -1117,27 +1106,17 @@ class ProceduralGraspController:
     # the needle rests (_plan_tip_grasp, _transfer).
     transfer_clearance = 0.012
     release_opening_rad = 0.6
-    # The grasp at the tip from which the tool lifts by it (without the pull): twist of the tool
-    # about the needle tangent and bite angle there [rad], -150 and 45 degrees (the parameters of
-    # needle_to_gripper_pose). It cannot pull: its roll joint stands at its limit at the pregrasp,
-    # and beyond it for a grasp point one piece of the needle's centre line (0.7 mm) nearer the tip,
-    # and the pull turns it further.
-    tip_grasp_roll_rad = -2.618
-    tip_grasp_bite_rad = 0.7854
-    tip_grasp_jaws_exchanged = False
     # The grasp at the tip from which the tool pulls the needle on along its curve (pull_through):
-    # twist -60 degrees, bite 30 degrees, and the tool turned half a turn about its jaw axis (the
-    # jaws exchanged, needle_to_gripper_pose): without the exchange the roll joint would have to
-    # pass its limit on the way over to the tip.
+    # twist of the tool about the needle tangent -60 degrees, bite angle 30 degrees [rad] (the
+    # parameters of needle_to_gripper_pose), and the tool turned half a turn about its jaw axis (the
+    # jaws exchanged): without the exchange the roll joint would have to pass its limit on the way
+    # over to the tip.
     pull_grasp_roll_rad = -1.0472
     pull_grasp_bite_rad = 0.5236
     pull_grasp_jaws_exchanged = True
-    # Arc by which the pull to the entry may go on beyond what the resting needle needs, in wire
-    # radii: the tissue goes along with the needle a little and the tool is behind its target.
     # The pull through the tissue ends one thread element past the exit marker (the element that
     # hangs on the tail is then outside, and the eyelet at the exit holds a free one) and may go
     # on by one more element (_pull_out_span).
-    pull_slack_radii = 4.0
     # Time the pull waits at its bound for the tail to arrive [s]: as long as a lost contact.
     pull_wait_seconds = contact_loss_seconds
     # How far the tool draws the loose thread on through the tissue after the pull, before the first tie,
@@ -1160,7 +1139,6 @@ class ProceduralGraspController:
         settle_seconds=0.5,
         *,
         lift_height=0.0,
-        tip_lift_height=0.0,
         pull_through=False,
     ):
         if geometry.get("control_mode") != "physical_grasp" or config.control_mode != "physical_grasp":
@@ -1178,69 +1156,52 @@ class ProceduralGraspController:
         self.config, self.speed, self.settle_seconds = config, float(speed), float(settle_seconds)
         if not np.isfinite(lift_height) or not 0 <= lift_height <= self.lift_height_limit:
             raise ValueError(f"Lift height must be finite and between 0 and {self.lift_height_limit:g} metres")
-        if not np.isfinite(tip_lift_height) or not 0 <= tip_lift_height <= lift_height:
-            raise ValueError("The lift at the tip must be finite and between 0 and the lift after the insertion")
         self.lift_height = float(lift_height)
-        self.tip_lift_height = float(tip_lift_height)
         self.pull_through = bool(pull_through)
-        if self.pull_through and self.tip_lift_height:
-            # The lift by the tip was scanned and run with the earlier grasp only, and the pull replaces it.
-            raise ValueError("The pull replaces the lift at the tip: ask for one of the two")
-        # Whether the thread of the scene follows the needle's track through the tissue, and the arc
-        # by which the tail is then taken past the exit [m]: one thread element. Without thread
-        # tracks, the radius of the hole that the needle has made at its entry [m]: the scene's
-        # needle/tissue interaction takes a point of the surface within it of the needle's track
-        # for that opening (two wire radii). The pull then ends when the tail of the needle is
-        # within this arc of the entry marker: it has arrived at the hole, and the end of the wire
-        # is not yet in the tissue.
-        self.thread_tracks, self.pull_clearance, self.pull_hole = False, 0.0, 0.0
+        # Whether the thread of the scene follows the needle's track through the tissue, as the pull
+        # needs it to, and the arc by which the tail is then taken past the exit [m]: one thread element.
+        self.thread_tracks, self.pull_clearance = False, 0.0
         # What the last call asks of every scene beside its action (commands()).
         self._asked = []
         if self.pull_through:
-            self.tip_grasp_roll_rad, self.tip_grasp_bite_rad = self.pull_grasp_roll_rad, self.pull_grasp_bite_rad
-            self.tip_grasp_jaws_exchanged = self.pull_grasp_jaws_exchanged
-            if geometry.get("thread_tracks"):
-                clearance = geometry.get("thread_element_length")
-                if clearance is None or not np.isfinite(clearance) or clearance <= 0:
-                    raise ValueError(
-                        "The pull through the tissue needs the length of a thread element (thread_element_length)"
-                    )
-                self.thread_tracks, self.pull_clearance = True, float(clearance)
-                # The least tissue volume at which the tied thread is as tight as the tissue allows: the rule
-                # of the thread/tissue coupling, or what the scene has found for its own tissue under the tie
-                # (tight_volume_ratio), which may ask for an earlier stop and never for a later one.
-                from ..._src.solvers.thread.tissue import TIGHT_VOLUME_RATIO
+            if not geometry.get("thread_tracks"):
+                raise ValueError(
+                    "The pull needs a scene whose thread follows the needle's track through the tissue (thread_tracks)"
+                )
+            clearance = geometry.get("thread_element_length")
+            if clearance is None or not np.isfinite(clearance) or clearance <= 0:
+                raise ValueError(
+                    "The pull through the tissue needs the length of a thread element (thread_element_length)"
+                )
+            self.thread_tracks, self.pull_clearance = True, float(clearance)
+            # The least tissue volume at which the tied thread is as tight as the tissue allows: the rule
+            # of the thread/tissue coupling, or what the scene has found for its own tissue under the tie
+            # (tight_volume_ratio), which may ask for an earlier stop and never for a later one.
+            from ..._src.solvers.thread.tissue import TIGHT_VOLUME_RATIO
 
-                volume = geometry.get("tight_volume_ratio", TIGHT_VOLUME_RATIO)
-                if volume is None or not np.isfinite(volume) or not TIGHT_VOLUME_RATIO <= volume < 1.0:
-                    raise ValueError(
-                        "The least tissue volume of a tight thread (tight_volume_ratio) must be at least the "
-                        f"coupling's {TIGHT_VOLUME_RATIO} and below 1"
-                    )
-                self.tight_volume = float(volume)
-                # The stitch ends with the thread tied where it leaves the last planned passage and slack
-                # between there and the needle: slack is a thread that pulls the needle with less than the
-                # weight that the scene itself applies to the needle [N] (zero: the scene applies none).
-                weight = geometry.get("needle_weight_N")
-                passages = geometry["insertion_plan"].get("expected_passages")
-                if weight is None or not np.isfinite(weight) or weight < 0:
-                    raise ValueError(
-                        "The stitch after the pull through the tissue needs the weight that the scene applies to "
-                        "the needle (needle_weight_N)"
-                    )
-                if isinstance(passages, bool) or not isinstance(passages, (int, np.integer)) or passages < 1:
-                    raise ValueError(
-                        "The stitch after the pull through the tissue needs the number of planned passages "
-                        "(insertion_plan expected_passages)"
-                    )
-                self.needle_weight, self.passages = float(weight), int(passages)
-            else:
-                hole = geometry.get("needle_capture_radius")
-                if hole is None or not np.isfinite(hole) or hole <= 0:
-                    raise ValueError(
-                        "The pull to the entry needs the radius of the hole that the needle makes (needle_capture_radius)"
-                    )
-                self.pull_hole = float(hole)
+            volume = geometry.get("tight_volume_ratio", TIGHT_VOLUME_RATIO)
+            if volume is None or not np.isfinite(volume) or not TIGHT_VOLUME_RATIO <= volume < 1.0:
+                raise ValueError(
+                    "The least tissue volume of a tight thread (tight_volume_ratio) must be at least the "
+                    f"coupling's {TIGHT_VOLUME_RATIO} and below 1"
+                )
+            self.tight_volume = float(volume)
+            # The stitch ends with the thread tied where it leaves the last planned passage and slack
+            # between there and the needle: slack is a thread that pulls the needle with less than the
+            # weight that the scene itself applies to the needle [N] (zero: the scene applies none).
+            weight = geometry.get("needle_weight_N")
+            passages = geometry["insertion_plan"].get("expected_passages")
+            if weight is None or not np.isfinite(weight) or weight < 0:
+                raise ValueError(
+                    "The stitch after the pull through the tissue needs the weight that the scene applies to "
+                    "the needle (needle_weight_N)"
+                )
+            if isinstance(passages, bool) or not isinstance(passages, (int, np.integer)) or passages < 1:
+                raise ValueError(
+                    "The stitch after the pull through the tissue needs the number of planned passages "
+                    "(insertion_plan expected_passages)"
+                )
+            self.needle_weight, self.passages = float(weight), int(passages)
         self.lift_normal = np.zeros(3)
         if self.lift_height or self.pull_through:
             # The lift goes along the entry normal, and the plan of the regrasp asks along it whether the
@@ -1284,7 +1245,7 @@ class ProceduralGraspController:
         self.centerline = np.asarray(geometry.get("needle_centerline", np.zeros((2, 3))), dtype=float)
         self.jaws = self.tissue = self.jaw_cover = self._wire_pieces = None
         self.joint_limits = self.reach_margin = None
-        if self.tip_lift_height or self.pull_through:
+        if self.pull_through:
             # The regrasp at the tip is planned against the jaws of the tool that is commanded and the
             # rest surface of the tissue: both as the scene publishes them, read once here.
             try:
@@ -1294,14 +1255,13 @@ class ProceduralGraspController:
                 self.needle_radius = float(geometry["needle_radius"])
             except (KeyError, IndexError, TypeError) as error:
                 raise ValueError(
-                    "A lift at the tip needs the capsules of the tool (grippers), the rest surface of the tissue "
+                    "The grasp at the tip needs the capsules of the tool (grippers), the rest surface of the tissue "
                     "(reference_positions, reference_triangles) and needle_radius"
                 ) from error
             if not np.isfinite(self.needle_radius) or self.needle_radius <= 0 or len(self.centerline) < 2:
-                raise ValueError("A lift at the tip needs a positive needle radius and the needle centre line")
+                raise ValueError("The grasp at the tip needs a positive needle radius and the needle centre line")
             self._read_tool(geometry["grippers"][0])
-            if self.pull_through:
-                self._read_joints(geometry["grippers"][0])
+            self._read_joints(geometry["grippers"][0])
 
     def _read_tool(self, tool):
         """Read what the way of the regrasp is planned with: every capsule of the tool, its trocar and the wire.
@@ -1309,8 +1269,9 @@ class ProceduralGraspController:
         The way from the release to the grasp at the tip keeps every capsule of the tool clear of the
         tissue, so the capsules of the shaft and the wrist are placed as well as those of the jaws. That
         needs the trocar through which the shaft passes (``trocar_pose``) and the link of every capsule
-        (``part_body_indices``); a tool without them can be planned a grasp for, and the regrasp stops
-        with a reason when it would have to move such a tool (``routable``).
+        (``part_body_indices``). A tool without a trocar is refused when the controller is made
+        (``_read_joints``); one without the links of its capsules can be planned a grasp for, and the
+        regrasp stops with a reason when it would have to move such a tool (``routable``).
         """
         rows = tool_capsules(tool)
         self.tool_ends = np.asarray([[start, end] for start, end, _reach, _bound, _link in rows])
@@ -1493,25 +1454,20 @@ class ProceduralGraspController:
         angles = np.linspace(0.0, span, int(np.ceil(span / self.config.rotation_step)) + 1)
         return pull_targets(needle_pose, held, self.arc_center_local, self.arc_axes[2], angles)
 
-    def _pull_span(self, needle_pose, marker, short=0.0, slack=None):
+    def _pull_span(self, needle_pose, marker, short, slack):
         """Angle [rad] of the pull that takes the tail of the needle to ``short`` [m] of arc before a marker, with the slack beyond.
 
-        ``slack`` [m] defaults to ``pull_slack_radii`` wire radii; a negative ``short`` is an arc past the marker.
+        ``slack`` [m] is the arc beyond; a negative ``short`` is an arc past the marker.
         """
-        if slack is None:
-            slack = self.pull_slack_radii * self.needle_radius
         return (max(-self._tail_past(needle_pose, marker) - short, 0.0) + slack) / self.radius
 
     def _pull_out_span(self, needle_pose, exit_position):
         """Angle [rad] that bounds the pull out of the tissue from where the needle is: the reach that the tool needs.
 
-        With thread tracks: the arc that takes the tail one thread element past the exit marker,
-        and one more element beyond (:attr:`pull_slack_radii`). Without: the arc to the exit
-        marker and the slack of the pull to the entry, as far as the resting needle tells.
+        The arc that takes the tail one thread element past the exit marker, and one more element
+        beyond, as far as the resting needle tells.
         """
-        if self.thread_tracks:
-            return self._pull_span(needle_pose, exit_position, -self.pull_clearance, self.pull_clearance)
-        return self._pull_span(needle_pose, exit_position)
+        return self._pull_span(needle_pose, exit_position, -self.pull_clearance, self.pull_clearance)
 
     def _grasp_reach(self, needle_pose, grasp, exit_position):
         """Whether the tool reaches a grasp at the tip and what follows it, by its joints (:meth:`_reach`).
@@ -1523,8 +1479,8 @@ class ProceduralGraspController:
         - the pull: the needle turned about its own centre of curvature from where it rests, held
           as at this grasp (:func:`pull_targets`), a pose every rotation step of the actions, over
           the arc that takes the tail of the needle out of the tissue (:meth:`_pull_out_span`): to
-          the exit marker and the slack beyond it, and with thread tracks to the bound of the pull,
-          two thread elements past that marker; as far as the resting needle tells.
+          the bound of the pull, two thread elements past the exit marker; as far as the resting
+          needle tells.
 
         Returns:
             None or why the grasp is not reached (the first row that is not), and the smallest
@@ -1567,9 +1523,9 @@ class ProceduralGraspController:
         relative = needle_to_gripper_pose(
             shape,
             arc_fraction=offset / float(lengths.sum()),
-            tangent_roll_rad=self.tip_grasp_roll_rad,
-            bite_angle_rad=self.tip_grasp_bite_rad,
-            jaws_exchanged=self.tip_grasp_jaws_exchanged,
+            tangent_roll_rad=self.pull_grasp_roll_rad,
+            bite_angle_rad=self.pull_grasp_bite_rad,
+            jaws_exchanged=self.pull_grasp_jaws_exchanged,
         )
         target = wp.transform_multiply(wp.transform(*_pose(needle_pose)), wp.transform(*relative))
         return _pose(np.asarray(target, dtype=float))
@@ -2109,14 +2065,14 @@ class ProceduralGraspController:
         - retreat, first part: straight back along the axis of an open jaw (:meth:`_leave_axis`),
           as far as it takes until the rise from there is clear (:meth:`_rise_blocked`), and no
           further than the transfer clearance. This part starts where the arc ended, which can be
-          inside the tissue. With the pull the tool must reach the whole of it, the transfer
+          inside the tissue. The tool must reach the whole of it, the transfer
           clearance back, with every joint inside its limits (:meth:`_reach`): asked when the jaws
           have opened, before the first step back;
         - retreat, second part: straight up along the shaft, until the tool can turn where it is
           and on its way to the point above the pregrasp (:meth:`_turn_blocked`). The grasp at the
           tip and the way down to it are planned meanwhile (:meth:`_tip_grasp_planned`). The rise
           that is open to the tool ends at the limit of its slide (:meth:`_rise`), where no margin
-          is left: with the pull each step of the rise is asked for reach before it is commanded;
+          is left: each step of the rise is asked for reach before it is commanded;
         - approach: the palm goes straight to the point above the pregrasp while the tool turns to
           the orientation of the grasp, then down along the jaws to the pregrasp, where the needle
           is looked at again (:meth:`_approach`);
@@ -2124,7 +2080,7 @@ class ProceduralGraspController:
 
         Every length follows from the capsules, the trocar, the tissue and the wire; the speeds
         are the rate limits of the actions (:func:`line_to`). A way that cannot be kept clear,
-        or with the pull one that the tool does not reach, stops the procedure with its reason.
+        or one that the tool does not reach, stops the procedure with its reason.
         """
         action = np.zeros(7, dtype=np.float32)
         opening = float(jaw_target[0] - jaw_target[1])
@@ -2149,16 +2105,14 @@ class ProceduralGraspController:
             elif state.region is None:
                 self._leave_field(state, old_target)
             elif opening >= self.release_opening_rad - 1e-9 and not contact:
-                reached = True
-                if self.pull_through:
-                    # The joints of the tool on the whole way back, frame by frame as it can be commanded.
-                    end = self._shifted(state.released, self.transfer_clearance * state.leave_axis)
-                    reached = self._reaches(
-                        state,
-                        line_targets(state.released, end, self.config),
-                        "The open jaws cannot back away from the needle within the joint limits of the tool",
-                        keep=False,
-                    )
+                # The joints of the tool on the whole way back, frame by frame as it can be commanded.
+                end = self._shifted(state.released, self.transfer_clearance * state.leave_axis)
+                reached = self._reaches(
+                    state,
+                    line_targets(state.released, end, self.config),
+                    "The open jaws cannot back away from the needle within the joint limits of the tool",
+                    keep=False,
+                )
                 if reached:
                     state.stage, state.stage_time = "retreat", 0.0
                 else:
@@ -2170,11 +2124,7 @@ class ProceduralGraspController:
                 # The measured grasp at the tip is the frame of everything that follows.
                 state.grasp = relative.copy()
                 state.had_contact, state.lost_since = True, None
-                if self.pull_through:
-                    self._begin_pull(state, item, relative)
-                else:
-                    state.stage, state.lift_origin, state.lift_time = "tip_lift", old_target.copy(), 0.0
-                    state.lift_complete = False
+                self._begin_pull(state, item, relative)
             elif state.stage_time > self.stage_wait_seconds:
                 self._stop(state, "The jaws did not close on the needle tip")
             return action
@@ -2223,7 +2173,7 @@ class ProceduralGraspController:
             top = self._shifted(state.via, state.rise)
             if self._reached(old_target, top):
                 self._stop(state, "The tool cannot rise far enough to turn towards the needle tip clear of the tissue")
-            elif self.pull_through:
+            else:
                 # The rise ends at the limit of the slide: the joints of the tool on its next step.
                 self._reaches(
                     state,
@@ -2235,8 +2185,8 @@ class ProceduralGraspController:
         if not state.planned:
             # High enough to turn: the tool waits here for the plan.
             return old_target
-        # With the pull: the joints of the tool on the straight way over, frame by frame as it will be commanded.
-        if self.pull_through and not self._reaches(
+        # The joints of the tool on the straight way over, frame by frame as it will be commanded.
+        if not self._reaches(
             state,
             line_targets(old_target, state.above, self.config),
             "The tool cannot turn over to the needle tip within its joint limits",
@@ -2393,12 +2343,11 @@ class ProceduralGraspController:
                         asked = 0
                         yield
                 before = whole
-        if self.pull_through:
-            # The joints of the tool on the way down to the pregrasp (the descent from there is in the plan).
-            why, least_rad, least_m = self._reach(line_targets(above, state.pregrasp, self.config))
-            if why is not None:
-                return f"The tool cannot come down on the needle tip within its joint limits: {why}"
-            state.reach_rad, state.reach_m = min(state.reach_rad, least_rad), min(state.reach_m, least_m)
+        # The joints of the tool on the way down to the pregrasp (the descent from there is in the plan).
+        why, least_rad, least_m = self._reach(line_targets(above, state.pregrasp, self.config))
+        if why is not None:
+            return f"The tool cannot come down on the needle tip within its joint limits: {why}"
+        state.reach_rad, state.reach_m = min(state.reach_rad, least_rad), min(state.reach_m, least_m)
         state.above = above
         return None
 
@@ -2413,7 +2362,7 @@ class ProceduralGraspController:
         radius); otherwise the needle was not at rest and the plan is made again. A plan that stands
         is given up in the same way when the needle is found further than that from its pose while the
         tool still rises (:meth:`_retreat`). The procedure stops when the wire has no point for the
-        jaws (with the pull: none that is clear and that the tool reaches), when the needle has not
+        jaws (none that is clear and that the tool reaches), when the needle has not
         come to rest ``stage_wait_seconds`` after the first plan was begun (the time the closing jaws are given as well),
         or when there is no clear way down to the grasp (:meth:`_plan_route`, which follows the plan
         of the grasp).
@@ -2433,8 +2382,8 @@ class ProceduralGraspController:
         if state.plan is None:
             state.plan_pose = _pose(item["needle_pose"])
             state.plan_notes = {}
-            # With the pull the plan takes only points that the tool reaches (:meth:`_grasp_reach`).
-            marker = np.asarray(item["exit_position"], dtype=float) if self.pull_through else None
+            # The plan takes only points that the tool reaches (:meth:`_grasp_reach`).
+            marker = np.asarray(item["exit_position"], dtype=float)
             state.plan = self._plan_tip_grasp(state.plan_pose, marker, state.plan_notes)
             if state.plan_since is None:
                 state.plan_since = state.stage_time
@@ -2480,9 +2429,8 @@ class ProceduralGraspController:
 
         ``R`` the radius of the needle and ``r_palm`` the distance of the palm origin from the
         needle's axis, from ``G``. The commanded angle is bounded by the arc that takes the tail to
-        the end of the pull from where the needle is now, and the slack beyond it: to the hole at
-        the entry marker (:meth:`_pull_span`), or with thread tracks out of the tissue, one thread
-        element past the exit marker (:meth:`_pull_out_span`).
+        the end of the pull from where the needle is now, and the slack beyond it: out of the
+        tissue, one thread element past the exit marker (:meth:`_pull_out_span`).
         The tool must reach that arc from the grasp as it is measured (:meth:`_reach`); if it does
         not, the procedure stops here, before the first target of the pull.
         """
@@ -2490,10 +2438,7 @@ class ProceduralGraspController:
         state.pull_needle = _pose(item["needle_pose"])
         state.pull_time = state.pull_angle = state.pull_wait = 0.0
         self._follow_tail(state, state.pull_needle, item)
-        if self.thread_tracks:
-            state.pull_bound = self._pull_out_span(state.pull_needle, item["exit_position"])
-        else:
-            state.pull_bound = self._pull_span(state.pull_needle, item["entry_position"], self.pull_hole)
+        state.pull_bound = self._pull_out_span(state.pull_needle, item["exit_position"])
         palm = -_quat_turn(state.grasp[3:] * np.array([-1.0, -1.0, -1.0, 1.0]), state.grasp[:3])
         offset = palm - self.arc_center_local
         arm = float(np.linalg.norm(offset - (offset @ self.arc_axes[2]) * self.arc_axes[2]))
@@ -2516,17 +2461,12 @@ class ProceduralGraspController:
         Where the needle is, is read from the observation: its pose gives its tail, centre and axis,
         and the entry and exit markers are those of the deformed tissue (:meth:`_tail_past`).
 
-        In a scene whose thread follows the needle's track (``thread_tracks``) the tail is taken
+        The thread of the scene follows the needle's track (``thread_tracks``) and the tail is taken
         through the tissue. The pull ends when both hold: the tissue holds no part of the track
         any more (``engaged_track_length_m`` of the observation's diagnostics is zero: the
         needle/tissue interaction lets a track sample go when the tail has passed it), and the
         tail is one thread element past the exit marker (``pull_clearance``). While a part of the
         track is still held the tail is inside the tissue, so at least that clearance is left.
-
-        In a scene without thread tracks the pull ends when the tail arrives at the hole of the
-        entry: within the radius of that hole of the entry marker (``pull_hole``). Up to
-        there the thread on the tail and the end of the wire are outside the tissue, and beyond
-        it the thread would be pressed back out through the surface.
 
         While both jaws hold the needle the commanded angle advances at the speed rule of the
         insertion at both ends: it starts with the ramp of the insertion (:func:`ramp_distance`)
@@ -2535,29 +2475,21 @@ class ProceduralGraspController:
         The angle is bounded (:meth:`_begin_pull`); a tail that has not arrived
         ``pull_wait_seconds`` after the command has reached its bound stops the procedure: the
         needle has not come free of the tissue, or has not followed. After the pull the tool
-        holds its last target for the hold time of a lift (stage ``clear``). Without thread
-        tracks the procedure is then done; with them the draw of the thread and the stitch follow
-        (:meth:`_begin_draw`, :meth:`_stitch_target`).
+        holds its last target for the hold time of a lift (stage ``clear``); the draw of the
+        thread and the stitch follow (:meth:`_begin_draw`, :meth:`_stitch_target`).
         """
         self._follow_tail(state, item["needle_pose"], item)
         if state.stage == "clear":
             state.hold_time += elapsed
             state.status = "holding"
             if state.hold_time >= self.lift_hold_seconds - 1e-9:
-                if self.thread_tracks:
-                    self._begin_draw(state, item, old_target)
-                else:
-                    state.stage = "done"
+                self._begin_draw(state, item, old_target)
             return old_target
         state.status = "pulling"
-        held = False
-        if self.thread_tracks:
-            held = float(item["diagnostics"].get("engaged_track_length_m", 0.0)) > 0.0
-            left = self.pull_clearance - state.tail_past_exit
-            if held:
-                left = max(left, self.pull_clearance)
-        else:
-            left = -state.tail_past_entry - self.pull_hole
+        held = float(item["diagnostics"].get("engaged_track_length_m", 0.0)) > 0.0
+        left = self.pull_clearance - state.tail_past_exit
+        if held:
+            left = max(left, self.pull_clearance)
         if left <= 0.0:
             state.stage, state.pull_complete, state.hold_time, state.status = "clear", True, 0.0, "holding"
             return old_target
@@ -2571,9 +2503,7 @@ class ProceduralGraspController:
         if state.pull_angle >= state.pull_bound:
             state.pull_wait += elapsed
             if state.pull_wait >= self.pull_wait_seconds - 1e-9:
-                if not self.thread_tracks:
-                    self._stop(state, "The needle did not follow the pull to the entry of its track")
-                elif held:
+                if held:
                     self._stop(state, "The needle did not come free of the tissue")
                 else:
                     self._stop(state, "The needle did not follow the pull out of its track")
@@ -3002,7 +2932,7 @@ class ProceduralGraspController:
         else:
             weight, state.lift_complete = 0.0, True
             state.status = "holding"
-        state.lift_offset = (self.tip_lift_height if state.stage == "tip_lift" else self.lift_height) * weight
+        state.lift_offset = self.lift_height * weight
         target = state.lift_origin.copy()
         target[:3] += self.lift_normal * state.lift_offset
         return target
@@ -3103,11 +3033,11 @@ class ProceduralGraspController:
                     elif self.pull_through and state.entries > 0:
                         # No lift is asked for: the tool lets go of the centred needle at once.
                         state.stage, state.stage_time = "release", 0.0
-            elif state.stage in ("lift", "tip_lift"):
+            elif state.stage == "lift":
                 target = self._lift_target(state, contact_elapsed)
                 if state.lift_complete:
                     state.lifts_complete += 1
-                    if state.stage == "lift" and (self.tip_lift_height > 0 or self.pull_through):
+                    if self.pull_through:
                         state.stage, state.stage_time = "release", 0.0
                     else:
                         state.stage = "done"
@@ -3162,7 +3092,7 @@ class ProceduralGraspController:
                 "tip_grasp_plans": int(state.tip_grasp is not None) + state.plans_repeated,
                 # The pull: commanded angle [rad], the arc by which the tail of the needle is past the
                 # entry and the exit marker [m] (negative: still to come), whether the pull has ended
-                # by its rule (the tail at the hole of the entry, or with thread tracks the needle free
+                # by its rule (the needle free
                 # of the tissue and its tail clear of the exit), and the smallest distance from a joint limit on the
                 # planned way (approach, descent, pull) of a rotary joint [rad] and of the slide [m].
                 "pull_angle_rad": state.pull_angle,

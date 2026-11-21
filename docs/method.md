@@ -1880,7 +1880,7 @@ rigid collision shapes of the MuJoCo model, the tool/tissue contact (either
 law), the thread's contact with the tools, the measurements of
 `fem_tool_tissue` and the collision shapes that the viewer's "Show Collision"
 option draws all read these rows, in `fem_needle_grasp`, in `fem_tool_tissue`
-and in every scene built with `add_rcm_grasper` or `add_grasper`. No reader
+and in every scene built with `add_rcm_grasper`. No reader
 has radii of its own.
 
 The rule. The surface of a drawn part is divided into cells: along the part by
@@ -1977,14 +1977,13 @@ the same. A limit: after the pregrasp the needle is not looked at again, so
 the jaws close on the needle where the plan had it. The pull turns
 the needle about its own centre of curvature until the tissue holds no part of
 its track and its tail is one thread element past the exit, with the thread
-following through the track (above); in a scene without thread tracks until
-its tail arrives at the hole of its entry. In eleven self-tests of the pull
+following through the track (above); it needs a scene with thread tracks. In eleven self-tests of the pull
 through the tissue (seven without the tool/tissue contact, four with
 `--tool-tissue-contact swept`) every run completes with 2 entries and 2 exits, all 8 eyelets threaded, the
 tail 1.81 to 2.01 mm above the deformed tissue, no jaw off the needle while
 it is held or pulled (smallest jaw force in the pull 0.67 N), and
 the joint targets 0.39 rad from a limit from the closing to
-the end of the pull. In the nine runs of the pull to the entry (three
+the end of the pull. In the nine runs of the pull to the entry, the pull of before the thread tracks, removed since (three
 self-tests without the tool/tissue contact, three with the swept contact,
 three more with that contact and records per physics interval) the smallest jaw force in the pull was 0.57 N
 and the joint targets stayed 0.36 rad from a limit.

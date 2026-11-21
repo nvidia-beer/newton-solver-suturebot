@@ -1195,10 +1195,6 @@ class NeedleTissueInteraction:
         return length
 
     @property
-    def track_section_ids(self):
-        return np.asarray(self._track_sections, dtype=np.int32)
-
-    @property
     def track_section_count(self):
         return len(set(self._track_sections))
 

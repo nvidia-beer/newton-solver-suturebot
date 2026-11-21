@@ -386,7 +386,6 @@ class DeviceSearchSceneTests(unittest.TestCase):
                 defaults.speed,
                 defaults.settle_seconds,
                 lift_height=defaults.lift_height,
-                tip_lift_height=GraspExample._tip_lift_height(defaults),
                 pull_through=GraspExample._pull_through(defaults),
             )
             _mark_startup(scene)

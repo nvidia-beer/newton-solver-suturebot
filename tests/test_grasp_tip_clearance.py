@@ -65,6 +65,46 @@ def tool(contact_radius=DRAWN_RADIUS, model_radius=MODEL_RADIUS):
     return result
 
 
+# The regrasp is a part of the procedure with the pull, so the controllers of these tests are built with it. What
+# the pull asks of a scene beside the tool, the tissue and the wire: a thread that follows the needle's track (the
+# length of one element), the weight on the needle and the passages of the plan; and of the tool the tolerances of
+# its pose IK, its joint limits (those of the dVRK tool of the scene), its trocar and the slide of its shaft at
+# rest (those of :func:`tool` where a tool of a test does not say them).
+PULL_SCENE = {"thread_tracks": True, "thread_element_length": 0.002, "needle_weight_N": 0.00294}
+PULL_TOOL = {
+    "arm_joint_limits": np.array([[-0.6, -0.6, -0.05, -np.pi, -1.1, -1.1], [0.6, 0.6, 0.05, np.pi, 1.1, 1.1]]),
+    "ik_position_tolerance_m": 1.0e-5,
+    "ik_orientation_tolerance_rad": 1.0e-3,
+    "trocar_pose": TROCAR,
+    "nominal_insertion_m": 0.18,
+}
+# The grasp at the tip of the by-hand numbers of these tests: twist -150 degrees, bite 45 degrees, the jaws not
+# exchanged. The procedure's own grasp (pull_grasp_*) is looked at in test_grasp_pull.
+TIP_GRASP = {"pull_grasp_roll_rad": -2.618, "pull_grasp_bite_rad": 0.7854, "pull_grasp_jaws_exchanged": False}
+
+
+def regrasp_controller(geometry, config, **options):
+    """A controller with the regrasp (``pull_through``) on a geometry that is given what the pull asks for.
+
+    The geometry is completed in place, and what a tool already says is kept. The grasp at the tip is
+    that of these tests (:data:`TIP_GRASP`). What these tests look at is where the jaws take the needle
+    and the clear way to it, not the reach of the tool, which has its own tests with a trocar from which
+    the tool reaches (test_grasp_pull): the tools here stand as no fixed-trocar tool can (on the way of the
+    regrasp fixture the wrist pitch goes beyond a quarter turn), so this controller takes every pose for
+    reached (``_reach``).
+    """
+    geometry.update(PULL_SCENE)
+    geometry["insertion_plan"] = dict(geometry["insertion_plan"], expected_passages=2)
+    geometry["grippers"] = [
+        {name: np.array(value) for name, value in PULL_TOOL.items()} | dict(entry) for entry in geometry["grippers"]
+    ]
+    controller = ProceduralGraspController(geometry, config, pull_through=True, **options)
+    for name, value in TIP_GRASP.items():
+        setattr(controller, name, value)
+    controller._reach = lambda poses: (None, np.inf, np.inf)
+    return controller
+
+
 def flat_tissue(size=0.05, step=0.001, centre=(0.0, 0.0)):
     """A square of the plane z = 0 in right triangles with legs ``step``; the tissue is below it."""
     count = int(round(size / step))
@@ -120,13 +160,11 @@ def controller_for(centerline, tool_entry, *, roll=None, bite=None, tissue=None)
         reference_triangles=triangles,
     )
     geometry["insertion_plan"]["exit_angle"] = 0.9
-    controller = ProceduralGraspController(
-        geometry, config, settle_seconds=0, lift_height=0.001, tip_lift_height=0.0005
-    )
+    controller = regrasp_controller(geometry, config, settle_seconds=0, lift_height=0.001)
     if roll is not None:
-        controller.tip_grasp_roll_rad = roll
+        controller.pull_grasp_roll_rad = roll
     if bite is not None:
-        controller.tip_grasp_bite_rad = bite
+        controller.pull_grasp_bite_rad = bite
     return controller
 
 
@@ -155,8 +193,8 @@ def lowest_axis_height(controller, needle_pose, offset, capsule):
     relative = needle_to_gripper_pose(
         shape,
         arc_fraction=offset / length,
-        tangent_roll_rad=controller.tip_grasp_roll_rad,
-        bite_angle_rad=controller.tip_grasp_bite_rad,
+        tangent_roll_rad=controller.pull_grasp_roll_rad,
+        bite_angle_rad=controller.pull_grasp_bite_rad,
     )
     frame = rotation_of(needle_pose) @ rotation_of(relative)
     origin = rotation_of(needle_pose) @ relative[:3] + needle_pose[:3]
@@ -507,7 +545,7 @@ class TipGraspRuleTests(unittest.TestCase):
         # The looks at the whole surface, the free wire, the one point of the search, the end.
         self.assertEqual(steps, 4)
 
-    def test_a_lift_at_the_tip_needs_the_tool_the_surface_and_the_wire_radius(self):
+    def test_the_grasp_at_the_tip_needs_the_tool_the_surface_and_the_wire_radius(self):
         geometry, config = fixture()
         vertices, triangles = flat_tissue(size=0.01)
         geometry.update(
@@ -520,18 +558,18 @@ class TipGraspRuleTests(unittest.TestCase):
             reference_triangles=triangles,
         )
         geometry["insertion_plan"]["exit_angle"] = 0.9
-        ProceduralGraspController(geometry, config, lift_height=0.001, tip_lift_height=0.0005)
+        regrasp_controller(geometry, config, lift_height=0.001)
         for missing in ("grippers", "reference_positions", "reference_triangles", "needle_radius"):
             incomplete = deepcopy(geometry)
             del incomplete[missing]
-            with self.subTest(missing=missing), self.assertRaises(ValueError):
-                ProceduralGraspController(incomplete, config, lift_height=0.001, tip_lift_height=0.0005)
-            # Without a lift at the tip nothing of it is read.
+            with self.subTest(missing=missing), self.assertRaisesRegex(ValueError, "The grasp at the tip needs"):
+                ProceduralGraspController(incomplete, config, lift_height=0.001, pull_through=True)
+            # Without the pull nothing of it is read.
             ProceduralGraspController(incomplete, config, lift_height=0.001)
         invalid = deepcopy(geometry)
         invalid["needle_radius"] = 0.0
-        with self.assertRaises(ValueError):
-            ProceduralGraspController(invalid, config, lift_height=0.001, tip_lift_height=0.0005)
+        with self.assertRaisesRegex(ValueError, "The grasp at the tip needs"):
+            ProceduralGraspController(invalid, config, lift_height=0.001, pull_through=True)
 
 
 if __name__ == "__main__":

@@ -10,6 +10,17 @@ import warp as wp
 from test_worker_thread import scene_fixture, track_rows
 
 from newton_solver_suturebot._src.solvers.thread.worker_thread import WorkerThread
+from newton_solver_suturebot._src.utils.capture import note_release
+
+
+def invalidate_step_graphs(worker):
+    """Drop the accepted-step graphs of a worker, as after replacing its storage or changing its settings.
+
+    The next real accepted step warms resources without a discarded solve.
+    """
+    note_release(len(worker._step_graphs))
+    worker._step_graphs.clear()
+    worker._graph_warmed = False
 
 
 class WorkerThreadGraphTests(unittest.TestCase):
@@ -51,7 +62,7 @@ class WorkerThreadGraphTests(unittest.TestCase):
         self.assertEqual(captured.diagnostics()["graph_launches"], len(cases) - 1)
         # Invalidation warms through exactly one real accepted step, preserving
         # thread history instead of integrating and rolling back a dummy step.
-        captured.invalidate_step_graphs()
+        invalidate_step_graphs(captured)
         self.assertFalse(captured._step_graphs)
         before = captured.accepted_steps
         reference.advance(1 / 240)
@@ -183,7 +194,7 @@ class WorkerThreadGraphTests(unittest.TestCase):
                 self.assertEqual(captured.accepted_steps, step + 1)
                 self.assertEqual({entry[0] for entry in captured._step_graphs.values()}, set(graphs))
         # An invalidated worker warms and captures again through the entry.
-        captured.invalidate_step_graphs()
+        invalidate_step_graphs(captured)
         self.assertFalse(captured._graph_warmed)
         before = bits(captured)
         self.assertTrue(captured.capture_graphs(states, dt))

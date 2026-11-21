@@ -890,14 +890,14 @@ class LocalSceneBudgetTests(unittest.TestCase):
             # Without a deadline the scene is stepped as before: no second argument.
             scenes.step(action)
             self.assertEqual(calls, [()])
-            self.assertEqual((scenes._observe_seconds, scenes._observe_longest), (0.0, 0.0))
+            self.assertEqual(scenes._observe_longest, 0.0)
             # An observation of 250 ms, then one of 62.5 ms: the last one and the longest one.
             observation[0] = 0.25
             scenes.step(action)
             observation[0] = 0.0625
             scenes.step(action, deadline=10.0)
             self.assertEqual(calls[2], (9.75,))
-            self.assertEqual((scenes._observe_seconds, scenes._observe_longest), (0.0625, 0.25))
+            self.assertEqual(scenes._observe_longest, 0.25)
             # The scene gets the deadline less the longest observation, not less the last one.
             scenes.step(action, deadline=10.0)
             self.assertEqual(calls[3], (9.75,))
@@ -907,7 +907,7 @@ class LocalSceneBudgetTests(unittest.TestCase):
             observation[0] = 0.0
             scenes.step(action, deadline=10.0)
             self.assertEqual(calls[4:], [(9.75,), (9.5,)])
-            self.assertEqual((scenes._observe_seconds, scenes._observe_longest), (0.0, 0.5))
+            self.assertEqual(scenes._observe_longest, 0.5)
             # A reset rebuilds the scene: it measures anew, and so does the observation after its steps.
             observation[0] = 0.125
             scenes.reset()
@@ -993,8 +993,8 @@ class ExampleBudgetTests(unittest.TestCase):
 
     def test_the_controller_acts_once_per_frame_and_only_complete_frames_are_counted(self):
         example = self.example([1, 3, 1, 2], 1.0 / 15.0)
-        # The longest drawing took 8 ms, the last one 1 ms.
-        example._draw_longest, example._draw_seconds = 0.008, 0.001
+        # The longest drawing took 8 ms.
+        example._draw_longest = 0.008
         before = time.perf_counter()
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
@@ -1071,11 +1071,10 @@ class ExampleBudgetTests(unittest.TestCase):
     def test_the_drawing_is_timed_for_the_next_step(self):
         example = self.example([1], 1.0 / 15.0)
         example.viewer = SimpleNamespace(begin_frame=lambda time: None, end_frame=lambda: time.sleep(0.002))
-        self.assertEqual((example._draw_seconds, example._draw_longest), (0.0, 0.0))
+        self.assertEqual(example._draw_longest, 0.0)
         example.render()
-        self.assertGreaterEqual(example._draw_seconds, 0.002)
-        self.assertLess(example._draw_seconds, 0.2)
-        self.assertEqual(example._draw_longest, example._draw_seconds)
+        self.assertGreaterEqual(example._draw_longest, 0.002)
+        self.assertLess(example._draw_longest, 0.2)
 
     def test_a_step_leaves_the_longest_drawing_free_not_the_last_one(self):
         example = self.example([1, 1], 1.0 / 15.0)
@@ -1088,17 +1087,17 @@ class ExampleBudgetTests(unittest.TestCase):
         example.viewer = SimpleNamespace(begin_frame=lambda time: None, end_frame=end_frame, is_paused=lambda: False)
         with patch.object(time, "perf_counter", lambda: clock[0]), contextlib.redirect_stdout(io.StringIO()):
             example.render()
-            self.assertEqual((example._draw_seconds, example._draw_longest), (0.25, 0.25))
+            self.assertEqual(example._draw_longest, 0.25)
             # A shorter drawing: the last one is timed, the longest one stays.
             drawing[0] = 0.125
             example.render()
-            self.assertEqual((example._draw_seconds, example._draw_longest), (0.125, 0.25))
+            self.assertEqual(example._draw_longest, 0.25)
             example.step()
             self.assertEqual(example.pool.steps[-1][1]["deadline"], clock[0] + 1.0 / 15.0 - 0.25)
             # A longer one counts from the step after it.
             drawing[0] = 0.5
             example.render()
-            self.assertEqual((example._draw_seconds, example._draw_longest), (0.5, 0.5))
+            self.assertEqual(example._draw_longest, 0.5)
             example.step()
             self.assertEqual(example.pool.steps[-1][1]["deadline"], clock[0] + 1.0 / 15.0 - 0.5)
         # An example that has not drawn leaves nothing free: nothing is measured.
@@ -1289,13 +1288,13 @@ class RecordedCallTests(unittest.TestCase):
             patch.object(parallel, "_step", lambda scene, deadline: deadlines.append(deadline)),
             LocalSutureScene() as scenes,
         ):
-            scenes._observe_seconds, scenes._observe_longest = self.LAST_OBSERVATION, self.LONGEST_OBSERVATION
+            scenes._observe_longest = self.LONGEST_OBSERVATION
             example = object.__new__(grasp_example.Example)
             example.pool, example.config, example.viewer = scenes, scenes.config, _Viewer()
             example.halted = example.render_scene = example.controller = None
             example.sim_time, example.completed = 0.0, 0
             example.frame_budget, example.frame_unit = self.BUDGET, "attempt"
-            example._draw_seconds, example._draw_longest = self.LAST_DRAWING, self.LONGEST_DRAWING
+            example._draw_longest = self.LONGEST_DRAWING
             # The call goes on with a frame in progress, as the recorded one left its frame unfinished.
             example._frame_start = [0.0]
             with patch.object(time, "perf_counter", return_value=start):
@@ -1380,7 +1379,7 @@ class ExampleSceneBudgetTests(unittest.TestCase):
             small = {"asset": str(Path(directory) / "pad.usd"), "entry_xy": (0, 0.005), "exit_xy": (0, -0.005)}
             args = SimpleNamespace(
                 device=DEVICE, num_envs=1, substeps=4, controller="procedural", rigid_backend="native", viewer="null",
-                speed=0.003, settle_seconds=0.02, spacing=0.45, lift_height=0.0, tip_lift_height=0.0,
+                speed=0.003, settle_seconds=0.02, spacing=0.45, lift_height=0.0,
             )  # fmt: skip
             with patch.object(
                 grasp_example, "SutureSceneConfig", lambda **settings: SutureSceneConfig(**(settings | small))

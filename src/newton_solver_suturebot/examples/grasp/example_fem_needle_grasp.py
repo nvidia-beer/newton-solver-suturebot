@@ -92,17 +92,13 @@ SETTLE_SECONDS = 0.5
 def _pull_through(args):
     """Whether the tool takes the needle by its tip and pulls it on along its curve after the lift.
 
-    With ``--lift-height 0`` the example stays the insertion alone, as before, whatever the pull says.
+    With ``--lift-height 0`` the example stays the insertion alone. The pull takes the needle through the
+    tissue and needs a thread that follows its track: with ``--no-thread-tracks`` the example ends after the lift.
+    An argument set that names no ``thread_tracks`` (a caller of the class with its own arguments) has the
+    scene's default, thread tracks, and so pulls after a lift; the arc with a lift alone, in a scene with
+    thread tracks, is the controller's ``pull_through=False`` and no longer an option of this example.
     """
-    return bool(getattr(args, "pull_through", False)) and getattr(args, "lift_height", 0.0) > 0
-
-
-def _tip_lift_height(args):
-    """Height of the lift by the tip [m]: the option; without it none with the pull or without a first lift, else 5 mm."""
-    height = getattr(args, "tip_lift_height", 0.0)
-    if height is None:
-        return 0.0 if _pull_through(args) or not getattr(args, "lift_height", 0.0) else 0.005
-    return height
+    return bool(getattr(args, "thread_tracks", THREAD_TRACKS)) and getattr(args, "lift_height", 0.0) > 0
 
 
 def threaded_in_order(passages, threaded):
@@ -202,10 +198,8 @@ class Example:
     frame_unit = "attempt"
     # Calls of step() that returned with their frame unfinished.
     unfinished_calls = 0
-    # Time [s] the last render() took and the longest a render() of this example has taken, and
-    # the physical time [s] of every scene at the start of the frame that the last step() left
-    # unfinished.
-    _draw_seconds = 0.0
+    # The longest time [s] a render() of this example has taken, and the physical time [s] of
+    # every scene at the start of the frame that the last step() left unfinished.
     _draw_longest = 0.0
     _frame_start = None
     # Per scene, what the stitch left where the controller passed (_follow_stitch): None before a tightening.
@@ -246,7 +240,6 @@ class Example:
                     args.speed,
                     args.settle_seconds,
                     lift_height=getattr(args, "lift_height", 0.0),
-                    tip_lift_height=self._tip_lift_height(args),
                     pull_through=self._pull_through(args),
                 )
                 if args.controller == "procedural"
@@ -270,7 +263,6 @@ class Example:
             raise
 
     _pull_through = staticmethod(_pull_through)
-    _tip_lift_height = staticmethod(_tip_lift_height)
 
     @classmethod
     def _frame_budget(cls, viewer, args):
@@ -746,8 +738,7 @@ class Example:
                         self._lock_shown[world] = locked
             self.markers.draw(self.state_0.particle_q)
         self.viewer.end_frame()
-        self._draw_seconds = time.perf_counter() - started
-        self._draw_longest = max(self._draw_longest, self._draw_seconds)
+        self._draw_longest = max(self._draw_longest, time.perf_counter() - started)
 
     def gui(self, ui):
         """The example's lines of the viewer's side panel: per scene, where the thread goes through the tissue and the stitch."""
@@ -847,11 +838,10 @@ class Example:
             for item in self.controller.report():
                 if not item["commanded_arc_complete"] or min(item["entry_count"], item["exit_count"]) < 1:
                     raise AssertionError(f"Insertion did not complete an entry and exit: {item}")
-                expected = 1 + int(self._tip_lift_height(self.args) > 0)
-                if lift_height and item["lifts_complete"] < expected:
-                    raise AssertionError(f"The lifts after the insertion and at the tip did not complete: {item}")
+                if lift_height and item["lifts_complete"] < 1:
+                    raise AssertionError(f"The lift after the insertion did not complete: {item}")
                 # With the pull the procedure ends when the pull has ended by its rule: the needle out of
-                # the tissue, or without thread tracks its tail at its entry.
+                # the tissue.
                 if self._pull_through(self.args) and not item["pull_complete"]:
                     raise AssertionError(f"The pull of the needle by its tip did not complete: {item}")
                 if lift_height and item["stage"] != "done":
@@ -1076,24 +1066,11 @@ class Example:
             "--lift-height",
             type=float,
             default=0.01,
-            help="Inspection lift along the tissue entry normal [m], after the insertion arc; 0 disables it.",
-        )
-        parser.add_argument(
-            "--tip-lift-height",
-            type=float,
-            default=None,
-            help="Lift by the needle tip after the tool has let go and taken the tip [m], with --no-pull-through "
-            "only (default there: 0.005; 0 ends after the first lift). The pull replaces this lift.",
-        )
-        parser.add_argument(
-            "--pull-through",
-            action=argparse.BooleanOptionalAction,
-            default=True,
-            help="After the lift the tool lets go, takes the needle by its tip and pulls it on along its own "
-            "curve until it is out of the tissue; the thread follows it through the track, is then tied at its "
-            "entry and tightened until the tissue allows no more, tied at its exit as well, and let go slack. "
-            "--no-pull-through takes the tip with the earlier grasp and lifts by it instead (--tip-lift-height). "
-            "With --lift-height 0 the example is the insertion alone.",
+            help="Inspection lift along the tissue entry normal [m], after the insertion arc. After the lift the "
+            "tool lets go, takes the needle by its tip and pulls it on along its own curve until it is out of the "
+            "tissue; the thread follows it through the track, is then tied at its entry and tightened until the "
+            "tissue allows no more, tied at its exit as well, and let go slack. With 0 the example is the "
+            "insertion alone.",
         )
         parser.add_argument(
             "--thread-tracks",
@@ -1101,7 +1078,8 @@ class Example:
             default=THREAD_TRACKS,
             help="The thread follows the needle through the tissue (default): the track the needle cuts becomes "
             "eyelets of the thread, which are threaded where the needle's tail has passed. With "
-            "--no-thread-tracks the thread stays on the tissue surface and the pull stops at the entry.",
+            "--no-thread-tracks the thread stays on the tissue surface and the example ends after the lift: the "
+            "pull takes the needle through the tissue and needs a thread that follows it.",
         )
         parser.add_argument(
             "--bite-length",
@@ -1176,11 +1154,6 @@ def main():
         parser.error("Speed must be positive, settling time nonnegative, and spacing at least 0.4 m")
     if not np.isfinite(options.lift_height) or not 0 <= options.lift_height <= 0.01:
         parser.error("Lift height must be finite and between 0 and 0.01 metres")
-    tip_lift_height = _tip_lift_height(options)
-    if not np.isfinite(tip_lift_height) or not 0 <= tip_lift_height <= options.lift_height:
-        parser.error("The lift at the tip must be between 0 and the lift after the insertion")
-    if tip_lift_height and _pull_through(options):
-        parser.error("The pull replaces the lift at the tip: use --no-pull-through with --tip-lift-height")
     if not np.isfinite(options.bite_length) or options.bite_length < 0:
         parser.error("The bite length must be finite and nonnegative")
     if not np.isfinite(options.coupling_relative_tolerance) or options.coupling_relative_tolerance <= 0:

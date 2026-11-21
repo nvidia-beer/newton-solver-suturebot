@@ -15,6 +15,7 @@ import newton
 import numpy as np
 import warp as wp
 from newton.viewer import ViewerNull
+from test_grasp import add_grasper
 
 from newton_solver_suturebot._src.solvers.coupled.interface.swept_tool_tissue_contact import capsule_pieces
 from newton_solver_suturebot._src.solvers.coupled.interface.tool_tissue_contact import capsule_samples
@@ -23,7 +24,6 @@ from newton_solver_suturebot.examples.grasp import _grasp_scene, _grasp_visual_a
 from newton_solver_suturebot.examples.grasp._dvrk_grasper import (
     CAPSULE_PART_NAMES,
     GrasperConfig,
-    add_grasper,
     jaw_opening_on_needle,
 )
 from newton_solver_suturebot.examples.grasp._dvrk_rcm_grasper import add_rcm_grasper
@@ -421,7 +421,14 @@ class OneCapsuleSetTests(unittest.TestCase):
                     free.initialize(model, state, (0, 0, 0, 0, 0, 0, 1), opening_rad=wrong)
 
     def test_regrasp_is_planned_with_the_open_jaws_clear_of_the_wire(self):
-        from test_grasp_tip_clearance import controller_for, flat_tissue, planned, straight_needle, straight_pose
+        from test_grasp_tip_clearance import (
+            TIP_GRASP,
+            controller_for,
+            flat_tissue,
+            planned,
+            straight_needle,
+            straight_pose,
+        )
 
         from newton_solver_suturebot import NeedleGeometry
         from newton_solver_suturebot.examples.grasp._dvrk_grasper import _segment_distance, needle_to_gripper_pose
@@ -456,8 +463,8 @@ class OneCapsuleSetTests(unittest.TestCase):
             relative = needle_to_gripper_pose(
                 geometry,
                 arc_fraction=grasp_distance / length,
-                tangent_roll_rad=Controller.tip_grasp_roll_rad,
-                bite_angle_rad=Controller.tip_grasp_bite_rad,
+                tangent_roll_rad=TIP_GRASP["pull_grasp_roll_rad"],
+                bite_angle_rad=TIP_GRASP["pull_grasp_bite_rad"],
             )
             to_palm = wp.transform_inverse(wp.transform(*relative))
             return np.asarray(

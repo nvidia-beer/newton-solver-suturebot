@@ -479,18 +479,6 @@ class WorkerThread:
             # The held nodes' share of the right-hand side of the tissue solve is then only their change.
             self.exchange.add_nodal_loads(external_nodal_forces)
 
-    def invalidate_step_graphs(self):
-        """Call after replacing worker storage or changing contact/material settings.
-
-        Accepted scene buffers and Newton stopping settings are tracked
-        automatically. The time step is device data that every launch reads, so
-        a graph serves every ``dt``. In-place state updates need no invalidation.
-        The next real accepted step warms resources without a discarded solve.
-        """
-        note_release(len(self._step_graphs))
-        self._step_graphs.clear()
-        self._graph_warmed = False
-
     def _capture_refused(self, arrays):
         """Whether the accepted step of these accepted-state arrays runs as written, without a graph."""
         return (

@@ -130,7 +130,7 @@ def history(interaction):
     alm = x.tunnel_alm
     return (
         (x.status, x.reason, x.punctured, x.puncture_count, x.entry_count, x.exit_count, x.track_count),
-        (x.track_length, x.engaged_track_length, tuple(x.track_section_ids), tuple(sorted(x._track_edges))),
+        (x.track_length, x.engaged_track_length, tuple(map(int, x._track_sections)), tuple(sorted(x._track_edges))),
         [(event["kind"], event["position"].tobytes(), event["reused"]) for event in x.events],
         (x.tip_inside, x._in_material, x._ever_inside, sorted(x._visited_tets), len(x._openings)),
         tuple(live(x, getattr(x, name)).tobytes() for name in TRACK[:5]),

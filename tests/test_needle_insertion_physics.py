@@ -326,7 +326,7 @@ class TestNeedleInsertionPhysics(unittest.TestCase):
         self.assertLess(interaction.track_length, 0.007)  # excludes the 2 mm empty gap
         self.assertEqual([event["kind"] for event in events], ["puncture", "entry", "exit", "puncture", "entry"])
         for a, b in interaction._track_edges:
-            self.assertEqual(interaction.track_section_ids[a], interaction.track_section_ids[b])
+            self.assertEqual(interaction._track_sections[a], interaction._track_sections[b])
         self.forces(interaction, state, forces)
         self.assertLess(interaction.force_balance_error, 1e-8)
         self.assertLess(interaction.torque_balance_error, 1e-10)

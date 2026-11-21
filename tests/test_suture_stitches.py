@@ -567,7 +567,6 @@ class BundledPadTests(unittest.TestCase):
         spacing = 1.0e-4 / geometry.radius  # a sample every 0.1 mm of the tip's way
         for stitch in self.stitches:
             plan = stitch.plan
-            self.assertEqual(plan.entry_angle, 0.0)
             self.assertLess(plan.exit_angle, geometry.span)
             # Through the pad, from entry to exit, the tip is in the tissue or in the open wound.
             angles = np.arange(0.0, plan.exit_angle, spacing)

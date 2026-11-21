@@ -546,10 +546,9 @@ class LocalSutureScene:
         self.config = SutureSceneConfig() if config is None else config
         self._closed = False
         self._scene = None
-        # Host-clock time [s] that the last step took after its scene had stepped (observation and
-        # copy), and the longest such time since the scene was made or reset: a step with a
-        # deadline leaves the longest free, the worst case measured, not the last.
-        self._observe_seconds = 0.0
+        # The longest host-clock time [s] that a step took after its scene had stepped (observation
+        # and copy) since the scene was made or reset: a step with a deadline leaves the longest
+        # free, the worst case measured, not the last.
         self._observe_longest = 0.0
         self._limits = ExitStack()
         try:
@@ -664,8 +663,7 @@ class LocalSutureScene:
         result["worker_started_ns"] = started
         result["worker_finished_ns"] = time.perf_counter_ns()
         self._last = [_snapshot(result)]
-        self._observe_seconds = time.perf_counter() - stepped
-        self._observe_longest = max(self._observe_longest, self._observe_seconds)
+        self._observe_longest = max(self._observe_longest, time.perf_counter() - stepped)
         return self._last
 
     def reset(self, env_ids=None):

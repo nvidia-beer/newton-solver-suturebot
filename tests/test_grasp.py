@@ -8,17 +8,91 @@ import mujoco
 import newton
 import numpy as np
 import warp as wp
+from newton.solvers import SolverMuJoCo
 
 from newton_solver_suturebot._src.geometry.needle import NeedleGeometry
 from newton_solver_suturebot._src.solvers.mujoco.subcycled_mujoco import SubcycledMuJoCo
 from newton_solver_suturebot.examples.grasp._dvrk_capsules import dvrk_tool_capsules
 from newton_solver_suturebot.examples.grasp._dvrk_grasper import (
+    GrasperAssembly,
     GrasperConfig,
-    add_grasper,
+    add_tool_capsules,
     jaw_opening_on_needle,
     needle_to_gripper_pose,
+    tool_instrument,
 )
 from newton_solver_suturebot.examples.needle._needle_insertion_drive import NeedleDrive
+
+
+def add_grasper(builder, *, config=None, label="grasper", instrument=None):
+    """Append the jaws of a PSM tool on a free palm, with independent hinges.
+
+    The palm aggregates the roll/pitch/yaw at their zero relative angles. Its
+    free-body demonstration inertia is positive and explicit; it is not a
+    dynamically calibrated reduction of the original seven-axis PSM chain.
+    Jaw masses/inertias match suturebot_rig.usda. The collision capsules are the
+    capsule set of the instrument, fitted to its drawn CAD with the shaft of the
+    configured centreline length (``dvrk_tool_capsules``); shaft and wrist lie on
+    the palm. ``instrument`` is "PSM1" or "PSM2"; by default the label if it is
+    one of them, else "PSM1".
+    Palm mass/inertia remain the explicit uncalibrated demonstration values.
+    """
+    config = config or GrasperConfig()
+    if "mujoco:condim" not in builder.custom_attributes:
+        SolverMuJoCo.register_custom_attributes(builder)
+    palm = builder.add_link(
+        mass=0.112,
+        inertia=wp.mat33(np.diag([0.002504, 6e-6, 0.002504])),
+        lock_inertia=True,
+        label=f"{label}/palm",
+    )
+    palm_joint = builder.add_joint_free(child=palm, label=f"{label}/free")
+    bodies, joints, q_indices, dof_indices = [], [], [], []
+    for side, sign in enumerate((1, -1)):
+        body = builder.add_link(
+            mass=0.006,
+            inertia=wp.mat33(np.eye(3) * 2e-6),
+            lock_inertia=True,
+            label=f"{label}/jaw_{side}",
+        )
+        joint = builder.add_joint_revolute(
+            palm,
+            body,
+            axis=(0, 0, 1),
+            target_q=sign * config.initial_opening_rad / 2,
+            target_ke=config.jaw_stiffness_nm_rad,
+            target_kd=config.jaw_damping_nms_rad,
+            limit_lower=0 if sign > 0 else -config.maximum_opening_rad / 2,
+            limit_upper=config.maximum_opening_rad / 2 if sign > 0 else 0,
+            effort_limit=config.jaw_torque_limit_nm,
+            actuator_mode=newton.JointTargetMode.POSITION,
+            label=f"{label}/hinge_{side}",
+        )
+        q_indices.append(builder.joint_q_start[joint])
+        dof_indices.append(builder.joint_qd_start[joint])
+        builder.joint_q[q_indices[-1]] = sign * config.initial_opening_rad / 2
+        bodies.append(body)
+        joints.append(joint)
+    builder.add_articulation([palm_joint, *joints], label=label)
+    capsules = dvrk_tool_capsules(tool_instrument(label, instrument), float(config.shaft_length_m))
+    return GrasperAssembly(
+        config,
+        palm,
+        tuple(bodies),
+        palm_joint,
+        tuple(joints),
+        tuple(q_indices),
+        tuple(dof_indices),
+        *add_tool_capsules(
+            builder,
+            capsules,
+            {"roll": palm, "pitch": palm, "jaw1": bodies[0], "jaw2": bodies[1]},
+            config,
+            label,
+            # The palm is the wrist-yaw frame: shaft and wrist are placed in it as the CAD assembles them.
+            part_frames={name: capsules.frames[name] for name in ("roll", "pitch")},
+        ),
+    )
 
 
 class _Rig:

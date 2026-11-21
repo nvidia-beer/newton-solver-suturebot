@@ -919,7 +919,8 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         done = {"commanded_arc_complete": True, "entry_count": 1, "exit_count": 1, "stage": "done"}
         # With a lift the procedure has no fixed duration: it must have ended at the last frame of the
         # self-test, however short or long the run is. A run that ends while the arc is under way fails ...
-        example = self.final_state(lift_height=0.01)
+        # (Without thread tracks the example does not pull: its procedure ends after the lift.)
+        example = self.final_state(lift_height=0.01, thread_tracks=False)
         example.controller.report = lambda: [
             {"commanded_arc_complete": False, "entry_count": 0, "exit_count": 0, "stage": "arc", "lifts_complete": 0}
         ]
@@ -942,21 +943,8 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         example.controller.report = lambda: [done | {"lifts_complete": 1}]
         with contextlib.redirect_stdout(io.StringIO()):
             example.test_final()
-        # ... both of them when the tool also lifts by the needle tip.
-        example = self.final_state(lift_height=0.01, tip_lift_height=0.005)
-        example.controller.report = lambda: [done | {"lifts_complete": 1}]
-        with self.assertRaisesRegex(AssertionError, "did not complete"):
-            example.test_final()
-        example.controller.report = lambda: [done | {"lifts_complete": 2}]
-        with contextlib.redirect_stdout(io.StringIO()):
-            example.test_final()
-        # A run that ends between the two lifts (the regrasp) or in the lift by the tip has not completed them.
-        for stage in ("release", "retreat", "approach", "descend", "close", "tip_lift"):
-            example.controller.report = lambda stage=stage: [done | {"stage": stage, "lifts_complete": 1}]
-            with self.subTest(stage=stage), self.assertRaisesRegex(AssertionError, "did not complete"):
-                example.test_final()
-        # With the pull the procedure ends with the tail of the needle at its entry, after the one lift.
-        example = self.final_state(lift_height=0.01, pull_through=True)
+        # With the pull the procedure ends when the pull has ended by its rule, after the one lift.
+        example = self.final_state(lift_height=0.01)
         pulled = done | {"lifts_complete": 1, "pull_complete": True}
         with contextlib.redirect_stdout(io.StringIO()):
             example.controller.report = lambda: [pulled]
@@ -972,7 +960,7 @@ class GraspExampleLifecycleTests(unittest.TestCase):
             example.test_final()
         # Another speed or settling time has another duration: nothing is asked of that procedure.
         for options in ({"speed": 0.001}, {"settle_seconds": 7.0}):
-            other = self.final_state(lift_height=0.01, pull_through=True, **options)
+            other = self.final_state(lift_height=0.01, **options)
             other.controller.report = lambda: [pulled | {"stage": "pull", "pull_complete": False}]
             with self.subTest(options=options), contextlib.redirect_stdout(io.StringIO()):
                 other.test_final()
@@ -1003,7 +991,7 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         }
 
         def example_with(report=None, thread=None, engaged=0.0, tracks=True, **options):
-            example = self.final_state(**({"lift_height": 0.01, "pull_through": True} | options))
+            example = self.final_state(**({"lift_height": 0.01} | options))
             example.geometry["insertion_plan"] = {"expected_passages": 2}
             if tracks:
                 example.geometry["thread_tracks"] = True
@@ -1057,19 +1045,20 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         # is asked of the procedure (another speed).
         for options in (
             {},
-            {"pull_through": False},
+            {"thread_tracks": False},
             {"speed": 0.001, "report": {"stage": "lift", "pull_complete": False}},
         ):
             with self.subTest(options=options), self.assertRaisesRegex(AssertionError, "no room in the reserve"):
                 example_with(thread={"eyelets_refused": 1}, **options).test_final()
-        # A scene whose thread does not follow the track (--no-thread-tracks) ends its pull at the entry:
-        # none of the conditions on the exit and the eyelets apply.
+        # A scene whose thread does not follow the track (--no-thread-tracks) is not pulled in, its procedure
+        # ends after the lift: none of the conditions on the pull, the exit and the eyelets apply.
         with contextlib.redirect_stdout(io.StringIO()):
             example_with(
-                report={"tail_past_exit_m": -0.0115},
+                report={"pull_complete": False, "tail_past_exit_m": None},
                 thread={"eyelets": 0, "eyelets_threaded": 0, "eyelet_passages": [], "thread_inside_tissue_m": 0.0},
                 engaged=0.009,
                 tracks=False,
+                thread_tracks=False,
             ).test_final()
         # A run that ends in the pull through the tissue fails: its pull has not ended.
         with self.assertRaisesRegex(AssertionError, "pull of the needle by its tip"):
@@ -1165,7 +1154,7 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         }
 
         def example_with(report=None, thread=None, tracks=True, record=None, time=None, **scene):
-            example = self.final_state(lift_height=0.01, pull_through=True)
+            example = self.final_state(lift_height=0.01)
             example.geometry["insertion_plan"] = {"expected_passages": 2}
             if tracks:
                 example.geometry["thread_tracks"] = True
@@ -1620,21 +1609,21 @@ class GraspExampleLifecycleTests(unittest.TestCase):
         args = parser.parse_args([])
         self.assertEqual(args.rigid_backend, "mujoco-warp")
         self.assertEqual((args.lift_height, args.bite_length), (0.01, 0.010))
-        # After the lift the tool takes the needle by its tip and pulls it on; the pull replaces the lift by the tip.
+        # After the lift the tool takes the needle by its tip and pulls it on.
         example = grasp_example.Example
-        self.assertTrue(args.pull_through)
-        self.assertIsNone(args.tip_lift_height)
-        self.assertEqual((example._pull_through(args), example._tip_lift_height(args)), (True, 0.0))
-        # Without the pull the procedure is the earlier one, with its lift of 5 mm by the tip.
-        earlier = parser.parse_args(["--no-pull-through"])
-        self.assertEqual((example._pull_through(earlier), example._tip_lift_height(earlier)), (False, 0.005))
-        shorter = parser.parse_args(["--no-pull-through", "--tip-lift-height", "0.002"])
-        self.assertEqual((example._pull_through(shorter), example._tip_lift_height(shorter)), (False, 0.002))
-        # Without the first lift the example is the insertion alone: no pull and no lift by the tip.
-        alone = parser.parse_args(["--lift-height", "0"])
-        self.assertEqual((example._pull_through(alone), example._tip_lift_height(alone)), (False, 0.0))
-        # An argument set without the options (a caller of the class) has neither.
-        self.assertEqual((example._pull_through(self.args()), example._tip_lift_height(self.args())), (False, 0.0))
+        self.assertTrue(args.thread_tracks)
+        self.assertTrue(example._pull_through(args))
+        # The pull takes the needle through the tissue: without thread tracks the example ends after the lift.
+        self.assertFalse(example._pull_through(parser.parse_args(["--no-thread-tracks"])))
+        # Without the first lift the example is the insertion alone: no pull.
+        self.assertFalse(example._pull_through(parser.parse_args(["--lift-height", "0"])))
+        # An argument set without the options (a caller of the class) has no lift and so no pull.
+        self.assertFalse(example._pull_through(self.args()))
+        # The options of the lift by the tip are gone.
+        for removed in (["--no-pull-through"], ["--pull-through"], ["--tip-lift-height", "0.002"]):
+            with self.subTest(removed=removed), contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit):
+                    parser.parse_args(removed)
         # 48 s at 60 Hz. The measured sequence is clear of the tissue before 31 s of simulated time. The draw
         # of the thread then takes one length of the needle (17.53 mm, the chord from its tail to its tip) at
         # 3 mm/s with the two ramps of 0.5 s, 6.35 s, and the hold of 0.5 s. The stitch then takes at most two
@@ -1668,12 +1657,6 @@ class GraspExampleLifecycleTests(unittest.TestCase):
     def test_main_rejects_heights_and_bites_outside_their_ranges(self):
         for arguments in (
             ["--lift-height", "0.011"],
-            ["--lift-height", "0.002", "--tip-lift-height", "0.003"],
-            ["--tip-lift-height", "-0.001"],
-            # The earlier procedure's lift of 5 mm by the tip does not fit under a first lift of 2 mm.
-            ["--lift-height", "0.002", "--no-pull-through"],
-            # The pull replaces the lift by the tip.
-            ["--tip-lift-height", "0.004"],
             ["--bite-length", "-0.001"],
             ["--bite-length", "nan"],
         ):

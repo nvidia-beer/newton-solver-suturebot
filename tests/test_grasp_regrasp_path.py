@@ -78,10 +78,18 @@ def jaws_only():
     return entry
 
 
-def scene_state(controller, leg="rise"):
-    """A scene of the controller in the regrasp, as the release leaves it."""
+def scene_state(controller, leg="rise", grasp=None):
+    """A scene of the controller in the regrasp, as the release leaves it; with ``grasp``, as its plan leaves it.
+
+    The plan of a grasp at the tip leaves the grasp, the pregrasp behind it, the needle pose it was made
+    for (here a needle far from everything) and the reach of the tool over its descent.
+    """
     state = procedure._Scene(0, 0.0, 0.0, 0.0)
     state.stage, state.leg = "retreat", leg
+    if grasp is not None:
+        state.tip_grasp, state.plan_pose = grasp, FAR
+        state.pregrasp = controller._backed_off(grasp)
+        state.reach_rad = state.reach_m = np.inf
     return state
 
 
@@ -458,8 +466,7 @@ class RouteRuleTests(unittest.TestCase):
         clearance = controller.transfer_clearance
 
         def route(grasp):
-            state = scene_state(controller)
-            state.tip_grasp, state.plan_pose = grasp, FAR
+            state = scene_state(controller, grasp=grasp)
             plan = controller._plan_route(state)
             for _ in range(400):
                 try:
@@ -500,12 +507,11 @@ class RouteRuleTests(unittest.TestCase):
 
     def test_wrist_and_shaft_are_kept_out_of_the_tissue_on_the_way_down(self):
         controller = controller_for(straight_needle(), tool())
-        state = scene_state(controller)
         # Jaws level 20 degrees under the horizon, the grasp 3.5 mm up: the jaws stay above the plane, the
         # wrist capsule (radius 3 mm, about the palm) does not.
         along = np.array([np.cos(0.35), 0.0, -np.sin(0.35)])
         frame = np.column_stack(([0.0, 1.0, 0.0], along, np.cross([0.0, 1.0, 0.0], along)))
-        state.tip_grasp, state.plan_pose = pose_from(frame, (0.004, -0.003, 0.0035)), FAR
+        state = scene_state(controller, grasp=pose_from(frame, (0.004, -0.003, 0.0035)))
         self.assertGreater(0.0035 - 0.009 * np.sin(0.35) - DRAWN_RADIUS, -0.0007)
         plan = controller._plan_route(state)
         with self.assertRaises(StopIteration) as done:
@@ -612,7 +618,7 @@ class DoneLineTests(unittest.TestCase):
         example.halted = example.render_scene = example.last_phases = None
         example.sim_time, example.completed, example.frame_budget = 0.0, 0, None
         example.viewer = SimpleNamespace()
-        state = {"stage": "tip_lift", "phase": "lowering"}
+        state = {"stage": "lift", "phase": "lowering"}
         controller = lambda observations: np.zeros((1, 7))  # noqa: E731
         controller.report = lambda: [{"env_id": 0, "reason": None, **state}]
         example.controller = controller

@@ -380,7 +380,7 @@ class NeedleTunnelALMTests(unittest.TestCase):
             self.vertices[self.live(interaction, interaction._track_nodes)],
         )
         self.assertFalse(np.any((points[:, 2] > 0.006001) & (points[:, 2] < 0.007999)))
-        sections = interaction.track_section_ids
+        sections = np.asarray(interaction._track_sections, dtype=np.int32)
         for first, second in interaction._track_edges:
             self.assertEqual(sections[first], sections[second])
         # A centered shaft creates no transverse reaction. Newly appended

@@ -15,6 +15,21 @@ from newton.solvers import SolverMuJoCo
 from newton_solver_suturebot.examples.needle._needle_insertion_drive import NeedleDrive, ramp_distance
 
 
+def net_wrench(drive, state):
+    """Last drive wrench including its passive damping at ``state`` velocity.
+
+    In implicit mode ``wrench`` stores only the externally applied spring
+    and target-velocity feedforward. This adds the drive's native
+    part, including the spring linearization if enabled; pre-existing
+    joint damping and tissue loads are excluded. Evaluate at the accepted
+    endpoint velocity to recover the discrete drive wrench.
+    """
+    value = drive.wrench.numpy()[0].astype(float)
+    if drive.implicit_damping:
+        value -= drive._configured_damping * state.body_qd.numpy()[drive.body]
+    return value
+
+
 @contextmanager
 def _body(*, com=(0, 0, 0)):
     with wp.ScopedDevice(os.environ.get("NEWTON_TEST_DEVICE", "cpu")):
@@ -85,7 +100,7 @@ class NeedleDriveTests(unittest.TestCase):
                         expected_wrench = stiffness * (target_coordinate - expected_coordinate)
                         expected_wrench += damping * (target_velocity - expected_velocity)
                         self.assertAlmostEqual(
-                            drive.net_wrench(following)[axis], expected_wrench, delta=2e-10 if angular else 2e-9
+                            net_wrench(drive, following)[axis], expected_wrench, delta=2e-10 if angular else 2e-9
                         )
 
     def test_timestep_changes_update_native_spring_once_and_preserve_passive_damping(self):
@@ -150,7 +165,7 @@ class NeedleDriveTests(unittest.TestCase):
             state.clear_forces()
             drive.configure_mujoco(solver)
             drive.add_forces(state, target, target_velocity)
-            np.testing.assert_allclose(drive.net_wrench(state), explicit, rtol=3e-6, atol=2e-10)
+            np.testing.assert_allclose(net_wrench(drive, state), explicit, rtol=3e-6, atol=2e-10)
             expected_passive = -np.array([drive.damping] * 3 + [drive.angular_damping] * 3)
             expected_passive *= state.body_qd.numpy()[0]
             np.testing.assert_allclose(drive.wrench.numpy()[0] + expected_passive, explicit, rtol=3e-6, atol=2e-10)

@@ -141,20 +141,6 @@ class NeedleDrive:
         if dt != self.spring_linearization_dt:
             self.configure_mujoco(self._mujoco_solver, dt)
 
-    def net_wrench(self, state):
-        """Last drive wrench including its passive damping at ``state`` velocity.
-
-        In implicit mode ``wrench`` stores only the externally applied spring
-        and target-velocity feedforward. This diagnostic adds the drive's native
-        part, including the spring linearization if enabled; pre-existing
-        joint damping and tissue loads are excluded. Evaluate at the accepted
-        endpoint velocity to recover the discrete drive wrench.
-        """
-        value = self.wrench.numpy()[0].astype(float)
-        if self.implicit_damping:
-            value -= self._configured_damping * state.body_qd.numpy()[self.body]
-        return value
-
     def add_forces(self, state, target_pose, target_velocity):
         wp.launch(
             _drive,

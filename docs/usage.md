@@ -814,9 +814,8 @@ the grasp and then runs one sequence:
    the tissue and out of its exit, the thread follows it through the track,
    and the tool holds the needle clear of the tissue
    ([the pull](#the-way-to-the-tip-and-the-pull)). With `--no-thread-tracks`
-   the pull ends when the tail arrives at the hole of its entry. With
-   `--no-pull-through` the tool takes the tip with the earlier grasp instead,
-   lifts 5 mm by it, holds and lowers.
+   the example ends after the lift: the pull needs a thread that follows the
+   needle's track.
 6. After the pull through the tissue it ties the thread where it goes into
    the tissue (a stand-in for a knot), moves the needle on along its chord
    until the thread is as tight as the tissue allows, and holds: the wound
@@ -912,8 +911,8 @@ unnoticed). The reach margin below allows for the creep of a resting needle
 only. Once the jaws have closed, the pull is tested again from the grasp as
 they measure it.
 
-By default the tool then pulls the needle on along its curve (`--pull-through`,
-`ProceduralGraspController._pull_target`): it turns the needle about the
+The tool then pulls the needle on along its curve
+(`ProceduralGraspController._pull_target`): it turns the needle about the
 needle's own centre of curvature, in the needle's own plane, in the sense of
 the insertion, so the tip rises out of its exit and the tail moves towards its
 entry. The speed is the arc speed of the insertion (`--speed`, 3 mm/s, with the
@@ -931,10 +930,9 @@ elements past the exit marker from where the needle rests; a needle that is
 not free of the tissue, or has not followed, 0.25 s after the command has
 reached that bound stops the procedure with that reason. The tool then holds
 for 0.5 s: the needle is held by its tip, clear of the tissue, with the thread
-running from its tail into the exit. With thread tracks
-[the tie and the tightening](#the-tie-and-the-tightening) and
-[the lock and the slackening](#the-lock-and-the-slackening) follow; without
-them the procedure is done.
+running from its tail into the exit.
+[The tie and the tightening](#the-tie-and-the-tightening) and
+[the lock and the slackening](#the-lock-and-the-slackening) follow.
 
 The thread follows through the track that the needle has actually cut
 (`WorkerThread`, `NeedleTrackEyelets`, `ThreadTissueCoupling.follow_tail`).
@@ -948,12 +946,9 @@ the direction in which the thread leaves the tail, and at most two wire radii
 (0.56 mm) beside that line. From then on the thread slides through it against
 the thread's friction, and the thread between the eyelets of a passage has no
 contact with the tissue surface. The default stitch makes 4 eyelets in each of
-its two passages. A scene run with `--no-thread-tracks` has no eyelets: its
-pull ends when the tail has arrived at the hole of its entry, within 0.56 mm
-of arc of the entry marker (two wire radii, the radius within which the
-needle/tissue interaction takes a point of the surface for the needle's
-opening), because a thread without a track is pressed back out through the
-surface behind a tail that goes in.
+its two passages. A scene run with `--no-thread-tracks` has no eyelets, and
+the example does not pull in it: a thread without a track is pressed back out
+through the surface behind a tail that goes in.
 
 A run with a window shows how far the thread is through the tissue: the side
 panel has one line per scene, for example
@@ -969,7 +964,7 @@ without threading it would be counted to the wrong passage, while the count
 of all stays right.
 
 For the pull the jaws take the tip with another grasp than the lift by the tip
-did: twist -60 degrees about the needle tangent, bite 30 degrees, and the tool
+did (a procedure that has been removed): twist -60 degrees about the needle tangent, bite 30 degrees, and the tool
 turned half a turn about its jaw axis (`needle_to_gripper_pose(...,
 jaws_exchanged=True)`: the same grasp with the two jaws exchanged, which a
 fixed-trocar tool reaches with its roll joint half a turn on). The earlier
@@ -987,8 +982,7 @@ its limit on the way over, and the procedure stops there with that reason.
 Reach is a condition of the plan. A point of the needle is taken only if the
 tool reaches the descent to it, the closing and the whole arc that takes the
 needle out of the tissue from it (the tail to two thread elements, 4 mm, past
-the exit marker: the bound of the pull; with `--no-thread-tracks` to the exit
-marker and 1.1 mm more) with every joint inside its limits by a margin; the
+the exit marker: the bound of the pull) with every joint inside its limits by a margin; the
 way back from the needle is tested when the jaws have opened (all 12 mm of
 it; the tool leaves it as soon as it can rise), each step of the rise before
 it is commanded (the rise that is open to the tool ends at the limit of its
@@ -1195,8 +1189,9 @@ and 1.97 and 1.88 mm above the deformed tissue, the thread at the end within
 jaw off the needle (0.66 N at least), nothing captured or loaded after
 start-up.
 
-With `--no-thread-tracks` the pull is the one of before (one self-test: it
-turns the needle by 30.5 degrees, 5.04 mm of arc, in 125 frames and ends with
+Before the thread tracks, and until its removal with `--no-thread-tracks`, the
+pull ended at the entry (one self-test: it
+turned the needle by 30.5 degrees, 5.04 mm of arc, in 125 frames and ended with
 the tail 0.55 mm before the entry marker; done at 26.3 s; no eyelet). That
 pull was measured in nine runs (three self-tests without the tool/tissue
 contact, three with `--tool-tissue-contact swept`, and three more runs with
@@ -1343,8 +1338,8 @@ the procedure therefore goes on with the first step of a stitch
 into the tissue, moves the needle on until the thread is as tight as the
 tissue allows, and holds; then it ties the thread at its exit and lets it go
 slack to the needle ([below](#the-lock-and-the-slackening)). No option
-switches this off by itself: without thread tracks and with
-`--no-pull-through` the procedure ends where it ended before.
+switches this off by itself: without thread tracks (`--no-thread-tracks`) and
+without the lift (`--lift-height 0`) the example does not pull at all.
 
 The tie. In the first call after the hold that ends the pull, the controller
 asks the scene to tie the thread at the first eyelet of its first passage,
@@ -1529,11 +1524,11 @@ is asked for at 30.6 to 31.0 s; the tightening takes 2.32 to 2.33 s:
   action, and the self-test passes for both scenes (travel 5.60 and 5.55 mm,
   the top 2.18 mm wide in both at the last frame, nothing captured or loaded
   after start-up).
-- The older procedures end where they ended (one self-test each, runs
-  `s1_notracks` and `s1_nopull`): with `--no-thread-tracks` the pull ends at
-  the entry and the procedure is done at 26.2 s, with `--no-pull-through` the
-  lift by the tip ends it at 28.1 s; no call of either asks the scene for
-  anything, and nothing is tied.
+- The older procedures, both removed since, ended where they ended (one
+  self-test each, runs `s1_notracks` and `s1_nopull`): with
+  `--no-thread-tracks` the pull ended at the entry and the procedure was done
+  at 26.2 s, with `--no-pull-through` the lift by the tip ended it at 28.1 s;
+  no call of either asked the scene for anything, and nothing was tied.
 - Without the tool/tissue contact (`--no-tool-tissue-contact`, one self-test,
   run `s1_nocontact`) the stitch is the same: travel 5.55 mm, least volume
   0.543 at rest, the top from 2.84 to 2.19 mm, 26.2 mN on the needle, no
@@ -1784,10 +1779,10 @@ asked for at 33.5 to 33.7 s; the slackening takes 1.18 to 1.20 s:
   the four runs above in three numbers: it is done 10 frames later, its
   tightening narrows the top by 0.68 mm, and its top is 2.44 mm wide at the
   end.
-- The older procedures ask the scene for nothing and tie nothing. With
-  `--no-thread-tracks` (one self-test, run `s2_notracks`) the pull ends at the
-  entry and the procedure is done at 26.2 s, as before. With
-  `--no-pull-through` the lift by the tip ends the procedure at 28.1 s in three
+- The older procedures, both removed since, asked the scene for nothing and
+  tied nothing. With `--no-thread-tracks` (one self-test, run `s2_notracks`)
+  the pull ended at the entry and the procedure was done at 26.2 s, as before.
+  With `--no-pull-through` the lift by the tip ended the procedure at 28.1 s in three
   of four self-tests: `s2_nopull_2` of this text, and `b2_nopull_1` and
   `b2_nopull_2` of the text before it. The fourth, `s2_nopull` of this text,
   stopped at 19.0 s on the way to the tip, in the stage `approach`, with the
@@ -1804,7 +1799,7 @@ asked for at 33.5 to 33.7 s; the slackening takes 1.18 to 1.20 s:
   is at one end of that spread (four other recorded runs, among them `s1_a` of
   the text before this step, have the needle within 0.05 mm and 0.4 degree of
   it; they used the pull, whose plan asks for reach). By this
-  `--no-pull-through` can stop in the same way before this step as after it; no
+  `--no-pull-through` could stop in the same way before this step as after it; no
   run of the text before it did (three of three passed).
 - Not seen in a window by this step: the second marker, the panel line and the
   pace of the new stages are untested on screen.
@@ -1865,7 +1860,7 @@ c(s) = min over the jaw capsules j of  [ min over x on S of dist(x, K_j(s)) - R_
   `s*` is taken among the points at which the centre line of the wire is
   further from the axis of every jaw capsule, turned open, than the radius of
   the capsule, its bound and the radius of the wire (`wire_clearance`). With
-  the twist and bite of the earlier grasp (`--no-pull-through`) the needle's
+  the twist and bite of the earlier grasp (the lift by the tip, removed since) the needle's
   tip lies towards the roots of the jaws: the open jaws of the needle driver
   are clear of the wire up to 2.10 mm of needle from the tip and at no point
   further from it.
@@ -1887,12 +1882,12 @@ tissue that the jaws pressed down (with the
 [tool/tissue contact](#tooltissue-contact) on) lets the needle come up by
 about 2 mm when the tool backs away. The procedure
 stops if no point of the wire that sticks out has clear jaws ("The needle tip
-does not stick out of the tissue far enough ..."), with the pull also if none
+does not stick out of the tissue far enough ..."), also if none
 of them is within the reach of the tool
 ([above](#the-way-to-the-tip-and-the-pull)), or if the needle has not come to
 rest 3 s after the plan was begun.
 
-With the fitted capsule set and the earlier grasp (`--no-pull-through`),
+With the fitted capsule set and the earlier grasp (the lift by the tip, removed since),
 measured on the device on 2026-11-17 in seven
 whole runs: the grasp point is 1.84 to 1.86 mm from the tip in four runs
 without the tool/tissue contact and 1.78, 1.87 and 1.95 mm in three runs with the
@@ -1946,16 +1941,12 @@ the complete shafts and trocar ports. Use `--controller hold` to inspect the set
 the insertion arc. `--speed` specifies arc speed in metres/second and
 `--settle-seconds` sets the initial grasp-settling interval. `--lift-height`
 sets the lift after the insertion in metres (0 to 0.01, default 0.01);
-`--lift-height 0` restores the insertion-only procedure. `--pull-through`
-(the default) takes the needle by its tip after the lift and pulls it on along
+`--lift-height 0` restores the insertion-only procedure. After the lift the
+tool takes the needle by its tip and pulls it on along
 its curve, out of the tissue, with the thread following through the needle's
-track; with `--no-thread-tracks` the thread stays on the surface and the pull
-ends at the entry; `--no-pull-through` is the earlier grasp at the tip and the
-lift by it, on the same clear way from the one grasp to the other (it is not
-the procedure of before the pull: that one went to the tip another way), with
-`--tip-lift-height`, the lift by the needle tip (0 up to
-the first lift, default 0.005 there; 0 ends the sequence after the first
-lift). The pull replaces the lift by the tip: both together are refused. A
+track; with `--no-thread-tracks` the thread stays on the surface and the
+example ends after the lift, because the pull needs a thread that follows the
+track. A
 lift rises with smooth endpoint speeds in
 the time that keeps its peak speed at 80 % of the action rate limit (3.1 s for
 10 mm, at least 0.75 s), holds for 0.5 s and returns in the same time. Grasp
@@ -2061,7 +2052,7 @@ of two kinds:
   100.7 s on the screen for the 30.9 s of the procedure. No window run of
   this procedure was made without the contact or without the budget.
 - The procedure of before the thread tracks, in which the pull ended at the
-  needle's entry (today `--no-thread-tracks`; done at 26.2 to 26.7 s): **11 of
+  needle's entry (removed since; done at 26.2 to 26.7 s): **11 of
   11 runs** in one shared round (15:25 to 15:57; its notes and logs are
   `/tmp/suturebot-gpu-work/round2/notes.md` and `r2_1117/logs` there, a work
   folder outside this repository): five with the window, three self-tests,
@@ -2076,7 +2067,7 @@ of two kinds:
 
 The other measurements of this section are earlier runs of the same day, made
 with the option written out and the procedure of their hour (the lift by the
-tip, later the pull to the entry).
+tip, later the pull to the entry; both removed since).
 
 What it does. The shaft, the wrist and the two jaws of both tools are covered
 with spheres along the axes of their collision capsules, 274 in all, with the
@@ -2942,8 +2933,7 @@ first attempt takes 10 ms in the median and the loop term alone is 39 to
 (7,829 steps, 124.1 s). The pace needs a device loop that a step can leave.
 
 **Measured in the window, the procedure of before the thread tracks** (the
-pull ended at the needle's entry; today every row is with
-`--no-thread-tracks`). The shared round on the GPU of 2026-11-17, 15:25
+pull ended at the needle's entry; that procedure has been removed). The shared round on the GPU of 2026-11-17, 15:25
 to 15:57, with the options that are the defaults now written out (one DGX
 Spark; seven window runs of 1750 frames, each alone on the
 GPU, the monitor awake, machine load 1.4 to 7.7 from other work on the CPU;

@@ -190,10 +190,6 @@ class InsertionPlan:
         return len(self.tissue_intervals) if self.tissue_intervals else 1
 
     @property
-    def entry_angle(self):
-        return 0.0
-
-    @property
     def path_points(self):
         return self.tip(np.linspace(self.initial_angle, self.finish_angle, 160))
 

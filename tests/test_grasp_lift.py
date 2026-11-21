@@ -12,7 +12,7 @@ from types import SimpleNamespace
 import numpy as np
 import warp as wp
 from test_grasp_procedure import fixture, snapshot
-from test_grasp_tip_clearance import TROCAR, flat_tissue, tool
+from test_grasp_tip_clearance import TROCAR, flat_tissue, regrasp_controller, tool
 
 from newton_solver_suturebot.examples.grasp import _grasp_procedure as procedure
 from newton_solver_suturebot.examples.grasp._dvrk_grasper import GRASP_BITE_DEPTH_M, needle_to_gripper_pose
@@ -40,7 +40,7 @@ def wire_point(plan, behind):
 def lift_fixture(*, normal=(0, 0, 1), out=0.008):
     """The procedure fixture with what a lift needs: entry normal, exit angle and the needle arc.
 
-    For the lift at the tip it also has the jaw capsules of the tool and a flat tissue surface: with the
+    For the regrasp it also has the jaw capsules of the tool and a flat tissue surface: with the
     needle at the end of its drive, the wire comes out of it at a right angle, ``out`` [m] behind the tip.
     """
     geometry, config = fixture()
@@ -135,12 +135,10 @@ def tick(controller, item, config):
     return action
 
 
-def at_drive_angle(*, height=0.0005, tip_height=0.0, behind=2.0, normal=(0, 0, 1), out=0.008):
+def at_drive_angle(*, height=0.0005, behind=2.0, normal=(0, 0, 1), out=0.008):
     """A controller whose commanded arc is complete, with the needle not yet in the tissue."""
     geometry, config = lift_fixture(normal=normal, out=out)
-    controller = ProceduralGraspController(
-        geometry, config, settle_seconds=0, lift_height=height, tip_lift_height=tip_height
-    )
+    controller = ProceduralGraspController(geometry, config, settle_seconds=0, lift_height=height)
     item = held(snapshot(geometry), geometry, behind)
     controller([item])
     item["diagnostics"]["physical_time_s"] = 30.0
@@ -155,14 +153,17 @@ def before_regrasp(*, out=0.006, behind=2.0, twist=-1.7):
     the lift, and so the pose at which the jaws will let go, is the tool on the wire.
     """
     geometry, config = regrasp_fixture(out=out)
-    controller = ProceduralGraspController(
-        geometry, config, settle_seconds=0, lift_height=0.001, tip_lift_height=0.0005
-    )
+    controller = regrasp_controller(geometry, config, settle_seconds=0, lift_height=0.001)
     item = gripped(snapshot(geometry), geometry, behind, twist)
     controller([item])
     item["diagnostics"]["physical_time_s"] = 30.0
     controller([item])
     item["needle_pose"] = pose_at(geometry["insertion_plan"], controller.report()[0]["commanded_angle_rad"])
+    # The markers of the tissue, which the plan of the grasp reads: where the wire goes into the tissue and
+    # where it comes out of it, ``out`` of arc before the tail and behind the tip.
+    plan, needle = geometry["insertion_plan"], wp.transform(*item["needle_pose"])
+    for name, behind_tip in (("entry_position", SPAN - out / plan["radius"]), ("exit_position", out / plan["radius"])):
+        item[name] = np.asarray(wp.transform_point(needle, wp.vec3(*wire_point(plan, behind_tip))), dtype=float)
     item["gripper_target_pose"] = gripper_target(item["needle_pose"], item["needle_relative_pose"])
     item["diagnostics"].update(entry_count=1, physical_time_s=30.1)
     controller([item])
@@ -540,29 +541,14 @@ class GraspLiftTests(unittest.TestCase):
         nearer = c._tip_grasp(needle, offset + c.jaws[0][2])
         self.assertLess(jaw_clearance(c.tissue, c.jaws, nearer, (0, 0.006, 0), opening, descent), 0.0)
 
-        # Close: the jaws close without moving the tool; the lift waits for contact on both.
+        # Close: the jaws close without moving the tool; what follows waits for contact on both (the pull:
+        # test_grasp_pull).
         while item["jaw_target_rad"][0] - item["jaw_target_rad"][1] > 1e-9:
             action = tick(c, item, config)
             np.testing.assert_array_equal(action[:6], 0)
             self.assertLess(action[6], 0)
-        self.assertEqual(c.report()[0]["stage"], "close")
-        item["jaw_contact_count"][:] = 1
-        item["jaw_contact_normal_force_n"][:] = 0.2
-        item["needle_relative_pose"] = np.asarray(
-            wp.transform_multiply(wp.transform_inverse(wp.transform(*grasp)), wp.transform(*needle)), dtype=float
-        )
-        tick(c, item, config)
-        self.assertEqual(c.report()[0]["stage"], "tip_lift")
-
-        # The lift by the tip uses its own height and returns to where the jaws closed.
-        peak = 0.0
-        for _ in range(int(np.ceil(c.lift_duration / config.frame_dt)) + 3):
-            tick(c, item, config)
-            peak = max(peak, item["gripper_target_pose"][2] - grasp[2])
-        self.assertAlmostEqual(peak, 0.0005, delta=1e-7)
-        np.testing.assert_allclose(item["gripper_target_pose"][:3], grasp[:3], atol=2e-7)
         report = c.report()[0]
-        self.assertEqual((report["stage"], report["lifts_complete"], report["phase"]), ("done", 2, "holding"))
+        self.assertEqual((report["stage"], report["lifts_complete"]), ("close", 1))
         self.assertEqual(report["tip_grasp_plans"], 1)
 
     def test_the_grasp_at_the_tip_is_planned_while_the_tool_rises_one_piece_of_work_per_frame(self):
@@ -731,11 +717,11 @@ class GraspLiftTests(unittest.TestCase):
         self.assertIn("cannot rise far enough", report["reason"])
         self.assertAlmostEqual(np.linalg.norm(frames[-1][2][:3] - state.via[:3]), 0.003, delta=2e-7)
 
-        # A tool that does not say where its shaft and wrist are cannot be kept out of the tissue: it is
-        # planned a grasp for as before (test_grasp_tip_clearance), and the regrasp stops before it moves.
+        # A tool that does not say which link each of its capsules is on cannot be kept out of the tissue: it
+        # is planned a grasp for as before (test_grasp_tip_clearance), and the regrasp stops before it moves.
         geometry, config = regrasp_fixture()
-        del geometry["grippers"][0]["trocar_pose"]
-        c = ProceduralGraspController(geometry, config, settle_seconds=0, lift_height=0.001, tip_lift_height=0.0005)
+        del geometry["grippers"][0]["part_body_indices"]
+        c = regrasp_controller(geometry, config, settle_seconds=0, lift_height=0.001)
         item = gripped(snapshot(geometry), geometry, 2.0)
         c([item])
         for time in (30.0, 30.1):
@@ -829,13 +815,9 @@ class GraspLiftTests(unittest.TestCase):
             "entry_clearance": 0.003,
             "transfer_clearance": 0.012,
             "release_opening_rad": 0.6,
-            "tip_grasp_roll_rad": -2.618,
-            "tip_grasp_bite_rad": 0.7854,
-            "tip_grasp_jaws_exchanged": False,
             "pull_grasp_roll_rad": -1.0472,
             "pull_grasp_bite_rad": 0.5236,
             "pull_grasp_jaws_exchanged": True,
-            "pull_slack_radii": 4.0,
             "draw_needle_lengths": 1.0,
             "tighten_travel_bound": 0.0075,
         }
@@ -866,19 +848,15 @@ class GraspLiftTests(unittest.TestCase):
         geometry, config = fixture()
         default = ProceduralGraspController(geometry, config)
         self.assertEqual((default.speed, default.settle_seconds), (0.003, 0.5))
-        # The rounded radians of the two grasps at the tip are the degrees of their scans.
-        angles = np.rad2deg([-2.618, 0.7854, -1.0472, 0.5236])
-        np.testing.assert_allclose(angles, [-150.0, 45.0, -60.0, 30.0], atol=5e-4)
+        # The rounded radians of the grasp at the tip are the degrees of its scan.
+        angles = np.rad2deg([-1.0472, 0.5236])
+        np.testing.assert_allclose(angles, [-60.0, 30.0], atol=5e-4)
 
     def test_height_and_positive_lift_normal_validation(self):
         geometry, config = lift_fixture()
         for height in (-0.0001, 0.010001, float("nan"), float("inf")):
             with self.subTest(height=height), self.assertRaises(ValueError):
                 ProceduralGraspController(geometry, config, lift_height=height)
-        # The lift at the tip cannot exceed the lift after the insertion.
-        for tip in (-0.0001, 0.002001, float("nan")):
-            with self.subTest(tip=tip), self.assertRaises(ValueError):
-                ProceduralGraspController(geometry, config, lift_height=0.002, tip_lift_height=tip)
         for normal in (None, [0, 0], [0, 0, 0], [0, 0, float("nan")], [0, float("inf"), 1]):
             invalid = deepcopy(geometry)
             if normal is None:
@@ -888,7 +866,7 @@ class GraspLiftTests(unittest.TestCase):
             with self.subTest(normal=normal), self.assertRaises(ValueError):
                 ProceduralGraspController(invalid, config, lift_height=0.0005)
         geometry["entry_normal"] = [0, 0, 2]
-        ProceduralGraspController(geometry, config, lift_height=0.01, tip_lift_height=0.01)
+        ProceduralGraspController(geometry, config, lift_height=0.01)
 
 
 if __name__ == "__main__":

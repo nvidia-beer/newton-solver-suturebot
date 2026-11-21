@@ -50,9 +50,12 @@ LIMITS = np.array([[-0.6, -0.6, -0.05, -np.pi, -1.1, -1.1], [0.6, 0.6, 0.05, np.
 # the joints of the tool are counted from a shaft along that axis.
 DOWN = np.r_[TROCAR[:3], 1.0, 0.0, 0.0, 0.0]
 # What the scene publishes beside the limits (GraspScene.grasp_geometry): the tolerances of the pose IK of a tool
-# [m, rad] and the radius of the hole that the needle makes [m], two wire radii.
+# [m, rad].
 IK_TOLERANCES = {"ik_position_tolerance_m": 1.0e-5, "ik_orientation_tolerance_rad": 1.0e-3}
-HOLE = 2.0 * WIRE_RADIUS
+# The pull through the tissue of these tests: the thread element of the scenes (0.18 m in 90 elements), the exit
+# marker 3 mm of arc ahead of the tail and the entry marker 1 mm.
+ELEMENT = 0.002
+EXIT_ARC, ENTRY_ARC = 0.003, 0.001
 # The weight that a scene with thread tracks applies to its needle [N] (0.3 g, as the dVRK scene's), and the
 # passages of its planned arc: what the stitch after the pull through the tissue reads beside the thread element.
 WEIGHT = 0.00294
@@ -97,20 +100,17 @@ def trocar_behind(grasp, distance=0.19):
     return np.r_[grasp[:3] - distance * along, np.asarray(turn, dtype=float)]
 
 
-def pull_controller(limits=LIMITS, trocar=DOWN, *, thread_element=None, hole=HOLE, **options):
+def pull_controller(limits=LIMITS, trocar=DOWN, *, thread_element=ELEMENT, **options):
     """A controller that pulls, on the regrasp fixture: the needle as a U in flat tissue, both ends out.
 
-    With ``thread_element`` [m] the scene says that its thread follows the needle's track through the tissue
-    and gives the length of a thread element, the weight it applies to the needle and the passages of its
-    plan, as ``GraspScene.grasp_geometry`` and the scene's geometry do; ``hole`` [m] is the radius of the
-    needle's hole that the scene publishes.
+    The scene says that its thread follows the needle's track through the tissue and gives the length of a
+    thread element (``thread_element`` [m]), the weight it applies to the needle and the passages of its
+    plan, as ``GraspScene.grasp_geometry`` and the scene's geometry do.
     """
     geometry, config = regrasp_fixture()
     geometry["grippers"] = [pulling_tool(limits, trocar)]
-    geometry["needle_capture_radius"] = hole
-    if thread_element is not None:
-        geometry.update(thread_tracks=True, thread_element_length=thread_element, needle_weight_N=WEIGHT)
-        geometry["insertion_plan"] = dict(geometry["insertion_plan"], expected_passages=PASSAGES)
+    geometry.update(thread_tracks=True, thread_element_length=thread_element, needle_weight_N=WEIGHT)
+    geometry["insertion_plan"] = dict(geometry["insertion_plan"], expected_passages=PASSAGES)
     return (
         geometry,
         config,
@@ -118,9 +118,7 @@ def pull_controller(limits=LIMITS, trocar=DOWN, *, thread_element=None, hole=HOL
     )
 
 
-def closed_on_the_tip(
-    limits=LIMITS, *, offset=0.002, entry_arc=0.00299, exit_arc=0.012, thread_element=None, hole=HOLE
-):
+def closed_on_the_tip(limits=LIMITS, *, offset=0.002, entry_arc=ENTRY_ARC, exit_arc=EXIT_ARC, thread_element=ELEMENT):
     """The pull fixture at the call in which the jaws have closed on the needle ``offset`` [m] behind its tip.
 
     The entry marker lies ``entry_arc`` [m] of arc ahead of the tail on the needle's own circle and the exit
@@ -130,7 +128,7 @@ def closed_on_the_tip(
     geometry, config = regrasp_fixture()
     needle = pose_at(geometry["insertion_plan"], DRIVE_ANGLE)
     grasp = pull_controller()[2]._tip_grasp(needle, offset)
-    geometry, config, c = pull_controller(limits, trocar_behind(grasp), thread_element=thread_element, hole=hole)
+    geometry, config, c = pull_controller(limits, trocar_behind(grasp), thread_element=thread_element)
     plan = geometry["insertion_plan"]
     item = snapshot(geometry)
     item.update(
@@ -236,8 +234,7 @@ class ReachTests(unittest.TestCase):
 
     def test_the_margin_follows_the_tolerances_that_the_scene_publishes_for_the_tool(self):
         """Fails if the controller keeps tolerances of its own instead of those of the scene's pose IK."""
-        geometry, config = regrasp_fixture()
-        geometry["needle_capture_radius"] = HOLE
+        geometry, config, _usual = pull_controller()
         # A scene whose pose IK is three times as tight in position and half as tight in orientation.
         geometry["grippers"] = [pulling_tool(ik_position_tolerance_m=3.0e-6, ik_orientation_tolerance_rad=2.0e-3)]
         c = ProceduralGraspController(geometry, config, settle_seconds=0, lift_height=0.001, pull_through=True)
@@ -301,20 +298,18 @@ class ReachTests(unittest.TestCase):
         # limit on either side of it.
         self.assertRegex(c._reach(row(3, [np.pi - 0.2, -np.pi + 0.2]))[0], "^roll is ")
 
-    def test_the_pull_needs_the_limits_of_the_tool_and_excludes_the_lift_at_the_tip(self):
+    def test_the_pull_needs_thread_tracks_and_the_limits_of_the_tool(self):
         geometry, config = regrasp_fixture()
-        # A scene without thread tracks says how large the hole of the needle is: the pull ends there.
-        for hole in (None, 0.0, -HOLE, float("nan")):
-            if hole is not None:
-                geometry["needle_capture_radius"] = hole
-            with self.assertRaisesRegex(ValueError, "needle_capture_radius"):
+        # The pull takes the needle through the tissue: a scene whose thread does not follow the track is refused.
+        for tracks in (None, False):
+            if tracks is not None:
+                geometry["thread_tracks"] = tracks
+            with self.assertRaisesRegex(ValueError, "thread_tracks"):
                 ProceduralGraspController(geometry, config, lift_height=0.001, pull_through=True)
-        geometry["needle_capture_radius"] = HOLE
+        geometry.update(thread_tracks=True, thread_element_length=ELEMENT, needle_weight_N=WEIGHT)
+        geometry["insertion_plan"] = dict(geometry["insertion_plan"], expected_passages=PASSAGES)
         with self.assertRaisesRegex(ValueError, "arm_joint_limits"):
             ProceduralGraspController(geometry, config, lift_height=0.001, pull_through=True)
-        geometry["grippers"] = [pulling_tool(LIMITS)]
-        with self.assertRaisesRegex(ValueError, "The pull replaces the lift at the tip"):
-            ProceduralGraspController(geometry, config, lift_height=0.001, tip_lift_height=0.0005, pull_through=True)
         geometry["grippers"] = [pulling_tool(LIMITS[:, :5])]
         with self.assertRaisesRegex(ValueError, "six increasing finite joint limits"):
             ProceduralGraspController(geometry, config, lift_height=0.001, pull_through=True)
@@ -323,17 +318,14 @@ class ReachTests(unittest.TestCase):
         ]
         with self.assertRaisesRegex(ValueError, "wrist pitch of less than a quarter turn"):
             ProceduralGraspController(geometry, config, lift_height=0.001, pull_through=True)
-        # Without the argument nothing of the pull is read or used, and the grasp at the tip is the earlier one.
-        earlier = ProceduralGraspController(regrasp_fixture()[0], config, lift_height=0.001, tip_lift_height=0.0005)
+        # Without the argument nothing of the pull is read or used.
+        earlier = ProceduralGraspController(regrasp_fixture()[0], config, lift_height=0.001)
         self.assertFalse(earlier.pull_through)
         self.assertIsNone(earlier.joint_limits)
-        self.assertEqual(
-            (earlier.tip_grasp_roll_rad, earlier.tip_grasp_bite_rad, earlier.tip_grasp_jaws_exchanged),
-            (-2.618, 0.7854, False),
-        )
+        self.assertIsNone(earlier.jaws)
         pulling = pull_controller(LIMITS)[2]
         self.assertEqual(
-            (pulling.tip_grasp_roll_rad, pulling.tip_grasp_bite_rad, pulling.tip_grasp_jaws_exchanged),
+            (pulling.pull_grasp_roll_rad, pulling.pull_grasp_bite_rad, pulling.pull_grasp_jaws_exchanged),
             (-1.0472, 0.5236, True),
         )
 
@@ -370,12 +362,13 @@ class PublishedValueTests(unittest.TestCase):
             other = ProceduralGraspController(_geometry(scene, config), config, lift_height=0.01, pull_through=True)
             self.assertEqual((other.ik_position_tolerance, other.ik_orientation_tolerance), (2.0e-5, 5.0e-4))
             self.assertLess(other.reach_margin[0], c.reach_margin[0])
-        # Without thread tracks the pull ends at the hole of the entry: the controller has the scene's radius.
+        # A scene whose thread stays on the surface says so, and the controller refuses to pull in it.
         with _scene(example_arguments=("--no-thread-tracks",)) as (scene, config):
-            c = ProceduralGraspController(_geometry(scene, config), config, lift_height=0.01, pull_through=True)
-            self.assertFalse(c.thread_tracks)
-            self.assertEqual(c.pull_hole, scene.interaction.capture_radius)
-            self.assertEqual(c.pull_hole, 2.0 * c.needle_radius)
+            geometry = _geometry(scene, config)
+            self.assertFalse(geometry["thread_tracks"])
+            with self.assertRaisesRegex(ValueError, "thread_tracks"):
+                ProceduralGraspController(geometry, config, lift_height=0.01, pull_through=True)
+            self.assertFalse(ProceduralGraspController(geometry, config, lift_height=0.01).thread_tracks)
 
 
 class PullKinematicsTests(unittest.TestCase):
@@ -456,12 +449,18 @@ class PullKinematicsTests(unittest.TestCase):
         self.assertAlmostEqual(c._tail_past(needle, marker(SPAN + 0.1)), 0.1 * radius, delta=1e-8)
         # Only the angle about the axis counts: not the height above the plane, not the distance from the centre.
         self.assertAlmostEqual(c._tail_past(needle, marker(SPAN - 0.4, 0.002, 1.3)), -0.4 * radius, delta=1e-8)
-        # The pull to a marker: that arc and the slack of four wire radii, as an angle.
-        self.assertAlmostEqual(c._pull_span(needle, marker(SPAN - 0.4)), 0.4 + 4.0 * WIRE_RADIUS / radius, delta=1e-6)
-        self.assertAlmostEqual(c._pull_span(needle, marker(SPAN + 0.1)), 4.0 * WIRE_RADIUS / radius, delta=1e-6)
-        # To the hole at a marker, two wire radii of arc before it.
+        # The pull to a marker: that arc and the slack beyond it, here four wire radii, as an angle.
+        slack = 4.0 * WIRE_RADIUS
+        self.assertAlmostEqual(c._pull_span(needle, marker(SPAN - 0.4), 0.0, slack), 0.4 + slack / radius, delta=1e-6)
+        self.assertAlmostEqual(c._pull_span(needle, marker(SPAN + 0.1), 0.0, slack), slack / radius, delta=1e-6)
+        # To two wire radii of arc before a marker, and to one thread element past it.
         self.assertAlmostEqual(
-            c._pull_span(needle, marker(SPAN - 0.4), 2.0 * WIRE_RADIUS), 0.4 + 2.0 * WIRE_RADIUS / radius, delta=1e-6
+            c._pull_span(needle, marker(SPAN - 0.4), 2.0 * WIRE_RADIUS, slack),
+            0.4 + 2.0 * WIRE_RADIUS / radius,
+            delta=1e-6,
+        )
+        self.assertAlmostEqual(
+            c._pull_span(needle, marker(SPAN - 0.4), -ELEMENT, ELEMENT), 0.4 + 2.0 * ELEMENT / radius, delta=1e-6
         )
 
     def test_the_speed_towards_a_stop_is_the_ramp_of_the_insertion_run_backwards(self):
@@ -506,21 +505,22 @@ class PullStageTests(unittest.TestCase):
         self.assertLessEqual(np.linalg.norm(action[3:6]) * config.rotation_step, 4 * np.finfo(np.float32).eps)
         self.assertEqual(action[6], 0.0)
 
-    def test_the_pull_turns_the_needle_to_the_hole_of_the_entry_at_the_speed_rule_then_holds_and_is_done(self):
+    def test_the_pull_turns_the_needle_at_the_speed_rule_one_thread_element_past_the_exit_then_holds(self):
         geometry, config, c, item, state = closed_on_the_tip()
         plan = geometry["insertion_plan"]
         radius, center = plan["radius"], plan["arc_center_local"]
-        hole = 2.0 * WIRE_RADIUS
+        # The tissue holds nothing of the track: the tail goes to one thread element past the exit marker.
+        way = EXIT_ARC + ELEMENT
         start = item["needle_pose"].copy()
         centre_world = procedure._rotation(start) @ center + start[:3]
         # The call in which the jaws are closed starts the pull and moves nothing.
         action = tick(c, item, config)
         np.testing.assert_array_equal(action, np.zeros(7))
         self.assertEqual((state.stage, c.report()[0]["phase"]), ("pull", "close"))
-        self.assertAlmostEqual(state.tail_past_entry, -0.00299, delta=1e-8)
-        self.assertAlmostEqual(state.tail_past_exit, -0.012, delta=1e-8)
-        # The tail has 2.99 mm less the radius of the hole to go; the command may go the slack further.
-        self.assertAlmostEqual(state.pull_bound, (0.00299 - hole + 4.0 * WIRE_RADIUS) / radius, delta=1e-6)
+        self.assertAlmostEqual(state.tail_past_entry, -ENTRY_ARC, delta=1e-8)
+        self.assertAlmostEqual(state.tail_past_exit, -EXIT_ARC, delta=1e-8)
+        # The tail has 3 mm and the element to go; the command may go one element further.
+        self.assertAlmostEqual(state.pull_bound, (way + ELEMENT) / radius, delta=1e-6)
         # Speed rule: the palm origin is this far from the axis of the needle (from the measured grasp).
         palm = inverse(item["needle_relative_pose"])[:3] - center
         arm = np.hypot(palm[0], palm[1])
@@ -529,12 +529,12 @@ class PullStageTests(unittest.TestCase):
         # By hand, frame by frame: the ramp of the insertion adds its arc, but no more than the speed of the
         # same ramp towards its stop allows with what the tail has left; the needle follows the tool exactly.
         travelled, frames, steps = 0.0, 0, []
-        while 0.00299 - hole - travelled > 0.0:
+        while way - travelled > 0.0:
             frames += 1
             added = float(
                 ramp_distance(frames * config.frame_dt, speed) - ramp_distance((frames - 1) * config.frame_dt, speed)
             )
-            added = min(added, ramp_speed(0.00299 - hole - travelled, speed) * config.frame_dt)
+            added = min(added, ramp_speed(way - travelled, speed) * config.frame_dt)
             steps.append(added)
             travelled += added
             self.assertLess(frames, 400)
@@ -546,7 +546,7 @@ class PullStageTests(unittest.TestCase):
         # speed would cover 3 mm. The frames in all: those of the arc at speed and half a second more.
         # (a few frames fewer: a frame of the stop runs at the speed of its beginning.)
         if speed == 0.003:
-            self.assertLessEqual(abs(frames - ((0.00299 - hole) / speed * 60.0 + 30.0)), 5.0)
+            self.assertLessEqual(abs(frames - ((way) / speed * 60.0 + 30.0)), 5.0)
         # The needle of the test follows the tool through single precision transforms, so the arc that the
         # controller reads as left differs from this hand count by nanometres: the angles agree to 5e-6 rad
         # (0.05 um of arc) and the last, nearly still frame of the stop may fall one call earlier or later.
@@ -573,52 +573,28 @@ class PullStageTests(unittest.TestCase):
             self.assertAlmostEqual(2.0 * np.arctan2(np.linalg.norm(turned[:3]), turned[3]), angle, delta=2e-6)
             self.assertLess(pulled, frames + 3)
         self.assertLessEqual(abs(pulled - frames), 1)
-        # That call saw the tail at the hole: the pull has ended and the tool holds its target.
+        # That call saw the tail clear of the exit: the pull has ended and the tool holds its target.
         report = c.report()[0]
         self.assertEqual((report["stage"], report["phase"], report["pull_complete"]), ("clear", "holding", True))
         self.assert_held(action, config)
-        self.assertAlmostEqual(report["tail_past_entry_m"], travelled - 0.00299, delta=3e-7)
-        # The tail is within the radius of the hole of the entry marker, by less than a slow frame's arc.
-        self.assertGreaterEqual(report["tail_past_entry_m"], -hole - 3e-7)
-        self.assertLess(report["tail_past_entry_m"], -hole + 0.05 * speed * config.frame_dt)
-        self.assertAlmostEqual(report["tail_past_exit_m"], travelled - 0.012, delta=3e-7)
-        # It holds for the hold time of a lift (0.5 s) and is then done; nothing moves any more.
+        self.assertAlmostEqual(report["tail_past_entry_m"], travelled - ENTRY_ARC, delta=3e-7)
+        # The tail is one thread element past the exit marker, by less than a slow frame's arc more.
+        self.assertGreaterEqual(report["tail_past_exit_m"], ELEMENT - 3e-7)
+        self.assertLess(report["tail_past_exit_m"], ELEMENT + 0.05 * speed * config.frame_dt)
+        self.assertAlmostEqual(report["tail_past_exit_m"], travelled - EXIT_ARC, delta=3e-7)
+        # It holds for the hold time of a lift (0.5 s) without moving; the draw of the thread follows (DrawTests).
         held = item["gripper_target_pose"].copy()
         for _ in range(29):
-            tick(c, item, config)
-            self.assertEqual(c.report()[0]["stage"], "clear")
-        tick(c, item, config)
-        self.assertEqual((c.report()[0]["stage"], c.report()[0]["phase"]), ("done", "holding"))
-        for _ in range(5):
             self.assert_held(tick(c, item, config), config)
+            self.assertEqual(c.report()[0]["stage"], "clear")
         np.testing.assert_allclose(item["gripper_target_pose"], held, atol=1e-6)
-        self.assertEqual(
-            (c.report()[0]["stage"], c.report()[0]["phase"], c.report()[0]["reason"]), ("done", "holding", None)
-        )
-
-    def test_the_pull_to_the_entry_ends_at_the_hole_that_the_scene_publishes(self):
-        """Fails if the pull ends at a hole of the controller's own size instead of the scene's."""
-        for hole in (HOLE, 1.5 * HOLE):
-            with self.subTest(hole=hole):
-                _geometry, config, c, item, state = closed_on_the_tip(hole=hole)
-                self.assertEqual(c.pull_hole, hole)
-                tick(c, item, config)
-                # The tail has 2.99 mm less the radius of that hole to go, and the slack of four wire radii beyond.
-                self.assertAlmostEqual(state.pull_bound, (0.00299 - hole + 4.0 * WIRE_RADIUS) / c.radius, delta=1e-6)
-                for _ in range(400):
-                    tick(c, item, config)
-                    if state.stage != "pull":
-                        break
-                report = c.report()[0]
-                self.assertEqual((report["stage"], report["pull_complete"]), ("clear", True))
-                # Within the radius of the hole of the entry marker, by less than a slow frame's arc.
-                self.assertGreaterEqual(report["tail_past_entry_m"], -hole - 3e-7)
-                self.assertLess(report["tail_past_entry_m"], -hole + 0.05 * state.pull_speed * config.frame_dt)
+        tick(c, item, config)
+        self.assertEqual((c.report()[0]["stage"], c.report()[0]["reason"]), ("draw", None))
 
     def test_the_report_follows_the_tail_of_the_needle_after_the_procedure_is_done(self):
         """Fails if a done procedure reports the tail where the last frame of the hold had it."""
-        # The pull to the entry, and the pull through tissue that holds nothing of the track.
-        for fixture_of in (closed_on_the_tip, through_the_tissue):
+        # The pull through tissue that holds nothing of the track.
+        for fixture_of in (through_the_tissue,):
             with self.subTest(fixture=fixture_of.__name__):
                 _geometry, config, c, item, state = fixture_of()
                 item["diagnostics"]["engaged_track_length_m"] = 0.0
@@ -648,7 +624,8 @@ class PullStageTests(unittest.TestCase):
     def test_without_a_lift_the_tool_lets_go_of_the_centred_needle_as_soon_as_the_arc_is_complete(self):
         geometry, config = regrasp_fixture()
         geometry["grippers"] = [pulling_tool()]
-        geometry["needle_capture_radius"] = HOLE
+        geometry.update(thread_tracks=True, thread_element_length=ELEMENT, needle_weight_N=WEIGHT)
+        geometry["insertion_plan"] = dict(geometry["insertion_plan"], expected_passages=PASSAGES)
         c = ProceduralGraspController(geometry, config, settle_seconds=0, pull_through=True)
         # The drive goes on to the centred needle, as before a lift, and the entry normal is read for the plan.
         self.assertAlmostEqual(c.drive_angle, 0.5 * EXIT_ANGLE + 0.5 * SPAN, delta=1e-12)
@@ -686,6 +663,7 @@ class PullStageTests(unittest.TestCase):
         item["needle_relative_pose"] = inverse(grasp)
         item["gripper_target_pose"] = gripper_target(item["needle_pose"], item["needle_relative_pose"])
         tick(c, item, config)
+        self.assertEqual(state.stage, "pull")
         # 80 % of 6 mm/s at the palm is 4.8 mm/s x 9.45 / 30 at the needle.
         self.assertAlmostEqual(state.pull_speed, 0.8 * 0.006 * radius / 0.03, delta=1e-8)
         self.assertLess(state.pull_speed, 0.003)
@@ -710,7 +688,7 @@ class PullStageTests(unittest.TestCase):
         self.assertAlmostEqual(state.pull_time, time + config.frame_dt, delta=1e-12)
         # A needle that stays where it is: the command stops at its bound, and 0.25 s later the procedure stops.
         geometry, config, c, item, state = closed_on_the_tip()
-        bound = (0.00299 - 2.0 * WIRE_RADIUS + 4.0 * WIRE_RADIUS) / c.radius
+        bound = (EXIT_ARC + 2.0 * ELEMENT) / c.radius
         frames = next(
             k
             for k in range(1, 900)
@@ -736,7 +714,7 @@ class PullStageTests(unittest.TestCase):
     def test_a_pull_that_the_tool_cannot_reach_from_where_the_jaws_closed_does_not_start(self):
         # The joints of the tool over the arc of the pull, from the measured grasp, by the joint frames.
         _geometry, _config, c, item, state = closed_on_the_tip()
-        span = (0.00299 - 2.0 * WIRE_RADIUS + 4.0 * WIRE_RADIUS) / c.radius
+        span = (EXIT_ARC + 2.0 * ELEMENT) / c.radius
         targets = pull_targets(
             item["needle_pose"],
             item["needle_relative_pose"],
@@ -770,17 +748,9 @@ class PullStageTests(unittest.TestCase):
         self.assertLess(state.reach_rad, np.inf)
 
 
-# The pull through the tissue of these tests: the thread element of the scenes (0.18 m in 90 elements), the exit
-# marker 3 mm of arc ahead of the tail and the entry marker 1 mm, and tissue that holds the needle's track until
-# the tail is level with the exit marker.
-ELEMENT = 0.002
-EXIT_ARC, ENTRY_ARC = 0.003, 0.001
-
-
 def through_the_tissue(**options):
-    geometry, config, c, item, state = closed_on_the_tip(
-        entry_arc=ENTRY_ARC, exit_arc=EXIT_ARC, thread_element=ELEMENT, **options
-    )
+    """The pull fixture with tissue that holds the needle's track until the tail is level with the exit marker."""
+    geometry, config, c, item, state = closed_on_the_tip(**options)
     item["diagnostics"]["engaged_track_length_m"] = 0.004
     return geometry, config, c, item, state
 
@@ -919,14 +889,6 @@ class PullThroughTests(unittest.TestCase):
         radius = geometry["insertion_plan"]["radius"]
         needle, marker = item["needle_pose"], item["exit_position"]
         self.assertAlmostEqual(c._pull_out_span(needle, marker), (EXIT_ARC + 2.0 * ELEMENT) / radius, delta=1e-6)
-        # Without thread tracks: to the exit marker and the slack of four wire radii, as before.
-        _geometry, _config, plain, plain_item, _state = closed_on_the_tip(entry_arc=ENTRY_ARC, exit_arc=EXIT_ARC)
-        self.assertFalse(plain.thread_tracks)
-        self.assertAlmostEqual(
-            plain._pull_out_span(plain_item["needle_pose"], plain_item["exit_position"]),
-            (EXIT_ARC + 4.0 * WIRE_RADIUS) / radius,
-            delta=1e-6,
-        )
         # The rows that _grasp_reach asks: the last pose of its pull is the tool at that span.
         grasp = item["gripper_target_pose"]
         asked = []
@@ -979,19 +941,15 @@ class PullThroughTests(unittest.TestCase):
             own = ProceduralGraspController(geometry, config, settle_seconds=0, lift_height=0.001, pull_through=True)
             self.assertEqual(own.tight_volume, volume)
         del geometry["tight_volume_ratio"]
-        # Neither is asked of a scene whose controller does not pull, or whose thread stays on the surface.
+        # Neither is asked of a scene whose controller does not pull.
         geometry["insertion_plan"] = plan
         del geometry["needle_weight_N"]
         without = ProceduralGraspController(geometry, config, settle_seconds=0, lift_height=0.001)
         self.assertEqual((without.thread_tracks, without.pull_clearance), (False, 0.0))
-        # With thread tracks the pull does not end at the hole of the entry, and its radius is not asked for.
-        self.assertEqual(with_pull.pull_hole, 0.0)
+        # A scene whose thread stays on the surface cannot be pulled in.
         geometry["thread_tracks"] = False
-        with self.assertRaisesRegex(ValueError, "needle_capture_radius"):
+        with self.assertRaisesRegex(ValueError, "thread_tracks"):
             ProceduralGraspController(geometry, config, settle_seconds=0, lift_height=0.001, pull_through=True)
-        geometry["needle_capture_radius"] = HOLE
-        off = ProceduralGraspController(geometry, config, settle_seconds=0, lift_height=0.001, pull_through=True)
-        self.assertEqual((off.thread_tracks, off.pull_clearance, off.pull_hole), (False, 0.0, HOLE))
 
 
 def clear_of_the_tissue(stage="tie", **options):
@@ -1316,17 +1274,27 @@ class StitchTests(unittest.TestCase):
             "The thread was not tied at its entry: the scene reports None ties of None asked for",
         )
 
-    def test_the_older_procedures_end_where_they_ended_and_ask_the_scene_for_nothing(self):
-        """Fails if the pull to the entry, without thread tracks, goes on to a tie or asks for one."""
-        _geometry, config, c, item, state = closed_on_the_tip()
+    def test_the_arc_with_a_lift_ends_where_it_ended_and_asks_the_scene_for_nothing(self):
+        """Fails if the procedure without the pull goes on after its lift, asks for a tie or reports a stitch."""
+        geometry, config = regrasp_fixture()
+        c = ProceduralGraspController(geometry, config, settle_seconds=0, lift_height=0.001)
+        item = gripped(snapshot(geometry), geometry, 2.0)
         asked = []
-        for _ in range(600):
-            tick(c, item, config)
+        for time in (0.0, 30.0):
+            item["diagnostics"]["physical_time_s"] = time
+            c([item])
             asked.append(c.commands())
-            if state.stage == "done":
+        item["diagnostics"]["entry_count"] = 1
+        for _ in range(600):
+            lift_tick(c, item, config)
+            asked.append(c.commands())
+            if c.report()[0]["stage"] == "done":
                 break
         report = c.report()[0]
-        self.assertEqual((report["stage"], report["pull_complete"], report["stitch_complete"]), ("done", True, False))
+        self.assertEqual(
+            (report["stage"], report["lifts_complete"], report["pull_complete"], report["stitch_complete"]),
+            ("done", 1, False, False),
+        )
         self.assertEqual(set(asked), {None})
         self.assertEqual(
             (report["ties"], report["tighten_travel_bound_m"], report["tighten_stop_volume"]), (None, None, None)
@@ -1896,7 +1864,8 @@ class LockTests(unittest.TestCase):
 
 class PlanReachTests(unittest.TestCase):
     NEEDLE = straight_pose(np.radians(60.0), 0.012)
-    # The exit marker beside the tail of the wire: the pull-out arc of the plan is its slack alone.
+    # The exit marker beside the tail of the wire, and a thread element of two wire radii: the pull-out arc of the
+    # plan is the two elements past the marker alone, four wire radii.
     EXIT = None
 
     def controller(self, limits=LIMITS, trocar=DOWN, **options):
@@ -1910,12 +1879,15 @@ class PlanReachTests(unittest.TestCase):
             needle_tip_local=centerline[0],
             needle_centerline=centerline,
             needle_radius=WIRE_RADIUS,
-            needle_capture_radius=HOLE,
+            thread_tracks=True,
+            thread_element_length=2.0 * WIRE_RADIUS,
+            needle_weight_N=WEIGHT,
             grippers=[pulling_tool(limits, trocar)],
             reference_positions=vertices,
             reference_triangles=triangles,
         )
         geometry["insertion_plan"]["exit_angle"] = 0.9
+        geometry["insertion_plan"]["expected_passages"] = PASSAGES
         return ProceduralGraspController(
             geometry, config, settle_seconds=0, lift_height=0.001, pull_through=True, **options
         )
@@ -1943,14 +1915,14 @@ class PlanReachTests(unittest.TestCase):
         c = self.controller(trocar=trocar)
         marker = self.exit_marker(c)
         # The two rows by hand: 12 mm of descent along the jaws in steps of 0.1 mm; the needle turned about
-        # its centre by the slack of four wire radii, in steps of no more than 0.01 rad, the tool held to
+        # its centre by the four wire radii of the two thread elements, in steps of no more than 0.01 rad, the tool held to
         # it as at the grasp.
         along = procedure._rotation(grasp)[:, 1]
         descent = np.tile(grasp, (121, 1))
         descent[:, :3] -= np.linspace(0.012, 0.0, 121)[:, None] * along
         span = 4.0 * WIRE_RADIUS / c.radius
-        self.assertAlmostEqual(c._pull_span(self.NEEDLE, marker), span, delta=1e-6)
-        angles = np.linspace(0.0, c._pull_span(self.NEEDLE, marker), int(np.ceil(span / 0.01)) + 1)
+        self.assertAlmostEqual(c._pull_out_span(self.NEEDLE, marker), span, delta=1e-6)
+        angles = np.linspace(0.0, c._pull_out_span(self.NEEDLE, marker), int(np.ceil(span / 0.01)) + 1)
         held = times(inverse(grasp), self.NEEDLE)
         pull = pull_targets(self.NEEDLE, held, c.arc_center_local, c.arc_axes[2], angles)
         rows = [c._reach(row) for row in (descent, pull)]
