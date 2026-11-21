@@ -2054,9 +2054,10 @@ scene's geometry: the needle's mass times the 9.81 m/s² of the scene's weight
 kernel). The stop ramp begins in the first frame with $F<W$, from the speed
 that the command then has. Its way matters: beyond the point where the thread
 is slack the needle pushes the thread together against the tied eyelet, and
-$F$ rises again (on the CPU, tightened to the rule: 0.7 mN at its least, 2.8
-mN 0.46 mm further, 6 mN where the tightening began). So the command comes to
-that frame slowly. With $k$ the slope of $F$ against $b$ over the last
+$F$ rises again (measured on the CPU before the draw and the open mouths,
+tightened to the rule of then: 0.7 mN at its least, 2.8 mN 0.46 mm further,
+6 mN where the tightening began; not measured again since). So the command
+comes to that frame slowly. With $k$ the slope of $F$ against $b$ over the last
 $\tfrac12vT$ of $b$, taken while $F$ falls, the thread is predicted to carry
 nothing at
 
@@ -2071,11 +2072,12 @@ at $b_{\rm slack}$, to within the travel of a frame. The slope is taken
 against the commanded travel, not the palm's own, because the palm springs
 forward as the load falls. The travel back is bounded by the travel of the
 tightening. The thread between the two ties then holds the tissue without the
-tool: in four device runs the command ends 2.15 to 2.17 mm back with 0.20 to
-0.22 mN on the needle, and one second later the wound is 0.39 to 0.40 mm
-narrower at its top and 0.21 to 0.22 mm at the track than before the stitch,
-59 % and 73 to 74 % of what the tightening closed. It does not close the wound,
-and the ties are held eyelets, not knots.
+tool: in four device runs the command ends 3.16 to 3.24 mm back, and in the
+last frame, about six seconds later, the thread pulls the needle with 0.50 to
+0.53 mN and the wound is 0.295 to 0.300 mm narrower at its top and 0.198 to
+0.202 mm at the track than when the tightening began, 51 to 52 % and 79 % of
+what the tightening closed. It does not close the wound, and the ties are held
+eyelets, not knots.
 
 Measured on one DGX Spark (GB10), MuJoCo Warp backend, 2026-11-17,
 self-test of `fem_needle_grasp` without the tool/tissue contact (2400 frames;
