@@ -155,7 +155,7 @@ that frame: the subtractor's graph for its scratch or work list, the
 subtractor's graph and both line graphs for the polygon storage, and the frame
 graph, with the Krylov solves of the frame that warms it, for the boundary
 triangles. Every growth is listed with its frame, sizes, time and captures
-(`LinearTetCut.storage_growths`, `Example.storage_growths`).
+(`LinearTetCut.storage_growths`, `CutTissue.storage_growths`).
 
 `--test` plays a scripted user for 210 frames: a line across the pad, a grip,
 a line of two knife patches, a cylinder click, the debug view on and off, the
@@ -171,7 +171,7 @@ more than the reserve is refused, the pad stays as it was and the panel names
 the option. One design load is a line cut through the whole depth across the
 pad in each horizontal direction and one cylinder and one sphere tunnel
 through the depth with a tool of 1 mm radius, counted on the mesh
-(`derive_reserve`). The tool radius is a chosen design input, not a bound: the
+(`CutTissue.derive_reserve`). The tool radius is a chosen design input, not a bound: the
 screen tools size the tool from the view (about 0.7 mm at the default camera
 in a 1080-pixel-high window), and a tool drawn from farther away is larger.
 `--cut_reserve_polygons VERTICES FACES` sets the polygon vertices and faces

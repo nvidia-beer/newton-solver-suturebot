@@ -12,7 +12,7 @@ examples assets tree for a portable export, preserving these relative paths.
 | Location | Contents |
 | --- | --- |
 | [FEM solver](../src/newton_solver_suturebot/_src/solvers/fem/) | Sparse tissue mechanics, material kernels, fixed boundaries, prepared steps and the retained differentiation API |
-| [Cutting](../src/newton_solver_suturebot/_src/cutting/) | Embedded Tet4 fragments, cut topology, streaming assembly inputs, contact and material grips |
+| [Cutting](../src/newton_solver_suturebot/_src/cutting/) | Embedded Tet4 fragments, cut topology, streaming assembly inputs, contact and material grips; in `tissue.py` the cut simulation as one object, `CutTissue`, that a cutting scene is built on or owns: the frame and its graph, the start-up, the edit transaction with its roll-back, storage growth and the fixed reserve |
 | [Rigid MuJoCo](../src/newton_solver_suturebot/_src/solvers/mujoco/) | Subcycled rigid integration inside a coupled interval: native MuJoCo, and MuJoCo Warp, an unmodified dependency, with the solver's own rigid step in [`warp_step/`](../src/newton_solver_suturebot/_src/solvers/mujoco/warp_step/) |
 | [Thread solver](../src/newton_solver_suturebot/_src/solvers/thread/) | Backward Euler chain of cable elements for a suture thread with friction and self-contact, its attachment to a MuJoCo rigid body, its contact with a body's capsules and its two-way coupling to FEM tissue |
 | [Needle coupling](../src/newton_solver_suturebot/_src/solvers/coupled/) | Partitioned needle/tissue coupling in `coupling.py`, its captured trial graph in `coupling_graph.py`, interface forces in `interface/`, search directions and start guesses in `acceleration/` |

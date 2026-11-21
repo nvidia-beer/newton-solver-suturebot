@@ -6,12 +6,14 @@ from .debug import CutConnectivityDebug
 from .holds import MaterialHolds
 from .model import CutModel
 from .tetrahedral_cut import LinearTetCut
+from .tissue import CutTissue
 from .tunnel import TetrahedralTunnelGuide
 from .volume_guard import CutVolumeGuard
 
 __all__ = [
     "CutSurfaceContact",
     "CutModel",
+    "CutTissue",
     "CutVolumeGuard",
     "MaterialHolds",
     "LinearTetCut",

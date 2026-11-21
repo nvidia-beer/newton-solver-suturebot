@@ -155,8 +155,11 @@ not change the existing `SolverFEM.step` or fixed-matrix adjoint contract.
 
 ## Embedded cuts and material grips
 
-The full-pad cutting example uses [CutModel](../src/newton_solver_suturebot/_src/cutting/model.py)
-and [LinearTetCut](../src/newton_solver_suturebot/_src/cutting/tetrahedral_cut.py).
+The incision example (`fem_surgical_incision`) runs the cut simulation of
+[CutTissue](../src/newton_solver_suturebot/_src/cutting/tissue.py), which joins the cutter
+[LinearTetCut](../src/newton_solver_suturebot/_src/cutting/tetrahedral_cut.py) and the cut models of
+[CutModel](../src/newton_solver_suturebot/_src/cutting/model.py) with the surface contact, the
+material grips and the volume guard.
 Cuts clip material into convex fragments while preserving each parent Tet4's
 affine basis. Disconnected material regions receive copied basis nodes.
 Fragment volumes weight elastic energy; barycentric first moments determine
