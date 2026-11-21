@@ -98,7 +98,7 @@ The ninth, `fem_surgical_incision`, was recorded again on 2026-11-20 from
 commit `a67249d`, after the floor contact of that example was corrected,
 and replaced the clip of 2026-11-19 in which the body sank into the floor.
 It was recorded once more the same day, with the code of the commit that
-brought the floor's friction (its parent is `6655550`): the floor now holds
+brought the floor's friction (`f9b646f`; this recording is of the code of the commit that made a cut leave the friction state of untouched rows as it was, whose parent is `2006872`): the floor now holds
 the body against the grips.
 `fem_needle_grasp` was recorded once more on 2026-11-20, with the code of
 the commit that brought the draw of the thread through the tissue (its
@@ -205,7 +205,7 @@ straight above. Its [sidecar](media/fem_surgical_incision.json) records 480
 frames, eight simulated seconds: a planar blade cuts the belly along the
 midline, 28.5 mm long and 13.5 mm deep, and two right-drag grips, one on each
 side, are pulled 4 mm and 8 mm outward and stay as spring holds (green
-markers) that keep the wound about 8.5 mm open (8.51 mm in this recording).
+markers) that keep the wound about 8.5 mm open (8.54 mm in this recording).
 The clip is the recorder's own output: the blade and the two grips are
 scripted in `tools/video_scenarios.py`, and the camera, the `edges` interval
 and the `crop` are entries of the recipe in `docs/videos.json`. The picture is
@@ -215,7 +215,7 @@ interface on (`show_ui`), and the crop cuts off its side panel, the counters
 and the recorder's title bar. The floor holds the body against the grips by
 friction (coefficient 0.5). It rests on the floor, 0.27 mm under its plane at
 the deepest point. The clip was recorded on 2026-11-20 with the code of the
-commit that brought that friction (its parent is `6655550`). The clip before
+commit that brought that friction (`f9b646f`; this recording is of the code of the commit that made a cut leave the friction state of untouched rows as it was, whose parent is `2006872`). The clip before
 it, from commit `a67249d`, was of the floor without friction, on which the
 body followed the first grip (wound 7.59 mm open; the top of the belly came
 down 2.4 mm before the cut as the soft body settled on its round back), and

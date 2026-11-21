@@ -255,7 +255,7 @@ ends in, because the Line tool itself cuts through the whole depth of the
 view. Two right-drags, one on each side of the wound, are pulled 4 mm and 8 mm
 outward and released as spring holds. The floor holds the body against the
 grips by its friction, and the two pulls open the wound to about 8.5 mm at
-the skin (8.51 mm in this recording). From 3.5 s to 6.5 s of the clip, while the
+the skin (8.54 mm in this recording). From 3.5 s to 6.5 s of the clip, while the
 second grip pulls, the viewer's Show Edges option is on (the `edges` of the
 recipe): the dark lines are the edges of the triangles that the example
 draws, which are the surface of the simulated tetrahedral mesh itself, not a
@@ -271,14 +271,14 @@ seconds; the volume guard shortened no step, the finite-state and
 positive-volume checks passed every 60 frames and at the end, and the
 self-test of `--test` found no graph capture after start-up. The clip was
 recorded on 2026-11-20 with the code of the commit that brought the floor's
-friction (its parent is `6655550`): the body rests on the floor and the floor
+friction (`f9b646f`; this recording is of the code of the commit that made a cut leave the friction state of untouched rows as it was, whose parent is `2006872`): the body rests on the floor and the floor
 holds it against the grips (the top of this guide). The clip before it, from
 commit `a67249d`, was of the floor without friction: there the body followed
 the first grip and the wound opened to 7.59 mm, and the top of the belly came
 down 2.4 mm before the cut as the body settled. The same scenario through the
 null viewer on the CPU opens the wound to 8.50 mm with friction and to
 7.62 mm with `--ground_friction 0`. The [capture metadata](media/fem_surgical_incision.json)
-holds the events; the 14.5-second recording wall time includes initialization,
+holds the events; the 19.0-second recording wall time includes initialization,
 rendering and encoding and is not a live-performance benchmark.
 
 The rest of this section describes the full-pad movie of the pad example,

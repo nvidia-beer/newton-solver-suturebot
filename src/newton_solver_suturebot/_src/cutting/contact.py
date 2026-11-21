@@ -445,33 +445,43 @@ def _floor_friction(
                     wp.atomic_add(node_tangent, indices[row, i], wp.abs(w) * tangent)
 
 
+@wp.func
+def _off_triangle(p: wp.vec3, a: wp.vec3, b: wp.vec3, c: wp.vec3) -> float:
+    """Squared distance of a point from a triangle."""
+    bary = _closest_barycentric(p, a, b, c)
+    delta = p - (bary[0] * a + bary[1] * b + bary[2] * c)
+    return wp.dot(delta, delta)
+
+
 @wp.kernel(enable_backward=False)
 def _carry_friction(
     bvh: wp.uint64,
     old_points: wp.array[wp.vec3],
     old_areas: wp.array[float],
+    old_normals: wp.array[wp.vec3],
     old_anchor: wp.array[wp.vec3],
     old_reach: wp.array[float],
-    q: wp.array[wp.vec3],
-    nodes: wp.array2d[int],
-    weights: wp.array[wp.vec4],
+    points: wp.array[wp.vec3],
     count: wp.array[int],
     radius: float,
     anchor: wp.array[wp.vec3],
     reach: wp.array[float],
 ):
-    # One floor row of the new surface; launch over its floor rows. ``bvh`` and the old arrays are
-    # those of the surface as it was, at the positions ``q``.
+    # One floor row of the new surface, whose corners are ``points``; launch over its floor rows.
+    # ``bvh`` and the old arrays are those of the surface as it was, at the same positions.
     row = wp.tid()
     anchor[row] = wp.vec3(0.0)
     reach[row] = 0.0
     if row < 3 * count[0]:
-        p = wp.vec3(0.0)
-        for k in range(4):
-            p += weights[row][k] * q[nodes[row, k]]
+        p = points[row]
+        first = 3 * (row // 3)
+        a1, b1, c1 = points[first], points[first + 1], points[first + 2]
+        facing = wp.cross(b1 - a1, c1 - a1)
+        centre = (a1 + b1 + c1) / 3.0
         query = wp.bvh_query_aabb(bvh, p - wp.vec3(radius), p + wp.vec3(radius))
         candidate, target = int(0), int(-1)
         best = radius * radius
+        best_away, best_apart = int(0), float(0.0)
         barycentric = wp.vec3(0.0)
         while wp.bvh_query_next(query, candidate):
             if old_areas[candidate] > 0.0:
@@ -479,19 +489,39 @@ def _carry_friction(
                 bary = _closest_barycentric(p, a, b, c)
                 delta = p - (bary[0] * a + bary[1] * b + bary[2] * c)
                 distance = wp.dot(delta, delta)
-                if distance < best:
-                    target, best, barycentric = candidate, distance, bary
+                if distance <= best:
+                    # Several old triangles hold a point that is a corner of them all, and each
+                    # has its own row there. The row's own triangle is the one that is the same
+                    # surface as the new one: it faces the same way, and one of the two holds the
+                    # other's middle (a part of a cut triangle lies in the whole, and the reverse).
+                    away = int(0)
+                    if wp.dot(facing, old_normals[candidate]) < 0.0:
+                        away = 1
+                    apart = _off_triangle(centre, a, b, c)
+                    # A new triangle without area has no surface of its own to hold an old middle.
+                    if wp.dot(facing, facing) > 0.0:
+                        apart = wp.min(apart, _off_triangle((a + b + c) / 3.0, a1, b1, c1))
+                    better = distance < best or target < 0
+                    if not better:
+                        better = away < best_away or (away == best_away and apart < best_apart)
+                    if better:
+                        target, best, barycentric = candidate, distance, bary
+                        best_away, best_apart = away, apart
         if target >= 0:
-            # The offset from the anchor and the reach are fields on the surface: a row of the new
-            # surface takes them from the triangle of the old one that it lies on. A corner of
-            # that triangle without grip has neither.
-            offset, grip = wp.vec3(0.0), float(0.0)
+            # The anchor and the reach are fields on the surface: a row of the new surface takes
+            # them from the triangle of the old one that it lies on. A corner of that triangle
+            # without grip is its own anchor and has no reach. A row that is a corner of its old
+            # triangle gets that corner's anchor and reach back to the bit.
+            carried, foot, grip = wp.vec3(0.0), wp.vec3(0.0), float(0.0)
             for corner in range(3):
                 old = 3 * target + corner
+                foot += barycentric[corner] * old_points[old]
                 if old_reach[old] > 0.0:
-                    offset += barycentric[corner] * (old_points[old] - old_anchor[old])
+                    carried += barycentric[corner] * old_anchor[old]
                     grip += barycentric[corner] * old_reach[old]
-            anchor[row] = p - offset
+                else:
+                    carried += barycentric[corner] * old_points[old]
+            anchor[row] = carried + (p - foot)
             reach[row] = grip
 
 
@@ -582,9 +612,11 @@ class CutSurfaceContact:
         # its reach [m], the slip mu N / k at which it slides; a row with reach zero has no grip.
         self.anchor = wp.zeros(3 * self.capacity, dtype=wp.vec3, device=self.device)
         self.reach = wp.zeros(3 * self.capacity, dtype=float, device=self.device)
-        # What update_topology carries over to the rows of the surface it publishes.
+        # What update_topology carries over to the rows of the surface it publishes, and where
+        # those rows are.
         self._carried_anchor = wp.zeros_like(self.anchor)
         self._carried_reach = wp.zeros_like(self.reach)
+        self._carried_points = wp.zeros_like(self.points)
         # Device-side diagnostics: ground rows, then inter-piece rows.
         self.active_rows = wp.zeros(2, dtype=int, device=self.device)
         self.forces = wp.zeros_like(particle_q)
@@ -646,12 +678,26 @@ class CutSurfaceContact:
     def _carry(self, previous, particle_q, anchor, reach):
         """Write the friction of ``previous``, on its surface as it was, for the rows of this contact's surface.
 
-        A cut renumbers the surface triangles, and a row is a corner of one. The offset of a row
-        from its anchor and its reach are taken from the triangle of the old surface on which the
-        row's point lies (the nearest one within the search radius), at the positions
-        ``particle_q``; a row with no old triangle that near starts without grip. The points and
-        the search structure of ``previous`` must be those of its surface at ``particle_q``.
+        A cut renumbers the surface triangles, and a row is a corner of one. A row's anchor and
+        its reach are taken from the triangle of the old surface on which the row's point lies
+        (the nearest one within the search radius), at the positions ``particle_q``: a row of a
+        triangle that the cut left as it was gets its own anchor and reach back to the bit, and
+        so does a row of a triangle that is a part of an old one, or the whole of old parts. A
+        row with no old triangle that near starts without grip. The points and the search
+        structure of ``previous`` must be those of its surface at ``particle_q``.
         """
+        wp.launch(
+            _surface_points,
+            dim=3 * self.capacity,
+            inputs=[
+                particle_q,
+                self.surface.vertex_nodes,
+                self.surface.weights,
+                self.surface.count,
+                self._carried_points,
+            ],
+            device=self.device,
+        )
         wp.launch(
             _carry_friction,
             dim=3 * self.capacity,
@@ -659,11 +705,10 @@ class CutSurfaceContact:
                 previous.bvh.id,
                 previous.points,
                 previous.areas,
+                previous.normals,
                 previous.anchor,
                 previous.reach,
-                particle_q,
-                self.surface.vertex_nodes,
-                self.surface.weights,
+                self._carried_points,
                 self.surface.count,
                 self.search_radius,
                 anchor,

@@ -131,6 +131,31 @@ def _floor_rows(example):
     }
 
 
+def _rows_by_triangle(example):
+    """Anchor and reach of every floor row with grip, to the bit, by its triangle (the bits of its three corners) and corner.
+
+    A cut numbers the surface triangles anew; the corners of a triangle that it leaves as it was stay
+    where they are, in their order.
+    """
+    count = int(example.surface.count.numpy()[0])
+    points = example.contact.update_surface(example.state_0.particle_q).numpy()[: 3 * count]
+    anchor = example.contact.anchor.numpy()[: 3 * count]
+    reach = example.contact.reach.numpy()[: 3 * count]
+    rows = {}
+    for row in np.flatnonzero(reach > 0.0):
+        first = 3 * (row // 3)
+        rows[(points[first : first + 3].tobytes(), int(row % 3))] = (anchor[row].tobytes(), reach[row].tobytes())
+    return rows
+
+
+def _points_with_unlike_rows(rows):
+    """How many points hold rows, of the triangles that meet there, whose anchors or reaches are not the same."""
+    held = {}
+    for (triangle, corner), state in rows.items():
+        held.setdefault(triangle[12 * corner : 12 * corner + 12], set()).add(state)
+    return sum(len(states) > 1 for states in held.values())
+
+
 def _along_floor(vectors):
     """Lengths of the parts of ``vectors`` along the floor [m]."""
     return np.linalg.norm(vectors[:, :2], axis=1)
@@ -488,6 +513,55 @@ class TestFloorFriction(unittest.TestCase):
             example.step()
             force = example.contact.forces.numpy().astype(np.float64).sum(axis=0)
             self.assertAlmostEqual(-force[0], load, delta=0.002 * weight)
+
+    def refuse_a_cut(self, example):
+        """A cut whose publication fails after the contact has taken the new surface: the example rolls back."""
+        update, calls = example.contact.update_topology, []
+
+        def fail_after_update(*arguments, **keywords):
+            calls.append(1)
+            update(*arguments, **keywords)
+            if len(calls) == 1:
+                raise RuntimeError("injected publication failure after contact mutation")
+
+        with patch.object(example.contact, "update_topology", side_effect=fail_after_update):
+            self.assertFalse(example.cut(_blade(axis=1)))
+        self.assertEqual(len(calls), 2)
+
+    def test_a_refused_cut_gives_every_row_its_own_anchor_and_reach_back(self):
+        """Fails if a refused cut leaves a row with the anchor or reach of another row that meets it in a node."""
+        with self.sliding_cube(20) as example, self.sliding_cube(20) as twin:
+            before = _rows_by_triangle(example)
+            self.assertGreater(len(before), 0)
+            # While the block slides the rows that meet in a node do not hold the same anchor and reach: a
+            # carry that gave them all those of one of them would show here.
+            self.assertGreater(_points_with_unlike_rows(before), 0)
+            self.refuse_a_cut(example)
+            self.assertEqual(_rows_by_triangle(example), before)
+            # The block goes on as one that nobody tried to cut: to the bit on the CPU, where two runs of
+            # one scene are the same run.
+            if DEVICE == "cpu":
+                for _ in range(5):
+                    example.step()
+                    twin.step()
+                np.testing.assert_array_equal(example.state_0.particle_q.numpy(), twin.state_0.particle_q.numpy())
+                np.testing.assert_array_equal(example.state_0.particle_qd.numpy(), twin.state_0.particle_qd.numpy())
+
+    def test_a_cut_leaves_the_rows_of_the_triangles_it_does_not_cross_as_they_were(self):
+        """Fails if a cut changes the anchor or the reach of a row whose triangle it did not touch."""
+        for arguments in ((), ("--surface_capacity", "12")):
+            with self.subTest(arguments=arguments), self.sliding_cube(20, *arguments) as example:
+                before = _rows_by_triangle(example)
+                self.assertGreater(_points_with_unlike_rows(before), 0)
+                capacity = example.contact.capacity
+                self.assertTrue(example.cut(_blade(axis=1)), example.cut_error)
+                self.assertEqual(example.contact.capacity > capacity, bool(arguments))
+                after = _rows_by_triangle(example)
+                # The blade stands along the block's way: the two walls beside it are not crossed.
+                kept = before.keys() & after.keys()
+                self.assertGreater(len(kept), 0)
+                self.assertLess(len(kept), len(before))
+                self.assertEqual({row: after[row] for row in kept}, {row: before[row] for row in kept})
 
     def test_a_floor_without_friction_launches_what_it_launched_before_and_keeps_no_anchor(self):
         """Fails if coefficient zero runs a friction kernel or writes friction state: it must be the contact as it was."""

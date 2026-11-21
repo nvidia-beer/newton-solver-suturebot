@@ -233,10 +233,24 @@ four substeps, and 0.9904 at eight (from 0.64 to 1.61 m/s); this formula gives
 moves its floor rows by 6 µm, no anchor moves, and the floor holds the load to
 0.02 %; at rest no anchor moves between 3 s and 10 s. Second, the limit is kept
 as the distance $\rho$ and the anchor as a point of the floor, per corner of a
-surface triangle. A cut renumbers those triangles, so the offset from the anchor
-and the reach are carried as fields on the surface: every row of the new surface
-takes them from the triangle of the old one on which it lies (`update_topology`;
-`take_over` for a contact that replaces a grown one). Third, friction holds a
+surface triangle. A cut renumbers those triangles, so the anchor and the reach
+are carried as fields on the surface: every row of the new surface takes them
+from the triangle of the old one on which it lies (`update_topology`;
+`take_over` for a contact that replaces a grown one). Several old triangles
+hold a point in which they meet, each with a row of its own there, and while a
+body slides those rows do not hold the same anchor (they differ by up to
+0.67 µm under the Baymax body with two grips). The row's own triangle is the
+one that is the same surface as the new one: it faces the same way, and one of
+the two holds the other's middle. A row of a triangle that the cut left whole,
+or cut into parts, or put together again from its parts, therefore gets its own
+anchor and reach back to the bit, and a cut that is refused leaves the floor's
+hold as it was: the frames after it are those of a body that nobody tried to
+cut, bit for bit on the CPU. Two limits: a row of a triangle so thin that its
+area rounds to nothing in single precision (a sliver under a micrometre high)
+can take the state of the edge beside it instead of its own, and a triangle
+put together again from parts gets one part's state at a shared corner, which
+is the same state only because no step lies between a cut and its roll-back.
+Third, friction holds a
 body in the shape in which it came to rest, and how it got there depends on the
 time step: the cube's depths differ by 5 % between one substep and four when its
 weight comes on at once, by 0.3 % when it comes on over a second, and not at all

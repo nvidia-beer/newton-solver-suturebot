@@ -11,7 +11,7 @@
   "width": 800,
   "height": 660,
   "show_ui": true,
-  "recording_wall_seconds": 14.504044517001603,
+  "recording_wall_seconds": 18.99764475200027,
   "playback_is_performance_benchmark": false,
   "simulation_time": [
     {
@@ -96,8 +96,8 @@
     "fixed_nodes": 0,
     "cuts": 1,
     "grips": 2,
-    "wound_opening_m": 0.008513454347848892,
-    "grip_distance_m": 0.019985631108283997,
+    "wound_opening_m": 0.008543919771909714,
+    "grip_distance_m": 0.01998783089220524,
     "volume_guard_limited_steps": 0,
     "cut_error": "",
     "events": [
@@ -106,19 +106,19 @@
         "action": "planar_cut_of_limited_depth",
         "length_m": 0.0285,
         "depth_below_skin_m": 0.013500000000000002,
-        "sunk_since_start_m": 0.002189000175137224,
+        "sunk_since_start_m": 0.002189001572121086,
         "material_components": 1,
         "mass_before_kg": 0.09245118498802185,
-        "mass_after_kg": 0.09245118498802185
+        "mass_after_kg": 0.09245119243860245
       },
       {
         "frame": 70,
         "action": "begin_right_drag",
         "side": "-x",
         "point_m": [
-          0.03273152036237503,
-          -0.03869392064499666,
-          -0.0014636965790436052
+          0.032731472468603584,
+          -0.03865017080390219,
+          -0.0014665467098168294
         ]
       },
       {
@@ -126,16 +126,16 @@
         "action": "release_to_hold",
         "side": "-x",
         "pull_m": 0.004,
-        "wound_opening_m": 0.0006996728479862213
+        "wound_opening_m": 0.0007063858211040497
       },
       {
         "frame": 187,
         "action": "begin_right_drag",
         "side": "+x",
         "point_m": [
-          0.04106308981228961,
-          -0.0387096525615408,
-          -0.001020964895284332
+          0.04106442693149081,
+          -0.038665492982993335,
+          -0.0010267332205700919
         ]
       },
       {
@@ -143,7 +143,7 @@
         "action": "release_to_hold",
         "side": "+x",
         "pull_m": 0.008,
-        "wound_opening_m": 0.00850553810596466
+        "wound_opening_m": 0.008535895496606827
       }
     ],
     "interaction": "a planar cut of limited depth through Example.cut; two right-drags through the mouse handlers of the screen pick tool (through its callbacks where there is no window)"
